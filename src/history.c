@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.19 2002-12-20 00:31:37 bjk Exp $ */
+/* $Id: history.c,v 1.20 2002-12-20 00:49:06 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -374,7 +374,8 @@ static char *random_agony()
     FILE *fp;
     char line[LINE_MAX];
 
-    if (index == -1 || (browse_history && !config.historyagony))
+    if (index == -1 || !config.agony || 
+	    (browse_history && !config.historyagony))
 	return NULL;
 
     if (!agony) {
@@ -393,11 +394,11 @@ static char *random_agony()
 
 	agony[index] = NULL;
 	fclose(fp);
-    }
 
-    if (agony[0][0] == 0 || !index) {
-	index = -1;
-	return NULL;
+	if (agony[0] == NULL || !index) {
+	    index = -1;
+	    return NULL;
+	}
     }
 
     return agony[random() % index];

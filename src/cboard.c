@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.38 2002-12-20 00:31:37 bjk Exp $ */
+/* $Id: cboard.c,v 1.39 2002-12-20 00:49:06 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -850,6 +850,8 @@ static void set_defaults()
     config.history_jump = 5;
     config.book_method = BOOK_RANDOM;
     config.engine_depth = 0;
+    config.historyagony = 0;
+    config.agony = 1;
 
     set_pgn_defaults();
     return;
