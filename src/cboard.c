@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.9 2002-12-06 20:07:23 bjk Exp $ */
+/* $Id: cboard.c,v 1.10 2002-12-06 20:38:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -325,66 +325,6 @@ void refresh_all()
     return;
 }
 
-char *pgn_escapes(const char *str)
-{
-    int i, n;
-    int len = strlen(str);
-    static char buf[MAX_PGN_LINE_LEN] = {0};
-
-    for (i = n = 0; i < len; i++, n++) {
-	switch (str[i]) {
-	    case '\\':
-	    case '\"':
-		buf[n++] = '\\';
-		break;
-	    default:
-		break;
-	}
-
-	buf[n] = str[i];
-    }
-
-    buf[n] = 0;
-    return buf;
-}
-	
-int save_pgn(const char *filename)
-{
-    int i, n;
-    int len = 0;
-    FILE *fp;
-
-    if ((fp = fopen(filename, "a")) == NULL)
-	return 1;
-
-    for (i = 0; i < pgn_index; i++)
-	fprintf(fp, "[%s \"%s\"]\n", pgn[i].token, pgn_escapes(pgn[i].value));
-
-    fprintf(fp, "\n");
-
-    for (i = 0, n = 1; i < history_index; i += 2, n++) {
-	int wlen = strlen(history[i].move);
-	int blen = strlen(history[i + 1].move);
-
-	if (wlen + blen + 6 + len > 80) {
-	    fprintf(fp, "\n");
-	    len = 0;
-	}
-
-	fprintf(fp, "%u. %s %s", n, history[i].move, history[i + 1].move);
-
-	if (i + 2 < history_index)
-	    fprintf(fp, " ");
-
-	len += wlen + blen + 6;
-    }
-
-    fprintf(fp, "\n\n");
-    fclose(fp);
-
-    return 0;
-}
-
 /* FIXME segfault after 'q' (sometimes), scrolling */
 void edit_pgn_data()
 {
@@ -494,12 +434,10 @@ void edit_pgn_data()
 	}
 
 gotkey:
-	    /*
-	       if (strcmp(pgn[i].token, "Date") == 0)
-	       continue;
-	       else if (strcmp(pgn[i].token, "Round") == 0)
-	       continue;
-	       */
+	if (strcmp(pgn[selected].token, "Date") == 0) {
+	    message(NULL, ANYKEY, "Can't edit the \"Date\" tag.");
+	    continue;
+	}
 
 	snprintf(editprompt, sizeof(editprompt),
 		"Editing roster tag \"%s\"", pgn[selected].token);

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.4 2002-12-06 19:11:13 bjk Exp $ */
+/* $Id: cboard.h,v 1.5 2002-12-06 20:38:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -70,3 +70,4 @@ void send_to_engine(const char *, ...);
 char *get_input(const char *, char *);
 int parse_pgn_file(const char *);
 int add_pgn_data(int *, const char *, const char *);
+int save_pgn(const char *);

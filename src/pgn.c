@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.3 2002-12-06 17:27:46 bjk Exp $ */
+/* $Id: pgn.c,v 1.4 2002-12-06 20:38:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -192,5 +192,77 @@ int parse_pgn_file(const char *filename)
     }
 
     fclose(fp);
+    return 0;
+}
+
+static char *pgn_escapes(const char *str)
+{
+    int i, n;
+    int len = strlen(str);
+    static char buf[MAX_PGN_LINE_LEN] = {0};
+
+    for (i = n = 0; i < len; i++, n++) {
+	switch (str[i]) {
+	    case '\\':
+	    case '\"':
+		buf[n++] = '\\';
+		break;
+	    default:
+		break;
+	}
+
+	buf[n] = str[i];
+    }
+
+    buf[n] = 0;
+    return buf;
+}
+	
+int save_pgn(const char *filename)
+{
+    int i, n;
+    int len = 0;
+    FILE *fp;
+
+    if ((fp = fopen(filename, "a")) == NULL)
+	return 1;
+
+    for (i = 0; i < pgn_index; i++) {
+	struct tm tp;
+
+	if (strcmp(pgn[i].token, "Date") == 0) {
+	    if (strptime(pgn[i].value, TIME_FORMAT, &tp) != NULL)
+		strftime(pgn[i].value, sizeof(pgn[i].value), PGN_TIME_FORMAT,
+			&tp);
+	}
+	else if (strcmp(pgn[i].value, UNKNOWN) == 0)
+	    pgn[i].value[0] = 0;
+
+	fprintf(fp, "[%s \"%s\"]\n", pgn[i].token, 
+		(pgn[i].value[0]) ? pgn_escapes(pgn[i].value) : "");
+    }
+
+    fprintf(fp, "\n");
+
+    for (i = 0, n = 1; i < history_index; i += 2, n++) {
+	int wlen = strlen(history[i].move);
+	int blen = strlen(history[i + 1].move);
+
+	if (wlen + blen + 6 + len > 80) {
+	    fprintf(fp, "\n");
+	    len = 0;
+	}
+
+	fprintf(fp, "%u. %s %s", n, history[i].move, history[i + 1].move);
+
+	if (i + 2 < history_index)
+	    fprintf(fp, " ");
+
+	len += wlen + blen + 6;
+    }
+
+    fprintf(fp, "\n\n");
+    fclose(fp);
+
     return 0;
 }
