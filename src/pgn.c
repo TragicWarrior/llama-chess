@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.75 2003-02-01 17:49:04 bjk Exp $ */
+/* $Id: pgn.c,v 1.76 2003-02-01 19:39:21 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1286,9 +1286,9 @@ char *country_codes(void *arg)
     if (cols < strlen(HELP_PROMPT) + 21)
 	cols = strlen(HELP_PROMPT) + 21;
 
-    win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
+    win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
     set_menu_win(menu, win);
-    subw = derwin(win, rows, cols, 2, 1);
+    subw = derwin(win, rows, cols + 2, 2, 1);
     set_menu_sub(menu, subw);
     set_menu_fore(menu, A_REVERSE);
     set_menu_grey(menu, A_NORMAL);
@@ -1302,7 +1302,7 @@ char *country_codes(void *arg)
     keypad(win, TRUE);
     set_menu_pattern(menu, mbuf);
     wbkgd(win, CP_MESSAGE_WINDOW);
-    draw_window_title(win, CC_TITLE, cols + 2, CP_MESSAGE_TITLE,
+    draw_window_title(win, CC_TITLE, cols + 4, CP_MESSAGE_TITLE,
 	    CP_MESSAGE_BORDER);
 
     while (1) {
@@ -1432,12 +1432,19 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 	char *mbuf = NULL;
 
 	for (i = 0; i < data_index; i++) {
+	    int nlen = 0, vlen = 0;
+
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
 
-	    if (data[i].value[0])
+	    if (data[i].value[0]) {
+		nlen = strlen(data[i].name);
+		vlen = strlen(data[i].value);
+
+		/* The +6 is for the menu padding. */
 		mitems[i] = new_item(data[i].name,
-			(strlen(data[i].value) > MAX_VALUE_WIDTH - 1)
+			(nlen + vlen + 6 >= MAX_VALUE_WIDTH)
 			? PRESS_ENTER : data[i].value);
+	    }
 	    else
 		mitems[i] = new_item(data[i].name, UNKNOWN);
 	}
@@ -1450,9 +1457,9 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 	if (cols < strlen(HELP_PROMPT) + 14)
 	    cols = strlen(HELP_PROMPT) + 14;
 
-	win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
+	win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
 	set_menu_win(menu, win);
-	subw = derwin(win, rows, cols, 2, 1);
+	subw = derwin(win, rows, cols + 2, 2, 1);
 	set_menu_sub(menu, subw);
 	set_menu_fore(menu, A_REVERSE);
 	set_menu_grey(menu, A_NORMAL);
@@ -1469,7 +1476,7 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 	set_menu_pattern(menu, mbuf);
 	wbkgd(win, CP_MESSAGE_WINDOW);
 	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
-		cols + 2, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+		cols + 4, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
 	while (1) {
 	    int c;
@@ -1486,7 +1493,7 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 	    snprintf(buf, sizeof(buf), "%s %i %s %i  %s", MENU_TAG_STR,
 		    item_index(current_item(menu)) + 1, N_OF_N_STR,
 		    item_count(menu), HELP_PROMPT);
-	    draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
+	    draw_prompt(win, rows + 2, cols + 4, buf, CP_MESSAGE_PROMPT);
 
 	    update_panels();
 	    doupdate();
@@ -1534,12 +1541,18 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 		    if (!edit)
 			break;
 
-		    if ((newtag = get_input(TAG_NEW_TITLE, NULL, 1, 0, NULL,
+		    if ((newtag = get_input(TAG_NEW_TITLE, NULL, 1, 1, NULL,
 				    NULL, NULL, 0, FIELD_TYPE_PGN_TAG_NAME))
 			    == NULL)
 			break;
 
 		    newtag[0] = toupper(newtag[0]);
+
+		    if (strlen(newtag) > MAX_VALUE_WIDTH - 6 - 
+			    strlen(PRESS_ENTER)) {
+			cmessage(ERROR, ANYKEY, "%s", E_TAG_NAMETOOLONG);
+			break;
+		    }
 
 		    for (i = 0; i < data_index; i++) {
 			if (strcasecmp(data[i].name, newtag) == 0) {
@@ -1848,7 +1861,7 @@ again:
 	panel = new_panel(win);
 
 	draw_window_title(win, path, cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-	draw_prompt(win, rows + 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
+	draw_prompt(win, rows + 2, cols + 2, HELP_PROMPT, CP_MESSAGE_PROMPT);
 
 	cbreak();
 	noecho();
