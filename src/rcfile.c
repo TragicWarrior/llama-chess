@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.23 2003-01-25 14:57:24 bjk Exp $ */
+/* $Id: rcfile.c,v 1.24 2003-01-25 15:54:06 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -292,6 +292,8 @@ void parse_rcfile(const char *filename)
 	    config.ics_user = strdup(val);
 	else if (strcmp(var, "ics_passwd") == 0)
 	    config.ics_passwd = strdup(val);
+	else if (strcmp(var, "engine_cmd") == 0)
+	    config.engine_cmd = strdup(val);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

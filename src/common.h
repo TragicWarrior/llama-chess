@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.45 2003-01-25 14:57:24 bjk Exp $ */
+/* $Id: common.h,v 1.46 2003-01-25 15:54:06 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -193,6 +193,7 @@ struct {
     char *fifo;
     char *tmpfile;
     char *savedirectory;
+    char *engine_cmd;
     struct colors color[CONF_MAX_COLORS];
     struct tags *tag;
     int tindex;

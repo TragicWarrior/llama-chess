@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.28 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: engine.c,v 1.29 2003-01-25 15:54:06 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -160,12 +160,59 @@ static int get_pty(char *pty_name)
     return -1;
 }
 
+static char **parseargs(char *str)
+{
+    char **pptr, *s;
+    char arg[255];
+    int index = 0;
+    int quote = 0;
+    int lastchar = 0;
+    int i;
+
+    if (!str)
+	return NULL;
+
+    if (!(pptr = malloc(sizeof(char *))))
+	return NULL;
+
+    for (i = 0, s = str; *s; lastchar = *s++) {
+	if ((*s == '\"' || *s == '\'') && lastchar != '\\') {
+	    quote = (quote) ? 0 : 1;
+	    continue;
+	}
+
+	if (*s == ' ' && !quote) {
+	    arg[i] = 0;
+	    pptr = realloc(pptr, (index + 2) * sizeof(char *));
+	    pptr[index++] = strdup(arg);
+	    arg[0] = i = 0;
+	    continue;
+	}
+	
+	if ((i + 1) == sizeof(arg))
+	    continue;
+
+	arg[i++] = *s;
+    }
+
+    arg[i] = 0;
+
+    if (arg[0]) {
+	pptr = realloc(pptr, (index + 2) * sizeof(char *));
+	pptr[index++] = strdup(arg);
+    }
+
+    pptr[index] = NULL;
+    return pptr;
+}
+
 /* Is this dangerous if pty permissions are wrong? */
 pid_t init_chess_engine()
 {
     pid_t pid;
     int from[2], to[2];
     char pty[FILENAME_MAX];
+    char **args;
 
     if ((to[1] = get_pty(pty)) == -1) {
 	errno = 0;
@@ -192,7 +239,8 @@ pid_t init_chess_engine()
 	    close(from[0]);
 	    close(from[1]);
 	    dup2(STDOUT_FILENO, STDERR_FILENO);
-	    execlp("gnuchess", "gnuchess", "xboard", NULL);
+	    args = parseargs(config.engine_cmd);
+	    execvp(args[0], args);
 	    _exit(EXIT_FAILURE);
 	default:
 	    break;

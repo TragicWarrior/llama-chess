@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.65 2003-01-25 14:57:24 bjk Exp $ */
+/* $Id: cboard.c,v 1.66 2003-01-25 15:54:06 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1483,6 +1483,7 @@ static void set_defaults()
 
     status.engine = ENGINE_OFFLINE;
 
+    config.engine_cmd = strdup("gnuchess xboard");
     config.jumpcount = 5;
     config.clevel = 6;
     config.book_method = BOOK_RANDOM;
