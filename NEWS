@@ -1,3 +1,57 @@
+CBoard version 0.1.4
+--------------------
+This release fixes a few bugs and plugs a couple memory leaks in the menu code.
+The SAN move parser still needs quite a bit of work though when interfaced
+with the engine, so check and end-of-game determination are on hold until that
+gets stable. But viewing games seems alright. Beginnings of ICS support
+(ignore the manual references as its useless right now). Hopefully the code is
+little more readable and easier to follow now. Heres the rest of the news:
+
+"make install" will install the data files and example configuration file to
+DATADIR/cboard (/usr/local/share/cboard by default). They will be copied to
+~/.cboard if they cannot be found.
+
+Linux runtime fixes.
+
+Can load and save .Z, .gz, .zip, .bz and .bz2 compressed files. Can't append
+to a compressed file though (for now).
+
+If theres a parse error when loading a file with multiple games, CBoard will
+keep reading the file rather than aborting.
+
+When editing the "Site" tag, you can lookup country codes which are stored in
+~/.cboard/cc.data.
+
+If a filename doesn't contain a ".", then ".pgn" is appended to it when
+saving.
+
+A few but important PGN parser fixes.
+
+Tags are sorted when loading and saving.
+
+Added command "d" to toggle the delete flag of the current game. Pressing "D"
+will delete all flagged games or the current one if none are flagged. This
+adds the configuration parameter "delete_prompt". The default is on.
+
+Added configuration parameter "valid_moves" to show valid moves when a piece
+is selected. The color can be adjusted with the "board_moves" color parameter.
+The cursor keys will move to the associated valid move. This is still buggy
+though.
+
+Added cursor repeat commands 0..9 (zero being ten). These will work with the
+board navigation, history browsing and game browsing keys.
+
+Removed cursor movement command 'j', 'k', 'l', and ';'.
+
+Added commands 'j' and 'J' to jump to a history move number or game number.
+
+Added "board_window" color configuration parameter.
+
+Added "engine_cmd" to specify the chess engine path, command and any
+arguments. The default is "gnuchess xboard". Note that other commands/engines
+haven't been tested.
+
+
 CBoard version 0.1.3
 --------------------
 Can now load and save SAN move format! Still not perfect I'm sure.
