@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.80 2003-02-01 21:10:44 bjk Exp $ */
+/* $Id: pgn.c,v 1.81 2003-02-01 21:17:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -787,14 +787,17 @@ int parse_pgn_file(BOARD b, const char *filename)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
-	    if ((c == '\n' && nextchar == '\n') || 
-		    ((isdigit(c) && (nextchar == '-' || nextchar == '/'))
-		     || c == '*')) {
+	    if ((c == '\n' && nextchar == '\n')) {
 		parse_error = 0;
 		nulltags = 1;
 	    }
 	    else
 		continue;
+	}
+
+	if ((c == '\n' && nextchar == '\n')) {
+	    nulltags = 1;
+	    continue;
 	}
 
 	if (c == '%') {
