@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.16 2002-12-19 16:55:12 bjk Exp $ */
+/* $Id: history.c,v 1.17 2002-12-19 18:14:05 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -314,7 +314,7 @@ static char *random_agony()
     FILE *fp;
     char line[LINE_MAX];
 
-    if (index == -1)
+    if (index == -1 || browse_history)
 	return NULL;
 
     if (!agony) {
@@ -463,8 +463,12 @@ static void parse_history_move(int index)
 void history_previous(int n)
 {
     if (game[gindex].hindex - n < 0) {
-	if (n == config.history_jump)
-	    game[gindex].hindex = 0;
+	if (n == config.history_jump) {
+	    if (game[gindex].hindex == 0)
+		return;
+	    else
+	        game[gindex].hindex = 0;
+	}
 	else
 	    game[gindex].hindex = game[gindex].htotal;
     }
@@ -478,8 +482,12 @@ void history_previous(int n)
 void history_next(int n)
 {
     if (game[gindex].hindex + n > game[gindex].htotal) {
-	if (n == config.history_jump)
-	    game[gindex].hindex = game[gindex].htotal;
+	if (n == config.history_jump) {
+	    if (game[gindex].hindex == game[gindex].htotal)
+		return;
+	    else
+	        game[gindex].hindex = game[gindex].htotal;
+	}
 	else
 	    game[gindex].hindex = 0;
     }
