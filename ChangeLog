@@ -1,3 +1,23 @@
+2002-12-19 Thursday 19:31  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.38), cboard.h (1.25), common.h (1.23),
+	history.c (1.19), history.h (1.10), pgn.c (1.30):
+	
+	Can now view NAG data.
+
+2002-12-19 Thursday 19:30  Ben Kibbey <bjk@arbornet.org>
+
+	* src/message.c (1.3):
+	
+	Somewhat new message() function that handles a pointer to a
+	function as an argument.
+
+2002-12-19 Thursday 19:29  Ben Kibbey <bjk@arbornet.org>
+
+	* src/input.c (1.13):
+	
+	The function pointer take a pointer-to-void argument.
+
 2002-12-19 Thursday 13:32  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.37), pgn.c (1.29):
