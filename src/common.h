@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.7 2002-12-09 18:54:24 bjk Exp $ */
+/* $Id: common.h,v 1.8 2002-12-09 21:51:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -132,7 +132,8 @@ void help(const char *, const char **);
 char *trim(char *);
 
 enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
-    FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM };
+    FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
+    FIELD_TYPE_PGN_TAG_NAME};
 char *get_input(const char *, const char *, int, ...);
 
 #ifdef WITH_DMALLOC

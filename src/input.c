@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.6 2002-12-09 21:20:13 bjk Exp $ */
+/* $Id: input.c,v 1.7 2002-12-09 21:51:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -47,6 +48,14 @@ static void cleanup(WINDOW *win, PANEL *panel, FORM *f, FIELD **fields)
     return;
 }
 
+static bool char_check(int c, const void *arg)
+{
+    if (!isalpha(c) && !isdigit(c) && c != '_')
+	return FALSE;
+
+    return TRUE;
+}
+
 /* This function prompts for one line of input. The init argument is the
  * initial value. The type argument is the type of validation for the input.
  * Remaining arguments are values for the type argument. See field_type(3X).
@@ -62,6 +71,7 @@ char *get_input(const char *prompt, const char *init, int type, ...)
     static unsigned char dst[255];
     char *tmp;
     va_list ap;
+    FIELDTYPE *TYPE_PGN_TAG_NAME;
 
     bzero(dst, sizeof(dst));
 
@@ -69,12 +79,17 @@ char *get_input(const char *prompt, const char *init, int type, ...)
     width = (len + 4 > INPUT_WIDTH && len + 4 < COLS - 2) ?
 	    len + 4 : INPUT_WIDTH;
 
+    TYPE_PGN_TAG_NAME = new_fieldtype(NULL, char_check);
+
     fields[0] = new_field(1, width - 4, 0, 0, 0, 0);
     set_max_field(fields[0], 255);
 
     va_start(ap, type);
 
     switch (type) {
+	case FIELD_TYPE_PGN_TAG_NAME:
+	    set_field_type(fields[0], TYPE_PGN_TAG_NAME);
+	    break;
 	case FIELD_TYPE_ALNUM:
 	    set_field_type(fields[0], TYPE_ALNUM, va_arg(ap, int));
 	    break;
@@ -185,6 +200,7 @@ char *get_input(const char *prompt, const char *init, int type, ...)
 done:
     tmp = trim(field_buffer(fields[0], 0));
     strncpy(dst, (tmp) ? tmp : "", sizeof(dst));
+    free_fieldtype(TYPE_PGN_TAG_NAME);
     cleanup(win, panel, finput, fields);
     noecho();
     nonl();

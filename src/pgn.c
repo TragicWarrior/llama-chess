@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.10 2002-12-09 21:24:24 bjk Exp $ */
+/* $Id: pgn.c,v 1.11 2002-12-09 21:51:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -395,7 +395,8 @@ struct pgndata *edit_pgn_data(int edit)
 		    if (!edit)
 			break;
 
-		    if ((newtag = get_input_str(PGN_NEW_TAG, NULL)) == NULL)
+		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 
+				    FIELD_TYPE_PGN_TAG_NAME)) == NULL)
 			break;
 
 		    if (add_pgn_data(&data, &data_index, newtag, NULL)) {
