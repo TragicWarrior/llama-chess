@@ -1,3 +1,11 @@
+2002-12-17 Tuesday 10:54  Ben Kibbey <bjk@arbornet.org>
+
+	* configure.ac (1.6):
+	
+	Make sure ncurses is installed.
+	
+	Release version 0.1.1.
+
 2002-12-17 Tuesday 10:35  Ben Kibbey <bjk@arbornet.org>
 
 	* KnownBugs (1.1), TODO (1.1), doc/Makefile.am (1.1),
