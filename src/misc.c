@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: misc.c,v 1.2 2002-12-07 21:30:06 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <err.h>
 #include <string.h>
+#include <ctype.h>
 
 void *Realloc(void *ptr, size_t size)
 {
@@ -51,4 +52,20 @@ char *real_filename(char *path)
 	return path;
 
     return ++tmp;
+}
+
+char *trim(char *str)
+{
+    int i = 0;
+
+    if (!str[0])
+	return NULL;
+
+    while (isspace(*str))
+	str++;
+
+    for (i = strlen(str) - 1; isspace(str[i]); i--)
+	str[i] = 0;
+
+    return str;
 }
