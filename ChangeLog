@@ -1,3 +1,9 @@
+2003-01-09 Thursday 12:58  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.50):
+	
+	Fix for segfault when adding a new tag.
+
 2003-01-09 Thursday 12:52  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.54), cboard.h (1.39), pgn.c (1.49), strings.h
