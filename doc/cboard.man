@@ -154,6 +154,11 @@ Password for ICS username.
 .Pp
 .It Cm valid_moves Ar on|off
 When a piece is selected, show valid squares the piece can move to. The
+.Cm board_white_moves
+and
+.Cm board_black_moves
+color parameters can specify alternate colors for the valid move squares.
+The
 default is 
 .Ar on .
 .El
@@ -167,7 +172,8 @@ default is
 .It Cm board_white Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_graphics Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_coords Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm board_moves Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_white_moves Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_black_moves Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_window Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_title Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_border Ar foreground Ar background Op Ar cattr Op Ar attr

@@ -80,7 +80,7 @@ board_black		white	black
 board_white		white	red	none	reverse
 board_coords		yellow	black	bold
 board_count		magenta	cyan	bold	bold,reverse
-board_white_moves	blue	magenta	none	reverse
+board_white_moves	white	magenta	none	reverse
 board_black_moves	white	blue	none	reverse
 
 status_window	white	black
