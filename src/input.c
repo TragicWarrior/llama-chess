@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.11 2002-12-12 19:16:51 bjk Exp $ */
+/* $Id: input.c,v 1.12 2002-12-14 20:59:46 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -56,19 +56,29 @@ static bool validate_pgn_round(int c, const void *arg)
     return TRUE;
 }
 
-/* This function titles for one line of input. The init argument is the
- * initial value. The lines argument is how many lines the field is. If zero,
- * then it is dynamically determined based on the init argument. The clear
- * argument is whether pressing ESC restores the init argument, if any, or
- * returns NULL. The type argument is the type of validation for the input
+/*
+ * This function prompts for input. The init argument is the initial value.
+ * The lines argument is how many lines the field is. If zero,
+ * then it is dynamically determined based on the init argument or INPUT_WIDTH
+ * if init is NULL.
+ *
+ * The clear argument is whether pressing ESC returns init or NULL. 
+ *
+ * The extra_help argument is an extra line of help prompt normally used with 
+ * the custom_func argument. The custom_func argument is a pointer to a 
+ * function of type void which takes no arguments. This function is called
+ * when CTRL-t is pressed in the input window.
+ *
+ * The type argument is the type of validation for the input
  * defined in common.h. Remaining arguments are values for the type argument.
  * See field_type(3X) for validation types.
  *
+ * FIXME
  * For some reason TYPE_ALNUM and TYPE_ALPHA don't like spaces. In this case
  * just use -1 as the type with no arguments.
  */
 char *get_input(const char *title, const char *init, int lines, int clear,
-	int type, ...)
+	const char *extra_help, void (*custom_func)(void), int type, ...)
 {
     WINDOW *win;
     PANEL *panel;
@@ -150,7 +160,8 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 
     scale_form(form, &y, &x);
 
-    win = newwin(y + 5, x + 2, CALCPOSY(y - 5), CALCPOSX(x));
+    win = newwin((extra_help) ? y + 6 : y + 5, x + 2, 
+	    CALCPOSY(((extra_help) ? y + 6 : y + 5)), CALCPOSX(x));
     set_form_win(form, win);
     set_form_sub(form, derwin(win, y, x, 2, 1));
     post_form(form);
@@ -161,8 +172,12 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     curs_set(1);
     panel = new_panel(win);
     draw_window_title(win, title, width);
-    mvwprintw(win, y + 3, CENTERX(x, INPUT_HELP_PROMPT), "%s", 
-	    INPUT_HELP_PROMPT);
+
+    if (extra_help)
+	mvwprintw(win, y + 3, CENTERX(x, extra_help), "%s", extra_help);
+
+    mvwprintw(win, (extra_help) ? y + 4 : y + 3,
+	    CENTERX(x, INPUT_HELP_PROMPT), "%s", INPUT_HELP_PROMPT);
     form_driver(form, REQ_END_FIELD);
 
     while (1) {
@@ -174,6 +189,10 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 	c = wgetch(win);
 
 	switch (c) {
+	    case CTRL('T'):
+		if (custom_func)
+		    custom_func();
+		break;
 	    case CTRL('X'):
 		form_driver(form, REQ_DEL_WORD);
 		break;
@@ -277,10 +296,10 @@ cleanup:
 
 char *get_input_str(const char *title, const char *init)
 {
-    return get_input(title, init, 1, 0, -1, 20);
+    return get_input(title, init, 1, 0, NULL, NULL, -1, 20);
 }
 
 char *get_input_str_clear(const char *title, const char *init)
 {
-    return get_input(title, init, 1, 1, -1, 20);
+    return get_input(title, init, 1, 1, NULL, NULL, -1, 20);
 }
