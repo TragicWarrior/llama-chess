@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.77 2003-02-01 19:48:46 bjk Exp $ */
+/* $Id: pgn.c,v 1.78 2003-02-01 20:46:11 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -352,8 +352,10 @@ int move_text(FILE *fp)
 		game[gindex].openingside = WHITE;
 	}
     }
-    else
-	status.turn = BLACK;
+    else {
+	if (game[gindex].hindex > 0)
+	    switch_turn();
+    }
 
     ungetc(c, fp);
 
@@ -366,16 +368,31 @@ int move_text(FILE *fp)
     }
 
     if (parse_move_text(pgnboard, p)) {
-	invalid_move(move);
-	return 1;
+	if (game[gindex].hindex == 0) {
+	    switch_turn();
+
+	    if (parse_move_text(pgnboard, p)) {
+		switch_turn();
+		invalid_move(move);
+		return 1;
+	    }
+
+	    game[gindex].openingside = BLACK;
+	}
+	else {
+	    invalid_move(move);
+	    return 1;
+	}
     }
 
     add_to_history(&game[gindex].history, &game[gindex].hindex,
 	    &game[gindex].htotal, p);
-/*
+
+    /*
     printf("%s\n", p);
     dump_board(pgnboard, 0);
     */
+
     return 0;
 }
 

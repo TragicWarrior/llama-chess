@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.29 2003-02-01 19:39:21 bjk Exp $ */
+/* $Id: pgn.h,v 1.30 2003-02-01 20:46:11 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -108,5 +108,6 @@ char *real_filename(char *);
 int parse_move_text(BOARD, char *);
 char *a2a4tosan(BOARD, char *);
 int integer_len(int);
+void switch_turn(void);
 
 #endif
