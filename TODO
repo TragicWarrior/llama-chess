@@ -30,3 +30,4 @@ order):
 - Support chess engines other than GNU Chess. This should be a configuration
   parameter to specify a path to the executable. Also, I'm not sure if parsing
   the engine output would change or not (standard?).
+Init history after EOG.
