@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.5 2002-12-17 15:34:25 bjk Exp $
+dnl $Id: configure.ac,v 1.6 2002-12-17 15:54:33 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.1, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -22,7 +22,7 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 dnl Checks for library functions.
-AC_CHECK_LIB(ncurses, initscr)
+AC_CHECK_LIB(ncurses, initscr, , [AC_MSG_ERROR([Could not find the ncurses library.])])
 AC_CHECK_LIB(panel, new_panel)
 AC_CHECK_LIB(form, new_form)
 AC_CHECK_LIB(menu, new_menu)
