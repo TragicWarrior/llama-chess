@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.17 2003-01-29 00:51:18 bjk Exp $ */
+/* $Id: move.c,v 1.18 2003-01-29 17:05:50 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -406,6 +406,12 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		}
 		else {
 		    if ((*srow == 7 && dist > 2) || (*srow < 7 && dist > 1))
+			return 1;
+		}
+
+		if (dist == 2) {
+		    p = piece_to_int(b[ROWTOBOARD(*srow + i)][COLTOBOARD(col)].icon);
+		    if (p != OPEN_SQUARE)
 			return 1;
 		}
 	    }
@@ -824,8 +830,11 @@ int checktest(BOARD b, int kr, int kc, int okr, int okc)
     int row, col;
 
     /* See if the move would leave ourselves in check. */
+
     if (selfchecktest(b, kr, kc))
 	return -1;
+
+    switch_turn();
 
     /* See if the move would put our opponent in check. */
     for (row = 1; VALIDFILE(row); row++) {
@@ -840,11 +849,14 @@ int checktest(BOARD b, int kr, int kc, int okr, int okc)
 	    if (pi == PAWN)
 		scol = col;
 
-	    if (get_source_yx(b, pi, okr, okc, &srow, &scol) == 0)
+	    if (get_source_yx(b, pi, okr, okc, &srow, &scol) == 0) {
+		switch_turn();
 		return 1;
+	    }
 	}
     }
 
+    switch_turn();
     return 0;
 }
 
@@ -875,12 +887,12 @@ void get_valid_moves(BOARD b, int p, int srow, int scol, int *minr, int *maxr,
 	    int sr = 0, sc = 0;
 
 	    if (get_source_yx(b, p, row, col, &sr, &sc)) {
-		sc = 0;
-		sr = srow;
+		sr = 0;
+		sc = scol;
 
 		if (get_source_yx(b, p, row, col, &sr, &sc)) {
-		    sr = 0;
-		    sc = scol;
+		    sc = 0;
+		    sr = srow;
 
 		    if (get_source_yx(b, p, row, col, &sr, &sc)) {
 			continue;
@@ -942,8 +954,6 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
     int srow, scol;
     int check;
 
-    switch_turn();
-
     /* For each square on the board see if each peace has a valid move, and if
      * so, see if it would leave ourselves or the opponent in check.
      */
@@ -985,9 +995,7 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 		    }
 		}
 
-		switch_turn();
 		check = checktest(t, nkr, nkc, nokr, nokc);
-		switch_turn();
 
 		if (check == 0)
 		    goto done;
@@ -1003,7 +1011,6 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 	result = WHITEWINS;
 
 done:
-    switch_turn();
     return (check != 0) ? 1 : 0;
 }
 
@@ -1216,18 +1223,23 @@ int parse_move_text(BOARD b, char *move, int reset)
     b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
 
 done:
+    kingsquare(b, &kr, &kc, &okr, &okc);
+    switch_turn();
+
     if (game[gindex].castle) {
 	p = move + strlen(move);
 	game[gindex].castle = 0;
     }
 
-    kingsquare(b, &kr, &kc, &okr, &okc);
+    validate_move = 1;
 
     /* FIXME draw. */
     switch (checktest(b, kr, kc, okr, okc)) {
 	case 0:
 	    break;
 	case -1:
+	    validate_move = 0;
+	    switch_turn();
 	    return 1;
 	default:
 	    if (checkmatetest(b, kr, kc, okr, okc)) {
@@ -1245,12 +1257,15 @@ done:
 		    strncpy(game[gindex].tag[TAG_RESULT].value, "0-1", 4);
 		    status.notify = NOTIFY_CHECKMATE_BLACK_WINS;
 		}
+
+		if (curses_initialized)
+		    update_tag_window();
 	    }
 	    else {
 		*p++ = '+';
 
-		if ((status.turn == WHITE && status.side == BLACK) ||
-			(status.turn == BLACK && status.side == WHITE))
+		if ((status.turn == WHITE && status.side == WHITE) ||
+			(status.turn == BLACK && status.side == BLACK))
 		    status.notify = NOTIFY_CHECK;
 	    }
 
@@ -1258,5 +1273,7 @@ done:
 	    break;
     }
 
+    switch_turn();
+    validate_move = 0;
     return 0;
 }
