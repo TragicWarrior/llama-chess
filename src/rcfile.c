@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.18 2003-01-09 22:30:54 bjk Exp $ */
+/* $Id: rcfile.c,v 1.19 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -270,6 +270,19 @@ void parse_rcfile(const char *filename)
 		errx(EXIT_FAILURE, "%s(%i): value must be between 1 and 9", 
 			filename, lines);
 	}
+	else if (strcmp(var, "ics_server") == 0)
+	    strncpy(config.ics_server, val, sizeof(config.ics_server));
+	else if (strcmp(var, "ics_port") == 0) {
+	    if (!isinteger(val))
+		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
+			lines);
+
+	    config.ics_port = atoi(val);
+	}
+	else if (strcmp(var, "ics_user") == 0)
+	    strncpy(config.ics_user, val, sizeof(config.ics_user));
+	else if (strcmp(var, "ics_passwd") == 0)
+	    strncpy(config.ics_passwd, val, sizeof(config.ics_passwd));
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.26 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: engine.c,v 1.27 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -273,9 +273,6 @@ void parse_engine_output(char *str)
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count)
 	    == 1) {
-	if ((p = a2a4tosan(board, move)) == NULL)
-	    return;
-
 	if (parse_move_text(board, move, 0))
 	    return;
 
@@ -283,19 +280,14 @@ void parse_engine_output(char *str)
 		&game[gindex].htotal, p);
 
 	status.engine = ENGINE_THINKING;
-	status.turn = BLACK;
+
+	if (status.turn == WHITE)
+	    status.turn = BLACK;
+	else
+	    status.turn = WHITE;
 
 	sp.icon = 0;
 	str += count;
-
-	/* This is needed when leaving history mode and the turn is now black
-	 * since we just went. This cancels 'manual'.
-	 */
-	/* FIXME */
-	if (cancel_manual_mode) {
-	    SEND_TO_ENGINE("go\n");
-	    cancel_manual_mode = 0;
-	}
 
 	/* This needs to be here in case the engine move text is bunched
 	 * up with the white move text.
@@ -307,6 +299,9 @@ void parse_engine_output(char *str)
 engine_move:
     if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, 
 		&count) == 1) {
+	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
+	 * need to convert them.
+	 */
 	if ((p = a2a4tosan(board, move)) == NULL)
 	    return;
 
@@ -316,7 +311,11 @@ engine_move:
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, p);
 
-	status.turn = WHITE;
+	if (status.turn == WHITE)
+	    status.turn = BLACK;
+	else
+	    status.turn = WHITE;
+
 	str += count;
 	RETURN;
     }
@@ -332,14 +331,6 @@ engine_move:
 	}
 
 	set_engine_defaults();
-
-	/* 
-	if (status.bw != status.turn) {
-	    cancel_manual_mode = 1;
-	    SEND_TO_ENGINE("go\n");
-	}
-	*/
-
 	return;
     }
 
@@ -352,11 +343,11 @@ engine_move:
 
     /* 'switch' command. */
     if (strstr(str, "White to move") != NULL) {
-	status.bw = status.turn = WHITE;
+	status.side = status.turn = WHITE;
 	RETURN;
     }
     else if (strstr(str, "Black to move") != NULL) {
-	status.bw = status.turn = BLACK;
+	status.side = status.turn = BLACK;
 	RETURN;
     }
 

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.57 2003-01-10 15:35:42 bjk Exp $ */
+/* $Id: pgn.c,v 1.58 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -254,6 +254,7 @@ static void reset_game_data()
 	free_game_data();
 
     gtotal = gindex = 0;
+    status.side = status.turn = WHITE;
     return;
 }
 
@@ -316,10 +317,6 @@ int move_text(FILE *fp)
     add_to_history(&game[gindex].history, &game[gindex].hindex,
 	    &game[gindex].htotal, p);
 
-    /*
-    printf("%s %s\n", move, p);
-    dump_board(pgnboard);
-    */
     return 0;
 }
 

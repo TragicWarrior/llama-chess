@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.8 2003-01-10 15:35:42 bjk Exp $ */
+/* $Id: move.c,v 1.9 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -27,15 +27,6 @@
 
 #include "common.h"
 #include "move.h"
-
-int val_piece_side(int c)
-{
-    if ((isupper(c) && status.turn != WHITE) ||
-	    (islower(c) && status.turn != BLACK))
-	return 0;
-
-    return 1;
-}
 
 static int int_to_piece(int which)
 {
@@ -70,6 +61,23 @@ static int int_to_piece(int which)
     return (status.turn == WHITE) ? toupper(p) : p;
 }
 
+int piece_side(int c)
+{
+    if (c < 'A')
+	c = int_to_piece(c);
+
+    return (isupper(c)) ? WHITE : BLACK;
+}
+
+int val_piece_side(int c)
+{
+    if ((isupper(c) && status.turn != WHITE) ||
+	    (islower(c) && status.turn != BLACK))
+	return 0;
+
+    return 1;
+}
+
 static int piece_to_int(int p)
 {
     if (p == '.')
@@ -95,14 +103,6 @@ static int piece_to_int(int p)
     }
 
     return -1;
-}
-
-int piece_side(int c)
-{
-    if (c < 'A')
-	c = int_to_piece(c);
-
-    return (isupper(c)) ? WHITE : BLACK;
 }
 
 /*
@@ -571,13 +571,24 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
     int dist = 0;
     int promo;
     int trow;
+    static int firstrun;
     static int enpassant, castle;
 
+    /* FIXME castling? */
     if (reset) {
-	enpassant = 0;
+	if (browse_history) {
+	    if (!firstrun) {
+		enpassant = 0;
+		firstrun = 1;
+	    }
+	}
+	else
+	    firstrun = 0;
+
 	wk = bk = rqw = rkw = rqb = rkb = castle = 0;
     }
 
+    status.notify = NULL;
     srow = row = col = scol = promo = piece = 0;
     p = (move) + strlen(move);
 
@@ -631,14 +642,15 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 	    trow = (status.turn == WHITE) ? row - 1 : row + 1;
 
 	    while (1) {
-		piece = piece_to_int(b[ROWTOBOARD(trow)][COLTOBOARD(col)].icon);
+		int n = b[ROWTOBOARD(trow)][COLTOBOARD(col)].icon;
+		piece = piece_to_int(n);
 
-		if (piece == PAWN)
+		if (piece == PAWN && val_piece_side(n))
 		    break;
 
 		trow += (status.turn == WHITE) ? -1 : 1;
 
-		if (trow > 8 || trow < 1)
+		if (!VALIDFILE(trow))
 		    return 1;
 
 		dist++;
@@ -760,6 +772,14 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 	}
     }
 
+    piece = piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon);
+    dist = abs(srow - row);
+
+    if (piece == PAWN && dist == 2)
+	enpassant = 1;
+    else
+	enpassant = 0;
+
     if (castle) {
 	if (castle_move(b, castle))
 	    return 1;
@@ -767,13 +787,6 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 	castle = 0;
 	goto done;
     }
-
-    piece = piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon);
-
-    if (piece == PAWN && abs(srow - row) == 2)
-	enpassant = 1;
-    else
-	enpassant = 0;
 
     piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.37 2003-01-09 22:30:53 bjk Exp $ */
+/* $Id: common.h,v 1.38 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -21,6 +21,10 @@
 
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
+
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
 #endif
 
 #ifdef HAVE_FORM_H
@@ -108,7 +112,7 @@ enum {
 
 struct {
     int engine;
-    int bw;
+    int side;
     char *notify;
     int turn;
 } status;
@@ -174,6 +178,10 @@ struct {
     int linegraphics;
     int saveprompt;
     int clevel;
+    char ics_server[MAXHOSTNAMELEN];
+    int ics_port;
+    char ics_user[16];
+    char ics_passwd[32];
     char nagfile[FILENAME_MAX];
     char agonyfile[FILENAME_MAX];
     char configfile[FILENAME_MAX];
@@ -187,13 +195,15 @@ struct {
 /* Chess engine file descriptors. 0 = from, 1 = to. */
 int enginefd[2];
 
+/* Network socket descriptor. */
+int sockfd;
+
 char datadir[FILENAME_MAX];
 int curses_initialized;
 char pgnfile[FILENAME_MAX];
 int gindex, gtotal; /* Current game and total number of games. */
 int cursor_y, cursor_x; /* Current cursor position. */
 int browse_history; /* 1 if in history mode. */
-int cancel_manual_mode;
 int engine_initialized;
 int oldhistorytotal; /* This is a failsafe when resuming a game. */
 WINDOW *historyw;

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.56 2003-01-09 22:30:53 bjk Exp $ */
+/* $Id: cboard.c,v 1.57 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,6 +22,7 @@
 #include <err.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <string.h>
 #include <panel.h>
@@ -184,9 +185,9 @@ void draw_board()
 		    else {
 			piece = board[row / 2][rcol].icon;
 
-			if (status.bw == WHITE && isupper(piece))
+			if (status.side == WHITE && isupper(piece))
 			    attrs |= A_BOLD;
-			else if (status.bw == BLACK && islower(piece))
+			else if (status.side == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
 			waddch(boardw, (piece && piece !=  '.') ?
@@ -263,6 +264,9 @@ void update_status()
 
     snprintf(buf, sizeof(buf), "%i of %i", gindex + 1, gtotal);
     mvwprintw(statusw, 2, 1, "Game: %-*s", STATUS_WIDTH - 8, buf);
+
+    if (browse_history)
+	status.engine = HISTORY_MODE;
 
     switch (status.engine) {
 	case ENGINE_THINKING:
@@ -396,27 +400,6 @@ void update_all()
     return;
 }
 
-void refresh_all()
-{
-    werase(statusw);
-    werase(historyw);
-    werase(whitew);
-    werase(blackw);
-    werase(boardw);
-    update_all();
-    draw_window_title(whitew, "White", BW_WIDTH, CP_WHITE_TITLE, 
-	    CP_WHITE_BORDER);
-    draw_window_title(blackw, "Black", BW_WIDTH, CP_BLACK_TITLE, 
-	    CP_BLACK_BORDER);
-    draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
-	    CP_STATUS_BORDER);
-    draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
-	    CP_HISTORY_BORDER);
-    update_panels();
-    doupdate();
-    return;
-}
-
 static void game_next_prev(int n)
 {
     if (gtotal < 2)
@@ -518,7 +501,7 @@ void game_loop()
 	int c = 0;
 	fd_set fds;
 	int i, n, len;
-	char enginebuf[8192] = {0};
+	char fdbuf[8192] = {0};
 	struct timeval tv;
 	char *tmp;
 	char buf[78];
@@ -531,24 +514,49 @@ void game_loop()
 	    FD_ZERO(&fds);
 	    FD_SET(enginefd[0], &fds);
 
-	    if ((n = select(enginefd[0] + 1, &fds, NULL, NULL, &tv)) > 0) {
+	    if (sockfd)
+		FD_SET(sockfd, &fds);
+
+	    n = (sockfd > enginefd[0]) ? sockfd : enginefd[0];
+
+	    if ((n = select(n + 1, &fds, NULL, NULL, &tv)) > 0) {
 		if (FD_ISSET(enginefd[0], &fds)) {
-		    len = read(enginefd[0], enginebuf, sizeof(enginebuf));
+		    len = read(enginefd[0], fdbuf, sizeof(fdbuf));
 
 		    if (len == -1) {
-			if (errno == EAGAIN)
-			    goto blah;
-			else {
+			if (errno != EAGAIN) {
 			    message(ERROR, ANYKEY, "Attempt #%i. read(): %s",
 				    ++error_recover, strerror(errno));
 			    continue;
 			}
 		    }
+		    else {
+			if (len)
+			    parse_engine_output(fdbuf);
 
-		    if (len)
-			parse_engine_output(enginebuf);
+			update_all();
+		    }
+		}
 
-		    update_all();
+		if (!sockfd)
+		    goto blah;
+
+		if (FD_ISSET(sockfd, &fds)) {
+		    len = recv(sockfd, fdbuf, sizeof(fdbuf), 0);
+
+		    if (len == -1) {
+			if (errno != EAGAIN) {
+			    message(ERROR, ANYKEY, "Attempt #%i. recv(): %s",
+				    ++error_recover, strerror(errno));
+			    continue;
+			}
+		    }
+		    else {
+			if (len)
+			    parse_ics_output(fdbuf);
+
+			update_all();
+		    }
 		}
 	    }
 	    else {
@@ -593,6 +601,7 @@ blah:
 
 		delete_game(gindex);
 		init_history();
+		update_all();
 		break;
 	    case 'a':
 	        annotate = game[gindex].hindex;
@@ -641,8 +650,8 @@ blah:
 	    case 'h':
 		if (browse_history) {
 		    if (game[gindex].hindex != game[gindex].htotal) {
-			if ((c = message(NULL, YESNO, "%s", RESUME_HISTORY))
-				!= 'y')
+			if ((c = message_uncentered(NULL, YESNO, "%s",
+					RESUME_HISTORY)) != 'y')
 			    break;
 		    }
 
@@ -779,7 +788,6 @@ blah:
 		    parse_pgn_file(pgnfile);
 		}
 
-		status.bw = WHITE;
 		game[gindex].wcaptures = game[gindex].bcaptures = 0;
 
 		if (status.engine == ENGINE_OFFLINE) {
@@ -794,7 +802,10 @@ blah:
 		update_all();
 		break;
 	    case 'R':
-		refresh_all();
+		endwin();
+		keypad(boardw, TRUE);
+		update_panels();
+		doupdate();
 		break;
 	    case 'c':
 		if (status.engine == ENGINE_THINKING)
@@ -867,6 +878,15 @@ blah:
 		if (browse_history)
 		    break;
 
+		if (status.turn == BLACK && status.side == WHITE) {
+		    status.side = BLACK;
+		    break;
+		}
+		else if (status.turn == WHITE && status.side == BLACK) {
+		    status.side = WHITE;
+		    break;
+		}
+
 		SEND_TO_ENGINE("\nswitch\n");
 		break;
 	    case ' ':
@@ -890,6 +910,7 @@ blah:
 
 		if ((islower(sp.icon) && status.turn != BLACK) ||
 			(isupper(sp.icon) && status.turn != WHITE)) {
+		    message_uncentered(NULL, ANYKEY, "%s", E_SELECT_TURN);
 		    sp.icon = 0;
 		    break;
 		}
@@ -932,8 +953,11 @@ blah:
 
 void usage(const char *pn)
 {
-    printf("Usage: %s [-hv] [-p <pgnfile>]\n", pn);
+    printf("Usage: %s [-hv] [-p <pgnfile>] [-i hostname[:port]] "
+	    "[-u username:passwd]\n", pn);
     printf("  -p  Load PGN file.\n");
+    printf("  -i  ICS hostname and optional port.\n");
+    printf("  -u  ICS username and password.\n");
     printf("  -v  Version information.\n");
     printf("  -h  This help text.\n");
 
@@ -982,6 +1006,8 @@ static void set_defaults()
     config.agony = 1;
     config.linegraphics = 1;
     config.saveprompt = 1;
+    strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
+    config.ics_port = DEFAULT_ICS_PORT;
 
     set_default_colors();
     return;
@@ -993,8 +1019,49 @@ int main(int argc, char *argv[])
     struct passwd *pwd;
     struct stat st;
 
-    while ((opt = getopt(argc, argv, "hp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "hp:vu:i:")) != -1) {
+	char *tmp;
+	int i;
+
 	switch (opt) {
+	    case 'u':
+		i = 0;
+
+		while ((tmp = strsep(&optarg, ":")) != NULL) {
+		    switch (i++) {
+			case 0:
+			    strncpy(config.ics_user, tmp,
+				    sizeof(config.ics_user));
+			    break;
+			case 1:
+			    strncpy(config.ics_passwd, tmp,
+				    sizeof(config.ics_passwd));
+			    break;
+			default:
+			    usage(argv[0]);
+		    }
+		}
+		break;
+	    case 'i':
+		i = 0;
+
+		while ((tmp = strsep(&optarg, ":")) != NULL) {
+		    switch (i++) {
+			case 0:
+			    strncpy(config.ics_server, tmp,
+				    sizeof(config.ics_server));
+			    break;
+			case 1:
+			    if (!isinteger(tmp))
+				usage(argv[0]);
+
+			    config.ics_port = atoi(tmp);
+			    break;
+			default:
+			    usage(argv[0]);
+		    }
+		}
+		break;
 	    case 'v':
 		printf("%s\n%s\n", PACKAGE_STRING, COPYRIGHT);
 		exit(EXIT_SUCCESS);
@@ -1054,10 +1121,6 @@ int main(int argc, char *argv[])
 	    errx(EXIT_FAILURE, "%s: %s", pgnfile, E_PGN_PARSE);
     }
 
-    /*
-    delete_game(1);
-    exit(0);
-    */
     srandom(getpid());
 
     if (initscr() == NULL)

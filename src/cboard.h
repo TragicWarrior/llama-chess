@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.40 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: cboard.h,v 1.41 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -48,7 +48,7 @@ const char *mainhelp[] = {
     "   UP/j - cursor up/hist jump     R - refresh screen",
     " DOWN/k - cursor down/hist jump   b - cycle through book modes",
     " LEFT/l - cursor left/hist rev    c - send a command to the game engine",
-    "RIGHT/; - cursor right/hist fwd   w - switch sides",
+    "RIGHT/; - cursor right/hist fwd   w - switch playing sides",
     "                                  u - undo previous move",
     "  SPACE - select piece            g - force engine to make next move",
     "  ENTER - commit selected piece   h - toggle history mode",
@@ -106,5 +106,7 @@ char *a2a4tosan(struct board_matrix [][], char *);
 int add_pgn_data(struct pgndata **, int *, const char *, const char *);
 void new_game(struct board_matrix [][]);
 void *Malloc(size_t);
+int isinteger(const char *);
+int parse_ics_output(char *);
 
 #endif

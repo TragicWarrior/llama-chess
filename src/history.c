@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.30 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: history.c,v 1.31 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -452,7 +452,6 @@ void history_next(int n)
 void init_history()
 {
     parse_history_move(game[gindex].hindex);
-    status.engine = HISTORY_MODE;
     browse_history = 1;
     update_status();
     return;

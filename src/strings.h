@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.6 2003-01-10 15:35:42 bjk Exp $ */
+/* $Id: strings.h,v 1.7 2003-01-10 21:56:59 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -26,7 +26,8 @@
 #define SAVE_HISTORY    "You are in history mode. You can save all moves up " \
     "to and including the current move by pressing 'c', or the whole game " \
     "history by pressing 'a'."
-#define RESUME_HISTORY	"Resume game from history?"
+#define RESUME_HISTORY	"Resuming a game from previous history will remove " \
+    "all future moves. Do you really want to resume from history?"
 #define DELETE_GAME	"Really delete game"
 
 #define SAVE_PGN_P	"Edit PGN tags?"
@@ -45,6 +46,9 @@
 #define E_SAVE_NOGMOVES	"No games contain any moves. Aborting save."
 #define E_SAVE_COMPRESS	"Cannot append to compressed file."
 #define E_INVALID_MOVE	"Invalid move"
+#define E_SELECT_TURN	"It is not your turn to move. You can switch sides " \
+    "by pressing 'w' or force the engine to make the next move by " \
+    "pressing 'g'."
 
 #define NOTIFY_SAVED	"Game saved."
 
