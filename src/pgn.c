@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.38 2002-12-30 14:25:44 bjk Exp $ */
+/* $Id: pgn.c,v 1.39 2002-12-30 14:31:16 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -371,14 +371,14 @@ static void nag_text(FILE *fp)
     return;
 }
 
-static void move_annotation(FILE *fp)
+static void move_annotation(FILE *fp, int terminator)
 {
     char *a = game[gindex].history[game[gindex].hindex - 1].comment;
     int c, lastchar = 0;
 
     skip_leading_space(fp);
 
-    while ((c = fgetc(fp)) != EOF && c != '}') {
+    while ((c = fgetc(fp)) != EOF && c != terminator) {
 	if (c == '\n')
 	    c = ' ';
 
@@ -474,7 +474,7 @@ int parse_pgn_file(const char *filename)
 	    }
 	}
 
-	if (c == '%' || c == ';') {
+	if (c == '%') {
 	    while ((c = fgetc(fp)) != EOF && c != '\n');
 	    continue;
 	}
@@ -489,8 +489,8 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
 
-	if (c == '{') {
-	    move_annotation(fp);
+	if (c == '{' || c == ';') {
+	    move_annotation(fp, (c == '{') ? '}' : '\n');
 	    continue;
 	}
 
