@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.74 2003-01-29 17:47:14 bjk Exp $ */
+/* $Id: cboard.c,v 1.75 2003-01-29 20:23:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -582,7 +582,7 @@ void free_game_data()
 	return;
 
     for (i = 0; i < gtotal; i++) {
-	free_historydata(game[i].history, game[i].htotal);
+	free_historydata(&game[i].history, 0, game[i].htotal);
 	free(game[i].history);
 	free_tag_data(game[i].tag, game[i].tindex);
 	free(game[i].tag);
@@ -599,7 +599,7 @@ static void delete_game(int which)
     
     for (i = 0; i < gtotal; i++) {
 	if (i == which || game[i].delete) {
-	    free_historydata(game[i].history, game[i].htotal);
+	    free_historydata(&game[i].history, 0, game[i].htotal);
 	    free(game[i].history);
 	    free_tag_data(game[i].tag, game[i].tindex);
 	    free(game[i].tag);

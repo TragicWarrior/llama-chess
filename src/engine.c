@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.31 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: engine.c,v 1.32 2003-01-29 20:23:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -351,9 +351,9 @@ void parse_engine_output(BOARD b, char *str)
 
 	switch_turn();
 
-	status.engine = ENGINE_THINKING;
 	sp.icon = 0;
 	str += count;
+	status.engine = ENGINE_THINKING;
 
 	/* This needs to be here in case the engine move text is bunched
 	 * up with the white move text.
@@ -385,6 +385,17 @@ engine_move:
 	switch_turn();
 
 	str += count;
+
+	if (game[gindex].gameover) {
+	    init_history(b);
+	    RETURN;
+	}
+
+	RETURN;
+    }
+
+    if (game[gindex].gameover) {
+	init_history(b);
 	RETURN;
     }
 
@@ -397,6 +408,9 @@ engine_move:
 	    oldhistorytotal = 0;
 	    return;
 	}
+	else
+	    free_historydata(&game[gindex].history, game[gindex].hindex + 1,
+		    oldhistorytotal);
 
 	set_engine_defaults();
 	return;

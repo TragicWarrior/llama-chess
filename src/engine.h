@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.14 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: engine.h,v 1.15 2003-01-29 20:23:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -39,5 +39,7 @@ char *book_method(int);
 int parse_move_text(BOARD, char *, int);
 char *a2a4tosan(BOARD, char *);
 void switch_turn(void);
+void init_history(BOARD);
+void free_historydata(struct history **, int, int);
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.53 2003-01-29 17:47:15 bjk Exp $ */
+/* $Id: cboard.h,v 1.54 2003-01-29 20:23:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -114,7 +114,7 @@ char *compression_cmd(const char *, int);
 int piece_to_int(int);
 int int_to_piece(int);
 void free_tag_data(struct tags *, int);
-void free_historydata(struct history *, int);
+void free_historydata(struct history **, int, int);
 void get_valid_moves(BOARD, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
 int parse_move_text(BOARD, char *, int);

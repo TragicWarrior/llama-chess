@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.50 2003-01-29 17:07:19 bjk Exp $ */
+/* $Id: common.h,v 1.51 2003-01-29 20:23:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -138,6 +138,7 @@ struct games {
     int wcaptures;
     int bcaptures;
     int delete;
+    int gameover;
     int enpassant;
     int castle;
     int wk, bk, rqw, rkw, rqb, rkb;

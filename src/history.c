@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.37 2003-01-29 16:59:49 bjk Exp $ */
+/* $Id: history.c,v 1.38 2003-01-29 20:23:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -34,17 +34,22 @@
 #include "colors.h"
 #include "history.h"
 
-void free_historydata(struct history *h, int total)
+void free_historydata(struct history **history, int index, int total)
 {
     int i;
+    struct history *h = *history;
 
     if (total) {
-	for (i = 0; i < total; i++) {
+	for (i = index; i < total; i++) {
 	    if (h[i].comment)
 		free(h[i].comment);
 	}
     }
 
+    if (index)
+	h = Realloc(h, (index) * sizeof(struct history));
+
+    *history = h;
     return;
 }
 
@@ -419,6 +424,9 @@ void parse_history_move(BOARD b, int index)
 
 	switch_turn();
     }
+
+    if (!status.notify)
+	status.notify = GAME_HELP_PROMPT;
 
     return;
 }
