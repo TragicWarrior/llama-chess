@@ -1,3 +1,17 @@
+2002-12-19 Thursday 19:49  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.39), common.h (1.24), history.c (1.20),
+	rcfile.c (1.8):
+	
+	Added configuration parameter "agony" to disable agony strings
+	altogether.
+
+2002-12-19 Thursday 19:42  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.31):
+	
+	When saving and adding a duplicate tag, edit the original tag.
+
 2002-12-19 Thursday 19:31  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.38), cboard.h (1.25), common.h (1.23),
