@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.36 2002-12-26 17:53:58 bjk Exp $ */
+/* $Id: pgn.c,v 1.37 2002-12-27 00:23:54 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -536,8 +536,32 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     char *mode = NULL;
     int c;
     char buf[FILENAME_MAX];
+    struct stat st;
 
     if (filename[0] != '/' && config.savedirectory[0] && !isfifo) {
+	if (stat(config.savedirectory, &st) == -1) {
+	    if (errno == ENOENT) {
+		if (mkdir(config.savedirectory, 0755) == -1) {
+		    message(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+			    strerror(errno));
+		    return 1;
+		}
+	    }
+	    else {
+		message(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+			strerror(errno));
+		return 1;
+	    }
+	}
+
+	stat(config.savedirectory, &st);
+
+	if (!S_ISDIR(st.st_mode)) {
+	    message(ERROR, ANYKEY, "%s: not a directory", 
+		    config.savedirectory);
+	    return 1;
+	}
+
 	snprintf(buf, sizeof(buf), "%s/%s", config.savedirectory, filename);
 	filename = buf;
     }
@@ -570,8 +594,10 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 	    mode = "a";
     }
 
-    if ((fp = fopen(filename, mode)) == NULL)
+    if ((fp = fopen(filename, mode)) == NULL) {
+	message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
 	return 1;
+    }
 
     /* Modify a backup of the data so all the fancy tag names are kept while
      * PGN data is saved (history).
