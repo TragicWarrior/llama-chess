@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.49 2003-01-09 17:52:33 bjk Exp $ */
+/* $Id: pgn.c,v 1.50 2003-01-09 17:58:16 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -1173,7 +1173,8 @@ gotitem:
 		tmp = "*";
 	}
 	else {
-	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
+	    if (item_description(mitems[selected]) && 
+		    strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
 		tmp = NULL;
 	    else
 		tmp = data[selected].value;
