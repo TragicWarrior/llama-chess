@@ -1,3 +1,44 @@
+CBoard version 0.1.3
+--------------------
+Can now load and save PGN format! Still not perfect I'm sure.
+
+A file browser has been added to the load/save game prompt. Pressing TAB will
+enable it.
+
+Added configuration parameter "save_directory". If set, saved games will be
+stored here and will also be the default open location of the file browser.
+
+The annotation viewing keys have changed from 'V' and 'v' to '[' and ']'.
+
+Configuration parameters whose values were either "0" or "1" are now "off" or
+"on" respectively.
+
+New configuration parameter "line_graphics". If "off", then the board line
+graphics will not be drawn.
+
+The data window has been replaced by two separate white and black player
+information windows. This adds color configuration parameters white_... and
+black_...
+
+The PGN file parser now supports "!?"/"!!"/etc. NAG format and end-of-game
+markers.
+
+When multiple games are loaded, you can choose to save all games or just the
+current one.
+
+When saving from history mode, you can save up to the current move or all
+moves.
+
+Added configuration parameter "save_prompt" and ingame command "S". When set
+to "off", don't prompt to edit roster tags and for history save commands when
+in history mode.
+
+The ingame "N" command has changed to start a new game from scratch. The "n"
+command starts a new game or round.
+
+Added command "D" to delete game.
+
+
 CBoard version 0.1.2
 --------------------
 Loading a saved game and resuming a game from previous history works now. This
