@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.8 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: move.h,v 1.9 2003-01-28 17:39:17 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -25,6 +25,12 @@
 #define COLTOINT(c)	(c - ('a' - 1))
 #define INTTOROW(r)	(r + '0')
 #define INTTOCOL(c)	(c + ('a' - 1))
+
+int result;
+
+enum {
+    WHITEWINS, BLACKWINS, DRAW
+};
 
 enum {
     KINGSIDE = 1, QUEENSIDE

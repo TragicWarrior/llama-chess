@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.13 2003-01-27 18:10:08 bjk Exp $ */
+/* $Id: strings.h,v 1.14 2003-01-28 17:39:17 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -49,6 +49,7 @@
 #define GAME_HELP_PROMPT	"Type CTRL-g for command keys"
 
 /* Error strings. */
+#define E_REGCOMP_TITLE	"Error Compiling Regular Expression"
 #define E_RESUME_BLACK	"Cannot resume a game with black starting position " \
     "(yet)."
 #define E_HOME_ENV	"The HOME environment variable is unset."
@@ -76,7 +77,8 @@
 /* The notification line in the status window. */
 #define NOTIFY_SAVED		"Game saved."
 #define NOTIFY_CHECK		"Check!"
-#define NOTIFY_CHECKMATE	"Checkmate. Game over!"
+#define NOTIFY_CHECKMATE_WHITE_WINS	"Game over! White wins."
+#define NOTIFY_CHECKMATE_BLACK_WINS	"Game over! Black wins."
 #define NOTIFY_ENPASSANT	"En Passant"
 #define NOTIFY_PROMOTION	"Promotion!"
 #define NOTIFY_BCASTLEQ		"Black castles queen side"
@@ -139,6 +141,7 @@
 #define BROWSER_PROMPT		"Type TAB for file browser"
 
 /* Miscellaneous strings. */
+#define FIND_REGEXP		"Find Move Text Expression"
 #define COPY_DATAFILE		"Copying"
 #define NONE			"none"
 #define x_grid_chars		"abcdefgh"

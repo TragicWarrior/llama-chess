@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.70 2003-01-27 18:25:44 bjk Exp $ */
+/* $Id: cboard.c,v 1.71 2003-01-28 17:39:17 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -33,6 +33,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#ifdef HAVE_REGEX_H
+#include <regex.h>
 #endif
 
 #include "common.h"
@@ -433,7 +437,6 @@ void update_tag_window()
 	else
 	    value = game[gindex].tag[i].value;
 
-
 	if (strcmp(game[gindex].tag[i].name, "Result") == 0) {
 	    for (n = 0; n < NARRAY(fancy_results); n++) {
 		if (strcmp(value, fancy_results[n].pgn) == 0) {
@@ -735,12 +738,55 @@ done:
 }
 */
 
-void game_loop()
+static int find_move_exp(const char *str, int which, int count)
 {
+    int i;
+    int ret;
+    regex_t r;
+    int flags = REG_EXTENDED|REG_NOSUB;
+    char errbuf[255];
+    int incr;
+    int found;
+
+    if (config.ignorecase)
+	flags |= REG_ICASE;
+
+    if ((ret = regcomp(&r, str, flags)) != 0) {
+	regerror(ret, &r, errbuf, sizeof(errbuf));
+	message(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	return -1;
+    }
+
+    incr = (which == 0 || which == 1) ? 1 : -(1);
+
+    for (i = game[gindex].hindex + incr, found = 0; ; i += incr) {
+	if (i == game[gindex].hindex)
+	    break;
+
+	if (i >= game[gindex].htotal)
+	    i = 0;
+	else if (i < 0)
+	    i = game[gindex].htotal;
+
+	if (regexec(&r, game[gindex].history[i].move, 0, 0, 0) == 0) {
+	    if (count == ++found) {
+		regfree(&r);
+		return i;
+	    }
+	}
+    }
+
+    regfree(&r);
+    return -1;
+}
+
+void game_loop()
+{  
     int error_recover = 0;
     int pushkey = 0;
     int count = 0;
     int crow = 8, ccol = 1;
+    char regexp[255] = {0};
 
     gactive = gindex;
     gindex = gtotal - 1;
@@ -761,7 +807,7 @@ void game_loop()
 	int i, n = 0, len = 0;
 	char fdbuf[8192] = {0};
 	struct timeval tv;
-	char *tmp;
+	char *tmp = NULL;
 	char buf[78];
 	char tfile[FILENAME_MAX];
 	struct tags *tmptag = NULL;
@@ -853,6 +899,30 @@ void game_loop()
 	switch (c) {
 	    int annotate;
 
+	    case '{':
+	    case '}':
+	    case 'f':
+	        if (!*regexp || c == 'f') {
+		    if ((tmp = get_input(FIND_REGEXP, regexp, 1, 1, NULL, 
+				    NULL, NULL, 0, -1)) == NULL)
+			break;
+
+		    strncpy(regexp, tmp, sizeof(regexp));
+
+		    if ((n = find_move_exp(tmp, 0, (count) ? count : 1)) == -1)
+			break;
+		}
+		else {
+		    if ((n = find_move_exp(regexp, (c == '}') ? 1 : -1,
+				    (count) ? count : 1)) == -1)
+			break;
+		}
+
+		/* FIXME previous '{'. */
+		game[gindex].hindex = (c == '}' || c == 'f') ? n + 1 : n - 1;
+		parse_history_move(board, game[gindex].hindex);
+		update_all();
+		break;
 	    case ']':
 	        view_annotation(game[gindex].hindex);
 		break;

@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.25 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: rcfile.c,v 1.26 2003-01-28 17:39:17 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -264,6 +264,8 @@ void parse_rcfile(const char *filename)
 	    config.deleteprompt = on_or_off(filename, lines, val);
 	else if (strcmp(var, "valid_moves") == 0)
 	    config.validmoves = on_or_off(filename, lines, val);
+	else if (strcmp(var, "ignorecase") == 0)
+	    config.ignorecase = on_or_off(filename, lines, val);
 	else if (strcmp(var, "clevel") == 0) {
 	    if (!isinteger(val))
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
