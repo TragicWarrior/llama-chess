@@ -1,3 +1,29 @@
+2002-12-16 Monday 13:48  Ben Kibbey <bjk@arbornet.org>
+
+	* src/rcfile.c (1.2):
+	
+	Configuration file parsing works now. The only recognized
+	parameters are "book" and "jumpcount" for the book method and
+	history jump count.
+
+2002-12-16 Monday 13:47  Ben Kibbey <bjk@arbornet.org>
+
+	* src/misc.c (1.5):
+	
+	Added function isinteger().
+
+2002-12-16 Monday 13:46  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.27):
+	
+	Fix for KEY_UP in history mode.
+
+2002-12-16 Monday 13:12  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.8):
+	
+	Zero out new history.
+
 2002-12-16 Monday 12:54  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: common.h (1.16), pgn.c (1.21), pgn.h (1.10):
