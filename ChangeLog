@@ -1,3 +1,21 @@
+2002-12-06 Friday 16:54  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.12), cboard.h (1.7), common.h (1.5), pgn.c
+	(1.5):
+	
+	Moved edit_pgn_data() to pgn.c.
+	
+	Fixed editing custom tag.
+	
+	Fixed updating the data window when there are more tags the the
+	window height.
+
+2002-12-06 Friday 16:42  Ben Kibbey <bjk@arbornet.org>
+
+	* src/engine.h (1.1):
+	
+	Initial commit.
+
 2002-12-06 Friday 16:41  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: Makefile.am (1.2), cboard.c (1.11), cboard.h (1.6),
