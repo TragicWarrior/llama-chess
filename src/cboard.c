@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.92 2003-02-04 22:01:15 bjk Exp $ */
+/* $Id: cboard.c,v 1.93 2003-02-05 00:26:40 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1096,6 +1096,7 @@ void game_loop()
 		    add_tag(&game[gindex].tag, &game[gindex].tindex,
 			    "FEN", board_to_fen(board, game[gindex]));
 		    status.mode = MODE_PLAY;
+		    game[gindex].fentag = game[gindex].tindex - 1;
 		}
 		else {
 		    status.mode = MODE_EDIT;
@@ -1216,6 +1217,8 @@ void game_loop()
 		    delete_count = 0;
 		}
 
+		status.mode = MODE_HISTORY;
+		editmode = 0;
 		break;
 	    case '<':
 		game_next_prev(0, (count) ? count : 1);
@@ -1226,6 +1229,8 @@ void game_loop()
 		    delete_count = 0;
 		}
 
+		status.mode = MODE_HISTORY;
+		editmode = 0;
 		break;
 	    case 'j':
 		if (status.mode != MODE_HISTORY || game[gindex].htotal < 2)
@@ -1492,6 +1497,8 @@ void game_loop()
 				BROWSER_PROMPT, browse_directory, NULL, 
 				'\t', -1)) == NULL)
 		    break;
+
+		tmp = tilde_expand(tmp);
 
 		if (parse_pgn_file(board, tmp))
 		    break;
