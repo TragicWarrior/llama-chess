@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.54 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: common.h,v 1.55 2003-01-31 19:51:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -92,10 +92,10 @@ enum {
     ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
 };
 
-#define message(title, prompt, args...)	\
+#define cmessage(title, prompt, args...)	\
     dump_message(title, prompt, 1, NULL, NULL, NULL, 0, ##args)
 
-#define message_uncentered(title, prompt, args...) \
+#define message(title, prompt, args...) \
     dump_message(title, prompt, 0, NULL, NULL, NULL, 0, ##args)
 
 #define show_message(title, prompt, ehelp, func, arg, key, args...) \

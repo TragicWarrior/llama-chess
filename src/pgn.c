@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.69 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: pgn.c,v 1.70 2003-01-31 19:51:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -304,7 +304,7 @@ static void skip_leading_space(FILE *fp)
 static void invalid_move(const char *move)
 {
     if (curses_initialized)
-	message(NULL, ANYKEY, "%s \"%s\" (#%i)", E_INVALID_MOVE, move,
+	cmessage(NULL, ANYKEY, "%s \"%s\" (#%i)", E_INVALID_MOVE, move,
 		gindex + 1);
     else
 	warnx("%s: %s \"%s\" (#%i)", pgnfile, E_INVALID_MOVE, move,
@@ -693,7 +693,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
     if (access(filename, R_OK) == -1) {
 	if (curses_initialized)
-	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
 	else
 	    warn("%s", filename);
 
@@ -705,7 +705,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
 	if ((ofp = fopen(tfile, "w+")) == NULL) {
 	    if (curses_initialized)
-		message(ERROR, ANYKEY, "%s: %s", tfile, strerror(errno));
+		cmessage(ERROR, ANYKEY, "%s: %s", tfile, strerror(errno));
 	    else
 		warn("%s", tfile);
 
@@ -714,7 +714,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
 	if ((fp = popen(command, "r")) == NULL) {
 	    if (curses_initialized)
-		message(ERROR, ANYKEY, "%s: %s", command, strerror(errno));
+		cmessage(ERROR, ANYKEY, "%s: %s", command, strerror(errno));
 	    else
 		warn("%s", command);
 
@@ -733,7 +733,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
     if ((fp = fopen(filename, "r")) == NULL) {
 	if (curses_initialized)
-	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
 	else
 	    warn("%s", filename);
 
@@ -751,7 +751,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
 	    if (ferror(fp)) {
 		if (curses_initialized)
-		    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+		    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
 		else
 		    warnx("%s: %s", filename, strerror(errno));
 
@@ -948,7 +948,7 @@ static void dumpgame(FILE *fp, GAME g, int index, int isfifo)
     if (!isfifo && g.hindex != g.htotal) {
 	snprintf(buf, sizeof(buf), "%s (#%i)", GAME_SAVE_FROM_HISTORY_TITLE,
 		index + 1);
-	i = message_uncentered(buf, GAME_SAVE_FROM_HISTORY_PROMPT, "%s", 
+	i = message(buf, GAME_SAVE_FROM_HISTORY_PROMPT, "%s", 
 			GAME_SAVE_FROM_HISTORY_TEXT);
 
 	if (i == 'c')
@@ -1109,13 +1109,13 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	if (stat(config.savedirectory, &st) == -1) {
 	    if (errno == ENOENT) {
 		if (mkdir(config.savedirectory, 0755) == -1) {
-		    message(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+		    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
 			    strerror(errno));
 		    return 1;
 		}
 	    }
 	    else {
-		message(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+		cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
 			strerror(errno));
 		return 1;
 	    }
@@ -1124,7 +1124,7 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	stat(config.savedirectory, &st);
 
 	if (!S_ISDIR(st.st_mode)) {
-	    message(ERROR, ANYKEY, "%s: %s", config.savedirectory, E_NOTADIR);
+	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory, E_NOTADIR);
 	    return 1;
 	}
 
@@ -1145,13 +1145,13 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	mode = "w";
     else {
 	if (access(filename, W_OK) == 0) {
-	    c = message(NULL, GAME_SAVE_OVERWRITE_PROMPT,
+	    c = cmessage(NULL, GAME_SAVE_OVERWRITE_PROMPT,
 		    "%s \"%s\"", E_FILEEXISTS, filename);
 
 	    switch (c) {
 		case 'a':
 		    if (command) {
-			message(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
+			cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
 			return 1;
 		    }
 
@@ -1170,13 +1170,13 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 
     if (command) {
 	if ((fp = popen(command, "w")) == NULL) {
-	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
 	    return 1;
 	}
     }
     else {
 	if ((fp = fopen(filename, mode)) == NULL) {
-	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
 	    return 1;
 	}
     }
@@ -1230,7 +1230,7 @@ static int init_country_codes()
     int cindex = 0;
 
     if ((fp = fopen(config.ccfile, "r")) == NULL) {
-	message(ERROR, ANYKEY, "%s: %s", config.ccfile, strerror(errno));
+	cmessage(ERROR, ANYKEY, "%s: %s", config.ccfile, strerror(errno));
 	return 1;
     }
 
@@ -1507,7 +1507,7 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 		    selected = item_index(current_item(menu));
 
 		    if (selected <= 6) {
-			message(NULL, ANYKEY, "%s", E_REMOVE_STR);
+			cmessage(NULL, ANYKEY, "%s", E_REMOVE_STR);
 			goto cleanup;
 		    }
 
@@ -1610,7 +1610,7 @@ gotitem:
 
 	    snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_VIEW_TAG_TITLE,
 		    data[selected].name);
-	    message(buf, ANYKEY, "%s", data[selected].value);
+	    cmessage(buf, ANYKEY, "%s", data[selected].value);
 	    goto cleanup;
 	}
 
@@ -1623,7 +1623,7 @@ gotitem:
 
 	    if (tmp) {
 		if (strptime(tmp, PGN_TIME_FORMAT, &tp) == NULL) {
-		    message(ERROR, ANYKEY, "%s", E_TAG_DATE_FMT);
+		    cmessage(ERROR, ANYKEY, "%s", E_TAG_DATE_FMT);
 		    goto cleanup;
 		}
 	    }
@@ -1765,7 +1765,7 @@ char *browse_directory(void *arg)
 
     if (config.savedirectory) {
 	if ((dp = opendir(config.savedirectory)) == NULL) {
-	    message(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
 		    strerror(errno));
 	    getcwd(path, sizeof(path));
 	}
@@ -1812,7 +1812,7 @@ again:
 	    path[strlen(path) - 1] = '\0';
 
 	if ((entries = get_directory_entries(path)) == NULL) {
-	    message(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
+	    cmessage(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
 	    return NULL;
 	}
 
@@ -1902,7 +1902,7 @@ again:
 		    break;
 		case '~':
 		    if ((tmp = getenv("HOME")) == NULL) {
-			message(ERROR, ANYKEY, "%s", E_HOME_ENV);
+			cmessage(ERROR, ANYKEY, "%s", E_HOME_ENV);
 			break;
 		    }
 
@@ -1940,7 +1940,7 @@ gotitem:
 	snprintf(file, sizeof(file), "%s", entries[selected].name);
 
 	if (stat(file, &st) == -1) {
-	    message(ERROR, ANYKEY, "%s", strerror(errno));
+	    cmessage(ERROR, ANYKEY, "%s", strerror(errno));
 	    cleanup(win, subw, panel, menu, mitems, entries);
 	    continue;
 	}
@@ -1955,7 +1955,7 @@ gotitem:
 	if (S_ISREG(st.st_mode))
 	    break;
 
-	message(ERROR, ANYKEY, "%s", E_NOTAREGFILE);
+	cmessage(ERROR, ANYKEY, "%s", E_NOTAREGFILE);
     }
 
 done:

@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.17 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: strings.h,v 1.18 2003-01-31 19:51:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -26,7 +26,8 @@
 #define GAME_HISTORY_JUMP_TITLE		"Jump to Move Number"
 #define GAME_NOTSAVED			"*delete*"
 #define GAME_SAVE_OVERWRITE_PROMPT	"'a' to append, 'o' to overwrite"
-#define GAME_SAVE_MULTI_PROMPT		"Type 'c' or 'a'"
+#define GAME_SAVE_MULTI_PROMPT		"Type 'c' or 'a' or any other key " \
+    "to abort"
 #define GAME_SAVE_MULTI_TEXT		"There is more than one game " \
     "loaded. You can save only the current game by pressing 'c', or all " \
     "games by pressing 'a'."

@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.20 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: move.c,v 1.21 2003-01-31 19:51:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -815,7 +815,7 @@ static int selfchecktest(BOARD b, int kr, int kc)
 		continue;
 
 	    if (get_source_yx(b, pi, kr, kc, &srow, &scol) == 0) {
-//		message(ERROR, ANYKEY, "%i %i %i %i\n", kc, kr, scol, srow);
+//		cmessage(ERROR, ANYKEY, "%i %i %i %i\n", kc, kr, scol, srow);
 		switch_turn();
 		return 1;
 	    }

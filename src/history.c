@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.40 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: history.c,v 1.41 2003-01-31 19:51:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -61,7 +61,7 @@ static int init_nag()
     int i = 0;
 
     if ((fp = fopen(config.nagfile, "r")) == NULL) {
-	message(ERROR, ANYKEY, "%s: %s", config.nagfile, strerror(errno));
+	cmessage(ERROR, ANYKEY, "%s: %s", config.nagfile, strerror(errno));
 	return 1;
     }
 
@@ -102,7 +102,7 @@ static void view_nag(void *arg)
     }
 
     line[strlen(line) - 1] = 0;
-    message_uncentered(buf, ANYKEY, "%s", line);
+    message(buf, ANYKEY, "%s", line);
     return;
 }
 
@@ -419,7 +419,7 @@ void parse_history_move(BOARD b, int index)
 	    break;
 	
 	if (parse_move_text(b, h.move, 1)) {
-	    message(NULL, ANYKEY, "Invalid move \"%s\"", h.move);
+	    cmessage(NULL, ANYKEY, "Invalid move \"%s\"", h.move);
 	    break;
 	}
 

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.81 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: cboard.c,v 1.82 2003-01-31 19:51:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -56,7 +56,7 @@ char *random_agony()
     if (!agony) {
 	if ((fp = fopen(config.agonyfile, "r")) == NULL) {
 	    index = -1;
-	    message(ERROR, ANYKEY, "%s: %s", config.agonyfile, strerror(errno));
+	    cmessage(ERROR, ANYKEY, "%s: %s", config.agonyfile, strerror(errno));
 	    return NULL;
 	}
 
@@ -264,7 +264,7 @@ static char *board_to_san(BOARD b)
 
     if (piece == PAWN && ((sp.destrow == 8 && status.turn == WHITE) ||
 		    (sp.destrow == 1 && status.turn == BLACK))) {
-	promo = message(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
+	promo = cmessage(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
 	
 	if (piece_to_int(promo) == -1)
 	    return NULL;
@@ -277,14 +277,14 @@ static char *board_to_san(BOARD b)
     copy_board(b, t);
 
     if ((p = a2a4tosan(t, str)) == NULL) {
-	message(p, ANYKEY, "%s", E_A2A4_PARSE);
+	cmessage(p, ANYKEY, "%s", E_A2A4_PARSE);
 	return NULL;
     }
 
     validate_move = 1;
 
     if (parse_move_text(t, p, 0)) {
-	message(ERROR, ANYKEY, "%s: %s", E_INVALID_MOVE, p);
+	cmessage(ERROR, ANYKEY, "%s: %s", E_INVALID_MOVE, p);
 	validate_move = 0;
 	return NULL;
     }
@@ -786,7 +786,7 @@ static int find_move_exp(const char *str, int init, int which, int count)
 
 	if ((ret = regcomp(&r, str, REG_EXTENDED|REG_NOSUB)) != 0) {
 	    regerror(ret, &r, errbuf, sizeof(errbuf));
-	    message(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	    cmessage(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
 	    return -1;
 	}
 
@@ -814,7 +814,7 @@ static int find_move_exp(const char *str, int init, int which, int count)
 	else {
 	    if (ret != REG_NOMATCH) {
 		regerror(ret, &r, errbuf, sizeof(errbuf));
-		message(E_REGEXEC_TITLE, ANYKEY, "%s", errbuf);
+		cmessage(E_REGEXEC_TITLE, ANYKEY, "%s", errbuf);
 		return -1;
 	    }
 	}
@@ -839,7 +839,7 @@ static int toggle_delete_flag(int index)
     }
 
     if (n == gtotal) {
-	message(NULL, ANYKEY, "%s", E_DELETE_GAME);
+	cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
 	game[index].delete = 0;
 	return 1;
     }
@@ -927,7 +927,7 @@ void game_loop()
 
 		    if (len == -1) {
 			if (errno != EAGAIN) {
-			    message(ERROR, ANYKEY, "Attempt #%i. read(): %s",
+			    cmessage(ERROR, ANYKEY, "Attempt #%i. read(): %s",
 				    ++error_recover, strerror(errno));
 			    continue;
 			}
@@ -949,7 +949,7 @@ void game_loop()
 
 			if (len == -1) {
 			    if (errno != EAGAIN) {
-				message(ERROR, ANYKEY, 
+				cmessage(ERROR, ANYKEY, 
 					"Attempt #%i. recv(): %s", 
 					++error_recover, strerror(errno));
 				continue;
@@ -966,7 +966,7 @@ void game_loop()
 	    }
 	    else {
 		if (n == -1)
-		    message(ERROR, ANYKEY, "select(): %s", strerror(errno));
+		    cmessage(ERROR, ANYKEY, "select(): %s", strerror(errno));
 		else {
 		    /* timeout */
 		}
@@ -1134,7 +1134,7 @@ void game_loop()
 		break;
 	    case 'D':
 		if (gtotal < 2) {
-		    message(NULL, ANYKEY, "%s", E_DELETE_GAME);
+		    cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
 		    break;
 		}
 
@@ -1149,7 +1149,7 @@ void game_loop()
 		    tmp = GAME_DELETE_GAME_TEXT;
 		else {
 		    if (n == gtotal) {
-			message(NULL, ANYKEY, "%s", E_DELETE_GAME);
+			cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
 			break;
 		    }
 
@@ -1157,7 +1157,7 @@ void game_loop()
 		}
 
 		if (config.deleteprompt) {
-		    if ((c = message(NULL, YESNO, "%s", tmp)) != 'y')
+		    if ((c = cmessage(NULL, YESNO, "%s", tmp)) != 'y')
 			break;
 		}
 
@@ -1221,13 +1221,13 @@ void game_loop()
 	    case 'h':
 		if (browse_history) {
 		    if (game[gindex].openingside == BLACK) {
-			message(NULL, ANYKEY, "%s", E_RESUME_BLACK);
+			cmessage(NULL, ANYKEY, "%s", E_RESUME_BLACK);
 			break;
 		    }
 
 		    if (!pushkey && 
 			    game[gindex].hindex != game[gindex].htotal) {
-			if ((c = message_uncentered(NULL, YESNO, "%s",
+			if ((c = message(NULL, YESNO, "%s",
 					GAME_RESUME_HISTORY_TEXT)) != 'y')
 			    break;
 		    }
@@ -1286,7 +1286,7 @@ void game_loop()
 	    case 'S':
 	    case 's':
 		if (gtotal > 1) {
-		    n = message_uncentered(NULL, GAME_SAVE_MULTI_PROMPT, "%s", 
+		    n = message(NULL, GAME_SAVE_MULTI_PROMPT, "%s", 
 			    GAME_SAVE_MULTI_TEXT);
 
 		    if (n == 'c')
@@ -1328,7 +1328,7 @@ void game_loop()
 	    case 'n':
 	    case 'N':
 		if (c == 'N') {
-		    if (message(NULL, YESNO, "%s", GAME_NEW_PROMPT) != 'y')
+		    if (cmessage(NULL, YESNO, "%s", GAME_NEW_PROMPT) != 'y')
 			break;
 		}
 
@@ -1553,7 +1553,7 @@ void game_loop()
 
 		if ((islower(sp.icon) && status.turn != BLACK) ||
 			(isupper(sp.icon) && status.turn != WHITE)) {
-		    message_uncentered(NULL, ANYKEY, "%s", E_SELECT_TURN);
+		    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
 		    sp.icon = 0;
 		    break;
 		}
@@ -1635,7 +1635,7 @@ void catch_signal(int which)
 	    if (quit)
 		break;
 
-	    message(NULL, ANYKEY, "%s", E_BROKEN_PIPE);
+	    cmessage(NULL, ANYKEY, "%s", E_BROKEN_PIPE);
 	    endwin();
 	    exit(EXIT_FAILURE);
 	    break;
