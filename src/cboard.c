@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.37 2002-12-19 18:32:11 bjk Exp $ */
+/* $Id: cboard.c,v 1.38 2002-12-20 00:31:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -489,7 +489,8 @@ blah:
 			game[gindex].history[annotate].move);
 
 		tmp = get_input(buf, game[gindex].history[annotate].comment, 
-			0, 0, NAG_PROMPT, history_edit_nag, -1);
+			0, 0, NAG_PROMPT, history_edit_nag, (void *)annotate,
+			-1);
 
 		if (tmp)
 		    strncpy(game[gindex].history[annotate].comment, tmp,

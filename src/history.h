@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.9 2002-12-19 16:55:12 bjk Exp $ */
+/* $Id: history.h,v 1.10 2002-12-20 00:31:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -23,7 +23,11 @@
 #define NAG_HELP	"NAG Menu Keys"
 #define VIEW_ANNOTATION	"Viewing Annotation for"
 
-char **agony, **nag;
+char **agony;
+
+struct nags {
+    char line[80];
+} *nag;
 
 const char *naghelp[] = {
     "[a-zA-Z0-9] - jump to item",
@@ -41,4 +45,6 @@ const char *naghelp[] = {
 
 void init_board(void);
 void update_status(void);
+int show_message(const char *, const char *, const char *, void(*)(void*),
+	void *, int, const char *, va_list);
 #endif

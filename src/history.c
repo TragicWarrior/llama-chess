@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.18 2002-12-19 18:19:47 bjk Exp $ */
+/* $Id: history.c,v 1.19 2002-12-20 00:31:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -33,18 +33,84 @@
 #include "common.h"
 #include "history.h"
 
+static int init_nag()
+{
+    FILE *fp;
+    char line[LINE_MAX];
+    int i = 0;
+
+    if ((fp = fopen(config.nagfile, "r")) == NULL) {
+	message(ERROR, ANYKEY, "Could not open NAG file.");
+	return 1;
+    }
+
+    while (!feof(fp)) {
+	if (fscanf(fp, " %[^\n] ", line) == 1) {
+	    nag = Realloc(nag, (i + 2) * sizeof(struct nags));
+	    strncpy(nag[i].line, line, sizeof(nag[i].line));
+	    i++;
+	}
+    }
+
+    memset(&nag[i], 0, sizeof(struct nags));
+    return 0;
+}
+
+static void view_nag(void *arg)
+{
+    int index = (int)arg;
+    char buf[80];
+    char line[LINE_MAX] = {0};
+    int i = 0;
+
+    snprintf(buf, sizeof(buf), "Viewing NAG for \"%s\"", 
+	    game[gindex].history[index].move);
+
+    if (!nag) {
+	if (init_nag())
+	    return;
+    }
+
+    for (i = 0; i < MAX_PGN_NAG; i++) {
+	if (!game[gindex].history[index].nag[i])
+	    break;
+
+	strncat(line, nag[game[gindex].history[index].nag[i] - 1].line,
+		sizeof(line));
+	strncat(line, ". ", sizeof(line));
+    }
+
+    message(buf, ANYKEY, "%s", line);
+    return;
+}
+
 void view_annotation(int index)
 {
     char buf[MAX_PGN_MOVE_LEN + strlen(VIEW_ANNOTATION) + 4];
+    int nag = 0, comment = 0;
 
-    if (!game[gindex].history[index].comment[0])
+    if (game[gindex].history[index].comment[0])
+        comment++;
+ 
+    if (game[gindex].history[index].nag[0])
+ 	nag++;
+
+    if (!nag && !comment)
 	return;
 
     snprintf(buf, sizeof(buf), "%s \"%s\"", VIEW_ANNOTATION,
 	    game[gindex].history[index].move);
 
-    message(buf, ANYKEY, "%s", 
-	    game[gindex].history[index].comment);
+    if (comment)
+	show_message(buf, (nag) ? "Any other key to continue" : ANYKEY,
+		(nag) ? "Press 'n' to view NAG" : NULL, 
+		(nag) ? view_nag : NULL, (nag) ? (void *)index : NULL,
+		(nag) ? 'n' : 0, "%s", game[gindex].history[index].comment);
+    else
+	show_message(buf, "Any other key to continue", "Press 'n' to view NAG",
+		view_nag, (void *)index, 'n', "%s", 
+		"No annotations for this move");
+
     return;
 }
 
@@ -63,42 +129,37 @@ void reset_history()
     return;
 }
 
-void history_edit_nag()
+void history_edit_nag(void *arg)
 {
     WINDOW *win, *subw;
     PANEL *panel;
-    static ITEM **mitems = NULL;
+    ITEM **mitems = NULL;
     MENU *menu;
     int i = 0, n;
     int itemcount = 0;
     int rows, cols;
     char *mbuf = NULL;
-    FILE *fp;
-    char line[LINE_MAX];
+    int index = (int)arg;
 
-    if (!mitems) {
-	if ((fp = fopen(config.nagfile, "r")) == NULL) {
-	    message(ERROR, ANYKEY, "Could not open NAG file.");
+    if (!nag) {
+	if (init_nag())
 	    return;
-	}
-
-	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	mitems[i++] = new_item(NONE, NULL);
-
-	while (!feof(fp)) {
-	    if (fscanf(fp, " %[^\n] ", line) == 1) {
-		mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-		mitems[i++] = new_item(strdup(line), NULL);
-	    }
-
-	    mitems[i] = NULL;
-	}
     }
 
+    i = 0;
+    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+    mitems[i++] = new_item(NONE, NULL);
+
+    for (n = 0; nag[n].line[0]; n++, i++) {
+	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+	mitems[i] = new_item(nag[n].line, NULL);
+    }
+
+    mitems[i] = NULL;
     menu = new_menu(mitems);
     scale_menu(menu, &rows, &cols);
 
-    win = newwin(rows + 4, cols + 2, CALCPOSY(rows), CALCPOSX(cols));
+    win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
     set_menu_win(menu, win);
     /* FIXME test. may not need to free subw. */
     subw = derwin(win, rows, cols, 2, 1);
@@ -117,9 +178,10 @@ void history_edit_nag()
     draw_window_title(win, NAG_TITLE, cols + 2);
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (game[gindex].history[game[gindex].hindex].nag[i]) {
-	    set_item_value(mitems[game[gindex].history[game[gindex].hindex].nag[i]], TRUE);
-	    set_current_item(menu, mitems[game[gindex].history[game[gindex].hindex].nag[i]]);
+	if (game[gindex].history[index].nag[i] && 
+		game[gindex].history[index].nag[i] <= item_count(menu)) {
+	    set_item_value(mitems[game[gindex].history[index].nag[i]], TRUE);
+	    set_current_item(menu, mitems[game[gindex].history[index].nag[i]]);
 	    itemcount++;
 	}
     }
@@ -166,7 +228,7 @@ void history_edit_nag()
 	    case CTRL('G'):
 		help(NAG_HELP, naghelp);
 		break;
-	    case KEY_LEFT:
+	    case KEY_RIGHT:
 		if (!itemcount)
 		    break;
 
@@ -190,7 +252,7 @@ void history_edit_nag()
 
 		set_current_item(menu, mitems[found]);
 		break;
-	    case KEY_RIGHT:
+	    case KEY_LEFT:
 		if (!itemcount)
 		    break;
 
@@ -271,21 +333,19 @@ void history_edit_nag()
 
 gotitem:
     for (i = 0; i < MAX_PGN_NAG; i++)
-	game[gindex].history[game[gindex].hindex].nag[i] = 0;
+	game[gindex].history[index].nag[i] = 0;
 
     for (i = 0, n = 0; mitems[i] && n < MAX_PGN_NAG; i++) {
 	if (item_value(mitems[i]) == TRUE)
-	    game[gindex].history[game[gindex].hindex].nag[n++] = i;
+	    game[gindex].history[index].nag[n++] = i;
     }
 
 done:
     unpost_menu(menu);
     free_menu(menu);
 
-    /*
     for (i = 0; mitems[i]; i++)
 	free_item(mitems[i]);
-	*/
 
     del_panel(panel);
     delwin(win);
@@ -386,14 +446,13 @@ void move_piece(char *move)
 	status.notify = random_agony();
     }
     else {
-	/* FIXME */
 	/* En Passant. */
-	if (row == 2 && board[srow][scol].icon == 'P') {
+	if (row == 2 && board[srow][scol].icon == 'P' && scol != col) {
 	    board[row + 1][col].icon = '.';
 	    game[gindex].wcaptures++;
 	}
 
-	if (row == 5 && board[srow][scol].icon == 'p') {
+	if (row == 5 && board[srow][scol].icon == 'p' && scol != col) {
 	    board[row - 1][col].icon = '.';
 	    game[gindex].bcaptures++;
 	}

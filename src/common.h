@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.22 2002-12-19 18:19:47 bjk Exp $ */
+/* $Id: common.h,v 1.23 2002-12-20 00:31:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -154,7 +154,7 @@ enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND};
 
 char *get_input(const char *, const char *, int, int, const char *,
-	void (*)(void), int, ...);
+	void (*)(void *), void *, int, ...);
 char *get_input_str(const char *, const char *);
 char *get_input_str_clear(const char *, const char *);
 void draw_window_title(WINDOW *, const char *, int);

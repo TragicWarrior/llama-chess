@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.29 2002-12-19 18:32:11 bjk Exp $ */
+/* $Id: pgn.c,v 1.30 2002-12-20 00:31:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -332,7 +332,6 @@ int parse_pgn_file(const char *filename)
 	free_game_data();
 
     gtotal = gindex = 0;
-    browse_history = 1;
 
     if (!*filename) {
 	init_data();
@@ -753,7 +752,7 @@ struct pgndata *edit_pgn_data(int edit)
 			break;
 
 		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 1, 0, NULL, NULL,
-				    FIELD_TYPE_PGN_TAG_NAME)) == NULL)
+				    NULL, FIELD_TYPE_PGN_TAG_NAME)) == NULL)
 			break;
 
 		    newtag[0] = toupper(newtag[0]);
@@ -816,7 +815,7 @@ gotitem:
 	    tmp = strptime(data[selected].value, TIME_FORMAT, &tp);
 	    strftime(tmptime, MAX_TIME_LEN, PGN_TIME_FORMAT, &tp);
 
-	    tmp = get_input(buf, tmptime, 0, 0, 0, NULL, NULL,
+	    tmp = get_input(buf, tmptime, 0, 0, 0, NULL, NULL, NULL,
 		    FIELD_TYPE_PGN_DATE);
 
 	    if (tmp) {
@@ -830,9 +829,11 @@ gotitem:
 		goto cleanup;
 	}
 	else if (strcmp(data[selected].token, "Round") == 0)
-	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, FIELD_TYPE_PGN_ROUND);
+	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL,
+		    FIELD_TYPE_PGN_ROUND);
 	else
-	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, -1);
+	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, NULL,
+		    -1);
 
 	if (tmp) {
 	    if (strcmp(tmp, UNKNOWN) == 0)
