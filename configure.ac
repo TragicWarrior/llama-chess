@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.11 2003-01-14 20:36:46 bjk Exp $
+dnl $Id: configure.ac,v 1.12 2003-01-22 20:01:47 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.3, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -22,10 +22,14 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 dnl Checks for library functions.
-AC_CHECK_LIB(ncurses, initscr, , [AC_MSG_ERROR([Could not find the ncurses library.])])
-AC_CHECK_LIB(panel, new_panel)
-AC_CHECK_LIB(form, new_form)
-AC_CHECK_LIB(menu, new_menu)
+AC_CHECK_LIB(ncurses, initscr, ,
+	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
+AC_CHECK_LIB(panel, new_panel, ,
+	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
+AC_CHECK_LIB(form, new_form, ,
+	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
+AC_CHECK_LIB(menu, new_menu, , 
+	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -49,6 +53,23 @@ AC_DEFINE_UNQUOTED([DEFAULT_ICS_SERVER], "localhost",
 AC_DEFINE([DEFAULT_ICS_PORT], 5000, [Default internet chess server port.])
 AC_DEFINE_UNQUOTED([DEFAULT_ICS_USER], "guest",
 		   [Default internet chess server port.])
+
+AC_DEFUN([AC_DEBUG],
+[
+    if test "$1"; then
+	ac_cv_sys_debug=$1
+    fi
+
+    AC_CACHE_CHECK([if debugging is wanted], [ac_cv_sys_debug],
+	[ac_cv_sys_debug=no])
+
+    if test "$ac_cv_sys_debug" = "yes"; then
+	CPPFLAGS="$CPPFLAGS -DDEBUG"
+    fi
+])
+
+AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debugging.]),
+    AC_DEBUG([$enableval]), AC_DEBUG)
 
 AM_WITH_DMALLOC
 
