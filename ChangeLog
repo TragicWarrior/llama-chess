@@ -1,3 +1,9 @@
+2002-12-10 Tuesday 17:31  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.17):
+	
+	Fix for updating the data window after tag editing.
+
 2002-12-10 Tuesday 17:19  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: pgn.c (1.12), pgn.h (1.5):
