@@ -85,7 +85,7 @@ board_count	magenta	cyan	bold	bold,reverse
 status_window	white	black
 status_title	white	blue	none	reverse
 status_border	cyan	black
-status_notify	red	black	none	bold
+status_notify	green	black	none	bold
 status_engine	yellow	black	none	bold
 
 tag_window	white	black
