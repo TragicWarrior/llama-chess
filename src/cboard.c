@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.18 2002-12-10 23:40:34 bjk Exp $ */
+/* $Id: cboard.c,v 1.19 2002-12-11 17:42:51 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -42,9 +42,7 @@ void draw_board()
     int rcol = 0;
     int maxy = BOARD_HEIGHT, maxx = BOARD_WIDTH;
     int ncols = 0, offset = 1;
-    const char *coords_y = "87654321";
-    const char *coords_x = x_grid_chars;
-    int yindex = 0, xindex = 0;
+    unsigned coords_y = 8;
 
     for (row = 0; row < maxy; row++) {
 	rcol = 0;
@@ -70,8 +68,8 @@ void draw_board()
 		continue;
 	    }
 
-	    if ((row % 2) && col == maxx - 1) {
-		mvwprintw(boardw, row, col, "%c", coords_y[yindex++]);
+	    if ((row % 2) && col == maxx - 1 && coords_y) {
+		mvwprintw(boardw, row, col, "%d", coords_y--);
 		continue;
 	    }
 
@@ -121,9 +119,18 @@ void draw_board()
 		    mvwaddch(boardw, row, col, ' ');
 
 		    if (row == maxy - 1)
-			waddch(boardw, coords_x[xindex++] | attrs);
+			waddch(boardw, x_grid_chars[rcol] | attrs);
 		    else {
-			waddch(boardw, board[row / 2][rcol].icon | attrs);
+			if (status.bw == WHITE &&
+				isupper(board[row / 2][rcol].icon))
+			    attrs |= A_BOLD;
+			else if (status.bw == BLACK &&
+				islower(board[row / 2][rcol].icon))
+			    attrs |= A_BOLD;
+
+			waddch(boardw, (board[row / 2][rcol].icon) ?
+				board[row / 2][rcol].icon | attrs :
+				' ' | attrs);
 		    }
 
 		    waddch(boardw, ' ');
@@ -154,7 +161,7 @@ void parse_piece_command(int dest_y, int dest_x)
 		    x_grid_chars[selected_piece.col - 1], selected_piece.row);
 	    break;
 	default:
-	    snprintf(str, sizeof(str), "%c%i", selected_piece.icon,
+	    snprintf(str, sizeof(str), "%c%i", toupper(selected_piece.icon),
 		    selected_piece.row);
 	    break;
     }
@@ -169,6 +176,7 @@ void parse_piece_command(int dest_y, int dest_x)
 void update_status()
 {
     int w = STATUS_WIDTH - 10;
+    int i;
     char *book, *engine;
 
     switch (status.engine) {
@@ -219,6 +227,9 @@ void update_status()
 
     mvwprintw(statusw, 5, 1, "Game #: %i", status.games);
 
+    for (i = 1; i < STATUS_WIDTH - 4; i++)
+	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
+
     if (status.notify) {
 	wattron(statusw, NOTIFY_STATUS);
 	mvwprintw(statusw, STATUS_HEIGHT - 2,
@@ -259,12 +270,9 @@ void update_data()
 		pgn[i].value);
     }
 
-    /*
-    mvwprintw(dataw, 6, 1, " White: %-*s", w,
-	    (status.bw == WHITE) ? data.white : data.black);
-    mvwprintw(dataw, 7, 1, " Black: %-*s", w,
-	    (!status.bw == WHITE) ? data.white : data.black);
-	    */
+    for (; i < DATA_HEIGHT - 4; i++)
+	mvwprintw(dataw, i + 3, 1, "%*s", DATA_WIDTH - 4, " ");
+
     return;
 }
 
@@ -288,15 +296,21 @@ void draw_window_title(WINDOW *win, const char *title, int width)
     return;
 }
 
+void update_all()
+{
+    update_status();
+    update_data();
+    update_history();
+    return;
+}
+
 void refresh_all()
 {
     werase(statusw);
     werase(historyw);
     werase(dataw);
     werase(boardw);
-    update_status();
-    update_data();
-    update_history();
+    update_all();
     draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH);
     draw_window_title(dataw, DATA_TITLE, DATA_WIDTH);
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH);
@@ -311,15 +325,11 @@ void game_loop()
 
     cursor_x = 2, cursor_y = 1;
 
-    /* FIXME fiddle */
-    wtimeout(boardw, 1000);
+    wtimeout(boardw, 500);
     send_to_engine("nopost\n");
 
-    if (data.pgnfile[0]) {
+    if (data.pgnfile[0])
 	send_to_engine("pgnload %s\n", data.pgnfile);
-	browse_history = 1;
-	init_history();
-    }
     else
 	send_to_engine("show board\n");
 
@@ -344,9 +354,7 @@ void game_loop()
 		if ((len = read(from_engine, enginebuf, sizeof(enginebuf))) 
 			> 0) {
 		    parse_engine_output(enginebuf);
-		    update_status();
-		    update_data();
-		    update_history();
+		    update_all();
 		}
 		else
 		    message(ERROR, ANYKEY, "read() error from engine");
@@ -403,7 +411,8 @@ void game_loop()
 		send_to_engine("go\n");
 		break;
 	    case 'b':
-		if (status.book_method == -1 || status.engine == ENGINE_THINKING)
+		if (status.book_method == -1 || status.engine ==
+			ENGINE_THINKING)
 		    break;
 
 		if (status.book_method + 1 >= BOOK_MAX)
@@ -424,20 +433,19 @@ void game_loop()
 			update_history();
 		    }
 
-	//	    reset_history();
 		    browse_history = 0;
 
-		    /* FIXME thinking isnt updated */
-		    if (status.bw != status.turn)
+		    if (status.bw != status.turn) {
 			send_to_engine("go\n");
+			break;
+		    }
 		    
-		    /* FIXME need to 'resume' after leaving history mode */
-
+		    status.engine = ENGINE_READY;
+		    update_status();
+		    cancel_manual_mode = 1;
 		    break;
 		}
 
-		/* FIXME pgn history init */
-		//init_history();
 		send_to_engine("manual\n");
 		browse_history = 1;
 		status.engine = HISTORY_MODE;
@@ -450,23 +458,21 @@ void game_loop()
 		send_to_engine("remove\n");
 		break;
 	    case 'r':
-		if (browse_history) {
-		    reset_history();
-		    browse_history = 0;
-		    break;
-		}
-
 		if ((tmp = get_input_str("Load saved game filename", NULL)) 
 			== NULL)
 		    break;
 
-		if (parse_pgn_file(tmp))
-		    message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
-		else {
-		    strncpy(data.pgnfile, tmp, sizeof(data.pgnfile));
-		    send_to_engine("pgnload %s\n", data.pgnfile);
-		    init_history();
+		if ((c = parse_pgn_file(tmp)) != 0) {
+		    if (c > 0)
+			message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
+		    else
+			message(NULL, ANYKEY, "%s: parse error", tmp);
+
+		    break;
 		}
+
+		strncpy(data.pgnfile, tmp, sizeof(data.pgnfile));
+		send_to_engine("pgnload %s\n", data.pgnfile);
 		break;
 	    case 's':
 		if (message(NULL, YESNO, "Edit save game data?") == 'y') {
@@ -511,10 +517,8 @@ void game_loop()
 		}
 
 		status.games = 0;
-		refresh_all();
+		update_all();
 
-		/* FIXME should be done in engine.c*/
-		status.engine = ENGINE_READY;
 		status.bw = WHITE;
 		send_to_engine("new\n");
 		send_to_engine("show board\n");
@@ -534,7 +538,6 @@ void game_loop()
 	    case KEY_ESCAPE:
 		selected_piece.icon = selected_y = selected_x = 0;
 		break;
-		/* FIXME diagonal keys */
 	    case 'j':
 	    case KEY_UP:
 		if (browse_history)
@@ -670,7 +673,7 @@ void catch_signal(int which)
 	    break;
 	case SIGCONT:
 	    resetty();
-	    refresh_all();
+	    keypad(boardw, TRUE);
 	    break;
 	default:
 	    break;
@@ -705,8 +708,12 @@ int main(int argc, char *argv[])
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
 
-    if (parse_pgn_file(data.pgnfile) != 0)
-	err(EXIT_FAILURE, "%s", data.pgnfile);
+    if ((opt = parse_pgn_file(data.pgnfile)) != 0) {
+	if (opt > 0)
+	    err(EXIT_FAILURE, "%s", data.pgnfile);
+	else
+	    errx(EXIT_FAILURE, "%s: parse error", data.pgnfile);
+    }
 
     initscr();
     init_chess_engine();

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.12 2002-12-10 22:17:28 bjk Exp $ */
+/* $Id: cboard.h,v 1.13 2002-12-11 17:42:52 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -75,10 +75,8 @@ int selected_y, selected_x;
 int quit;
 
 void init_chess_engine(void);
-void send_to_engine(const char *, ...);
 int parse_pgn_file(const char *);
 int save_pgn(const char *, struct pgndata *);
 void update_history(void);
-void init_history(void);
 void reset_history(void);
 struct pgndata *edit_pgn_data(int);
