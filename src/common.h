@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.13 2002-12-12 19:16:51 bjk Exp $ */
+/* $Id: common.h,v 1.14 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -46,6 +46,7 @@ FILE *debugfp;
 
 #define ACK			message("ack", "ack", "ack")
 
+#define x_grid_chars		"abcdefgh"
 #define MAX_PGN_LINE_LEN	255
 #define MAX_MOVE_LEN		7 /* As defined by SAN. */
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
@@ -67,8 +68,17 @@ struct {
     chtype icon;
 } board[8][8];
 
-enum { BOOK_OFF, BOOK_PREFER, BOOK_BEST, BOOK_WORST, BOOK_RANDOM, BOOK_MAX };
-enum { ENGINE_READY, ENGINE_THINKING, HISTORY_MODE };
+enum { 
+    BOOK_OFF, BOOK_PREFER, BOOK_BEST, BOOK_WORST, BOOK_RANDOM, BOOK_MAX
+};
+
+enum {
+    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, HISTORY_MODE, 
+    ENGINE_INITIALIZING
+};
+
+#define SEND_TO_ENGINE(fmt, args...)	(engine_initialized) ? \
+    send_to_engine(fmt, ##args) : 0
 
 struct {
     int engine;
@@ -97,15 +107,32 @@ struct games {
     struct history *history;
     int hindex;
     int htotal;
+    int wcaptures;
+    int bcaptures;
 } *game;
+
+/* This holds the selected piece info. */
+struct {
+    int icon;
+    int row;
+    int col;
+    int destrow;
+    int destcol;
+} sp;
+
+struct {
+    int history_jump;
+} config;
+
+/* Chess engine file descriptors. 0 = from, 1 = to. */
+int enginefd[2];
 
 char pgnfile[FILENAME_MAX];
 int gindex, gtotal;
 int cursor_y, cursor_x;
-int to_engine;
-int from_engine;
 int browse_history;
 int cancel_manual_mode;
+int engine_initialized;
 WINDOW *historyw;
 PANEL *historyp;
 

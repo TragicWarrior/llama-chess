@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.4 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: history.c,v 1.5 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -17,8 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 #include <panel.h>
+#include <ctype.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -27,12 +30,13 @@
 #include "common.h"
 #include "history.h"
 
-char *get_history_by_index(int index)
+int get_history_by_index(int index, struct history *h)
 {
     if (index < 0 || index > game[gindex].htotal - 1)
-	return "none";
+	return 1;
 
-    return game[gindex].history[index].move;
+    *h = game[gindex].history[index];
+    return 0;
 }
 
 void reset_history()
@@ -53,5 +57,99 @@ void add_to_history(struct history **h, int *n, int *t, const char *str)
 
     *n = *t = index;
     *h = history;
+    return;
+}
+
+void move_piece(char *move)
+{
+    int row, srow;
+    int col = 0, scol = 0;
+    int n;
+    char dst[MAX_MOVE_LEN + 1], *d = dst;
+    char src[MAX_MOVE_LEN + 1], *s = src;
+    char tsrc[2], *t = tsrc;
+    char tdst[2], *tt = tdst;
+    char *p = move;
+
+    *s++ = *p++;
+    *s++ = *t++ = *p++;
+    *s = *t = 0;
+    *d++ = *p++;
+    *d++ = *tt++ = *p++;
+    *d = *tt = 0;
+    d -= 2;
+    s -= 2;
+    t--;
+    tt--;
+
+    srow = 8 - (int)strtol(t, NULL, 10);
+    row = 8 - (int)strtol(tt, NULL, 10);
+
+    for (n = 0; n < strlen(x_grid_chars); n++) {
+	if (s[0] == x_grid_chars[n])
+	    scol = n;
+
+	if (d[0] == x_grid_chars[n])
+	    col = n;
+    }
+
+    if (board[row][col].icon != '.' && !browse_history) {
+	if (isupper(board[row][col].icon))
+	    game[gindex].bcaptures++;
+	else
+	    game[gindex].wcaptures++;
+    }
+
+    board[row][col].icon = board[srow][scol].icon;
+    board[srow][scol].icon = '.';
+    return;
+}
+
+static void parse_history_move(int index)
+{
+    int i;
+
+    init_board();
+
+    for (i = 0; i < index; i++) {
+	struct history h;
+
+	if (get_history_by_index(i, &h))
+	    break;
+
+	move_piece(h.move);
+    }
+
+    return;
+}
+
+void history_previous(int n)
+{
+    if (game[gindex].hindex - n < 0)
+	game[gindex].hindex = game[gindex].htotal;
+    else
+	game[gindex].hindex -= n;
+
+    parse_history_move(game[gindex].hindex);
+    return;
+}
+
+void history_next(int n)
+{
+    if (game[gindex].hindex + n > game[gindex].htotal)
+	game[gindex].hindex = 0;
+    else
+	game[gindex].hindex += n;
+
+    parse_history_move(game[gindex].hindex);
+    return;
+}
+
+void init_history()
+{
+    parse_history_move(game[gindex].hindex);
+    status.engine = HISTORY_MODE;
+    browse_history = 1;
+    update_status();
     return;
 }

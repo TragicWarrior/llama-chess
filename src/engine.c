@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.7 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: engine.c,v 1.8 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -23,10 +23,13 @@
 #include <limits.h>
 #include <string.h>
 #include <sys/types.h>
+#include <signal.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -40,6 +43,7 @@ void send_to_engine(const char *format, ...)
     va_list ap;
     int len;
     char *line;
+    int try = 0;
 
     va_start(ap, format);
 #ifdef HAVE_VASPRINTF
@@ -56,24 +60,35 @@ void send_to_engine(const char *format, ...)
 	struct timeval tv;
 
 	FD_ZERO(&fds);
-	FD_SET(to_engine, &fds);
+	FD_SET(enginefd[1], &fds);
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 
-	if ((n = select(to_engine + 1, NULL, &fds, NULL, &tv)) > 0) {
-	    if (FD_ISSET(to_engine, &fds)) {
-		if ((n = write(to_engine, line, len)) != len) {
-		    message(NULL, ANYKEY, "write() error to engine. "
-			    "Expected %i, got %i.", len, n);
+	if ((n = select(enginefd[1] + 1, NULL, &fds, NULL, &tv)) > 0) {
+	    if (FD_ISSET(enginefd[1], &fds)) {
+		n = write(enginefd[1], line, len);
+
+		if (n == -1) {
+		    if (errno == EAGAIN)
+			continue;
+
+		    message(ERROR, ANYKEY, "Attempt #%i. write(): %s", ++try,
+			    strerror(errno));
+		    continue;
 		}
-		else {
-		    break;
+
+		if (len != n) {
+		    message(NULL, ANYKEY, "try #%i: write() error to engine. "
+			    "Expected %i, got %i.", ++try, len, n);
+		    continue;
 		}
+
+		break;
 	    }
 	}
 	else {
-	//    message(ERROR, ANYKEY, "write() timeout, trying again.\n");
+	    /* timeout */
 	}
     }
 
@@ -83,160 +98,196 @@ void send_to_engine(const char *format, ...)
 
 void parse_engine_output(char *str)
 {
-    char *buf = str, *tmp;
-    int row = 0;
+    char *tmp;
     char move[MAX_MOVE_LEN + 1];
 
-    if (strstr(str, "Thinking...") != NULL)
-	status.engine = ENGINE_THINKING;
+    DEBUG("%s", str);
 
     /* 'switch' command. */
-    if (strstr(str, "White to move\n") != NULL) {
+    if (strstr(str, "White to move") != NULL) {
 	status.bw = status.turn = WHITE;
-	return;
+	RETURN;
     }
-    else if (strstr(str, "Black to move\n") != NULL) {
+    else if (strstr(str, "Black to move") != NULL) {
 	status.bw = status.turn = BLACK;
-	return;
+	RETURN;
     }
 
     /* Bad engine command or move. */
     if ((tmp = strstr(str, "Illegal move: ")) != NULL) {
 	str[strlen(str) - 1] = 0;
 	message(NULL, ANYKEY, "%s", str);
-	return;
+	RETURN;
     }
 
     /* Human move. Add it to the move history (if not browsing). */
     if (!browse_history) {
-	if (sscanf(str, "%*u%*c%s", move) == 1)
+	if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) == 1) {
 	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		    &game[gindex].htotal, move);
+
+	    if (status.turn == WHITE)
+		status.turn = BLACK;
+	    else if (status.turn == BLACK)
+		status.turn = WHITE;
+
+	    status.engine = ENGINE_THINKING;
+	    move_piece(move);
+	    sp.icon = 0;
+	    return;
+	}
 
 	/* This is needed when leaving history mode and the turn is now black
 	 * since we just went. This cancels 'manual'.
 	 */
 	if (cancel_manual_mode) {
-	    send_to_engine("go\n");
+	    SEND_TO_ENGINE("go\n");
 	    cancel_manual_mode = 0;
 	}
     }
 
-    /* This is output whenever a move is made/undone (and 'show board'). */
-    if ((buf = strstr(str, "white  ")) != NULL || 
-	    (buf = strstr(str, "black  ")) != NULL) {
+    /* Engine move. */
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) 
+	    == 1) {
+	add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		&game[gindex].htotal, move);
 
-	if (strstr(buf, "white  "))
+	if (status.turn == WHITE)
+	    status.turn = BLACK;
+	else if (status.turn == BLACK)
 	    status.turn = WHITE;
 
-	if (strstr(buf, "black  "))
-	    status.turn = BLACK;
-
-	/* Engine finished move, add it to the move history. */
-	if ((tmp = strstr(buf, "My move is : ")) != NULL) {
-	    tmp += 13;
-	    tmp = parse_piece(tmp);
-	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		    &game[gindex].htotal, tmp);
-	}
-
-	tmp = strsep(&buf, "\n");
-
-	/* Parse the board. */
-	while ((tmp = strsep(&buf, "\n")) != NULL) {
-	    int i, col = 0;
-
-	    if (!*tmp)
-		break;
-
-	    for (i = 0; i < strlen(tmp); i++) {
-		if (tmp[i] == ' ')
-		    continue;
-
-		if (tmp[i] == '.')
-		    board[row][col++].icon = ' ';
-		else
-		    board[row][col++].icon = tmp[i];
-	    }
-
-	    row++;
-	}
-
-	if (browse_history)
-	    status.engine = HISTORY_MODE;
-	else {
-	    if (status.bw == status.turn)
-		status.engine = ENGINE_READY;
-	}
-	return;
+	move_piece(move);
+	RETURN;
     }
 
     /* Miscellaneous one-liners. */
     if ((tmp = strstr(str, "Cannot open file ")) != NULL) {
 	str[strlen(str) - 1] = 0;
 	message(NULL, ANYKEY, "%s", str);
-	return;
-    }
-
-    if ((tmp = strstr(str, "Cannot write to file ")) != NULL) {
-	str[strlen(str) - 1] = 0;
-	message(NULL, ANYKEY, "%s", str);
-	return;
+	RETURN;
     }
 
     if ((tmp = strstr(str, " No book found.")) != NULL)
 	status.book_method = -1; 
-    else if ((tmp = strstr(str, "book now off")) != NULL)
+    else if ((tmp = strstr(str, "book now off.")) != NULL)
 	status.book_method = BOOK_OFF;
-    else if ((tmp = strstr(str, "book now on")) != NULL)
+    else if ((tmp = strstr(str, "book now on.")) != NULL)
 	status.book_method = BOOK_PREFER;
-    else if ((tmp = strstr(str, "book now best")) != NULL)
+    else if ((tmp = strstr(str, "book now best.")) != NULL)
 	status.book_method = BOOK_BEST;
-    else if ((tmp = strstr(str, "book now worst")) != NULL)
+    else if ((tmp = strstr(str, "book now worst.")) != NULL)
 	status.book_method = BOOK_WORST;
-    else if ((tmp = strstr(str, "book now random")) != NULL)
+    else if ((tmp = strstr(str, "book now random.")) != NULL)
 	status.book_method = BOOK_RANDOM;
 
-    return;
+    RETURN;
 }
 
-void init_chess_engine()
+/* This is ripped from XBoard. */
+static int get_pty(char pty_name[])
+{
+  struct stat stb;
+  int c, i;
+  int fd;
+
+  /* Some systems name their pseudoterminals so that there are gaps in
+     the usual sequence - for example, on HP9000/S700 systems, there
+     are no pseudoterminals with names ending in 'f'.  So we wait for
+     three failures in a row before deciding that we've reached the
+     end of the ptys.  */
+  int failed_count = 0;
+
+  for (c = FIRST_PTY_LETTER; c <= LAST_PTY_LETTER; c++)
+    for (i = 0; i < 16; i++) {
+	sprintf (pty_name, "/dev/pty%c%x", c, i);
+
+	if (stat (pty_name, &stb) < 0) {
+	    failed_count++;
+
+	    if (failed_count >= 3)
+	      return -1;
+	}
+	else
+	  failed_count = 0;
+
+	fd = open(pty_name, O_RDWR, 0);
+
+	if (fd >= 0) {
+	    /* check to make certain that both sides are available
+	       this avoids a nasty yet stupid bug in rlogins */
+            sprintf (pty_name, "/dev/tty%c%x", c, i);
+
+	    if (access (pty_name, 6) != 0) {
+		close (fd);
+		continue;
+	    }
+
+#ifdef IBMRTAIX
+	      /* On AIX, the parent gets SIGHUP when a pty attached
+                 child dies.  So, we ignore SIGHUP once we've started
+                 a child on a pty.  Note that this may cause xboard
+                 not to die when it should, i.e., when its own
+                 controlling tty goes away.
+	      */
+	    signal(SIGHUP, SIG_IGN);
+#endif /* IBMRTAIX */
+	    return fd;
+	}
+    }
+
+    return -1;
+}
+
+/* Is this dangerous if pty permissions are wrong? */
+pid_t init_chess_engine()
 {
     pid_t pid;
-    int p1[2], p2[2];
+    int from[2], to[2];
+    char pty[FILENAME_MAX];
 
-    if (pipe(p1) < 0)
-	err(EXIT_FAILURE, "pipe()");
+    if ((to[1] = get_pty(pty)) == -1) {
+	errno = 0;
+	return -1;
+    }
 
-    if (pipe(p2) < 0)
-	err(EXIT_FAILURE, "pipe()");
+    from[0] = to[1];
+    errno = 0;
+
+    if ((to[0] = open(pty, O_RDWR, 0)) == -1)
+	return -1;
+
+    from[1] = to[0];
 
     switch ((pid = fork())) {
 	case -1:
 	    err(EXIT_FAILURE, "fork()");
 	case 0:
-	    close(STDIN_FILENO);
-	    dup2(p1[0], STDIN_FILENO);
-	    close(STDOUT_FILENO);
-	    close(STDERR_FILENO);
-	    dup2(p2[1], STDOUT_FILENO);
-	    dup2(p2[1], STDERR_FILENO);
-	    close(p1[0]);
-	    close(p1[1]);
-	    close(p2[0]);
-	    close(p2[1]);
-	    execlp("gnuchess", "gnuchess", NULL);
+	    dup2(to[0], STDIN_FILENO);
+	    dup2(from[1], STDOUT_FILENO);
+	    close(to[0]);
+	    close(to[1]);
+	    close(from[0]);
+	    close(from[1]);
+	    dup2(STDOUT_FILENO, STDERR_FILENO);
+	    execlp("gnuchess", "gnuchess", "xboard", NULL);
 	    err(EXIT_FAILURE, "execlp()");
 	default:
 	    break;
     }
 
-    close(p1[0]);
-    close(p2[1]);
-    from_engine = p2[0];
-    to_engine = p1[1];
-    fcntl(from_engine, F_SETFL, O_NONBLOCK | O_DIRECT);
-    fcntl(to_engine, F_SETFL, O_NONBLOCK | O_DIRECT);
-    return;
-}
+    if (kill(pid, 0) == -1)
+	return -2;
 
+    close(to[0]);
+    close(from[1]);
+
+    enginefd[0] = from[0];
+    enginefd[1] = to[1];
+
+    fcntl(enginefd[0], F_SETFL, O_NONBLOCK);
+    fcntl(enginefd[1], F_SETFL, O_NONBLOCK);
+
+    engine_initialized = 1;
+    return pid;
+}

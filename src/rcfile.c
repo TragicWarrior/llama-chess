@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.3 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: rcfile.c,v 1.1 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,5 +16,27 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-void init_board(void);
-void update_status(void);
+#include <stdio.h>
+#include <stdlib.h>
+#include <err.h>
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include "common.h"
+#include "rcfile.h"
+
+void parse_rcfile(const char *filename)
+{
+    FILE *fp;
+
+    fprintf(stderr, "rc file parsing not done yet\n");
+    return;
+
+    if ((fp = fopen(filename, "r")) == NULL)
+	err(EXIT_FAILURE, "filename");
+
+    fclose(fp);
+    return;
+}

@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.3 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: rcfile.h,v 1.1 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,5 +16,3 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-void init_board(void);
-void update_status(void);

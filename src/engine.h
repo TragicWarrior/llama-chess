@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.4 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: engine.h,v 1.5 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,6 +16,16 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-enum { HUMAN, ENGINE };
+#define FIRST_PTY_LETTER	'p'
+#define LAST_PTY_LETTER		'z'
+
+#define RETURN		status.engine = ENGINE_READY; \
+			return
+
+enum { 
+    HUMAN, ENGINE
+};
+
 void add_to_history(struct history **, int *, int *, const char *);
 char *parse_piece(char *);
+void move_piece(char *);

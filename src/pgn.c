@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.18 2002-12-12 19:16:11 bjk Exp $ */
+/* $Id: pgn.c,v 1.19 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -28,11 +28,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <err.h>
 #include <string.h>
 #include <time.h>
 #include <pwd.h>
 #include <ctype.h>
+#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -129,6 +131,51 @@ static char *remove_escapes(const char *str)
     return buf;
 }
 
+void init_board()
+{
+    int row, col;
+
+    for (row = 0; row < 8; row++) {
+	for (col = 0; col < 8; col++) {
+	    int c = '.';
+
+	    switch (row) {
+		case 0:
+		case 7:
+		    switch (col) {
+			case 0:
+			case 7:
+			    c = 'r';
+			    break;
+			case 1:
+			case 6:
+			    c = 'n';
+			    break;
+			case 2:
+			case 5:
+			    c = 'b';
+			    break;
+			case 3:
+			    c = 'q';
+			    break;
+			case 4:
+			    c = 'k';
+			    break;
+		    }
+		    break;
+		case 1:
+		case 6:
+		    c = 'p';
+		    break;
+	    }
+
+	    board[row][col].icon = (row < 2) ? c : toupper(c);
+	}
+    }
+
+    return;
+}
+
 /* FIXME need a way to 'append' a game or round. */
 static void init_data()
 {
@@ -161,25 +208,19 @@ static void init_data()
 
     gtotal = gindex + 1;
 
+    init_board();
     return;
 }
 
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
-    int i;
     char buf[LINE_MAX], *tmp;
     int tag_section = 0;
     int skip_move_text = 0;
 
-    if (gtotal) {
-	for (i = 0; i < gtotal; i++) {
-	    free(game[i].pgn);
-	    free(game[i].history);
-	}
-
-	free(game);
-    }
+    if (gtotal)
+	free_game_data();
 
     gtotal = gindex = 0;
     game = Calloc(1, sizeof(struct games));
@@ -336,14 +377,10 @@ static char *pgn_escapes(const char *str)
     return buf;
 }
 	
-int save_pgn(const char *filename, struct pgndata *data)
+static void dump_save_data(FILE *fp, struct pgndata *data)
 {
     int i, n;
     int len = 0;
-    FILE *fp;
-
-    if ((fp = fopen(filename, "a")) == NULL)
-	return 1;
 
     for (i = 0; data[i].token[0]; i++) {
 	struct tm tp;
@@ -401,8 +438,51 @@ int save_pgn(const char *filename, struct pgndata *data)
 	fprintf(fp, "\n");
 
     fprintf(fp, "%s\n\n", pgn_escapes(data[PGN_RESULT].value));
-    fclose(fp);
 
+    return;
+}
+
+int save_pgn(const char *filename, struct pgndata *data, int isfifo)
+{
+    pid_t pid;
+    int status;
+    FILE *fp;
+
+    /* Writing a game to a fifo for the engine to read. This is a hack to let
+     * more than one game in a file work when resuming a game.
+     */
+    if ((fp = fopen(filename, "w")) == NULL) {
+
+	if (isfifo)
+	    unlink(filename);
+
+	return 1;
+    }
+
+    if (isfifo) {
+	switch ((pid = fork())) {
+	    case -1:
+		message(ERROR, ANYKEY, "fork(): %s", strerror(errno));
+		goto cleanup;
+	    case 0:
+		dump_save_data(fp, data);
+		fclose(fp);
+		unlink(filename);
+		_exit(EXIT_SUCCESS);
+	    default:
+		SEND_TO_ENGINE("\npgnload %s\n", filename);
+		wait(&status);
+		return 0;
+	}
+    }
+
+    dump_save_data(fp, data);
+
+cleanup:
+    if (isfifo)
+	unlink(filename);
+
+    fclose(fp);
     return 0;
 }
 

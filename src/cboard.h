@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.15 2002-12-12 19:16:51 bjk Exp $ */
+/* $Id: cboard.h,v 1.16 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -49,12 +49,6 @@ const char *book_methods[] = {
     "off", "prefer", "best", "worst", "random"
 };
 
-struct {
-    int icon;
-    int row;
-    int col;
-} selected_piece;
-
 const char *mainhelp[] = {
     "   UP/j - cursor up               R - refresh screen",
     " DOWN/k - cursor down             b - cycle through book modes",
@@ -83,17 +77,21 @@ PANEL *statusp;
 WINDOW *dataw;
 PANEL *datap;
 
-const char *x_grid_chars = "abcdefgh";
 int selected_y, selected_x;
 int quit;
+pid_t enginepid;
 
-void init_chess_engine(void);
+pid_t init_chess_engine(void);
 int parse_pgn_file(const char *);
-int save_pgn(const char *, struct pgndata *);
+int save_pgn(const char *, struct pgndata *, int);
 void update_history(void);
 void reset_history(void);
 struct pgndata *edit_pgn_data(int);
 void parse_engine_output(char *);
 char *real_filename(char *);
 void send_to_engine(const char *, ...);
-char *get_history_by_index(int);
+int get_history_by_index(int, struct history *);
+void history_next(int);
+void history_previous(int);
+void init_history(void);
+void parse_rcfile(const char *);

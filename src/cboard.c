@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.22 2002-12-12 19:21:14 bjk Exp $ */
+/* $Id: cboard.c,v 1.23 2002-12-13 21:55:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,6 +22,7 @@
 #include <err.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <panel.h>
 #include <errno.h>
@@ -49,6 +50,7 @@ void draw_board()
 
 	for (col = 0; col < maxx; col++) {
 	    int attrs = BOARD_WHITE;
+	    chtype piece;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -121,16 +123,15 @@ void draw_board()
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[rcol] | attrs);
 		    else {
-			if (status.bw == WHITE &&
-				isupper(board[row / 2][rcol].icon))
+			piece = board[row / 2][rcol].icon;
+
+			if (status.bw == WHITE && isupper(piece))
 			    attrs |= A_BOLD;
-			else if (status.bw == BLACK &&
-				islower(board[row / 2][rcol].icon))
+			else if (status.bw == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
-			waddch(boardw, (board[row / 2][rcol].icon) ?
-				board[row / 2][rcol].icon | attrs :
-				' ' | attrs);
+			waddch(boardw, (piece && piece !=  '.') ?
+				piece | attrs : ' ' | attrs);
 		    }
 
 		    waddch(boardw, ' ');
@@ -149,36 +150,23 @@ void draw_board()
     return;
 }
 
-void parse_piece_command(int dest_y, int dest_x)
+void parse_piece_command()
 {
     char str[MAX_MOVE_LEN] = {0};
-    char buf[MAX_MOVE_LEN] = {0};
 
-    switch (selected_piece.icon) {
-	case 'p':
-	case 'P':
-	    snprintf(str, sizeof(str), "%c%i",
-		    x_grid_chars[selected_piece.col - 1], selected_piece.row);
-	    break;
-	default:
-	    snprintf(str, sizeof(str), "%c%i", toupper(selected_piece.icon),
-		    selected_piece.row);
-	    break;
-    }
-
-    snprintf(buf, sizeof(buf), "%c%i", x_grid_chars[dest_x - 1], dest_y);
-    strncat(str, buf, sizeof(str));
-    send_to_engine("%s\n", str);
-    selected_piece.icon = selected_x = selected_y = 0;
+    snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[sp.col - 1], sp.row,
+	    x_grid_chars[sp.destcol - 1], sp.destrow);
+    SEND_TO_ENGINE("%s\n", str);
+    selected_x = selected_y = 0;
     return;
 }
 
 void update_status()
 {
-    int w = STATUS_WIDTH - 10;
+    int w = STATUS_WIDTH - 12;
     int i;
     char *book, *engine;
-    char buf[w];
+    char buf[w + 1];
 
     switch (status.engine) {
 	case ENGINE_THINKING:
@@ -190,14 +178,17 @@ void update_status()
 	case HISTORY_MODE:
 	    engine = "ready (move history)";
 	    break;
+	case ENGINE_INITIALIZING:
+	    engine = "initializing ...";
+	    break;
 	default:
 	    engine = UNKNOWN;
 	    break;
     }
 
-    mvwprintw(statusw, 2, 1, "Engine: %-*s", w, " ");
+    mvwprintw(statusw, 2, 1, "  Engine: %-*s", w, " ");
     wattron(statusw, ENGINE_STATUS);
-    mvwaddstr(statusw, 2, 9, engine);
+    mvwaddstr(statusw, 2, 11, engine);
     wattroff(statusw, ENGINE_STATUS);
 
     switch (status.book_method) {
@@ -221,13 +212,15 @@ void update_status()
 	    break;
     }
 
-    mvwprintw(statusw, 3, 1, "  Book: %-*s", w, book);
+    mvwprintw(statusw, 3, 1, "    Book: %-*s", w, book);
 
-    mvwprintw(statusw, 4, 1, "  Turn: %-*s", w, 
+    mvwprintw(statusw, 4, 1, "    Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
     snprintf(buf, sizeof(buf), "%i of %i", gindex + 1, gtotal);
-    mvwprintw(statusw, 5, 1, "  Game: %-*s", w, buf);
+    mvwprintw(statusw, 5, 1, "    Game: %-*s", w, buf);
+    mvwprintw(statusw, 6, 1, "Captures: %i (white)  %i (black)",
+	    game[gindex].wcaptures, game[gindex].bcaptures);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -245,6 +238,7 @@ void update_status()
 void update_history()
 {
     char buf[16];
+    struct history h = {{0},{0}};
 
     if (game[gindex].htotal)
 	snprintf(buf, sizeof(buf), "%u%s of %u", game[gindex].hindex,
@@ -254,10 +248,17 @@ void update_history()
 	strncpy(buf, UNKNOWN, sizeof(buf));
 
     mvwprintw(historyw, 2, 1, "     Move: %-*s", HISTORY_WIDTH - 13, buf);
+
+    get_history_by_index(game[gindex].hindex, &h);
+
     mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, 
-	    get_history_by_index(game[gindex].hindex));
+	    (h.move[0]) ? h.move : "none");
+
+    if (get_history_by_index(game[gindex].hindex - 1, &h))
+	h.move[0] = 0;
+
     mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13,
-	    get_history_by_index(game[gindex].hindex - 1));
+	    (h.move[0]) ? h.move : "none");
     return;
 }
 
@@ -351,22 +352,51 @@ void refresh_all()
     return;
 }
 
+static int start_chess_engine()
+{
+    status.engine = ENGINE_INITIALIZING;
+    update_status();
+    update_panels();
+    doupdate();
+
+    enginepid = init_chess_engine();
+
+    switch (enginepid) {
+	/* Pty allocation. */
+	case -1:
+	/* Could not execute engine. */
+	case -2:
+	    status.engine = ENGINE_OFFLINE;
+
+	    if (errno) {
+		message(ERROR, ANYKEY, "gnuchess: %s",
+			strerror(errno));
+		break;
+	    }
+
+	    message(ERROR, ANYKEY, "Could not allocate PTY");
+	    break;
+	default:
+	    status.engine = ENGINE_READY;
+	    break;
+    }
+
+    return enginepid;
+}
+
 void game_loop()
 {
     int rrow = 8, rcol = 1;
+    int error_recover = 0;
 
     cursor_x = 2, cursor_y = 1;
     gindex = gtotal - 1;
 
-    wtimeout(boardw, 500);
-    send_to_engine("nopost\n");
-
     if (pgnfile[0])
-	send_to_engine("pgnload %s\n", pgnfile);
-    else
-	send_to_engine("show board\n");
+	init_history();
 
     flushinp();
+    update_all();
 
     while (!quit) {
 	int c = 0;
@@ -378,28 +408,40 @@ void game_loop()
 	char buf[78];
 	struct pgndata *tmppgn = NULL;
 
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
+	if (status.engine != ENGINE_OFFLINE) {
+	    tv.tv_sec = 0;
+	    tv.tv_usec = 0;
 
-	FD_ZERO(&fds);
-	FD_SET(from_engine, &fds);
+	    FD_ZERO(&fds);
+	    FD_SET(enginefd[0], &fds);
 
-	if ((n = select(from_engine + 1, &fds, NULL, NULL, &tv)) > 0) {
-	    if (FD_ISSET(from_engine, &fds)) {
-		if ((len = read(from_engine, enginebuf, sizeof(enginebuf))) 
-			> 0) {
-		    parse_engine_output(enginebuf);
+	    if ((n = select(enginefd[0] + 1, &fds, NULL, NULL, &tv)) > 0) {
+		if (FD_ISSET(enginefd[0], &fds)) {
+		    len = read(enginefd[0], enginebuf, sizeof(enginebuf));
+
+		    if (len == -1) {
+			if (errno == EAGAIN)
+			    goto blah;
+			else {
+			    message(ERROR, ANYKEY, "Attempt #%i. read(): %s",
+				    ++error_recover, strerror(errno));
+			    continue;
+			}
+		    }
+
+		    if (len)
+			parse_engine_output(enginebuf);
+
 		    update_all();
 		}
-		else
-		    message(ERROR, ANYKEY, "read() error from engine");
 	    }
-
+	    else {
+		/* timeout */
+	    }
 	}
-	else {
-	    /* timeout */
-	}
 
+blah:
+	error_recover = 0;
 	draw_board();
 	wmove(boardw, cursor_y, cursor_x);
 	update_panels();
@@ -410,6 +452,7 @@ void game_loop()
 
 	switch (c) {
 	    int annotate;
+	    int oldhistorytotal;
 
 	    case '>':
 		if (gindex + 1 == gtotal)
@@ -455,7 +498,7 @@ void game_loop()
 		if (browse_history || status.engine == ENGINE_THINKING)
 		    break;
 
-		send_to_engine("go\n");
+		SEND_TO_ENGINE("go\n");
 		break;
 	    case 'b':
 		if (status.book_method == -1 || status.engine ==
@@ -467,7 +510,7 @@ void game_loop()
 		else
 		    status.book_method++;
 
-		send_to_engine("book %s\n", book_methods[status.book_method]);
+		SEND_TO_ENGINE("book %s\n", book_methods[status.book_method]);
 		break;
 	    case 'h':
 		if (browse_history) {
@@ -476,14 +519,34 @@ void game_loop()
 					"Resume game from history?")) != 'y')
 			    break;
 
+			tmp = tmpnam(NULL);
+
+			if (mkfifo(tmp, 0600) == -1) {
+			    message(ERROR, ANYKEY, "Could not create fifo");
+			    break;
+			}
+
+			if (!engine_initialized) {
+			    if (start_chess_engine() < 0)
+				break;
+			}
+
+			oldhistorytotal = game[gindex].htotal;
 			game[gindex].htotal = game[gindex].hindex;
+
+			if (save_pgn(tmp, game[gindex].pgn, 1)) {
+			    message(ERROR, ANYKEY, "%s", strerror(errno));
+			    game[gindex].htotal = oldhistorytotal;
+			    break;
+			}
+
 			update_history();
 		    }
 
 		    browse_history = 0;
 
 		    if (status.bw != status.turn) {
-			send_to_engine("go\n");
+			SEND_TO_ENGINE("go\n");
 			break;
 		    }
 		    
@@ -493,17 +556,17 @@ void game_loop()
 		    break;
 		}
 
-		send_to_engine("manual\n");
-		browse_history = 1;
-		status.engine = HISTORY_MODE;
-		update_status();
+		if (!game[gindex].htotal)
+		    break;
+
+		init_history();
 		break;
 	    case 'u':
 		if (browse_history)
 		    break;
 
 		/* FIXME history */
-		send_to_engine("remove\n");
+		SEND_TO_ENGINE("remove\n");
 		break;
 	    case 'r':
 		if ((tmp = get_input_str("Load saved game filename", NULL)) 
@@ -521,7 +584,8 @@ void game_loop()
 
 		gindex = gtotal - 1;
 		strncpy(pgnfile, tmp, sizeof(pgnfile));
-		send_to_engine("pgnload %s\n", pgnfile);
+		init_history();
+		update_all();
 		break;
 	    case 's':
 		if (!game[gindex].htotal) {
@@ -541,7 +605,7 @@ void game_loop()
 		    break;
 		}
 
-		if (save_pgn(tmp, (tmppgn) ? tmppgn : game[gindex].pgn)) {
+		if (save_pgn(tmp, (tmppgn) ? tmppgn : game[gindex].pgn, 0)) {
 		    if (tmppgn)
 			free(tmppgn);
 
@@ -553,8 +617,7 @@ void game_loop()
 		strncpy(pgnfile, tmp, sizeof(pgnfile));
 		parse_pgn_file(pgnfile);
 		gindex = gtotal - 1;
-		update_data();
-		update_status();
+		update_all();
 		break;
 	    case CTRL('G'):
 		help(MAIN_HELP, mainhelp);
@@ -566,16 +629,21 @@ void game_loop()
 		reset_history();
 		browse_history = 0;
 
-		if (pgnfile[0]) {
+		if (pgnfile[0])
 		    pgnfile[0] = 0;
-		    parse_pgn_file(pgnfile);
+
+		parse_pgn_file(pgnfile);
+		status.bw = WHITE;
+		game[gindex].wcaptures = game[gindex].bcaptures = 0;
+
+		if (status.engine == ENGINE_OFFLINE) {
+		    if (start_chess_engine() < 0)
+			break;
 		}
 
+		SEND_TO_ENGINE("\nnew\n");
 		update_all();
-
-		status.bw = WHITE;
-		send_to_engine("new\n");
-		send_to_engine("show board\n");
+		wtimeout(boardw, 70);
 		break;
 	    case 'R':
 		refresh_all();
@@ -584,18 +652,24 @@ void game_loop()
 		if (status.engine == ENGINE_THINKING)
 		    break;
 
+		if (status.engine == ENGINE_OFFLINE)
+		    break;
+
 		if ((tmp = get_input_str_clear(ENGINE_COMMAND_PROMPT, NULL)) 
 			!= NULL) {
-		    send_to_engine("%s\n", tmp);
+		    SEND_TO_ENGINE("%s\n", tmp);
 		}
 		break;
 	    case KEY_ESCAPE:
-		selected_piece.icon = selected_y = selected_x = 0;
+		sp.icon = selected_y = selected_x = 0;
 		break;
 	    case 'j':
 	    case KEY_UP:
-		if (browse_history)
+		if (browse_history) {
+		    history_next(config.history_jump);
+		    update_history();
 		    break;
+		}
 
 		if (cursor_y - 2 < 1)
 		    cursor_y = BOARD_HEIGHT - 3, rrow = 1;
@@ -604,8 +678,11 @@ void game_loop()
 		break;
 	    case 'k':
 	    case KEY_DOWN:
-		if (browse_history)
+		if (browse_history) {
+		    history_next(config.history_jump);
+		    update_history();
 		    break;
+		}
 
 		if (cursor_y + 2 > BOARD_HEIGHT - 2)
 		    cursor_y = 1, rrow = 8;
@@ -615,11 +692,8 @@ void game_loop()
 	    case 'l':
 	    case KEY_LEFT:
 		if (browse_history) {
-		    if (game[gindex].hindex - 1 < 0)
-			break;
-
-		    send_to_engine("undo\n");
-		    game[gindex].hindex--;
+		    history_previous(1);
+		    update_history();
 		    break;
 		}
 
@@ -631,11 +705,8 @@ void game_loop()
 	    case ';':
 	    case KEY_RIGHT:
 		if (browse_history) {
-		    if (game[gindex].hindex + 1 > game[gindex].htotal)
-			break;
-
-		    send_to_engine("%s\n", 
-			    game[gindex].history[game[gindex].hindex++].move);
+		    history_next(1);
+		    update_history();
 		    break;
 		}
 
@@ -648,30 +719,37 @@ void game_loop()
 		if (browse_history)
 		    break;
 
-		send_to_engine("switch\n");
+		SEND_TO_ENGINE("\nswitch\n");
 		break;
 	    case ' ':
-		if (browse_history)
+		if (status.engine != ENGINE_READY) {
+		    message(NULL, ANYKEY, "Use the 'N' command to start a "
+			    "new game or the 'r' command to load a previous "
+			    "game");
 		    break;
+		}
 
-		if (selected_piece.icon) {
+		if (sp.icon || status.engine == ENGINE_THINKING) {
 		    beep();
 		    break;
 		}
 
-		if ((selected_piece.icon = winch(boardw) & A_CHARTEXT) == ' ') {
-		    selected_piece.icon = 0;
+		if (browse_history)
+		    break;
+
+		if ((sp.icon = winch(boardw) & A_CHARTEXT) == ' ') {
+		    sp.icon = 0;
 		    break;
 		}
 
-		if ((islower(selected_piece.icon) && status.turn != BLACK) ||
-			(isupper(selected_piece.icon) && status.turn != WHITE)) {
-		    selected_piece.icon = 0;
+		if ((islower(sp.icon) && status.turn != BLACK) ||
+			(isupper(sp.icon) && status.turn != WHITE)) {
+		    sp.icon = 0;
 		    break;
 		}
 
-		selected_piece.row = rrow;
-		selected_piece.col = rcol;
+		sp.row = rrow;
+		sp.col = rcol;
 		selected_x = cursor_x;
 		selected_y = cursor_y;
 		break;
@@ -684,10 +762,12 @@ void game_loop()
 		    break;
 		}
 
-		if (!selected_piece.icon)
+		if (!sp.icon)
 		    break;
 
-		parse_piece_command(rrow, rcol);
+		sp.destrow = rrow;
+		sp.destcol = rcol;
+		parse_piece_command();
 		break;
 	    case 'q':
 		quit = 1;
@@ -705,7 +785,8 @@ void game_loop()
 
 void usage(const char *pn)
 {
-    printf("Usage: %s [-hv] [-p <pgnfile>]\n", pn);
+    printf("Usage: %s [-hv] [-f <rcfile>] [-p <pgnfile>]\n", pn);
+    printf("  -f  Alternate configuration file. The default is ~/.cboardrc.\n");
     printf("  -p  Load PGN file.\n");
     printf("  -v  Version information.\n");
     printf("  -h  This help text.\n");
@@ -738,17 +819,45 @@ void catch_signal(int which)
     return;
 }
 
+void free_game_data()
+{
+    int i;
+
+    if (!gtotal)
+	return;
+
+    for (i = 0; i < gtotal; i++) {
+	free(game[i].pgn);
+	free(game[i].history);
+    }
+
+    free(game);
+    return;
+}
+
+static void set_defaults()
+{
+    status.engine = ENGINE_OFFLINE;
+
+    config.history_jump = 5;
+    return;
+}
+
 int main(int argc, char *argv[])
 {
     int opt;
-    int i;
+    char rcfile[FILENAME_MAX] = {0};
+    struct passwd *pwd;
 
-    /* FIX THIS STUPID THING */
-    printf("GNUChess is modified in main() to setlinebuf(). This fixes the "
-	    "PIPE_BUF problem.\n");
-
-    while ((opt = getopt(argc, argv, "hp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "hp:f:v")) != -1) {
 	switch (opt) {
+	    case 'f':
+		snprintf(rcfile, sizeof(rcfile), "%s", optarg);
+
+		if (access(rcfile, R_OK) == -1)
+		    err(EXIT_FAILURE, "%s", rcfile);
+
+		break;
 	    case 'v':
 		printf("%s\n%s\n", PACKAGE_STRING, COPYRIGHT);
 		exit(EXIT_SUCCESS);
@@ -761,6 +870,22 @@ int main(int argc, char *argv[])
 	}
     }
 
+    set_defaults();
+
+    if (!rcfile[0]) {
+	if ((pwd = getpwuid(getuid())) == NULL)
+	    err(EXIT_FAILURE, "getpwuid()");
+
+	snprintf(rcfile, sizeof(rcfile), "%s/.cboardrc", pwd->pw_dir);
+
+	if (access(rcfile, R_OK) == -1) {
+	    if (errno != ENOENT)
+		err(EXIT_FAILURE, "%s", rcfile);
+	}
+    }
+    else
+	parse_rcfile(rcfile);
+
     signal(SIGPIPE, catch_signal);
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
@@ -772,8 +897,8 @@ int main(int argc, char *argv[])
 	    errx(EXIT_FAILURE, "%s: parse error", pgnfile);
     }
 
+    //init_chess_engine();
     initscr();
-    init_chess_engine();
 
     if (has_colors() == TRUE && start_color() == OK) {
 	init_pair(1, COLOR_WHITE, COLOR_RED);
@@ -806,22 +931,19 @@ int main(int argc, char *argv[])
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH);
 
     game_loop();
-    send_to_engine("quit\n");
+
+    SEND_TO_ENGINE("quit\n");
+
     endwin();
-    del_panel(datap);
+    free_game_data();
     del_panel(boardp);
-    del_panel(statusp);
     del_panel(historyp);
-    delwin(dataw);
+    /* this segfaults */
+    del_panel(statusp);
+    del_panel(datap);
     delwin(boardw);
-    delwin(statusw);
     delwin(historyw);
-
-    for (i = 0; i < gtotal; i++) {
-	free(game[i].pgn);
-	free(game[i].history);
-    }
-
-    free(game);
+    delwin(statusw);
+    delwin(dataw);
     exit(EXIT_SUCCESS);
 }
