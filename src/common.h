@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.51 2003-01-29 20:23:19 bjk Exp $ */
+/* $Id: common.h,v 1.52 2003-01-30 17:52:41 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -33,6 +33,10 @@
 
 #ifdef HAVE_PANEL_H
 #include <panel.h>
+#endif
+
+#if defined(__linux__) && defined(HAVE_VASPRINTF)
+extern int vasprintf(char **, const char *, va_list);
 #endif
 
 #include "strings.h"

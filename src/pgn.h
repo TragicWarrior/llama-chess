@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.25 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: pgn.h,v 1.26 2003-01-30 17:52:41 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,10 @@
 */
 #ifndef PGN_H
 #define PGN_H
+
+#ifdef __linux__
+extern char *strptime(const char *, const char *, struct tm *);
+#endif
 
 #define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
 #define BROWSE_HEIGHT	12
