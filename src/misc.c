@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.9 2003-01-22 20:04:49 bjk Exp $ */
+/* $Id: misc.c,v 1.10 2003-01-24 20:28:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -107,6 +107,24 @@ char *itoa(long n)
 
     snprintf(buf, sizeof(buf), "%li", n);
     return buf;
+}
+
+int integer_len(int n)
+{
+    int len = 1;
+
+    if (n >= 10)
+	len++;
+    else if (n >= 100)
+	len++;
+    else if (n >= 1000)
+	len++;
+    else if (n >= 10000)
+	len++;
+    else if (n >= 100000)
+	len++;
+
+    return len;
 }
 
 int isinteger(const char *str)
