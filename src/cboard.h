@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.47 2003-01-24 21:27:20 bjk Exp $ */
+/* $Id: cboard.h,v 1.48 2003-01-27 14:30:01 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -57,26 +57,26 @@ int gactive;
 char **agony;
 
 const char *mainhelp[] = {
-    "   UP - cursor up/hist jump     R - refresh screen",
-    " DOWN - cursor down/hist jump   b - cycle through book modes",
-    " LEFT - cursor left/hist rev    c - send a command to the game engine",
-    "RIGHT - cursor right/hist fwd   w - switch playing sides",
-    " 0..9 - cursor repeat count     u - undo previous move",
+    "   UP - cursor up/hist jump*    R - refresh screen",
+    " DOWN - cursor down/hist jump*  b - cycle through book modes",
+    " LEFT - cursor left/hist rev*   c - send a command to the game engine",
+    "RIGHT - cursor right/hist fwd*  w - switch playing sides",
+    " 0..9 - command repeat count    u - undo previous move",
     "SPACE - select piece            g - force engine to make next move",
     "ENTER - commit selected piece   h - toggle history mode",
     "  ESC - cancel selected piece   a - annotate previous move",
     "                                ] - view the next moves annotation",
     "    n - new game or round       [ - view the previous moves annotation",
     "    N - new game from scratch   i - show PGN roster tags",
-    "    > - next game or round      j - jump to move number",
-    "    < - previous game or round  q - quit",
-    "    J - jump to game or round",
+    "    > - next game or round*     j - jump to move number*",
+    "    < - previous game or round* q - quit",
+    "    J - jump to game or round*",
     "    d - toggle game for deletion",
     "    D - delete game(s)",
     " ",
     "    r - resume a saved game",
     "    s - save game",
-    "    S - save game with prompt",
+    "    S - save game with prompt   * = can take a repeat count",
     NULL
 };
 

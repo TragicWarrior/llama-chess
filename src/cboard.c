@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.66 2003-01-25 15:54:06 bjk Exp $ */
+/* $Id: cboard.c,v 1.67 2003-01-27 14:30:01 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -850,14 +850,20 @@ void game_loop()
 		    break;
 		*/
 
-		if ((tmp = get_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, 
-				NULL, NULL, NULL, 0, -1)) == NULL)
-		    break;
+		if (!count) {
+		    if ((tmp = get_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, 
+				    NULL, NULL, NULL, 0, -1)) == NULL)
+			break;
 
-		if (!isinteger(tmp))
-		    break;
+		    if (!isinteger(tmp))
+			break;
 
-		if ((i = atoi(tmp)) > game[gindex].htotal || i < 0)
+		    i = atoi(tmp);
+		}
+		else
+		    i = count;
+
+		if (i > game[gindex].htotal || i < 0)
 		    break;
 
 		game[gindex].hindex = i;
@@ -875,14 +881,20 @@ void game_loop()
 		    break;
 		*/
 
-		if ((tmp = get_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL, 
-				NULL, 0, -1)) == NULL)
-		    break;
+		if (!count) {
+		    if ((tmp = get_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL,
+				    NULL, NULL, 0, -1)) == NULL)
+			break;
 
-		if (!isinteger(tmp))
-		    break;
+		    if (!isinteger(tmp))
+			break;
 
-		if ((i = atoi(tmp) - 1) > gtotal - 1 || i < 0)
+		    i = atoi(tmp);
+		}
+		else
+		    i = count;
+
+		if (--i > gtotal - 1 || i < 0)
 		    break;
 
 		gindex = i;
@@ -1196,10 +1208,12 @@ void game_loop()
 		    reset_valid_moves(board);
 		break;
 	    case '0' ... '9':
-		if (c == '0')
-		    count = 10;
+		n = c - '0';
+
+		if (count)
+		    count = count * 10 + n;
 		else
-		    count = c - '0';
+		    count = n;
 
 		continue;
 	    case KEY_UP:
