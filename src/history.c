@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.41 2003-01-31 19:51:36 bjk Exp $ */
+/* $Id: history.c,v 1.42 2003-02-01 17:26:09 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -426,7 +426,7 @@ void parse_history_move(BOARD b, int index)
 	switch_turn();
     }
 
-    if (!status.notify)
+    if (!status.notify && !browse_history)
 	status.notify = GAME_HELP_PROMPT;
 
     return;
