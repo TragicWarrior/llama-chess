@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.22 2002-12-17 18:42:53 bjk Exp $ */
+/* $Id: pgn.c,v 1.23 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -48,6 +48,21 @@
 
 #include "common.h"
 #include "pgn.h"
+
+int end_of_game(const char *str)
+{
+    int i;
+
+    for (i = 0; i < NARRAY(fancy_results); i++) {
+	if (strstr(str, fancy_results[i].pgn) != NULL) {
+	    strncpy(game[gindex].pgn[PGN_RESULT].value, fancy_results[i].fancy,
+		    sizeof(game[gindex].pgn[PGN_RESULT].value));
+	    return 1;
+	}
+    }
+
+    return 0;
+}
 
 char *parse_piece(char *str)
 {

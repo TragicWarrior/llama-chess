@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.7 2002-12-17 23:24:25 bjk Exp $ */
+/* $Id: history.h,v 1.8 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,6 +16,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef HISTORY_H
+#define HISTORY_H
 #define NAG_TITLE	"Editing NAG Information"
 #define NAG_PROMPT	"Type CTRL-g for help"
 #define NAG_HELP	"NAG Menu Keys"
@@ -186,3 +188,4 @@ char *agony[] = {
 
 void init_board(void);
 void update_status(void);
+#endif

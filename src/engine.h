@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.6 2002-12-17 18:42:53 bjk Exp $ */
+/* $Id: engine.h,v 1.7 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,6 +16,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef ENGINE_H
+#define ENGINE_H
 #define FIRST_PTY_LETTER	'p'
 #define LAST_PTY_LETTER		'z'
 
@@ -34,3 +36,4 @@ void move_piece(char *);
 int save_pgn(const char *, struct pgndata *, int);
 void update_status();
 char *book_method(int);
+#endif

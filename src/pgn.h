@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.10 2002-12-16 17:54:55 bjk Exp $ */
+/* $Id: pgn.h,v 1.11 2002-12-18 14:48:32 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,6 +16,9 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef PGN_H
+#define PGN_H
+
 #define MAX_TIME_LEN	18
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
@@ -34,7 +37,7 @@
 enum {PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK,
     PGN_RESULT };
 
-struct {
+const struct {
     char *pgn;
     char *fancy;
 } fancy_results[] = {
@@ -66,3 +69,4 @@ void add_to_history(struct history **, int *, int *, const char *);
 void reset_history(void);
 void free_game_data(void);
 void send_to_engine(const char *, ...);
+#endif

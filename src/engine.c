@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.15 2002-12-17 23:25:31 bjk Exp $ */
+/* $Id: engine.c,v 1.16 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -289,6 +289,10 @@ engine_move:
     if ((tmp = strstr(str, "My move is: ")) != NULL) {
 	tmp += 12;
 	tmp = trim(tmp);
+
+	if (end_of_game(tmp))
+	    tmp[4] = 0;
+
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, tmp);
 
@@ -304,8 +308,7 @@ engine_move:
     /* Miscellaneous one-liners. */
 
     /* The engine is now reading a FIFO. Dump what we need to it. */
-    if (strstr(str, "pgnload") != NULL) {
-	tmp = strstr(str, "pgnload");
+    if ((tmp = strstr(str, "pgnload")) != NULL) {
 	tmp += 8;
 	tmp = trim(tmp);
 
@@ -328,8 +331,7 @@ engine_move:
     }
 
     /* 'depth' command. */
-    if (strstr(str, "Search to a depth of ") != NULL) {
-	tmp = strsep(&str, "Search to a depth of ");
+    if ((tmp = strstr(str, "Search to a depth of ")) != NULL) {
 	tmp += 21;
 	tmp = trim(tmp);
 	config.engine_depth = atoi(tmp);

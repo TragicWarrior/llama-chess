@@ -1,4 +1,4 @@
-/* $Id: message.h,v 1.2 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: message.h,v 1.3 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,5 +16,10 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef MESSAGE_H
+#define MESSAGE_H
+
 #define MSG_WIDTH	60 /* For multiline messages. */
 #define MESSAGE_CP	((COLORS) ? COLOR_PAIR(8) : 0)
+
+#endif

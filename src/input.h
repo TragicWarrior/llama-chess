@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.5 2002-12-12 19:16:52 bjk Exp $ */
+/* $Id: input.h,v 1.6 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,6 +16,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef INPUT_H
+#define INPUT_H
 #define INPUT_WIDTH	((COLS > 60) ? 60 : COLS - 2)
 #define INPUT_HELP_PROMPT	"Type CTRL-g for available line editing keys"
 #define INPUT_HELP	"Line Editing Keys"
@@ -34,3 +36,4 @@ const char *inputhelp[] = {
     "             ENTER - quit with changes",
     NULL
 };
+#endif

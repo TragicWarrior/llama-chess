@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.19 2002-12-17 23:25:31 bjk Exp $ */
+/* $Id: common.h,v 1.20 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,6 +16,9 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef COMMON_H
+#define COMMON_H
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
@@ -45,6 +48,7 @@ FILE *debugfp;
         fclose(debugfp)
 
 #define ACK			message("ack", "ack", "ack")
+#define ACK2			message("ack2", "ack2", "ack2")
 
 #define NONE			"none"
 #define x_grid_chars		"abcdefgh"
@@ -157,4 +161,5 @@ char *itoa(long);
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
+#endif
 #endif

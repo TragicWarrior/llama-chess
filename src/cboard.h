@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.21 2002-12-17 21:25:55 bjk Exp $ */
+/* $Id: cboard.h,v 1.22 2002-12-18 14:48:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,6 +16,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef CBOARD_H
+#define CBOARD_H
 #define COPYRIGHT	"Copyright (c) 2002 " PACKAGE_BUGREPORT
 
 #define BOARD_HEIGHT	18
@@ -100,3 +102,4 @@ void view_annotation(int);
 int save_pgn(const char *, struct pgndata *, int);
 void set_engine_defaults();
 int start_chess_engine();
+#endif
