@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.3 2002-12-09 18:48:48 bjk Exp $ */
+/* $Id: misc.c,v 1.4 2002-12-10 22:17:57 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,10 +16,12 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#include <stdio.h>
 #include <stdlib.h>
 #include <err.h>
 #include <string.h>
 #include <ctype.h>
+#include <string.h>
 
 void *Realloc(void *ptr, size_t size)
 {
@@ -68,4 +70,12 @@ char *trim(char *str)
 	str[i] = 0;
 
     return str;
+}
+
+char *itoa(long n)
+{
+    static char buf[16];
+
+    snprintf(buf, sizeof(buf), "%li", n);
+    return buf;
 }
