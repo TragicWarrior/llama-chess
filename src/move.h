@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.6 2003-01-14 20:44:15 bjk Exp $ */
+/* $Id: move.h,v 1.7 2003-01-15 00:20:42 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -37,7 +37,9 @@ enum {
     KINGSIDE = 1, QUEENSIDE
 };
 
+int Checktest;
 int enpassant;
+
 /* These are used to determine whether a castle is legal.
  */
 int wk, bk, rqw, rkw, rqb, rkb;

@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.10 2003-01-14 20:44:14 bjk Exp $ */
+/* $Id: move.c,v 1.11 2003-01-15 00:20:42 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -63,6 +63,9 @@ static int int_to_piece(int which)
 
 int piece_side(int c)
 {
+    if (c == int_to_piece(OPEN_SQUARE))
+	return -1;
+    
     if (c < 'A')
 	c = int_to_piece(c);
 
@@ -269,12 +272,20 @@ int piece_by_diag(struct board_matrix b[][8], int piece, int row, int col,
     return (count) ? 1 : 0;
 }
 
-int valid_move(int row, int col, int srow, int scol)
+int valid_move(struct board_matrix b[][8], int row, int col, int srow, int scol)
 {
+    int p1, p2;
+
     if (!VALIDFILE(srow) || !VALIDFILE(scol))
 	return 0;
 
     if (row == srow && col == scol)
+	return 0;
+
+    p1 = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
+    p2 = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+
+    if (piece_side(p1) == piece_side(p2))
 	return 0;
 
     return 1;
@@ -355,8 +366,6 @@ int move_from(struct board_matrix b[][8], int piece, int row, int col,
 		    status.notify = NOTIFY_ENPASSANT;
 		}
 	    }
-	    else
-		printf("ack\n");
 	    break;
 	case ROOK:
 	    if (piece_by_xy(b, ROOK, row, col, srow, scol) == 0)
@@ -478,7 +487,7 @@ int move_from(struct board_matrix b[][8], int piece, int row, int col,
     }
 
 done:
-    if (valid_move(row, col, *srow, *scol) == 0)
+    if (valid_move(b, row, col, *srow, *scol) == 0)
 	return 1;
 
     return 0;
@@ -754,6 +763,8 @@ static int checkmatetest(struct board_matrix b[][8], int kr, int kc, int okr,
     int srow, scol;
     int check;
 
+    Checktest = 1;
+    switch_turn();
     /* For each square on the board see if each peace has a valid move, and if
      * so, see if it would leave ourselves or the opponent in check.
      */
@@ -761,8 +772,10 @@ static int checkmatetest(struct board_matrix b[][8], int kr, int kc, int okr,
 	for (col = 1; VALIDFILE(col); col++) {
 	    int n;
 
+	    /*
 	    if (row == r && col == c)
 		continue;
+		*/
 
 	    srow = scol = 0;
 
@@ -775,11 +788,9 @@ static int checkmatetest(struct board_matrix b[][8], int kr, int kc, int okr,
 		    continue;
 
 		/*
-		printf("%i %i %i %i %c %i\n", scol, srow, col, row,
-			int_to_piece(n), status.turn);
-			*/
 		if (srow == r && scol == c)
 		    continue;
+		    */
 
 		/* Valid move. */
 		sp = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
@@ -804,6 +815,7 @@ static int checkmatetest(struct board_matrix b[][8], int kr, int kc, int okr,
     check = 1;
 
 done:
+    Checktest = 0;
     return (check != 0) ? 1 : 0;
 }
 
@@ -841,7 +853,7 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 
     while (!isdigit(*--p) && *p != 'O') {
 	if (*p == '=') {
-	    promo = i;
+	    promo = piece_to_int(i);
 	    break;
 	}
 
@@ -878,10 +890,11 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 		row = ROWTOINT(*++p);
 	    }
 	    else if (*p == '=') {
-		if ((promo = piece_to_int(promo)) == -1 || promo == KING ||
-			promo == PAWN)
+		if (promo == -1 || promo == KING || promo == PAWN)
 		    return 1;
 
+		*p++ = '=';
+		*p++ = toupper(int_to_piece(promo));
 		break;
 	    }
 	    else
@@ -1008,15 +1021,17 @@ done:
 	case -1:
 	    return 1;
 	default:
+	    /*
 	    if (checkmatetest(b, kr, kc, okr, okc, row, col))
 		*p++ = '#';
 	    else {
+	    */
 		*p++ = '+';
 
 		if ((status.turn == WHITE && status.side == BLACK) ||
 			(status.turn == BLACK && status.side == WHITE))
 		    status.notify = NOTIFY_CHECK;
-	    }
+	    //}
 	    break;
     }
 
