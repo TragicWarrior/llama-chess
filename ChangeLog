@@ -1,3 +1,28 @@
+2002-12-20 Friday 12:14  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.40), cboard.h (1.27), common.h (1.25),
+	message.h (1.4), rcfile.c (1.10):
+	
+	Added configuration parameters to manipulate colors and attributes.
+
+2002-12-20 Friday 12:13  Ben Kibbey <bjk@arbornet.org>
+
+	* etc/config.example (1.1):
+	
+	Initial commit.
+
+2002-12-19 Thursday 19:53  Ben Kibbey <bjk@arbornet.org>
+
+	* src/rcfile.c (1.9):
+	
+	isalnum() not isalpha() for "pgntag".
+
+2002-12-19 Thursday 19:51  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.h (1.26):
+	
+	Update help text.
+
 2002-12-19 Thursday 19:49  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.39), common.h (1.24), history.c (1.20),
