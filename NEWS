@@ -1,3 +1,47 @@
+CBoard version 0.1.6
+--------------------
+A few important save game, validation and file parser fixes.
+
+Added command 't' to edit tags. You won't be prompted to edit tags anymore
+when saving.
+
+Renamed game deletion commands 'd' and 'D' to 'x' and 'X'. The delete commands
+also accept a "range" to delete by specifying a count the one of the delete
+commands then a direction ('<' or '>').
+
+Tildes in the load/save dialog are expanded.
+
+Added commands '!'-'*' and 'A'-'H' to move the cursor to the specified
+rank/file.
+
+Move numbers and tags are no longer needed in a PGN file.
+
+The ncurses interface is initialized before trying to parse a file specified
+on the command line.
+
+The annotation viewing commands '[' and ']' have changed to 'V' and 'v'.
+
+The next/prev move text expression keys '}' and '{' have changed to ']' and
+'['.
+
+Added game searching commands '?', '}' and '{'. These work like to move text
+searching commands, but for roster tags instead.
+
+Now parses the FEN tag. When editing tags, you can press CTRL-f to insert or
+update the FEN tag with the current move in the move history.
+
+Added command 'e' to toggle edit mode. This will allow positioning, deleting
+('x' command) and inserting ('I' command) of pieces. No move validation is
+done in edit mode and may only be enabled with a fresh board ('N' or 'n'
+commands). After leaving edit mode, a FEN tag is created. It's somewhat
+useless right now though.
+
+Redone main command keys help.
+
+Added commands '_' and '+' to decrease and increase the engine depth. These
+can take a count.
+
+
 CBoard version 0.1.5
 --------------------
 The repeat count commands are now 0-9. The first non-integer is the command to
