@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.18 2003-01-24 20:23:49 bjk Exp $ */
+/* $Id: input.c,v 1.19 2003-01-30 14:07:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -164,8 +164,8 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 
     scale_form(form, &y, &x);
 
-    win = newwin((extra_help) ? y + 6 : y + 5, x + 2, 
-	    CALCPOSY(((extra_help) ? y + 6 : y + 5)), CALCPOSX(x));
+    win = newwin((extra_help) ? y + 5 : y + 4, x + 2, 
+	    CALCPOSY(((extra_help) ? y + 5 : y + 4)), CALCPOSX(x));
     set_form_win(form, win);
     swin = derwin(win, y, x, 2, 1);
     set_form_sub(form, swin);
@@ -180,9 +180,9 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     draw_window_title(win, title, width, CP_INPUT_TITLE, CP_INPUT_BORDER);
 
     if (extra_help)
-	draw_prompt(win, y + 3, width, extra_help, CP_INPUT_PROMPT);
+	draw_prompt(win, y + 2, width, extra_help, CP_INPUT_PROMPT);
 
-    draw_prompt(win, (extra_help) ? y + 4 : y + 3, width, INPUT_HELP_PROMPT,
+    draw_prompt(win, (extra_help) ? y + 3 : y + 2, width, INPUT_HELP_PROMPT,
 	    CP_INPUT_PROMPT);
 
     form_driver(form, REQ_END_FIELD);
