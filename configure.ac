@@ -1,6 +1,6 @@
-dnl $Id: configure.ac,v 1.8 2002-12-21 21:51:59 bjk Exp $
+dnl $Id: configure.ac,v 1.9 2003-01-09 18:58:53 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(cboard, 0.1.2, [Ben Kibbey <bjk@arbornet.org>])
+AC_INIT(cboard, 0.1.3, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
