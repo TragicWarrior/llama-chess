@@ -16,15 +16,18 @@ book		random
 depth		0
 
 # Show agony strings on captures.
-agony		1
+agony		on
 
 # Show agony strings when browsing history. If "agony" above is off,
 # this will be off also regardless of the setting.
-historyagony	0
+historyagony	off
 
 # If set, the default directory where games will be saved to and opened from.
 # A tilde "~" as the first character will expand to your home directory.
 #save_directory	/some/path
+
+# If "off", the chess board line graphics will not be drawn.
+line_graphics	on
 
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
@@ -52,9 +55,13 @@ status_border	cyan	black
 status_notify	red	black	none	bold
 status_engine	yellow	black	none	bold
 
-data_window	white	black
-data_title	white	blue	none	reverse
-data_border	cyan	black
+white_window	white	black
+white_title	white	blue	none	reverse
+white_border	cyan	black
+
+black_window	white	black
+black_title	white	blue	none	reverse
+black_border	cyan	black
 
 history_window	white	black
 history_title	white	blue	none	reverse

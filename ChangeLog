@@ -1,3 +1,24 @@
+2002-12-27 Friday 09:36  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.45), cboard.h (1.32), colors.c (1.3), colors.h
+	(1.2), common.h (1.29), pgn.h (1.15), rcfile.c (1.14):
+	
+	The data window has been replaced by the white and black status
+	information.  This adds two new color configuration parameter
+	sections white_... and black_...
+	
+	New configuration parameter line_graphics to toggle board line
+	graphics.
+	
+	Parameter values which were either "0" or "1" are now "off" and
+	"on".
+
+2002-12-26 Thursday 19:23  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.37):
+	
+	Save game fix.
+
 2002-12-26 Thursday 12:53  Ben Kibbey <bjk@arbornet.org>
 
 	* src/pgn.c (1.36):
