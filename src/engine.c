@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.13 2002-12-17 19:09:39 bjk Exp $ */
+/* $Id: engine.c,v 1.14 2002-12-17 21:28:00 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -315,6 +315,14 @@ engine_move:
 	}
 
 	set_engine_defaults();
+
+	/* 
+	if (status.bw != status.turn) {
+	    cancel_manual_mode = 1;
+	    SEND_TO_ENGINE("go\n");
+	}
+	*/
+
 	return;
     }
 
