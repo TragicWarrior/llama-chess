@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.10 2002-12-16 17:52:05 bjk Exp $ */
+/* $Id: engine.c,v 1.11 2002-12-17 14:10:09 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -101,6 +101,68 @@ void parse_engine_output(char *str)
     char *tmp;
     char move[MAX_PGN_MOVE_LEN + 1];
 
+    /* Human move. Add it to the move history (if not browsing). */
+    if (!browse_history) {
+	if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) == 1) {
+	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		    &game[gindex].htotal, move);
+
+	    if (status.turn == WHITE)
+		status.turn = BLACK;
+	    else if (status.turn == BLACK)
+		status.turn = WHITE;
+
+	    status.engine = ENGINE_THINKING;
+	    move_piece(move);
+	    sp.icon = 0;
+
+	    /* This needs to be here in case the engine move text is bunched
+	     * up with the white move text.
+	     */
+	    goto engine_move;
+	}
+
+	/* This is needed when leaving history mode and the turn is now black
+	 * since we just went. This cancels 'manual'.
+	 */
+	/* FIXME this relies on the fifo stuff. */
+	if (cancel_manual_mode) {
+	    SEND_TO_ENGINE("go\n");
+	    cancel_manual_mode = 0;
+	}
+    }
+
+    /* Engine move. */
+engine_move:
+    /*
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) 
+	    == 1) {
+    */
+    if ((tmp = strstr(str, "My move is: ")) != NULL) {
+	tmp += 12;
+	tmp = trim(tmp);
+	add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		&game[gindex].htotal, tmp);
+
+	if (status.turn == WHITE)
+	    status.turn = BLACK;
+	else if (status.turn == BLACK)
+	    status.turn = WHITE;
+
+	move_piece(tmp);
+	RETURN;
+    }
+
+    /* Miscellaneous one-liners. */
+
+    /* 'depth' command. */
+    if (strstr(str, "Search to a depth of ") != NULL) {
+	tmp = strsep(&str, "Search to a depth of ");
+	tmp += 21;
+	tmp = trim(tmp);
+	status.depth = atoi(tmp);
+    }
+
     /* 'switch' command. */
     if (strstr(str, "White to move") != NULL) {
 	status.bw = status.turn = WHITE;
@@ -117,49 +179,6 @@ void parse_engine_output(char *str)
 	RETURN;
     }
 
-    /* Human move. Add it to the move history (if not browsing). */
-    if (!browse_history) {
-	if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) == 1) {
-	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		    &game[gindex].htotal, move);
-
-	    if (status.turn == WHITE)
-		status.turn = BLACK;
-	    else if (status.turn == BLACK)
-		status.turn = WHITE;
-
-	    status.engine = ENGINE_THINKING;
-	    move_piece(move);
-	    sp.icon = 0;
-	    return;
-	}
-
-	/* This is needed when leaving history mode and the turn is now black
-	 * since we just went. This cancels 'manual'.
-	 */
-	/* FIXME this relies on the fifo stuff. */
-	if (cancel_manual_mode) {
-	    SEND_TO_ENGINE("go\n");
-	    cancel_manual_mode = 0;
-	}
-    }
-
-    /* Engine move. */
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) 
-	    == 1) {
-	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, move);
-
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-	else if (status.turn == BLACK)
-	    status.turn = WHITE;
-
-	move_piece(move);
-	RETURN;
-    }
-
-    /* Miscellaneous one-liners. */
     if ((tmp = strstr(str, "Cannot open file ")) != NULL) {
 	status.notify = "Engine could not open file";
 	RETURN;
@@ -178,7 +197,7 @@ void parse_engine_output(char *str)
     else if ((tmp = strstr(str, "book now random.")) != NULL)
 	status.book_method = BOOK_RANDOM;
 
-    RETURN;
+    return;
 }
 
 /* This is ripped from XBoard. */
