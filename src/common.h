@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.3 2002-12-05 23:48:33 bjk Exp $ */
+/* $Id: common.h,v 1.4 2002-12-06 21:41:20 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,8 +20,8 @@
 #include <limits.h>
 #endif
 
-#ifdef HAVE_CURSES_H
-#include <curses.h>
+#ifdef HAVE_PANEL_H
+#include <panel.h>
 #endif
 
 #ifndef LINE_MAX
@@ -33,6 +33,16 @@
 #define LINE_MAX	2048
 #endif
 #endif
+
+#define BOARD_HEIGHT	18
+#define BOARD_WIDTH	34
+#define STATUS_HEIGHT	(10)
+#define STATUS_WIDTH	(COLS - BOARD_WIDTH)
+#define DATA_HEIGHT	(LINES - STATUS_HEIGHT)
+#define DATA_WIDTH	(COLS - BOARD_WIDTH)
+#define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
+#define HISTORY_WIDTH	(COLS - DATA_WIDTH)
+#define HISTORY_TITLE	"Move History"
 
 #define MAX_PGN_LINE_LEN	255
 #define MAX_MOVE_LEN		7 /* As defined by SAN. */
@@ -98,6 +108,8 @@ int history_index;
 int history_total;
 int browse_history;
 int pgn_index;
+WINDOW *historyw;
+PANEL *historyp;
 
 void *Calloc(size_t, size_t);
 void *Realloc(void *, size_t);

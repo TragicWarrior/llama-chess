@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.3 2002-12-05 21:45:27 bjk Exp $ */
+/* $Id: engine.c,v 1.4 2002-12-06 21:41:20 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -33,6 +33,7 @@
 #endif
 
 #include "common.h"
+#include "engine.h"
 
 static void parse_piece(char *str)
 {
@@ -59,16 +60,6 @@ static void parse_piece(char *str)
 #define HUMAN 0
 #define ENGINE 1
 
-void add_to_history(int index, const char *str)
-{
-    history = Realloc(history, (index + 2) * sizeof(struct history_s));
-    strncpy(history[index].move, str, sizeof(history[index].move));
-
-    history_total = index + 1;
-    memset(&history[index + 1], 0, sizeof(struct history_s));
-    return;
-}
-
 void parse_engine_output(char *str)
 {
     char *buf = str, *tmp;
@@ -94,8 +85,8 @@ void parse_engine_output(char *str)
 		    return;
 		}
 
-		add_to_history(i++, white);
-		add_to_history(i++, black);
+		add_to_history(&i, white);
+		add_to_history(&i, black);
 	    }
 
 	    history_index = i;
@@ -132,7 +123,7 @@ void parse_engine_output(char *str)
     /* Human move. Add it to the move history (if not browsing). */
     if (!browse_history) {
 	if (sscanf(str, "%*u%*c%s", move) == 1)
-	    add_to_history(history_index++, move);
+	    add_to_history(&history_index, move);
     }
 
     /* This is output whenever a move is made/undone (and 'show board'). */
@@ -147,7 +138,7 @@ void parse_engine_output(char *str)
 	    if (tmp[strlen(tmp) - 1] == '\n')
 		tmp[strlen(tmp) - 1] = 0;
 
-	    add_to_history(history_index++, tmp);
+	    add_to_history(&history_index, tmp);
 	    parse_piece(tmp);
 	}
 

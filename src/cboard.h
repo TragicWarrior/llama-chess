@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.5 2002-12-06 20:38:12 bjk Exp $ */
+/* $Id: cboard.h,v 1.6 2002-12-06 21:41:20 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -17,14 +17,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #define COPYRIGHT	"Copyright (c) 2002 " PACKAGE_BUGREPORT
-#define BOARD_HEIGHT	18
-#define BOARD_WIDTH	34
-#define STATUS_HEIGHT	(10)
-#define STATUS_WIDTH	(COLS - BOARD_WIDTH)
-#define DATA_HEIGHT	(LINES - STATUS_HEIGHT)
-#define DATA_WIDTH	(COLS - BOARD_WIDTH)
-#define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
-#define HISTORY_WIDTH	(COLS - DATA_WIDTH)
 
 #define BOARD_WHITE	((COLORS) ? COLOR_PAIR(1) : A_REVERSE)
 #define BOARD_BLACK	((COLORS) ? COLOR_PAIR(2) : A_NORMAL)
@@ -37,7 +29,6 @@
 
 #define STATUS_TITLE	"Game Status"
 #define DATA_TITLE	"Game Information"
-#define HISTORY_TITLE	"Move History"
 #define HELP_PROMPT	"Type '?' for available command keys."
 
 /* order must match the BOOK_... enumeration on common.h */
@@ -57,8 +48,6 @@ WINDOW *statusw;
 PANEL *statusp;
 WINDOW *dataw;
 PANEL *datap;
-WINDOW *historyw;
-PANEL *historyp;
 
 const char *x_grid_chars = "abcdefgh";
 int piece_selected;
@@ -71,3 +60,6 @@ char *get_input(const char *, char *);
 int parse_pgn_file(const char *);
 int add_pgn_data(int *, const char *, const char *);
 int save_pgn(const char *);
+void update_history(void);
+void init_history(void);
+void reset_history(void);

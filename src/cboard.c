@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.10 2002-12-06 20:38:12 bjk Exp $ */
+/* $Id: cboard.c,v 1.11 2002-12-06 21:41:20 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -163,32 +163,6 @@ void parse_piece_command(int dest_y, int dest_x)
     strncat(str, buf, sizeof(str));
     send_to_engine("%s\n", str);
     selected_piece.icon = selected_x = selected_y = 0;
-    return;
-}
-
-char *last_history(int index)
-{
-    if (index < 0 || index > history_total - 1)
-	return "none";
-
-    return history[index].move;
-}
-
-void update_history()
-{
-    char buf[16];
-
-    if (history_total)
-	snprintf(buf, sizeof(buf), "%u of %u", history_index,
-		history_total);
-    else
-	strncpy(buf, UNKNOWN, sizeof(buf));
-
-    mvwprintw(historyw, 2, 1, "     Move: %-*s", HISTORY_WIDTH - 13, buf);
-    mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, 
-	    last_history(history_index));
-    mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13,
-	    last_history(history_index - 1));
     return;
 }
 
@@ -458,19 +432,6 @@ gotkey:
 
 done:
     curs_set(0);
-    return;
-}
-
-void reset_history()
-{
-    history_index = history_total = 0;
-    return;
-}
-
-void init_history()
-{
-    send_to_engine("manual\n");
-    send_to_engine("show game\n");
     return;
 }
 
