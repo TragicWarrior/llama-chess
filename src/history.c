@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.9 2002-12-17 14:25:01 bjk Exp $ */
+/* $Id: history.c,v 1.10 2002-12-17 14:31:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -357,8 +357,12 @@ static void parse_history_move(int index)
 
 void history_previous(int n)
 {
-    if (game[gindex].hindex - n < 0)
-	game[gindex].hindex = game[gindex].htotal;
+    if (game[gindex].hindex - n < 0) {
+	if (n == config.history_jump)
+	    game[gindex].hindex = 0;
+	else
+	    game[gindex].hindex = game[gindex].htotal;
+    }
     else
 	game[gindex].hindex -= n;
 
@@ -368,8 +372,12 @@ void history_previous(int n)
 
 void history_next(int n)
 {
-    if (game[gindex].hindex + n > game[gindex].htotal)
-	game[gindex].hindex = 0;
+    if (game[gindex].hindex + n > game[gindex].htotal) {
+	if (n == config.history_jump)
+	    game[gindex].hindex = game[gindex].htotal;
+	else
+	    game[gindex].hindex = 0;
+    }
     else
 	game[gindex].hindex += n;
 
