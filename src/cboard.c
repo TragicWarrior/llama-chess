@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.47 2003-01-06 20:16:14 bjk Exp $ */
+/* $Id: cboard.c,v 1.48 2003-01-07 21:35:42 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -212,11 +212,17 @@ void draw_board()
 
 void parse_piece_command()
 {
-    char str[MAX_PGN_MOVE_LEN] = {0};
+    char str[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
 
     snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[sp.col - 1], sp.row,
 	    x_grid_chars[sp.destcol - 1], sp.destrow);
-    SEND_TO_ENGINE("%s\n", str);
+
+    if ((p = a2a4tosan(board, str)) == NULL) {
+	message(NULL, ANYKEY, "Error parsing \"%s\". Probably a bug.", p);
+	return;
+    }
+
+    SEND_TO_ENGINE("%s\n", p);
     selected_x = selected_y = 0;
     return;
 }

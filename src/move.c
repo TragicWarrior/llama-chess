@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.5 2003-01-07 20:35:21 bjk Exp $ */
+/* $Id: move.c,v 1.6 2003-01-07 21:35:42 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -585,10 +585,10 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 	}
     }
 
-    p = move;
-
     if (strlen(move) < 2)
 	return 1;
+
+    p = move;
 
     /* Pawn. */
     if (VALIDCOL(*p)) {

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.33 2003-01-06 20:16:15 bjk Exp $ */
+/* $Id: cboard.h,v 1.34 2003-01-07 21:35:42 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -102,5 +102,6 @@ void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void set_default_colors(void);
 void init_color_pairs(void);
 char *browse_directory(void *);
+char *a2a4tosan(struct board_matrix [][], char *);
 
 #endif

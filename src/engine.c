@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.23 2003-01-07 20:35:21 bjk Exp $ */
+/* $Id: engine.c,v 1.24 2003-01-07 21:35:42 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -282,12 +282,8 @@ void parse_engine_output(char *str)
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, p);
 
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-	else if (status.turn == BLACK)
-	    status.turn = WHITE;
-
 	status.engine = ENGINE_THINKING;
+	status.turn = BLACK;
 
 	sp.icon = 0;
 	str += count;
@@ -320,11 +316,7 @@ engine_move:
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, p);
 
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-	else if (status.turn == BLACK)
-	    status.turn = WHITE;
-
+	status.turn = WHITE;
 	str += count;
 	RETURN;
     }
