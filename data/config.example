@@ -26,6 +26,11 @@ historyagony	off
 # A tilde "~" as the first character will expand to your home directory.
 #save_directory	/some/path
 
+# When saving a game, prompt to edit PGN data. When saving in history mode,
+# prompt for the history type. If off, you can override it using the ingame 'S'
+# command.
+save_prompt	on
+
 # If "off", the chess board line graphics will not be drawn.
 line_graphics	on
 

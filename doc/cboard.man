@@ -93,6 +93,18 @@ default tag values.
 .It Cm line_graphics Ar on|off
 Enable or disable board line graphics. The default is
 .Ar on .
+.Pp
+.It Cm save_directory Pa path
+If set, the default directory where games will be saved and opened from in the
+file browser. A tilde
+.Pa
+as the first
+character will expand to your home directory.
+.Pp
+.It Cm save_prompt Ar on|off
+When saving a game, prompt to edit PGN tag data. Or when saving in history
+mode, prompt for additional save commands. The default is
+.Ar on .
 .El
 .
 .Sh COLORS
