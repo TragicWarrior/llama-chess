@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.21 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: pgn.h,v 1.22 2003-01-14 20:44:15 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,12 +19,16 @@
 #ifndef PGN_H
 #define PGN_H
 
+#define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
 #define BROWSE_HEIGHT	12
 #define MAX_TIME_LEN	18
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 #define PGN_EDIT_TITLE	"Editing PGN Save Data"
 #define HELP_PROMPT	"Type CTRL-g for help"
+#define CC_PROMPT	"Type CTRL-t for country codes"
+#define CC_TITLE	"Country Codes"
+#define CC_KEY_HELP	"Country Code Keys"
 #define PGN_INFO_HELP	"PGN Information Keys"
 #define PGN_EDIT_HELP	"PGN Edit Keys"
 #define PGN_EDIT_TAG	"Editing PGN Roster Tag"
@@ -47,6 +51,11 @@ const struct {
     {"1/2-1/2", "draw"},
     {"*", "undetermined"}
 };
+
+struct country_codes {
+    char code[4];
+    char country[64];
+} *ccodes;
 
 struct d_entries {
     char *name;
@@ -77,6 +86,18 @@ const char *pgn_info_help[] = {
     "  a-zA-Z0-9 - jump to entry",
     "      ENTER - view selected entry",
     "     ESCAPE - quit",
+    NULL
+};
+
+const char *cc_help[] = {
+    "    UP/DOWN - previous/next menu entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
+    "      ENTER - selected entry",
+    "     ESCAPE - cancel",
     NULL
 };
 

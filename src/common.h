@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.38 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: common.h,v 1.39 2003-01-14 20:44:14 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -185,6 +185,7 @@ struct {
     char nagfile[FILENAME_MAX];
     char agonyfile[FILENAME_MAX];
     char configfile[FILENAME_MAX];
+    char ccfile[FILENAME_MAX];
     char fifo[FILENAME_MAX];
     char savedirectory[FILENAME_MAX];
     struct pgndata *pgn;

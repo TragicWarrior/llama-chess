@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.31 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: history.c,v 1.32 2003-01-14 20:44:14 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -397,15 +397,13 @@ static void parse_history_move(int index)
 	if (get_history_by_index(i, &h))
 	    break;
 
+	
 	if (parse_move_text(board, h.move, 1)) {
 	    message(NULL, ANYKEY, "Invalid move \"%s\"", h.move);
 	    break;
 	}
 
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-	else
-	    status.turn = WHITE;
+	switch_turn();
     }
 
     return;

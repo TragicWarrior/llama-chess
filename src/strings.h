@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.7 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: strings.h,v 1.8 2003-01-14 20:44:15 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -51,6 +51,13 @@
     "pressing 'g'."
 
 #define NOTIFY_SAVED	"Game saved."
+#define NOTIFY_CHECK	"Check!"
+#define NOTIFY_ENPASSANT	"En Passant"
+#define NOTIFY_PROMOTION	"Promotion!"
+#define NOTIFY_BCASTLEQ	"Black castles queen side"
+#define NOTIFY_BCASTLEK	"Black castles king side"
+#define NOTIFY_WCASTLEQ	"White castles queen side"
+#define NOTIFY_WCASTLEK	"White castles king side"
 
 #define UNAVAILABLE	"not available"
 

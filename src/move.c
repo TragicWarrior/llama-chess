@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.9 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: move.c,v 1.10 2003-01-14 20:44:14 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -71,11 +71,11 @@ int piece_side(int c)
 
 int val_piece_side(int c)
 {
-    if ((isupper(c) && status.turn != WHITE) ||
-	    (islower(c) && status.turn != BLACK))
-	return 0;
+    if ((isupper(c) && status.turn == WHITE) ||
+	    (islower(c) && status.turn == BLACK))
+	return 1;
 
-    return 1;
+    return 0;
 }
 
 static int piece_to_int(int p)
@@ -110,8 +110,8 @@ static int piece_to_int(int p)
  *
  * The following two functions find 'piece' from the given square 'col' and
  * 'row' and store the resulting column or row in 'c' and 'r'. The return
- * value is the number of 'piece' found (on the current status.turns side) or zero.
- * Search for 'piece' stops when a non-empty square is found.
+ * value is the number of 'piece' found (on the current status.turns side) or
+ * zero. Search for 'piece' stops when a non-empty square is found.
  */
 int piece_by_col(struct board_matrix b[][8], int piece, int row, int col, 
 	int *r, int *c)
@@ -204,7 +204,7 @@ int piece_test(struct board_matrix b[][8], int piece, int row, int col,
     int p;
 
     if (!VALIDFILE(row) || !VALIDFILE(col))
-	return 0;
+	return 2;
 
     p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
@@ -230,7 +230,7 @@ int piece_by_diag(struct board_matrix b[][8], int piece, int row, int col,
 
     for (i = 1; VALIDFILE(i); i++) {
 	if (dr) {
-	    n = piece_test(b, piece, abs(row - i), col + i, srow, scol);
+	    n = piece_test(b, piece, row - i, col + i, srow, scol);
 
 	    if (n == 1 && count++)
 		return 1;
@@ -239,7 +239,7 @@ int piece_by_diag(struct board_matrix b[][8], int piece, int row, int col,
 	}
 
 	if (dl) {
-	    n = piece_test(b, piece, abs(row - i), abs(col - i), srow, scol);
+	    n = piece_test(b, piece, row - i, col - i, srow, scol);
 
 	    if (n == 1 && count++)
 		return 1;
@@ -257,7 +257,7 @@ int piece_by_diag(struct board_matrix b[][8], int piece, int row, int col,
 	}
 
 	if (ul) {
-	    n = piece_test(b, piece, row + i, abs(col - i), srow, scol);
+	    n = piece_test(b, piece, row + i, col - i, srow, scol);
 
 	    if (n == 1 && count++)
 		return 1;
@@ -269,15 +269,95 @@ int piece_by_diag(struct board_matrix b[][8], int piece, int row, int col,
     return (count) ? 1 : 0;
 }
 
+int valid_move(int row, int col, int srow, int scol)
+{
+    if (!VALIDFILE(srow) || !VALIDFILE(scol))
+	return 0;
+
+    if (row == srow && col == scol)
+	return 0;
+
+    return 1;
+}
+
 int move_from(struct board_matrix b[][8], int piece, int row, int col, 
 	int *srow, int *scol)
 {
-    int p;
+    int p = 0;
     int count = 0;
     int dstr[4], dstc[4];
     int r, c;
+    int i;
+    int dist = 0;
 
     switch (piece) {
+	case PAWN:
+	    if (*srow == 0 && *scol == col) {
+		i = (status.turn == WHITE) ? -1 : 1;
+
+		/* Find the first pawn in the current column. */
+		for (r = row + i, dist = 0; VALIDFILE(r); r += i, dist++) {
+		    int n = b[ROWTOBOARD(r)][COLTOBOARD(col)].icon;
+
+		    p = piece_to_int(n);
+
+		    if (p == PAWN && val_piece_side(n))
+			break;
+		}
+
+		if (p != PAWN || dist > 2)
+		    return 1;
+
+		*srow = r;
+		dist = abs(*srow - row);
+
+		if (status.turn == WHITE) {
+		    if ((*srow == 2 && dist > 2) || (*srow > 2 && dist > 1))
+			return 1;
+		}
+		else {
+		    if ((*srow == 7 && dist > 2) || (*srow < 7 && dist > 1))
+			return 1;
+		}
+	    }
+	    else if (*scol != col) {
+		if (abs(*scol - col) != 1)
+		    return 1;
+
+		*srow = (status.turn == WHITE) ? row - 1 : row + 1;
+
+		if (piece_to_int(b[ROWTOBOARD(*srow)][COLTOBOARD(*scol)].icon)
+			!= PAWN)
+		    return 1;
+
+		piece = piece_to_int(b[ROWTOBOARD(row)][COLTOBOARD(col)].icon);
+
+		/* En Passant. */
+		if (piece == OPEN_SQUARE) {
+		    /* Previous move was not 2 squares and a pawn. */
+		    if (enpassant == 0)
+			return 1;
+
+		    r = (status.turn == WHITE) ? 6 : 3;
+
+		    if (row != r)
+			return 1;
+
+		    r = (status.turn == WHITE) ? row - 1 : row + 1;
+		    piece = b[ROWTOBOARD(r)][COLTOBOARD(col)].icon;
+
+		    if (piece_to_int(piece) != PAWN)
+			return 1;
+
+		    b[ROWTOBOARD(r)][COLTOBOARD(col)].icon =
+			int_to_piece(OPEN_SQUARE);
+
+		    status.notify = NOTIFY_ENPASSANT;
+		}
+	    }
+	    else
+		printf("ack\n");
+	    break;
 	case ROOK:
 	    if (piece_by_xy(b, ROOK, row, col, srow, scol) == 0)
 		    return 1;
@@ -377,6 +457,9 @@ int move_from(struct board_matrix b[][8], int piece, int row, int col,
 			*srow = r;
 			*scol = c;
 
+			if (abs(*srow - row) > 1 || abs(*scol - col) > 1)
+			    return 1;
+
 			if (*scol == COLTOINT('e')) {
 			    if (status.turn == WHITE)
 				wk = 1;
@@ -384,7 +467,7 @@ int move_from(struct board_matrix b[][8], int piece, int row, int col,
 				bk = 1;
 			}
 
-			return 0;
+			goto done;
 		    }
 		}
 	    }
@@ -393,6 +476,10 @@ int move_from(struct board_matrix b[][8], int piece, int row, int col,
 	default:
 	    return 1;
     }
+
+done:
+    if (valid_move(row, col, *srow, *scol) == 0)
+	return 1;
 
     return 0;
 }
@@ -427,15 +514,16 @@ int castle_move(struct board_matrix b[][8], int which)
 
 	if (status.turn == WHITE) {
 	    wk = rkw = 1;
-	    status.notify = "White castles king side";
+	    status.notify = NOTIFY_WCASTLEK;
 	}
 	else {
 	    bk = rkb = 1;
-	    status.notify = "Black castles king side";
+	    status.notify = NOTIFY_BCASTLEK;
 	}
     }
     else {
-	if ((status.turn == WHITE && (wk || rqw)) || (status.turn == BLACK && (bk || rqb)))
+	if ((status.turn == WHITE && (wk || rqw)) || 
+		(status.turn == BLACK && (bk || rqb)))
 	    return 1;
 
 	p = b[ROWTOBOARD(row)][COLTOBOARD((n - 1))].icon;
@@ -456,11 +544,11 @@ int castle_move(struct board_matrix b[][8], int which)
 
 	if (status.turn == WHITE) {
 	    wk = rqw = 1;
-	    status.notify = "White castles queen side";
+	    status.notify = NOTIFY_WCASTLEQ;
 	}
 	else {
 	    bk = rqb = 1;
-	    status.notify = "Black castles queen side";
+	    status.notify = NOTIFY_BCASTLEQ;
 	}
     }
 
@@ -476,7 +564,7 @@ char *a2a4tosan(struct board_matrix b[][8], char *move)
     static char buf[MAX_PGN_MOVE_LEN + 1] = {0}, *cp = buf;
     char *p = move;
     int scol, srow, col, row;
-    int piece, piecei;
+    int piece, piecei, spiece;
     int trow, tcol;
     int rowc, colc;
     int promo = 0;
@@ -502,6 +590,7 @@ char *a2a4tosan(struct board_matrix b[][8], char *move)
     if ((piecei = piece_to_int(piece)) == -1 || piecei == OPEN_SQUARE)
 	return NULL;
 
+    spiece = piecei;
     cp = buf;
     colc = abs(scol - col);
 
@@ -519,10 +608,8 @@ char *a2a4tosan(struct board_matrix b[][8], char *move)
 	*cp++ = toupper(piece);
     else {
 	/* En Passant. */
-	if (scol != col && piece_to_int(b[row][col].icon) == OPEN_SQUARE) {
+	if (scol != col && piece_to_int(b[row][col].icon) == OPEN_SQUARE)
 	    enpassant = 1;
-	    *cp++ = INTTOCOL(scol);
-	}
     }
 
     colc = piece_by_col(b, piecei, row, col, &trow, &tcol);
@@ -546,8 +633,12 @@ char *a2a4tosan(struct board_matrix b[][8], char *move)
 
     piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
-    if ((piecei = piece_to_int(piece)) != OPEN_SQUARE || enpassant)
+    if ((piecei = piece_to_int(piece)) != OPEN_SQUARE || enpassant) {
+	if (enpassant || spiece == PAWN)
+	    *cp++ = INTTOCOL(scol);
+
 	*cp++ = 'x';
+    }
 
     *cp++ = INTTOCOL(col);
     *cp++ = INTTOROW(row);
@@ -562,19 +653,175 @@ char *a2a4tosan(struct board_matrix b[][8], char *move)
     return buf;
 }
 
+void switch_turn()
+{
+    if (status.turn == WHITE)
+	status.turn = BLACK;
+    else
+	status.turn = WHITE;
+
+    return;
+}
+
+static void kingsquare(struct board_matrix b[][8], int *kr, int *kc, int *okr,
+	int *okc)
+{
+    int row, col;
+
+    for (row = 1; VALIDFILE(row); row++) {
+	for (col = 1; VALIDFILE(col); col++) {
+	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+
+	    if (piece_to_int(p) == KING) {
+		if (val_piece_side(p)) {
+		    *kr = row;
+		    *kc = col;
+		}
+		else {
+		    /* Opponent. */
+		    *okr = row;
+		    *okc = col;
+		}
+	    }
+	}
+    }
+
+    return;
+}
+
+static int selfchecktest(struct board_matrix b[][8], int kr, int kc)
+{
+    int row, col;
+
+    if (!VALIDFILE(kr) || !VALIDFILE(kc))
+	return 0;
+
+    switch_turn();
+
+    for (row = 1; VALIDFILE(row); row++) {
+	for (col = 1; VALIDFILE(col); col++) {
+	    int srow, scol;
+	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+	    int pi = piece_to_int(p);
+
+	    if (pi == OPEN_SQUARE || pi == KING || !val_piece_side(p))
+		continue;
+
+	    if (move_from(b, pi, kr, kc, &srow, &scol) == 0) {
+		switch_turn();
+		return 1;
+	    }
+	}
+    }
+
+    switch_turn();
+    return 0;
+}
+
+int checktest(struct board_matrix b[][8], int kr, int kc, int okr, int okc)
+{
+    int row, col;
+
+    /* See if the move would leave ourselves in check. */
+    if (selfchecktest(b, kr, kc))
+	return -1;
+
+    /* See if the move would put our opponent in check. */
+    for (row = 1; VALIDFILE(row); row++) {
+	for (col = 1; VALIDFILE(col); col++) {
+	    int srow = 0, scol = 0;
+	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+	    int pi = piece_to_int(p);
+
+	    if (pi == OPEN_SQUARE || pi == KING || !val_piece_side(p))
+		continue;
+
+	    if (pi == PAWN)
+		scol = col;
+
+	    if (move_from(b, pi, okr, okc, &srow, &scol) == 0)
+		return 1;
+	}
+    }
+
+    return 0;
+}
+
+static int checkmatetest(struct board_matrix b[][8], int kr, int kc, int okr,
+	int okc, int r, int c)
+{
+    int row, col;
+    int srow, scol;
+    int check;
+
+    /* For each square on the board see if each peace has a valid move, and if
+     * so, see if it would leave ourselves or the opponent in check.
+     */
+    for (row = 1; VALIDFILE(row); row++) {
+	for (col = 1; VALIDFILE(col); col++) {
+	    int n;
+
+	    if (row == r && col == c)
+		continue;
+
+	    srow = scol = 0;
+
+	    for (n = 0; n < MAX_PIECES; n++) {
+		int p, sp;
+
+		p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+
+		if (move_from(b, n, row, col, &srow, &scol))
+		    continue;
+
+		/*
+		printf("%i %i %i %i %c %i\n", scol, srow, col, row,
+			int_to_piece(n), status.turn);
+			*/
+		if (srow == r && scol == c)
+		    continue;
+
+		/* Valid move. */
+		sp = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
+		    b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
+		b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = 
+		    int_to_piece(OPEN_SQUARE);
+
+		check = checktest(b, kr, kc, okr, okc);
+		b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon =
+		    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+		b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = p;
+
+		/* Valid move and noones in check. */
+		if (check == 0) {
+		    if (piece_side(p) == piece_side(sp))
+			goto done;
+		}
+	    }
+	}
+    }
+
+    check = 1;
+
+done:
+    return (check != 0) ? 1 : 0;
+}
+
 int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 {
     char *p;
     int piece;
-    int i;
+    int i = 0;
     int srow, scol, row, col;
     int dist = 0;
-    int promo;
-    int trow;
+    int promo = -1;
+    int kr, kc, okr, okc;
     static int firstrun;
-    static int enpassant, castle;
+    static int castle;
 
-    /* FIXME castling? */
+    if (strlen(move) < 2)
+	return 1;
+
     if (reset) {
 	if (browse_history) {
 	    if (!firstrun) {
@@ -594,9 +841,12 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 
     while (!isdigit(*--p) && *p != 'O') {
 	if (*p == '=') {
-	    p++;
+	    promo = i;
 	    break;
 	}
+
+	i = *p;
+	*p = '\0';
     }
 
     if (strlen(move) < 2)
@@ -604,11 +854,13 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 
     p = move;
 
+    /* Skip 'P'. */
+    if (piece_to_int(*p) == PAWN)
+	p++;
+
     /* Pawn. */
     if (VALIDCOL(*p)) {
-	i = 0;
-
-	while (*p) {
+	for (i = 0; *p; i++) {
 	    if (VALIDCOL(*p)) {
 		if (i > 0)
 		    col = COLTOINT(*p++);
@@ -626,83 +878,18 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 		row = ROWTOINT(*++p);
 	    }
 	    else if (*p == '=') {
-		if ((promo = piece_to_int(*++p)) == -1)
+		if ((promo = piece_to_int(promo)) == -1 || promo == KING ||
+			promo == PAWN)
 		    return 1;
 
 		break;
 	    }
 	    else
 		printf("ACK: %c\n", *p++);
-
-	    i++;
 	}
 
-	/* a4 format; get the source row and column. */
-	if (srow == 0 && scol == col) {
-	    trow = (status.turn == WHITE) ? row - 1 : row + 1;
-
-	    while (1) {
-		int n = b[ROWTOBOARD(trow)][COLTOBOARD(col)].icon;
-		piece = piece_to_int(n);
-
-		if (piece == PAWN && val_piece_side(n))
-		    break;
-
-		trow += (status.turn == WHITE) ? -1 : 1;
-
-		if (!VALIDFILE(trow))
-		    return 1;
-
-		dist++;
-	    }
-
-	    if (piece != PAWN || dist > 2)
-		return 1;
-
-	    srow = trow;
-	    dist = abs(srow - row);
-
-	    if (status.turn == WHITE) {
-		if ((srow == 2 && dist > 2) || (srow > 2 && dist > 1))
-		    return 1;
-	    }
-	    else {
-		if ((srow == 7 && dist > 2) || (srow < 7 && dist > 1))
-		    return 1;
-	    }
-	}
-	/* Capture or En Passant. */
-	else if (scol != col) {
-	    srow = (status.turn == WHITE) ? row - 1 : row + 1;
-
-	    if (piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon)
-		    != PAWN)
-		return 1;
-
-	    piece = piece_to_int(b[ROWTOBOARD(row)][COLTOBOARD(col)].icon);
-
-	    /* En Passant. */
-	    if (piece == OPEN_SQUARE) {
-		if (enpassant == 0)
-		    return 1;
-
-		trow = (status.turn == WHITE) ? 6 : 3;
-
-		if (row != trow)
-		    return 1;
-		
-		trow = (status.turn == WHITE) ? row - 1 : row + 1;
-		piece = piece_to_int(b[ROWTOBOARD(trow)][COLTOBOARD(col)].icon);
-
-		if (piece != PAWN)
-		    return 1;
-
-		b[ROWTOBOARD(trow)][COLTOBOARD(col)].icon =
-		    int_to_piece(OPEN_SQUARE);
-
-		status.notify = "En Passant";
-	    }
-	}
+	if (move_from(b, PAWN, row, col, &srow, &scol))
+	    return 1;
     }
     /* Not a pawn. */
     else {
@@ -804,7 +991,7 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 
     if (promo) {
 	piece = int_to_piece(promo);
-	status.notify = "Promotion!";
+	status.notify = NOTIFY_PROMOTION;
     }
     else
 	piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
@@ -813,5 +1000,27 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
     b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
 
 done:
+    kingsquare(b, &kr, &kc, &okr, &okc);
+
+    switch (checktest(b, kr, kc, okr, okc)) {
+	case 0:
+	    break;
+	case -1:
+	    return 1;
+	default:
+	    if (checkmatetest(b, kr, kc, okr, okc, row, col))
+		*p++ = '#';
+	    else {
+		*p++ = '+';
+
+		if ((status.turn == WHITE && status.side == BLACK) ||
+			(status.turn == BLACK && status.side == WHITE))
+		    status.notify = NOTIFY_CHECK;
+	    }
+	    break;
+    }
+
+    *p = '\0';
+
     return 0;
 }

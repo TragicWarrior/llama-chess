@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.57 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: cboard.c,v 1.58 2003-01-14 20:44:13 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -343,12 +343,22 @@ void update_history()
 
 void update_white_black()
 {
-    mvwprintw(whitew, 2, 1, "Name: %-*s", BW_WIDTH - 8,
-	    (game[gindex].pgn[PGN_WHITE].value[0]) ?
-	    game[gindex].pgn[PGN_WHITE].value : UNAVAILABLE);
-    mvwprintw(blackw, 2, 1, "Name: %-*s", BW_WIDTH - 8,
-	    (game[gindex].pgn[PGN_BLACK].value[0]) ?
-	    game[gindex].pgn[PGN_BLACK].value : UNAVAILABLE);
+    char *white, *black;
+
+    if (game[gindex].pgn[PGN_WHITE].value[0] == '?' || 
+	    game[gindex].pgn[PGN_WHITE].value[0] == '\0')
+	white = UNAVAILABLE;
+    else 
+	white = game[gindex].pgn[PGN_WHITE].value;
+
+    if (game[gindex].pgn[PGN_BLACK].value[0] == '?' || 
+	    game[gindex].pgn[PGN_BLACK].value[0] == '\0')
+	black = UNAVAILABLE;
+    else 
+	black = game[gindex].pgn[PGN_BLACK].value;
+
+    mvwprintw(whitew, 2, 1, "Name: %-*s", BW_WIDTH - 8, white);
+    mvwprintw(blackw, 2, 1, "Name: %-*s", BW_WIDTH - 8, black);
 
     mvwprintw(whitew, 3, 1, "Captures: %-2i", game[gindex].wcaptures);
     mvwprintw(blackw, 3, 1, "Captures: %-2i", game[gindex].bcaptures);
@@ -505,6 +515,7 @@ void game_loop()
 	struct timeval tv;
 	char *tmp;
 	char buf[78];
+	char tfile[FILENAME_MAX];
 	struct pgndata *tmppgn = NULL;
 
 	if (status.engine != ENGINE_OFFLINE) {
@@ -514,7 +525,7 @@ void game_loop()
 	    FD_ZERO(&fds);
 	    FD_SET(enginefd[0], &fds);
 
-	    if (sockfd)
+	    if (sockfd > 0)
 		FD_SET(sockfd, &fds);
 
 	    n = (sockfd > enginefd[0]) ? sockfd : enginefd[0];
@@ -538,7 +549,7 @@ void game_loop()
 		    }
 		}
 
-		if (!sockfd)
+		if (sockfd <= 0)
 		    goto blah;
 
 		if (FD_ISSET(sockfd, &fds)) {
@@ -752,6 +763,12 @@ blah:
 				browse_directory, NULL, '\t', -1)) == NULL) {
 		    game[gindex].htotal = oldhistorytotal;
 		    break;
+		}
+
+		if (strstr(tmp, ".") == NULL && compression_cmd(tmp, 0)
+			== NULL) {
+		    snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
+		    tmp = tfile;
 		}
 
 		if (save_pgn(tmp, 0)) {
@@ -1008,6 +1025,7 @@ static void set_defaults()
     config.saveprompt = 1;
     strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
     config.ics_port = DEFAULT_ICS_PORT;
+    strncpy(config.ics_user, DEFAULT_ICS_USER, sizeof(config.ics_user));
 
     set_default_colors();
     return;
@@ -1078,6 +1096,7 @@ int main(int argc, char *argv[])
 	err(EXIT_FAILURE, "getpwuid()");
 
     snprintf(datadir, sizeof(datadir), "%s/.cboard", pwd->pw_dir);
+    snprintf(config.ccfile, sizeof(config.ccfile), "%s/cc.data", datadir);
     snprintf(config.nagfile, sizeof(config.nagfile), "%s/nag.data", datadir);
     snprintf(config.agonyfile, sizeof(config.agonyfile), "%s/agony.data",
 	    datadir);

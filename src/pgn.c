@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.58 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: pgn.c,v 1.59 2003-01-14 20:44:15 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -44,7 +44,7 @@
 #include "colors.h"
 #include "pgn.h"
 
-static char *compression_cmd(const char *filename, int expand)
+char *compression_cmd(const char *filename, int expand)
 {
     static char command[FILENAME_MAX];
     int len = strlen(filename);
@@ -231,13 +231,13 @@ void set_pgn_defaults()
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Event", "");
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Site", "");
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Event", "?");
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Site", "?");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Date", tbuf);
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Round", "-");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "White", 
 	    pwd->pw_gecos);
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Black", "");
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Black", "?");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Result", "*");
 
     /* Add custom tags from the configuration file. */
@@ -276,12 +276,9 @@ static void invalid_move(const char *move)
     if (curses_initialized)
 	message(NULL, ANYKEY, "%s \"%s\" (game #%i)", E_INVALID_MOVE, move,
 		gindex + 1);
-    else {
+    else
 	warnx("%s: %s \"%s\" (game #%i)", pgnfile, E_INVALID_MOVE, move,
 		gindex + 1);
-	printf("%s\n", ANYKEY);
-	(void)fgetc(stdin);
-    }
 
     return;
 }
@@ -291,13 +288,34 @@ int move_text(FILE *fp)
     char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
+    int dots = 0;
+    int digit = 0;
 
     while((c = fgetc(fp)) != EOF) {
-	if (isspace(c) || isdigit(c) || c == '.')
+	if (isspace(c))
 	    continue;
+
+	if (isdigit(c)) {
+	    digit = 1;
+	    continue;
+	}
+	
+	if (c == '.') {
+	    dots++;
+	    continue;
+	}
 
 	break;
     }
+
+    if (digit) {
+	if (dots > 1)
+	    status.turn = BLACK;
+	else
+	    status.turn = WHITE;
+    }
+    else
+	status.turn = BLACK;
 
     ungetc(c, fp);
 
@@ -317,6 +335,10 @@ int move_text(FILE *fp)
     add_to_history(&game[gindex].history, &game[gindex].hindex,
 	    &game[gindex].htotal, p);
 
+    /*
+    printf("%s\n", p);
+    dump_board(pgnboard);
+    */
     return 0;
 }
 
@@ -457,6 +479,7 @@ static void pgn_tag(FILE *fp)
     char value[255], *v = value;
     int c, i = 0;
     int quoted_string = 0;
+    int lastchar = 0;
 
     skip_leading_space(fp);
 
@@ -476,7 +499,13 @@ static void pgn_tag(FILE *fp)
 	    continue;
 	}
 
-	*v++ = c;
+	if (c == '\n' || c == '\t')
+	    c = ' ';
+
+	if (c == ' ' && lastchar == ' ')
+	    continue;
+
+	lastchar = *v++ = c;
     }
 
     *v = '\0';
@@ -666,6 +695,9 @@ int parse_pgn_file(const char *filename)
 	if (isspace(c))
 	    continue;
 
+	if (c == '<' || c == '>')
+	    continue;
+
 	if (c == '(' || c == ')') {
 	    rav_text(fp, c);
 	    continue;
@@ -700,14 +732,9 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
 
-	if (isdigit(c) || (c >= 'a' && c <= 'h') || c == 'N' || c == 'K'
-		|| c == 'Q' || c == 'B' || c == 'R' || c == 'P' || c == 'O') {
+	if (isdigit(c) || VALIDCOL(c) || c == 'N' || c == 'K' || c == 'Q' || 
+		c == 'B' || c == 'R' || c == 'P' || c == 'O') {
 	    ungetc(c, fp);
-
-	    if (isdigit(c))
-		status.turn = WHITE;
-	    else
-		status.turn = BLACK;
 
 	    tag_section = 0;
 
@@ -728,6 +755,12 @@ int parse_pgn_file(const char *filename)
     }
 
     fclose(fp);
+
+    if (gtotal < 1) {
+	new_game(board);
+	goto done;
+    }
+
     gtotal = gindex + 1;
 
     for (row = 0; row < 8; row++) {
@@ -735,9 +768,11 @@ int parse_pgn_file(const char *filename)
 	    board[row][col].icon = pgnboard[row][col].icon;
     }
 
+done:
     if (command)
 	unlink(filename);
 
+    //exit(0);
     return 0;
 }
 
@@ -782,14 +817,17 @@ static int integer_len(int n)
     return len;
 }
 
-static void dump_comments_and_nag(FILE *fp, int index, int *len)
+static int dump_comments_and_nag(FILE *fp, int index, int *len)
 {
     int i;
     int n;
     int x;
+    int annotated = 0;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
 	if (game[gindex].history[index].nag[i]) {
+	    annotated = 1;
+
 	    *len += integer_len(game[gindex].history[index].nag[i]) + 2;
 
 	    if (*len + 1 >= 80) {
@@ -802,6 +840,8 @@ static void dump_comments_and_nag(FILE *fp, int index, int *len)
     }
 
     if (game[gindex].history[index].comment[0]) {
+	annotated = 1;
+
 	fprintf(fp, "\n{");
 
 	if ((n = strlen(game[gindex].history[index].comment) + 1) >= 80) {
@@ -822,65 +862,91 @@ static void dump_comments_and_nag(FILE *fp, int index, int *len)
 	*len = 0;
     }
 
-    return;
+    return annotated;
 }
 
 static void dumpgame(FILE *fp, struct games g, int isfifo)
 {
     int i;
     int n, len = 0;
+    int annotated = 0;
 
-    if (!isfifo) {
-	for (i = 0; g.pgn[i].token[0]; i++) {
-	    struct tm tp;
+    for (i = 0; g.pgn[i].token[0]; i++) {
+	struct tm tp;
 
-	    if (strcmp(g.pgn[i].token, "Date") == 0) {
-		if (strptime(g.pgn[i].value, TIME_FORMAT, &tp) != NULL)
-		    strftime(g.pgn[i].value, sizeof(g.pgn[i].value),
-			    PGN_TIME_FORMAT, &tp);
+	if (isfifo && i == 7)
+	    break;
+
+	if (strcmp(g.pgn[i].token, "Date") == 0) {
+	    if (strptime(g.pgn[i].value, TIME_FORMAT, &tp) != NULL)
+		strftime(g.pgn[i].value, sizeof(g.pgn[i].value),
+			PGN_TIME_FORMAT, &tp);
+	}
+	else if (strcmp(g.pgn[i].token, "Event") == 0) {
+	    if (g.pgn[i].value[0] == '\0') {
+		g.pgn[i].value[0] = '?';
+		g.pgn[i].value[1] = '\0';
 	    }
-	    else if (strcmp(g.pgn[i].token, "Round") == 0) {
-		if (g.pgn[i].value[0] == '\0') {
-		    g.pgn[i].value[0] = '?';
-		    g.pgn[i].value[1] = '\0';
+	}
+	else if (strcmp(g.pgn[i].token, "Site") == 0) {
+	    if (g.pgn[i].value[0] == '\0') {
+		g.pgn[i].value[0] = '?';
+		g.pgn[i].value[1] = '\0';
+	    }
+	}
+	else if (strcmp(g.pgn[i].token, "Round") == 0) {
+	    if (g.pgn[i].value[0] == '\0') {
+		g.pgn[i].value[0] = '?';
+		g.pgn[i].value[1] = '\0';
+	    }
+	}
+	else if (strcmp(g.pgn[i].token, "Result") == 0) {
+	    if (g.pgn[i].value[0] == '\0') {
+		g.pgn[i].value[0] = '*';
+		g.pgn[i].value[1] = '\0';
+	    }
+	    else {
+		for (n = 0; n < NARRAY(fancy_results); n++) {
+		    if (strcmp(g.pgn[i].value, fancy_results[n].fancy)
+			    == 0) {
+			strncpy(g.pgn[i].value, fancy_results[n].pgn, 
+				sizeof(g.pgn[i].value));
+			n = -1;
+			break;
+		    }
+		    else if (strcmp(g.pgn[i].value, fancy_results[n].pgn)
+			    == 0) {
+			n = -1;
+			break;
+		    }
 		}
-	    }
-	    else if (strcmp(g.pgn[i].token, "Result") == 0) {
-		if (g.pgn[i].value[0] == '\0') {
+
+		if (n != -1) {
 		    g.pgn[i].value[0] = '*';
 		    g.pgn[i].value[1] = '\0';
 		}
-		else {
-		    for (n = 0; n < NARRAY(fancy_results); n++) {
-			if (strcmp(g.pgn[i].value, fancy_results[n].fancy)
-				== 0) {
-			    strncpy(g.pgn[i].value, fancy_results[n].pgn, 
-				    sizeof(g.pgn[i].value));
-			    n = -1;
-			    break;
-			}
-			else if (strcmp(g.pgn[i].value, fancy_results[n].pgn)
-				== 0) {
-			    n = -1;
-			    break;
-			}
-		    }
-
-		    if (n != -1) {
-			g.pgn[i].value[0] = '*';
-			g.pgn[i].value[1] = '\0';
-		    }
-		}
 	    }
-	    else if (strcmp(g.pgn[i].value, UNKNOWN) == 0)
-		g.pgn[i].value[0] = '\0';
-
-	    fprintf(fp, "[%s \"%s\"]\n", g.pgn[i].token, 
-		    (g.pgn[i].value[0]) ? pgn_escapes(g.pgn[i].value) : "");
 	}
+	else if (strcmp(g.pgn[i].token, "Black") == 0) {
+	    if (g.pgn[i].value[0] == '\0') {
+		g.pgn[i].value[0] = '?';
+		g.pgn[i].value[1] = '\0';
+	    }
+	}
+	else if (strcmp(g.pgn[i].token, "White") == 0) {
+	    if (g.pgn[i].value[0] == '\0') {
+		g.pgn[i].value[0] = '?';
+		g.pgn[i].value[1] = '\0';
+	    }
+	}
+	else if (strcmp(g.pgn[i].value, UNKNOWN) == 0)
+	    g.pgn[i].value[0] = '\0';
 
-	fprintf(fp, "\n");
+	fprintf(fp, "[%s \"%s\"]\n", g.pgn[i].token, 
+		(g.pgn[i].value[0]) ? pgn_escapes(g.pgn[i].value) : "");
     }
+
+    fprintf(fp, "\n");
 
     /* Move text section. If it's dumping to the FIFO, dont dump comments and
      * NAG data.
@@ -890,13 +956,22 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
 
 	if (!(i % 2)) {
 	    len += 2;
-	    fprintf(fp, "%u. ", n++);
+	    fprintf(fp, "%u. ", n);
+	}
+	else {
+	    if (annotated) {
+		fprintf(fp, "%u... ", n++);
+		annotated = 0;
+	    }
 	}
 
 	fprintf(fp, "%s ", g.history[i].move);
 
 	if (!isfifo)
-	    dump_comments_and_nag(fp, i, &len);
+	    annotated = dump_comments_and_nag(fp, i, &len);
+
+	if (!(i % 2) && !annotated)
+	    n++;
 
 	len += mlen + integer_len(n) + 1;
 
@@ -1054,6 +1129,182 @@ static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items,
     delwin(win);
 }
 
+static int init_country_codes()
+{
+    FILE *fp;
+    char line[LINE_MAX], *s;
+    int cindex = 0;
+
+    if ((fp = fopen(config.ccfile, "r")) == NULL) {
+	message(ERROR, ANYKEY, "Could not open country code data file.");
+	return 1;
+    }
+
+    while ((s = fgets(line, sizeof(line), fp)) != NULL) {
+	char *tmp;
+
+	if ((tmp = strsep(&s, " ")) == NULL)
+	    continue;
+
+	s = trim(s);
+	tmp = trim(tmp);
+
+	if (!s || !tmp)
+	    continue;
+
+	ccodes = Realloc(ccodes, (cindex + 2) * sizeof(struct country_codes));
+	strncpy(ccodes[cindex].code, tmp, sizeof(ccodes[cindex].code));
+	strncpy(ccodes[cindex].country, s, sizeof(ccodes[cindex].country));
+	cindex++;
+    }
+
+    memset(&ccodes[cindex], '\0', sizeof(struct country_codes));
+    fclose(fp);
+
+    return 0;
+}
+
+char *country_codes(void *arg)
+{
+    WINDOW *win, *subw;
+    PANEL *panel;
+    ITEM **mitems = NULL;
+    MENU *menu;
+    int i = 0, n;
+    int rows, cols;
+    char *mbuf = NULL;
+    char *tmp = NULL;
+    static char str[67];
+
+    if (!ccodes) {
+	if (init_country_codes())
+	    return NULL;
+    }
+
+    for (n = i = 0; ccodes[n].code[0]; n++, i++) {
+	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+	mitems[i] = new_item(ccodes[n].code, ccodes[n].country);
+    }
+
+    mitems[i] = NULL;
+    menu = new_menu(mitems);
+    scale_menu(menu, &rows, &cols);
+
+    if (cols < strlen(HELP_PROMPT) + 21)
+	cols = strlen(HELP_PROMPT) + 21;
+
+    win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
+    set_menu_win(menu, win);
+    /* FIXME test. may not need to free subw. */
+    subw = derwin(win, rows, cols, 2, 1);
+    set_menu_sub(menu, subw);
+    set_menu_fore(menu, A_REVERSE);
+    set_menu_grey(menu, A_NORMAL);
+    set_menu_mark(menu, NULL);
+    set_menu_spacing(menu, 0, 0, 0);
+    menu_opts_off(menu, O_NONCYCLIC);
+    post_menu(menu);
+    panel = new_panel(win);
+    cbreak();
+    noecho();
+    keypad(win, TRUE);
+    set_menu_pattern(menu, mbuf);
+    wbkgd(win, CP_MESSAGE_WINDOW);
+    draw_window_title(win, CC_TITLE, cols + 2, CP_MESSAGE_TITLE,
+	    CP_MESSAGE_BORDER);
+
+    while (1) {
+	int c;
+	char buf[cols - 4];
+
+	wattron(win, A_REVERSE);
+
+	for (c = 1; c < (cols + 2) - 1; c++)
+	    mvwprintw(win, rows + 2, c, " ");
+
+	c = item_index(current_item(menu)) + 1;
+
+	snprintf(buf, sizeof(buf), "Item %i of %i %s", c, 
+		item_count(menu), HELP_PROMPT);
+	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
+
+	wattroff(win, A_REVERSE);
+
+	/* This nl() statement needs to be here because NL is recognized
+	 * for some reason after the first selection.
+	 */
+	nl();
+	update_panels();
+	doupdate();
+
+	c = wgetch(win);
+
+	switch (c) {
+	    case CTRL('G'):
+		help(CC_KEY_HELP, cc_help);
+		break;
+	    case KEY_HOME:
+		menu_driver(menu, REQ_FIRST_ITEM);
+		break;
+	    case KEY_END:
+		menu_driver(menu, REQ_LAST_ITEM);
+		break;
+	    case KEY_UP:
+		menu_driver(menu, REQ_UP_ITEM);
+		break;
+	    case KEY_DOWN:
+		menu_driver(menu, REQ_DOWN_ITEM);
+		break;
+	    case KEY_PPAGE:
+	    case CTRL('P'):
+		if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_FIRST_ITEM);
+		break;
+	    case ' ':
+	    case KEY_NPAGE:
+	    case CTRL('N'):
+		if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_LAST_ITEM);
+		break;
+	    case '\n':
+		snprintf(str, sizeof(str), "%s %s",
+		    (char *)item_description(current_item(menu)),
+		    (char *)item_name(current_item(menu)));
+		goto done;
+		break;
+	    case KEY_ESCAPE:
+		str[0] = '\0'; 
+		goto done;
+		break;
+	    default:
+		tmp = menu_pattern(menu);
+
+		if (tmp && tmp[strlen(tmp) - 1] != c) {
+		    menu_driver(menu, REQ_CLEAR_PATTERN);
+		    menu_driver(menu, c);
+		}
+		else {
+		    if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			menu_driver(menu, c);
+		}
+
+		break;
+	}
+    }
+
+done:
+    unpost_menu(menu);
+    free_menu(menu);
+
+    for (i = 0; mitems[i]; i++)
+	free_item(mitems[i]);
+
+    del_panel(panel);
+    delwin(win);
+    delwin(subw);
+    return (str[0]) ? str : NULL;
+}
+
 struct pgndata *edit_pgn_data(int edit)
 {
     struct pgndata *data = NULL;
@@ -1083,7 +1334,7 @@ struct pgndata *edit_pgn_data(int edit)
 
 	    if (data[i].value[0])
 		mitems[i] = new_item(data[i].token,
-			(strlen(data[i].value) > MAX_VALUE_WIDTH)
+			(strlen(data[i].value) > MAX_VALUE_WIDTH - 1)
 			? "Press ENTER..." : data[i].value);
 	    else
 		mitems[i] = new_item(data[i].token, UNKNOWN);
@@ -1278,6 +1529,13 @@ gotitem:
 	    }
 	    else
 		goto cleanup;
+	}
+	else if (strcmp(data[selected].token, "Site") == 0) {
+	    tmp = get_input(buf, data[selected].value, 1, 1, CC_PROMPT,
+		    country_codes, NULL, CTRL('t'), -1);
+
+	    if (!tmp)
+		tmp = "?";
 	}
 	else if (strcmp(data[selected].token, "Round") == 0) {
 	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL, 0,

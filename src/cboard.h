@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.41 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: cboard.h,v 1.42 2003-01-14 20:44:14 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -108,5 +108,6 @@ void new_game(struct board_matrix [][]);
 void *Malloc(size_t);
 int isinteger(const char *);
 int parse_ics_output(char *);
+char *compression_cmd(const char *, int);
 
 #endif

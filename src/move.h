@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.5 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: move.h,v 1.6 2003-01-14 20:44:15 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -30,13 +30,14 @@
 #define COLTOBOARD(c)	(c - 1)
 
 enum {
-    OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING
+    OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING, MAX_PIECES
 };
 
 enum {
     KINGSIDE = 1, QUEENSIDE
 };
 
+int enpassant;
 /* These are used to determine whether a castle is legal.
  */
 int wk, bk, rqw, rkw, rqb, rkb;
