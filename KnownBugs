@@ -1,7 +1,5 @@
 SAN move format is broken with ambiguities and more.
 
-End of game and check aren't recognized.
-
 The PGN specification says import format shouldn't need move numbers. Right
 now theres no way around it. This affects black starting position also unless
 the move is in '1... e5' form.
