@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.17 2002-12-14 21:00:53 bjk Exp $ */
+/* $Id: cboard.h,v 1.18 2002-12-16 14:10:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -51,10 +51,10 @@ const char *book_methods[] = {
 };
 
 const char *mainhelp[] = {
-    "   UP/j - cursor up               R - refresh screen",
-    " DOWN/k - cursor down             b - cycle through book modes",
-    " LEFT/l - cursor left/reverse     c - send a command to the game engine",
-    "RIGHT/; - cursor right/forward    w - switch sides",
+    "   UP/j - cursor up/hist jump     R - refresh screen",
+    " DOWN/k - cursor down/hist jump   b - cycle through book modes",
+    " LEFT/l - cursor left/hist rev    c - send a command to the game engine",
+    "RIGHT/; - cursor right/hist fwd   w - switch sides",
     "                                  u - undo previous move",
     "  SPACE - select piece            g - force engine to make next move",
     "  ENTER - commit selected piece   h - toggle history mode",

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.24 2002-12-14 21:00:53 bjk Exp $ */
+/* $Id: cboard.c,v 1.25 2002-12-16 14:10:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -515,6 +515,10 @@ blah:
 	    case 'h':
 		if (browse_history) {
 		    if (game[gindex].hindex != game[gindex].htotal) {
+			message(NULL, ANYKEY, "Resuming a game from history "
+				"is broken right now.");
+			break;
+
 			if ((c = message(NULL, YESNO, 
 					"Resume game from history?")) != 'y')
 			    break;
@@ -555,11 +559,14 @@ blah:
 		init_history();
 		break;
 	    case 'u':
-		if (browse_history)
+		if (browse_history || !game[gindex].htotal)
 		    break;
 
-		/* FIXME history */
+		history_previous(2);
+		game[gindex].htotal = game[gindex].hindex;
+
 		SEND_TO_ENGINE("remove\n");
+		update_history();
 		break;
 	    case 'r':
 		if ((tmp = get_input_str("Load saved game filename", NULL)) 
