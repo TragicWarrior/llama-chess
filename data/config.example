@@ -1,6 +1,6 @@
 ###############################################################################
 # This is an example configuration file for CBoard. All of the settings below
-# are set to the defaults. Empty lines and lines beginning with '#' are
+# are the program defaults. Empty lines and lines beginning with '#' are
 # ignored. Parameters and values are separated by one or more space or TAB
 # characters.
 ###############################################################################
@@ -27,19 +27,41 @@ historyagony	0
 # names which must be one of: black, white, red, magenta, yellow, blue, cyan
 # or green. 
 #
+# Each ..._window parameter sets the defaults for all characters in the given
+# window.
+#
 # The third and fourth values are attributes for the color and non-color
 # terminal. To include more than one attribute for a value, separate them with
 # a single comma. The following attributes are available: bold, blink,
 # reverse, dim, standout, underline, invisible, or none. Note that not all
 # terminals support all attributes.
-window_border	cyan	black	bold
-window_title	white	blue	none	reverse
 board_graphics	white	black
 board_selected	white	yellow	none	bold,reverse
 board_cursor	white	green	none	bold,reverse
 board_black	white	black
 board_white	white	red	none	reverse
-board_coords	white	black
+board_coords	yellow	black	bold
+
+status_window	white	black
+status_title	white	blue	none	reverse
+status_border	cyan	black
 status_notify	red	black	none	bold
 status_engine	yellow	black	none	bold
-message_box	white	green
+
+data_window	white	black
+data_title	white	blue	none	reverse
+data_border	cyan	black
+
+history_window	white	black
+history_title	white	blue	none	reverse
+history_border	cyan	black
+
+message_window	white	black
+message_title	white	green	none	reverse
+message_border	cyan	black
+message_prompt	white	green	none	bold
+
+input_window	white	black
+input_title	white	green	none	reverse
+input_border	cyan	black
+input_prompt	white	green	none	bold

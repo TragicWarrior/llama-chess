@@ -27,7 +27,13 @@ You can find the data files along with an example configuration file in the
 'etc/' directory of the archive. You'll have to copy them over to ~/.cboard
 yourself until I figure out a way to do it with 'make install'.
 
-See the manual page for configuration file options; there are a few new ones.
+You can define custom colors and attributes in the configuration file. See the
+manual page for more infomation on the syntax.
 
-SANS move format is the next major thing that needs to be done. It seems like
+Added configuration parameters:
+          pgntag - Define custom tags for new games or override defaults.
+           agony - Show a random agony string on a capture.
+    historyagony - Enable or disable agony strings in history mode.
+
+SAN move format is the next major thing that needs to be done. It seems like
 I'm going in reverse order of how things should be developed, but oh well.

@@ -92,17 +92,31 @@ default tag values.
 .
 .Sh COLORS
 .Bl -tag -compact
-.It Cm window_border Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm window_title Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_selected Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_cursor Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm board_coords Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm board_graphics Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm board_white Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_black Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm status_engine Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_white Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_graphics Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_coords Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm status_window Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm status_title Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm status_border Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_notify Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm message_box Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm status_engine Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm data_window Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm data_title Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm data_border Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm history_window Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm history_title Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm history_border Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm message_window Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm message_title Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm message_border Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm message_prompt Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm input_window Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm input_title Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm input_border Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm input_prompt Ar foreground Ar background Op Ar cattr Op Ar attr
 .El
 .Pp
 Color and attributes can be modified from the configuration file. There are up
@@ -132,6 +146,9 @@ attributes are recognized:
 .Ar invisible 
 and
 .Ar none .
+.Pp
+Some color parameters have a _window extension. This will set the default
+color and attibutes for all characters for the given parameter set.
 .
 .Sh FILES
 .Bl -tag -compact -width ~/.cboardrc/agony.data
@@ -144,7 +161,7 @@ capature has been made.
 Appending to this file is fine for custom NAG types, but lines before 140 are
 reserved by the PGN standard.
 .It Pa ~/.cboard/fifo
-A FIFO for resuming games.
+A FIFO read by the chess engine for resuming games.
 .El
 .
 .Sh AUTHORS
