@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.36 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: common.h,v 1.37 2003-01-09 22:30:53 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -173,6 +173,7 @@ struct {
     int agony;
     int linegraphics;
     int saveprompt;
+    int clevel;
     char nagfile[FILENAME_MAX];
     char agonyfile[FILENAME_MAX];
     char configfile[FILENAME_MAX];
@@ -186,6 +187,7 @@ struct {
 /* Chess engine file descriptors. 0 = from, 1 = to. */
 int enginefd[2];
 
+char datadir[FILENAME_MAX];
 int curses_initialized;
 char pgnfile[FILENAME_MAX];
 int gindex, gtotal; /* Current game and total number of games. */

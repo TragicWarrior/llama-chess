@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.53 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: pgn.c,v 1.54 2003-01-09 22:30:54 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -43,6 +43,46 @@
 #include "common.h"
 #include "colors.h"
 #include "pgn.h"
+
+static char *compression_cmd(const char *filename, int expand)
+{
+    static char command[FILENAME_MAX];
+    int len = strlen(filename);
+
+    if (filename[len - 4] == '.' && filename[len - 3] == 'z' &&
+	    filename[len - 2] == 'i' && filename[len - 1] == 'p' &&
+	    filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "unzip -p %s 2>/dev/null", 
+		    filename);
+	else
+	    snprintf(command, sizeof(command), "zip -%i >%s 2>/dev/null",
+		    config.clevel, filename);
+
+	return command;
+    }
+    else if (filename[len - 3] == '.' && filename[len - 2] == 'g' &&
+	    filename[len - 1] == 'z' && filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "gzip -dc %s", filename);
+	else
+	    snprintf(command, sizeof(command), "gzip -c%i 1>%s", config.clevel,
+		    filename);
+
+	return command;
+    }
+    else if (filename[len - 2] == '.' && filename[len - 1] == 'Z' &&
+	    filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "uncompress -c %s", filename);
+	else
+	    snprintf(command, sizeof(command), "compress -c 1>%s", filename);
+
+	return command;
+    }
+
+    return NULL;
+}
 
 int end_of_game(const char *str)
 {
@@ -515,8 +555,10 @@ static void rav_text(FILE *fp, int which)
 
 int parse_pgn_file(const char *filename)
 {
-    FILE *fp;
+    FILE *fp, *ofp;
     char buf[LINE_MAX] = {0}, *p = buf;
+    char tfile[FILENAME_MAX];
+    char *command = NULL;
     int c;
     int tag_section = 0;
     int row, col;
@@ -525,6 +567,29 @@ int parse_pgn_file(const char *filename)
 	reset_game_data();
 	new_game(board);
 	return 0;
+    }
+
+    if (access(filename, R_OK) == -1)
+	return 1;
+
+    if ((command = compression_cmd(filename, 1)) != NULL) {
+	snprintf(tfile, sizeof(tfile), "%s/tmpfile", datadir);
+
+	if ((ofp = fopen(tfile, "w+")) == NULL)
+	    return 1;
+
+	if ((fp = popen(command, "r")) == NULL) {
+	    fclose(ofp);
+	    return 1;
+	}
+
+	while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+	    fprintf(ofp, "%s", p);
+
+	pclose(fp);
+	fclose(ofp);
+
+	filename = (char *)tfile;
     }
 
     if ((fp = fopen(filename, "r")) == NULL)
@@ -631,6 +696,9 @@ int parse_pgn_file(const char *filename)
 	for (col = 0; col < 8; col++)
 	    board[row][col].icon = pgnboard[row][col].icon;
     }
+
+    if (command)
+	unlink(filename);
 
     return 0;
 }
@@ -816,6 +884,7 @@ int save_pgn(const char *filename, int isfifo)
     struct stat st;
     int i;
     int cgame = 0;
+    char *command = NULL;
 
     if (gtotal > 1 && !isfifo) {
 	c = message_uncentered(NULL, SAVE_MULTIGAME_P, "%s", SAVE_MULTIGAME);
@@ -883,9 +952,18 @@ int save_pgn(const char *filename, int isfifo)
 	    mode = "a";
     }
 
-    if ((fp = fopen(filename, mode)) == NULL) {
-	message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	return 1;
+    /* FIXME append. */
+    if (!isfifo && (command = compression_cmd(filename, 0)) != NULL) {
+	if ((fp = popen(command, "w")) == NULL) {
+	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    return 1;
+	}
+    }
+    else {
+	if ((fp = fopen(filename, mode)) == NULL) {
+	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    return 1;
+	}
     }
 
     if (isfifo || cgame)
@@ -899,7 +977,11 @@ int save_pgn(const char *filename, int isfifo)
 	}
     }
 
-    fclose(fp);
+    if (command)
+	pclose(fp);
+    else
+	fclose(fp);
+
     return 0;
 }
 

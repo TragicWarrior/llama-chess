@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.55 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: cboard.c,v 1.56 2003-01-09 22:30:53 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -975,6 +975,7 @@ static void set_defaults()
     status.engine = ENGINE_OFFLINE;
 
     config.history_jump = 5;
+    config.clevel = 6;
     config.book_method = BOOK_RANDOM;
     config.engine_depth = 0;
     config.historyagony = 0;
@@ -989,7 +990,6 @@ static void set_defaults()
 int main(int argc, char *argv[])
 {
     int opt;
-    char datadir[FILENAME_MAX] = {0};
     struct passwd *pwd;
     struct stat st;
 

@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.17 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: rcfile.c,v 1.18 2003-01-09 22:30:54 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -261,6 +261,15 @@ void parse_rcfile(const char *filename)
 	    config.linegraphics = on_or_off(filename, lines, val);
 	else if (strcmp(var, "save_prompt") == 0)
 	    config.saveprompt = on_or_off(filename, lines, val);
+	else if (strcmp(var, "clevel") == 0) {
+	    if (!isinteger(val))
+		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
+			lines);
+
+	    if ((config.clevel = atoi(val)) > 9 || config.clevel < 1)
+		errx(EXIT_FAILURE, "%s(%i): value must be between 1 and 9", 
+			filename, lines);
+	}
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);
