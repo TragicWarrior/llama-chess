@@ -1,4 +1,4 @@
-/* $Id: colors.h,v 1.4 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: colors.h,v 1.5 2003-01-23 23:11:02 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -134,5 +134,9 @@
 #define CP_BOARD_MOVES	((COLORS) ? \
 	COLOR_PAIR(29) | config.color[CONF_BMOVES].attrs : \
 	config.color[CONF_BMOVES].nattrs)
+
+#define CP_BOARD_COUNT	((COLORS) ? \
+	COLOR_PAIR(30) | config.color[CONF_BCOUNT].attrs : \
+	config.color[CONF_BCOUNT].nattrs)
 
 #endif

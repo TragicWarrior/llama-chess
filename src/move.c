@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.13 2003-01-23 21:48:12 bjk Exp $ */
+/* $Id: move.c,v 1.14 2003-01-23 23:11:02 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -829,8 +829,10 @@ void reset_valid_moves(BOARD b)
     int row, col;
 
     for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++)
+	for (col = 0; col < 8; col++) {
 	    b[row][col].valid = 0;
+	    b[row][col].movecount = 0;
+	}
     }
 
     return;

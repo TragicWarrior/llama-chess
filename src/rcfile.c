@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.20 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: rcfile.c,v 1.21 2003-01-23 23:11:02 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -202,6 +202,8 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_BSELECTED]);
 	else if (strcmp(var, "board_moves") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BMOVES]);
+	else if (strcmp(var, "board_count") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BCOUNT]);
 	else if (strcmp(var, "board_cursor") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BCURSOR]);
 	else if (strcmp(var, "board_black") == 0)

@@ -1,4 +1,4 @@
-/* $Id: colors.c,v 1.6 2003-01-22 20:04:49 bjk Exp $ */
+/* $Id: colors.c,v 1.7 2003-01-23 23:11:02 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -83,6 +83,8 @@ void init_color_pairs()
 	    config.color[CONF_BTITLE].bg);
     init_pair(29, config.color[CONF_BMOVES].fg, 
 	    config.color[CONF_BMOVES].bg);
+    init_pair(30, config.color[CONF_BCOUNT].fg, 
+	    config.color[CONF_BCOUNT].bg);
 
     return;
 }
@@ -92,9 +94,12 @@ void set_default_colors()
     config.color[CONF_BCOORDS].fg = COLOR_YELLOW;
     config.color[CONF_BCOORDS].bg = COLOR_BLACK;
     config.color[CONF_BMOVES].fg = COLOR_WHITE;
-    config.color[CONF_BMOVES].bg = COLOR_CYAN;
+    config.color[CONF_BMOVES].bg = COLOR_BLUE;
     config.color[CONF_BMOVES].attrs = A_BOLD;
     config.color[CONF_BMOVES].nattrs = A_BOLD|A_REVERSE;
+    config.color[CONF_BCOUNT].fg = COLOR_RED;
+    config.color[CONF_BCOUNT].bg = COLOR_BLUE;
+    config.color[CONF_BCOUNT].attrs = A_BOLD;
     config.color[CONF_BGRAPHICS].fg = COLOR_WHITE;
     config.color[CONF_BGRAPHICS].bg = COLOR_BLACK;
     config.color[CONF_BWHITE].fg = COLOR_WHITE;

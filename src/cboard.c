@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.61 2003-01-23 21:48:12 bjk Exp $ */
+/* $Id: cboard.c,v 1.62 2003-01-23 23:11:02 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -161,11 +161,9 @@ void draw_board(BOARD b, int crow, int ccol)
 		    if (config.validmoves && b[brow][bcol].valid) {
 			attrs = CP_BOARD_MOVES;
 
-			/* FIXME add attrs here. (fg and bg are aquired) */
-			if (b[brow][bcol].movecount &&
-				(brow != crow && bcol != ccol)) {
+			if (b[brow][bcol].movecount) {
 			    if (b[brow][bcol].movecount > 1)
-				movecount = b[brow][bcol].movecount + '0';
+				movecount = (b[brow][bcol].movecount + '0');
 			}
 		    }
 
@@ -181,8 +179,7 @@ void draw_board(BOARD b, int crow, int ccol)
 		    if (row == maxy - 1)
 			attrs = 0;
 
-		    wattron(boardw, attrs);
-		    mvwaddch(boardw, row, col, ' ');
+		    mvwaddch(boardw, row, col, ' ' | attrs);
 
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
@@ -197,11 +194,15 @@ void draw_board(BOARD b, int crow, int ccol)
 			waddch(boardw,
 				(piece && piece != int_to_piece(OPEN_SQUARE)) ?
 				piece | attrs : ' ' | attrs);
+
+			attrs &= ~(A_BOLD);
 		    }
 
-		    waddch(boardw,
-			    (movecount && row != maxy - 1) ? movecount : ' ');
-		    wattroff(boardw, attrs);
+		    if (movecount && row != maxy -1)
+			waddch(boardw, movecount | CP_BOARD_COUNT);
+		    else
+			waddch(boardw, ' ' | attrs);
+
 		    col += 2;
 		    bcol++;
 		}
@@ -917,7 +918,6 @@ void game_loop()
 			    break;
 		    }
 
-		    /*
 		    if (!engine_initialized) {
 			if (start_chess_engine() < 0)
 			    break;
@@ -925,7 +925,6 @@ void game_loop()
 			pushkey = 'h';
 			break;
 		    }
-		    */
 
 		    pushkey = 0;
 		    oldhistorytotal = game[gindex].htotal;
@@ -1233,14 +1232,12 @@ void game_loop()
 		if (browse_history)
 		    break;
 
-		/*
 		if (status.engine != ENGINE_READY || !engine_initialized) {
 		    if (start_chess_engine() < 0) {
 			sp.icon = 0;
 			break;
 		    }
 		}
-		*/
 
 		if (sp.icon || status.engine == ENGINE_THINKING) {
 		    beep();
