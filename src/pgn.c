@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.23 2002-12-18 14:48:31 bjk Exp $ */
+/* $Id: pgn.c,v 1.24 2002-12-18 21:54:23 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -127,7 +127,7 @@ int add_pgn_data(struct pgndata **dst, int *n, char *token, char *value)
     return 0;
 }
 
-static char *remove_escapes(const char *str)
+static char *remove_pgn_tag_escapes(const char *str)
 {
     int i, n;
     int len = strlen(str);
@@ -229,12 +229,83 @@ static void init_data()
     return;
 }
 
+static void add_nag(FILE *fp, int index)
+{
+    int i, n = 0, count;
+    int nag;
+    char buf[2];
+
+    while (fscanf(fp, " %1[$]%i %n", buf, &nag, &count) == 2) {
+	/* Standard. */
+	if (!nag || nag < 0 || nag > 255)
+	    continue;
+
+	for (i = 0; i < MAX_PGN_NAG; i++) {
+	    if (game[gindex].history[index].nag[i])
+		continue;
+
+	    game[gindex].history[index].nag[i] = nag;
+	    n++;
+	    break;
+	}
+
+	if (n == MAX_PGN_NAG)
+	    break;
+    }
+
+    return;
+}
+
+static void add_comment(FILE *fp, int index, int terminator)
+{
+    int i = 0;
+
+    while (1) {
+	int c;
+
+	if ((c = fgetc(fp)) == terminator)
+	    break;
+
+	if (i + 1 > sizeof(game[gindex].history[index].comment) - 1)
+	    continue;
+
+	game[gindex].history[index].comment[i++] = c;
+    }
+
+    strncpy(game[gindex].history[index].comment,
+	    trim(game[gindex].history[index].comment),
+	    sizeof(game[gindex].history[index].comment));
+
+    return;
+}
+
+static void add_move(FILE *fp, const char *move)
+{
+    int c;
+
+    add_to_history(&game[gindex].history, &game[gindex].hindex,
+	    &game[gindex].htotal, move);
+
+    add_nag(fp, game[gindex].hindex - 1);
+
+    c = fgetc(fp);
+
+    while (isspace(c))
+	c = fgetc(fp);
+
+    if (c == '{' || c == ';') 
+	add_comment(fp, game[gindex].hindex - 1, (c == '{') ? '}' : '\n');
+    else
+	ungetc(c, fp);
+
+    return;
+}
+
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
     char buf[LINE_MAX], *tmp;
     int tag_section = 0;
-    int skip_move_text = 0;
 
     if (gtotal)
 	free_game_data();
@@ -251,8 +322,7 @@ int parse_pgn_file(const char *filename)
 	return 1;
 
     while ((tmp = fgets(buf, sizeof(buf), fp)) != NULL) {
-	char *token, *value;
-	int len = strlen(tmp);
+	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
 	int i;
 	char tbuf[MAX_TIME_LEN + 1] = {0};
 	struct tm tp;
@@ -266,101 +336,101 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
 
-	if (tmp[len - 1] == '\n')
-	    tmp[len-- - 1] = 0;
+	tmp = trim(tmp);
 
 	/* Must be a roster tag... */
 	if (tmp[0] == '[') {
 	    if (!tag_section) {
 		tag_section = 1;
-		skip_move_text = 0;
 		game = Realloc(game, (gindex + 2) * sizeof(struct games));
 		game[gindex].pindex = 0;
 	    }
 
 	    tmp++;
 
-	    if ((token = strsep(&tmp, " ")) != NULL) {
-		tmp++; /* Skip the initial value quote. */
-		tmp[strlen(tmp) - 2] = 0; /* Remove trailing '"]' from value. */
-		value = tmp;
+	    if (sscanf(tmp, "%s %[^]]", token, value) == 2) {
+		tmp = value;
 
-		if (strcmp(token, "Date") == 0) {
+		if (*tmp == '\"')
+		    tmp++;
+
+		if (tmp[strlen(tmp) - 1] == '\"')
+		    tmp[strlen(tmp) - 1] = 0;
+
+		strncpy(value, tmp, sizeof(value));
+
+		if (strcasecmp(token, "Date") == 0) {
 		    if (strptime(value, PGN_TIME_FORMAT, &tp) != NULL) {
 			strftime(tbuf, sizeof(tbuf), TIME_FORMAT, &tp);
-			value = (char *)tbuf;
+			strncpy(value, (char *)tbuf, sizeof(value));
 		    }
 		}
-		else if (strcmp(token, "Result") == 0) {
+		else if (strcasecmp(token, "Result") == 0) {
 		    for (i = 0; i < NARRAY(fancy_results); i++) {
 			if (strcmp(value, fancy_results[i].pgn) == 0)
-			    value = fancy_results[i].fancy;
+			    strncpy(value, fancy_results[i].fancy, 
+				    sizeof(value));
 		    }
 		}
-		else if (strcmp(token, "Round") == 0) {
+		else if (strcasecmp(token, "Round") == 0) {
 		    if (value[0] == '-' || value[0] == '?')
 			value[0] = 0;
 		}
 
 		if (!value[0])
-		    value = UNKNOWN;
+		    strncpy(value, UNKNOWN, sizeof(value));
 
 		add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, 
-			token, remove_escapes(value));
+			token, remove_pgn_tag_escapes(value));
 	    }
 
 	    continue;
 	}
     
-	if (skip_move_text)
+	if (tmp[0] == 0)
 	    continue;
 
 	/* Must be move text... */
-	fseek(fp, -(strlen(tmp) + 1), SEEK_CUR);
+	fseek(fp, -(strlen(tmp) + 2), SEEK_CUR);
 	game[gindex].hindex = game[gindex].htotal = 0;
 
-	/* Move text section contained no moves. */
-	if ((i = fgetc(fp)) == '*') {
-	    skip_move_text = 1;
-	    continue;
-	}
-
-	ungetc(i, fp);
-
 	while (!feof(fp)) {
-	    char white[MAX_PGN_MOVE_LEN], black[MAX_PGN_MOVE_LEN];
-	    int count, moven;
-	    char *tmp2;
+	    char move[MAX_PGN_MOVE_LEN + 1];
+	    int moven;
 
-	    if (fscanf(fp, "%d. %s %s %n", &moven, white, black, &count) != 3) {
-		fseek(fp, -(count), SEEK_CUR);
-		tmp = fgets(buf, sizeof(buf), fp);
+	    if (fscanf(fp, "%d. %7[a-zA-Z0-9+=#-] ", &moven, move) == 2) {
+		add_move(fp, move);
 
-		for (i = 0; i < NARRAY(fancy_results); i++) {
-		    if ((tmp2 = strstr(tmp, fancy_results[i].pgn)) != NULL)
-			break;
-		}
+		/* Black. */
+		if (fscanf(fp, " %7[a-zA-Z0-9+=#-] ", move) == 1)
+		    add_move(fp, move);
 
-		/* End of move text. */
-		if ((i = fgetc(fp)) == '\n')
-		    break;
+		continue;
+	    }
 
-		/* Dunno. */
-		ungetc(i, fp);
-		return -1;
+	    /* No move text, NAG or comments. Must be a game terminating
+	     * marker...
+	     */
+	    if ((tmp = fgets(buf, sizeof(buf), fp)) == NULL)
 		break;
-	    }
 
+	    tmp = trim(tmp);
+
+	    /* Normally this would match the "Result" tag, but not always.
+	     * So just leave it be (it's already defined from the tag parsing
+	     * section above).
+	     */
 	    for (i = 0; i < NARRAY(fancy_results); i++) {
-		if (strcmp(fancy_results[i].pgn, white) == 0 || 
-			strcmp(fancy_results[i].pgn, black) == 0)
-		    break;
+		if (strcmp(tmp, fancy_results[i].pgn) == 0)
+		    goto done;
 	    }
 
-	    add_to_history(&game[gindex].history, &game[gindex].hindex,
-		    &game[gindex].htotal, white);
-	    add_to_history(&game[gindex].history, &game[gindex].hindex,
-		    &game[gindex].htotal, black);
+	    fseek(fp, -(strlen(tmp) + 1), SEEK_CUR);
+	    /*
+	       printf("parse error?\n");
+	       */
+done:
+	    break;
 	}
 
 	gindex++;
@@ -461,6 +531,8 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     fprintf(fp, "\n");
 
     for (i = 0, n = 1; i < game[gindex].hindex; i += 2, n++) {
+	int x;
+
 	int wlen = strlen(game[gindex].history[i].move);
 	int blen = strlen(game[gindex].history[i + 1].move);
 
@@ -469,8 +541,26 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 	    len = 0;
 	}
 
-	fprintf(fp, "%u. %s %s ", n, game[gindex].history[i].move, 
-		game[gindex].history[i + 1].move);
+	fprintf(fp, "%u. %s ", n, game[gindex].history[i].move);
+
+	for (x = 0; x < MAX_PGN_NAG; x++) {
+	    if (game[gindex].history[i].nag[x])
+		fprintf(fp, "$%i ", game[gindex].history[i].nag[x]);
+	}
+
+	if (game[gindex].history[i].comment[0])
+	    fprintf(fp, "\n{%s}\n", game[gindex].history[i].comment);
+
+	fprintf(fp, "%s ", game[gindex].history[i + 1].move);
+
+	for (x = 0; x < MAX_PGN_NAG; x++) {
+	    if (game[gindex].history[i + 1].nag[x])
+		fprintf(fp, "$%i ", game[gindex].history[i + 1].nag[x]);
+	}
+
+	if (game[gindex].history[i + 1].comment[0])
+	    fprintf(fp, "\n{%s}\n", game[gindex].history[i + 1].comment);
+
 	len += wlen + blen + 6;
     }
 
