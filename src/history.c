@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.5 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: history.c,v 1.6 2002-12-14 20:58:05 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,11 +20,14 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include <panel.h>
 #include <ctype.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#ifdef HAVE_MENU_H
+#include <menu.h>
 #endif
 
 #include "common.h"
@@ -42,6 +45,128 @@ int get_history_by_index(int index, struct history *h)
 void reset_history()
 {
     game[gindex].hindex = game[gindex].htotal = 0;
+    return;
+}
+
+void history_edit_nag()
+{
+    WINDOW *win, *subw;
+    PANEL *panel;
+    ITEM **mitems = NULL;
+    MENU *menu;
+    int i;
+    int rows, cols;
+    char *mbuf = NULL;
+
+    for (i = 0; i < NARRAY(nag); i++) {
+	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+	mitems[i] = new_item((nag[i]) ? nag[i] : NONE, NULL);
+    }
+
+    mitems[i] = NULL;
+    menu = new_menu(mitems);
+    scale_menu(menu, &rows, &cols);
+
+    win = newwin(rows + 4, cols + 2, CALCPOSY(rows), CALCPOSX(cols));
+    set_menu_win(menu, win);
+    /* FIXME test. may not need to free subw. */
+    subw = derwin(win, rows, cols, 2, 1);
+    set_menu_sub(menu, subw);
+    set_menu_fore(menu, A_REVERSE);
+    set_menu_grey(menu, A_NORMAL);
+    set_menu_mark(menu, NULL);
+    set_menu_spacing(menu, 0, 0, 0);
+    menu_opts_off(menu, O_NONCYCLIC|O_SHOWDESC);
+    post_menu(menu);
+    panel = new_panel(win);
+    cbreak();
+    noecho();
+    keypad(win, TRUE);
+    set_menu_pattern(menu, mbuf);
+    draw_window_title(win, NAG_TITLE, cols + 2);
+    set_current_item(menu, 
+	    mitems[game[gindex].history[game[gindex].hindex].nag]);
+
+    while (1) {
+	int c;
+	char *tmp;
+	int pages, page;
+	char buf[cols - 4];
+
+	wattron(win, A_REVERSE);
+
+	for (c = 1; c < (cols + 2) - 1; c++)
+	    mvwprintw(win, rows + 2, c, " ");
+
+	c = item_index(current_item(menu)) + 1;
+	pages = item_count(menu) / (rows - 4);
+	page = c / pages + 1;
+
+	snprintf(buf, sizeof(buf), "Page %i of %i  Item %i of %i", 
+		page, pages, c, item_count(menu));
+	mvwprintw(win, rows + 2, CENTERX(cols, buf), "%s", buf);
+
+	wattroff(win, A_REVERSE);
+
+	/* This nl() statement needs to be here because NL is recognized
+	 * for some reason after the first selection.
+	 */
+	nl();
+	update_panels();
+	doupdate();
+
+	c = wgetch(win);
+
+	switch (c) {
+	    case KEY_UP:
+		menu_driver(menu, REQ_UP_ITEM);
+		break;
+	    case KEY_DOWN:
+		menu_driver(menu, REQ_DOWN_ITEM);
+		break;
+	    case KEY_PPAGE:
+	    case CTRL('P'):
+		menu_driver(menu, REQ_SCR_UPAGE);
+		break;
+	    case KEY_NPAGE:
+	    case CTRL('N'):
+		menu_driver(menu, REQ_SCR_DPAGE);
+		break;
+	    case '\n':
+		goto gotitem;
+		break;
+	    case KEY_ESCAPE:
+		goto done;
+		break;
+	    default:
+		tmp = menu_pattern(menu);
+
+		if (tmp && tmp[strlen(tmp) - 1] != c) {
+		    menu_driver(menu, REQ_CLEAR_PATTERN);
+		    menu_driver(menu, c);
+		}
+		else {
+		    if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			menu_driver(menu, c);
+		}
+
+		break;
+	}
+    }
+
+gotitem:
+    game[gindex].history[game[gindex].hindex].nag = item_index(current_item(menu));
+
+done:
+    unpost_menu(menu);
+    free_menu(menu);
+
+    for (i = 0; mitems[i]; i++)
+	free_item(mitems[i]);
+
+    del_panel(panel);
+    delwin(win);
+    delwin(subw);
     return;
 }
 
