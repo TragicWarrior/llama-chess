@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.79 2003-02-01 20:56:06 bjk Exp $ */
+/* $Id: pgn.c,v 1.80 2003-02-01 21:10:44 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -650,6 +650,8 @@ void new_game(BOARD b)
 {
     static int firstrun;
 
+    status.side = status.turn = WHITE;
+
     if (gtotal == 0)
 	firstrun = 1;
     else
@@ -785,7 +787,9 @@ int parse_pgn_file(BOARD b, const char *filename)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
-	    if (c == '\n' && nextchar == '\n') {
+	    if ((c == '\n' && nextchar == '\n') || 
+		    ((isdigit(c) && (nextchar == '-' || nextchar == '/'))
+		     || c == '*')) {
 		parse_error = 0;
 		nulltags = 1;
 	    }
