@@ -1,3 +1,30 @@
+2002-12-09 Monday 16:24  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.h (1.11), pgn.c (1.10), pgn.h (1.4):
+	
+	Return a pgndata structure in edit_pgn_data().
+	
+	If a tags value in the menu is greater than MAX_VALUE_WIDTH, select
+	to view it.
+
+2002-12-09 Monday 16:20  Ben Kibbey <bjk@arbornet.org>
+
+	* src/input.c (1.6):
+	
+	Goto the EOL if theres initial text.
+	
+	Pressing ESC will restore the initial text, if any rather than
+	clearing it.
+
+2002-12-09 Monday 16:18  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.15):
+	
+	Fix for tags with a with greater than the data window.
+	
+	Edit a backup up the tag data in case the save fails or is
+	cancelled.
+
 2002-12-09 Monday 13:54  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.14), cboard.h (1.10), common.h (1.7), pgn.c
