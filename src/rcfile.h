@@ -1,4 +1,4 @@
-/* $Id: rcfile.h,v 1.3 2002-12-18 14:48:32 bjk Exp $ */
+/* $Id: rcfile.h,v 1.4 2002-12-19 16:53:05 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,4 +20,5 @@
 #define RCFILE_H
 
 int isinteger(const char *);
+int add_pgn_data(struct pgndata **, int *, const char *, const char *);
 #endif

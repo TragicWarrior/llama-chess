@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.5 2002-12-17 15:33:44 bjk Exp $ */
+/* $Id: rcfile.c,v 1.6 2002-12-19 16:53:05 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
+#include <ctype.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -33,12 +34,14 @@ void parse_rcfile(const char *filename)
     FILE *fp;
     char *line, buf[LINE_MAX];
     int lines = 0;
+    int n;
 
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
 
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
 	char var[30], val[50];
+	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
 
 	lines++;
 	line = trim(line);
@@ -46,7 +49,7 @@ void parse_rcfile(const char *filename)
 	if (!line[0] || line[0] == '#')
 	    continue;
 
-	if (sscanf(line, "%s %s", var, val) != 2)
+	if (sscanf(line, "%s %[^\n]", var, val) != 2)
 	    errx(EXIT_FAILURE, "%s(%i): parse error", filename, lines);
 
 	strncpy(val, trim(val), sizeof(val));
@@ -80,6 +83,25 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.engine_depth = atoi(val);
+	}
+	else if (strcmp(var, "pgntag") == 0) {
+	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
+		    n > 2)
+		errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, 
+			lines, val);
+
+	    if (n == 1)
+		value[0] = 0;
+
+	    for (n = 0; n < strlen(token); n++) {
+		if (!isalpha(token[n]) && token[n] != '_')
+		    errx(EXIT_FAILURE, 
+			    "%s(%i): token names must match 0-9A-Za-z_.",
+			    filename, lines);
+	    }
+
+	    token[0] = toupper(token[0]);
+	    add_pgn_data(&config.pgn, &config.pindex, trim(token), trim(value));
 	}
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
