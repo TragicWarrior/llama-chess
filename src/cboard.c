@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.77 2003-01-30 16:53:23 bjk Exp $ */
+/* $Id: cboard.c,v 1.78 2003-01-30 17:52:28 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -49,7 +49,7 @@ char *random_agony()
     FILE *fp;
     char line[LINE_MAX];
 
-    if (index == -1 || !config.agony || 
+    if (index == -1 || !config.agony || !curses_initialized ||
 	    (browse_history && !config.historyagony))
 	return NULL;
 
