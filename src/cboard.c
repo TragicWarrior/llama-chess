@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.63 2003-01-24 20:21:50 bjk Exp $ */
+/* $Id: cboard.c,v 1.64 2003-01-24 21:27:20 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1079,12 +1079,12 @@ void game_loop()
 		if (browse_history && game[gindex].hindex != 
 			game[gindex].htotal && (c == 'S' || config.saveprompt))
 		{
-		    c = message_uncentered(NULL, GAME_SAVE_HISTORY_PROMPT,
+		    n = message_uncentered(NULL, GAME_SAVE_HISTORY_PROMPT,
 			    "%s", GAME_SAVE_HISTORY_TEXT);
 
-		    if (c == 'c')
+		    if (n == 'c')
 			game[gindex].htotal = game[gindex].hindex;
-		    else if (c == 'a');
+		    else if (n == 'a');
 		    else
 			break;
 		}
@@ -1130,6 +1130,7 @@ void game_loop()
 		gindex = gtotal - 1;
 		gactive = gindex;
 		status.notify = NOTIFY_SAVED;
+		switch_turn();
 		update_all();
 		break;
 	    case CTRL('G'):
