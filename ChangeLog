@@ -1,3 +1,25 @@
+2002-12-14 Saturday 16:00  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.24), cboard.h (1.17), common.h (1.15), engine.c
+	(1.9), pgn.c (1.20):
+	
+	More fiddling with PGN game resume. Still dont work though.
+
+2002-12-14 Saturday 15:59  Ben Kibbey <bjk@arbornet.org>
+
+	* src/input.c (1.12):
+	
+	get_input() how accepts two more arguments. The first is a
+	character pointer being one more line of help prompt. The other is
+	a function pointer which is called (if not NULL) when CTRL-t is
+	pressed.
+
+2002-12-14 Saturday 15:58  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: history.c (1.6), history.h (1.4):
+	
+	Beginings of NAG support.
+
 2002-12-13 Friday 16:55  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: Makefile.am (1.5), cboard.c (1.23), cboard.h (1.16),
