@@ -40,10 +40,11 @@ The following command line options are available:
 .
 .Bl -tag -width
 .It Fl p Ar pgnfile
-Load a PGN formatted file. If the filename extension ends with .Z, .gz or .zip,
-then it will be uncompressed (and compressed if saving) automatically provided
-you have
+Load a PGN formatted file. If the filename extension ends with .Z, .bz, .bz2,
+.gz or .zip, then it will be uncompressed (and compressed if saving)
+automatically provided you have
 .Xr compress 1 ,
+.Xr bzip2 1 ,
 .Xr gzip 1
 and
 .Xr zip 1
@@ -115,9 +116,24 @@ mode, prompt for additional save commands. The default is
 .Pp
 .It Cm clevel Ar 1-9
 Compression level of compressed saved files compressed with
-.Xr zip 1
+.Xr zip 1 ,
+.Xr bzip2 1
 and 
 .Xr gzip 1 .
+.Pp
+.It Cm ics_server Ar hostname
+Internet chess server hostname used for network games. The default is
+.Ar ics.freechess.org .
+.Pp
+.It Cm ics_port Ar port
+ICS server port. The default is 
+.Ar 5000 .
+.Pp
+.It Cm ics_user Ar username
+Optional username for ICS authentication.
+.Pp
+.It Cm ics_passwd Ar password
+Password for ICS username.
 .El
 .
 .Sh COLORS

@@ -37,6 +37,18 @@ clevel		6
 # If "off", the chess board line graphics will not be drawn.
 line_graphics	on
 
+# ICS server.
+ics_server	ics.freechess.org
+
+# ICS server port.
+ics_port	5000
+
+# ICS username.
+#ics_user	username
+
+# ICS user password.
+#ics_passwd	password
+
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
 # names which must be one of: black, white, red, magenta, yellow, blue, cyan
