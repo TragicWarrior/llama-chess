@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.4 2002-12-10 22:17:57 bjk Exp $ */
+/* $Id: misc.c,v 1.5 2002-12-16 18:47:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -78,4 +78,17 @@ char *itoa(long n)
 
     snprintf(buf, sizeof(buf), "%li", n);
     return buf;
+}
+
+int isinteger(const char *str)
+{
+    int i;
+    int len = strlen(str);
+
+    for (i = 0; i < len; i++) {
+	if (!isdigit(str[i]))
+	    return 0;
+    }
+
+    return 1;
 }
