@@ -1,3 +1,46 @@
+2002-12-30 Monday 14:00  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.46), common.h (1.31), history.h (1.12):
+	
+	init_board() takes one argument being the board_matrix struture to
+	initialize.
+
+2002-12-30 Monday 14:00  Ben Kibbey <bjk@arbornet.org>
+
+	* src/message.c (1.7):
+	
+	Fix for compile time warning.
+
+2002-12-30 Monday 13:59  Ben Kibbey <bjk@arbornet.org>
+
+	* src/Makefile.am (1.7):
+	
+	Added move.[ch] to the archive.
+
+2002-12-30 Monday 13:59  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: move.c (1.1), move.h (1.1):
+	
+	Initial commit.
+
+2002-12-30 Monday 13:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/rcfile.c (1.15):
+	
+	Fix compile time warnings.
+
+2002-12-30 Monday 13:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: pgn.c (1.40), pgn.h (1.16):
+	
+	Now recognizes EOG markers (wont do anything with'em yet though).
+
+2002-12-30 Monday 09:31  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.39):
+	
+	Fix for EOL type comment.
+
 2002-12-30 Monday 09:25  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: common.h (1.30), pgn.c (1.38):

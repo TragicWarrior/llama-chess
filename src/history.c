@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.24 2002-12-23 20:20:43 bjk Exp $ */
+/* $Id: history.c,v 1.25 2002-12-30 18:58:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -148,7 +148,7 @@ char *history_edit_nag(void *arg)
 
     if (!nag) {
 	if (init_nag())
-	    return;
+	    return NULL;
     }
 
     i = 0;
@@ -513,7 +513,7 @@ static void parse_history_move(int index)
 {
     int i;
 
-    init_board();
+    init_board(board);
     game[gindex].bcaptures = game[gindex].wcaptures = 0;
 
     for (i = 0; i < index; i++) {
