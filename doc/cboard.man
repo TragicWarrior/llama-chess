@@ -154,6 +154,7 @@ default is
 .
 .Sh COLORS
 .Bl -tag -compact
+.It Cm board_window Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_selected Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_cursor Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_black Ar foreground Ar background Op Ar cattr Op Ar attr

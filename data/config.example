@@ -69,6 +69,7 @@ ics_user	guest
 # a single comma. The following attributes are available: bold, blink,
 # reverse, dim, standout, underline, invisible, or none. Note that not all
 # terminals support all attributes.
+board_window	white	black
 board_graphics	white	black
 board_selected	white	yellow	none	bold,reverse
 board_cursor	white	green	none	bold,reverse
