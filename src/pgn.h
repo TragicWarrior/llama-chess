@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.4 2002-12-09 21:24:24 bjk Exp $ */
+/* $Id: pgn.h,v 1.5 2002-12-10 22:19:04 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,8 +20,9 @@
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 #define PGN_EDIT_TITLE	"Editing PGN Save Data"
-#define PGN_EDIT_PROMPT	"UP/DOWN/ENTER selects, 'a' adds, 'r' removes, " \
-			"and 'q' quits"
+#define PGN_PROMPT	"Type '^G' for help"
+#define PGN_INFO_HELP	"PGN Information Keys"
+#define PGN_EDIT_HELP	"PGN Edit Keys"
 #define PGN_EDIT_TAG	"Editing PGN Roster Tag"
 #define PGN_BAD_INDEX	"Could not get window index number"
 #define PGN_REMOVE_STR	"Cannot remove the Seven Tag Roster"
@@ -39,4 +40,21 @@ struct {
     {"0-1", "black wins"},
     {"1/2-1/2", "draw"},
     {"*", "undetermined"}
+};
+
+const char *pgn_edit_help[] = {
+    "j/UP,k/DOWN - select menu entry",
+    "      ENTER - edit entry",
+    "          a - add an entry",
+    "          r - remove an entry",
+    "          q - quit with changes",
+    "        ESC - quit without changes",
+    NULL
+};
+
+const char *pgn_info_help[] = {
+    "j/UP,k/DOWN - select menu entry",
+    "      ENTER - view entry",
+    "   ESC or q - quit",
+    NULL
 };

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.11 2002-12-09 21:51:53 bjk Exp $ */
+/* $Id: pgn.c,v 1.12 2002-12-10 22:19:04 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -32,6 +32,7 @@
 #include <string.h>
 #include <time.h>
 #include <pwd.h>
+#include <ctype.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -311,6 +312,8 @@ struct pgndata *edit_pgn_data(int edit)
 	char *tmp = NULL;
 	int rows, cols;
 	int selected = -1;
+	char tmptime[MAX_TIME_LEN];
+	struct tm tp;
 
 	for (i = 0; i < data_index; i++) {
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
@@ -323,20 +326,15 @@ struct pgndata *edit_pgn_data(int edit)
 	menu = new_menu(mitems);
 	scale_menu(menu, &rows, &cols);
 
-	if (edit) {
-	    if (cols < strlen(PGN_EDIT_TITLE))
-		cols = strlen(PGN_EDIT_TITLE) + 2;
-	}
-	else {
-	    if (cols < strlen(PGN_INFO_TITLE))
-		cols = strlen(PGN_INFO_TITLE) + 2;
-	}
+	if (cols < strlen(PGN_PROMPT))
+	    cols = strlen(PGN_PROMPT);
 
-	win = newwin(rows + 3, cols + 2, CALCPOSY(rows), CALCPOSX(cols));
-	/* FIXME */
+	cols += 2;
+
+	win = newwin(rows + 5, cols, CALCPOSY(rows), CALCPOSX(cols));
 	set_menu_format(menu, 12, 0);
 	set_menu_win(menu, win);
-	set_menu_sub(menu, derwin(win, rows, cols, 2, 1));
+	set_menu_sub(menu, derwin(win, rows, cols - 2, 2, 1));
 	set_menu_fore(menu, A_REVERSE);
 	set_menu_grey(menu, A_NORMAL);
 	set_menu_mark(menu, NULL);
@@ -345,7 +343,10 @@ struct pgndata *edit_pgn_data(int edit)
 	post_menu(menu);
 	panel = new_panel(win);
 	draw_window_title(win, (edit) ? PGN_EDIT_TITLE : PGN_INFO_TITLE, 
-		cols + 2);
+		cols);
+
+	mvwprintw(win, rows + 3, CENTERX(cols, PGN_PROMPT), "%s", PGN_PROMPT);
+
 	cbreak();
 	noecho();
 	nonl();
@@ -364,6 +365,12 @@ struct pgndata *edit_pgn_data(int edit)
 	    c = wgetch(win);
 
 	    switch (c) {
+		case '':
+		    if (edit)
+			help(PGN_EDIT_HELP, pgn_edit_help);
+		    else
+			help(PGN_INFO_HELP, pgn_info_help);
+		    break;
 		case 'r':
 		    if (!edit)
 			break;
@@ -395,9 +402,11 @@ struct pgndata *edit_pgn_data(int edit)
 		    if (!edit)
 			break;
 
-		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 
+		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 1, 0,
 				    FIELD_TYPE_PGN_TAG_NAME)) == NULL)
 			break;
+
+		    newtag[0] = toupper(newtag[0]);
 
 		    if (add_pgn_data(&data, &data_index, newtag, NULL)) {
 			message(ERROR, ANYKEY, "%s \"%s\"", PGN_DUPLICATE,
@@ -439,15 +448,30 @@ gotitem:
 	    goto cleanup;
 	}
 
-	if (strcmp(data[selected].token, "Date") == 0) {
-	    message(NULL, ANYKEY, "%s \"Date\"", PGN_EDIT_REFUSE);
-	    goto cleanup;
-	}
-
 	snprintf(buf, sizeof(buf), "%s \"%s\"", PGN_EDIT_TAG,
 		data[selected].token);
 
-	tmp = get_input_str(buf, data[selected].value);
+	if (strcmp(data[selected].token, "Date") == 0) {
+	    tmp = strptime(data[selected].value, TIME_FORMAT, &tp);
+	    strftime(tmptime, MAX_TIME_LEN, PGN_TIME_FORMAT, &tp);
+
+	    tmp = get_input(buf, tmptime, 0, 0, FIELD_TYPE_PGN_DATE);
+
+	    if (tmp) {
+		if (strptime(tmp, PGN_TIME_FORMAT, &tp) == NULL) {
+		    message(ERROR, ANYKEY, "The \"Date\" tag must be in "
+			    "YYYY.MM.DD format");
+		    goto cleanup;
+		}
+	    }
+	    else
+		goto cleanup;
+	}
+	else if (strcmp(data[selected].token, "Round") == 0)
+	    tmp = get_input(buf, itoa(status.rounds), 1, 1, 
+			FIELD_TYPE_PGN_ROUND);
+	else
+	    tmp = get_input(buf, data[selected].value, 0, 0, -1);
 
 	if (tmp) {
 	    if (strcmp(tmp, UNKNOWN) == 0)
