@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.45 2003-01-08 21:54:07 bjk Exp $ */
+/* $Id: pgn.c,v 1.46 2003-01-09 17:13:28 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -17,13 +17,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-/* This tries to match the PGN specification as much as possible. The only
- * real exception are the 'Result' and 'Date' tags which are converted for
- * easier reading. It'll be converted back to the standard when saving to a
- * file.
- *
- * User defined tags are supported and can be displayed in-game (see help).
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -511,6 +504,21 @@ void new_game(struct board_matrix b[][8])
     return;
 }
 
+/* Skip RAV text section for now as it's unsupported. */
+static void rav_text(FILE *fp, int which)
+{
+    int c;
+
+    while ((c = fgetc(fp)) != EOF) {
+	if (c == '(')
+	    rav_text(fp, c);
+	else if (c == ')')
+	    break;
+    }
+
+    return;
+}
+
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
@@ -555,6 +563,11 @@ int parse_pgn_file(const char *filename)
 
 	if (isspace(c))
 	    continue;
+
+	if (c == '(' || c == ')') {
+	    rav_text(fp, c);
+	    continue;
+	}
 
 	if (c == '$' || c == '!' || c == '?' || c == '+' || c == '-' || 
 		c == '~' || c == '=') {
