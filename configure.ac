@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.14 2003-01-28 17:39:42 bjk Exp $
+dnl $Id: configure.ac,v 1.15 2003-01-30 16:54:46 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.4, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -45,14 +45,26 @@ dnl Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([bzero strdup strerror strrchr vasprintf])
 
-AC_DEFINE([MAX_PGN_LINE_LEN], 255, [Maximum line length in a PGN file.])
-AC_DEFINE([MAX_PGN_MOVE_LEN], 7, [Maximum SAN move length without terminating NULL.])
-AC_DEFINE([MAX_PGN_NAG], 5, [Maximum number of NAG entries per move.])
-AC_DEFINE_UNQUOTED([DEFAULT_ICS_SERVER], "localhost", 
-		   [Default internet chess server.])
-AC_DEFINE([DEFAULT_ICS_PORT], 5000, [Default internet chess server port.])
-AC_DEFINE_UNQUOTED([DEFAULT_ICS_USER], "guest",
-		   [Default internet chess server port.])
+AH_TOP([/* Maximum line length in a PGN file. */
+#define MAX_PGN_LINE_LEN 255])
+
+AH_TOP([/* Maximum SAN move length without terminating NULL. */
+#define MAX_PGN_MOVE_LEN 7])
+
+AH_TOP([/* Maximum number of NAG entries per move. */
+#define MAX_PGN_NAG 5])
+
+AH_TOP([/* Default internet chess server. */
+#define DEFAULT_ICS_SERVER "localhost"])
+
+AH_TOP([/* Default internet chess server port. */
+#define DEFAULT_ICS_PORT 5000])
+
+AH_TOP([/* Default internet chess server username. */
+#define DEFAULT_ICS_USER "guest"])
+
+AH_TOP([/* Default chess engine command and arguments. */
+#define DEFAULT_ENGINE_CMD "gnuchess xboard"])
 
 AC_DEFUN([AC_DEBUG],
 [
@@ -73,5 +85,5 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debugging.]),
 
 AM_WITH_DMALLOC
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile etc/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile data/Makefile])
 AC_OUTPUT
