@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.50 2003-01-09 17:58:16 bjk Exp $ */
+/* $Id: pgn.c,v 1.51 2003-01-09 18:02:42 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -1152,9 +1152,17 @@ gotitem:
 	    else
 		goto cleanup;
 	}
-	else if (strcmp(data[selected].token, "Round") == 0)
+	else if (strcmp(data[selected].token, "Round") == 0) {
 	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL, 0,
 		    FIELD_TYPE_PGN_ROUND);
+
+	    if (!tmp) {
+		if (gtotal > 1)
+		    tmp = "?";
+		else
+		    tmp = "-";
+	    }
+	}
 	else if (strcmp(data[selected].token, "Result") == 0) {
 	    tmp = get_input(buf, data[selected].value, 1, 1, NULL, NULL, NULL, 
 		    0, -1);
