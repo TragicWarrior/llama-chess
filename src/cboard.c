@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.95 2003-02-05 16:21:44 bjk Exp $ */
+/* $Id: cboard.c,v 1.96 2003-02-05 16:26:56 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1177,11 +1177,21 @@ void game_loop()
 	    case 'H':
 	        ccol = 8;
 		break;
+	    case '_':
 	    case '+':
 		if (status.engine != ENGINE_READY)
 		    break;
 
-		config.engine_depth = (count) ? count : ++config.engine_depth;
+		n = (count) ? count : 1;
+
+		if (c == '_') {
+		    if (config.engine_depth - n < 0)
+			config.engine_depth = 0;
+		    else
+			config.engine_depth -= n;
+		}
+		else
+		    config.engine_depth += n;
 
 		SEND_TO_ENGINE("depth %i\n", config.engine_depth);
 		break;
