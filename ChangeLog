@@ -1,3 +1,17 @@
+2003-01-09 Thursday 12:13  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.53), cboard.h (1.38):
+	
+	Added command 'D' to delete a game.
+	
+	White and black window changes.
+
+2003-01-09 Thursday 12:13  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.46):
+	
+	Skip RAV text for the time being.
+
 2003-01-08 Wednesday 16:59  Ben Kibbey <bjk@arbornet.org>
 
 	* src/cboard.c (1.52):
