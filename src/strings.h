@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.12 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: strings.h,v 1.13 2003-01-27 18:10:08 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -46,6 +46,7 @@
 #define GAME_HELP	"Command Keys"
 #define GAME_LOAD_TITLE	"Load Filename"
 #define GAME_SAVE_TITLE	"Save Game Filename"
+#define GAME_HELP_PROMPT	"Type CTRL-g for command keys"
 
 /* Error strings. */
 #define E_RESUME_BLACK	"Cannot resume a game with black starting position " \

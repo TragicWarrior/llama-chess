@@ -1,4 +1,4 @@
-/* $Id: colors.c,v 1.10 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: colors.c,v 1.11 2003-01-27 18:10:08 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -120,7 +120,7 @@ void set_default_colors()
     config.color[CONF_SENGINE].fg = COLOR_YELLOW;
     config.color[CONF_SENGINE].bg = COLOR_BLACK;
     config.color[CONF_SENGINE].nattrs = A_BOLD;
-    config.color[CONF_SNOTIFY].fg = COLOR_RED;
+    config.color[CONF_SNOTIFY].fg = COLOR_GREEN;
     config.color[CONF_SNOTIFY].bg = COLOR_BLACK;
     config.color[CONF_SNOTIFY].nattrs = A_BOLD;
     config.color[CONF_TWINDOW].fg = COLOR_WHITE;
