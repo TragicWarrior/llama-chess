@@ -1,3 +1,11 @@
+2002-12-19 Thursday 13:32  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.37), pgn.c (1.29):
+	
+	Parser fix.
+	
+	Fix for segfault.
+
 2002-12-19 Thursday 13:19  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: common.h (1.22), history.c (1.18), rcfile.c (1.7):
