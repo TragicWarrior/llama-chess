@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.82 2003-01-31 19:51:36 bjk Exp $ */
+/* $Id: cboard.c,v 1.83 2003-01-31 20:47:38 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -338,11 +338,13 @@ void update_status_window()
     int i;
     char buf[STATUS_WIDTH - 7];
     char tmp[15];
+    int w = STATUS_WIDTH - 10;
 
+    mvwprintw(statusw, 2, 1, "  File: %-*s", w,
+	    (pgnfile[0]) ? str_etc(pgnfile, w, 1) : UNAVAILABLE);
     snprintf(buf, sizeof(buf), "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
 	    (game[gindex].delete) ? GAME_NOTSAVED : "");
-    mvwprintw(statusw, 2, 1, "%*s %-*s", 7, STATUS_GAME_STR, STATUS_WIDTH - 10,
-	    buf);
+    mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
 
     switch (status.engine) {
 	case ENGINE_THINKING:
@@ -370,30 +372,29 @@ void update_status_window()
 	    break;
     }
 
-    mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, 
-	    STATUS_WIDTH - 10, " ");
+    mvwprintw(statusw, 4, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
-    mvwaddstr(statusw, 3, 9, buf);
+    mvwaddstr(statusw, 4, 9, buf);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, 4, 1, "%*s %-*i", 7, STATUS_DEPTH_STR,
-	    STATUS_WIDTH - 10, config.engine_depth);
+    mvwprintw(statusw, 5, 1, "%*s %-*i", 7, STATUS_DEPTH_STR, w,
+	    config.engine_depth);
 
-    mvwprintw(statusw, 5, 1, "%*s %-*s", 7, STATUS_BOOK_STR, STATUS_WIDTH - 10,
+    mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_BOOK_STR, w,
 	    book_method(config.book_method));
 
-    mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, STATUS_WIDTH - 10,
+    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
 	    (status.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     snprintf(buf, sizeof(buf), "c/%i", game[gindex].wcaptures);
-    mvwprintw(statusw, 7, 1, "%*s: %-*s", 6, tmp, STATUS_WIDTH - 10, buf);
+    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     snprintf(buf, sizeof(buf), "c/%i", game[gindex].bcaptures);
-    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, STATUS_WIDTH - 10, buf);
+    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -450,11 +451,10 @@ void update_history_window()
 void update_tag_window()
 {
     int i;
+    int w = TAG_WIDTH - 10;
 
     for (i = 0; i < 7; i++) {
-	char buf[TAG_WIDTH - 6 - 3];
-	char *value, *p;
-	int len;
+	char *value;
 	int n;
 
 	if ((game[gindex].tag[i].value[0] == '?' ||
@@ -473,21 +473,10 @@ void update_tag_window()
 	    }
 	}
 
-	len = strlen(value);
-
-	if (len > TAG_WIDTH - 6 - 4) {
-	    strncpy(buf, game[gindex].tag[i].value, sizeof(buf));
-
-	    p = buf + (TAG_WIDTH - 6 - 4 - 4);
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p = '\0';
-	    value = buf;
-	}
+	value = str_etc(game[gindex].tag[i].value, TAG_WIDTH - 6 - 4, 0);
 
 	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, game[gindex].tag[i].name,
-		TAG_WIDTH - 6 - 4, value);
+		w, value);
     }
 
     return;
@@ -895,7 +884,7 @@ void game_loop()
     while (!quit) {
 	int c = 0;
 	fd_set fds;
-	int i, x = 0, n = 0, len = 0;
+	int i, x, n = 0, len = 0;
 	char fdbuf[8192] = {0};
 	struct timeval tv;
 	char *tmp = NULL;
@@ -1285,6 +1274,8 @@ void game_loop()
 		break;
 	    case 'S':
 	    case 's':
+		x = -1;
+
 		if (gtotal > 1) {
 		    n = message(NULL, GAME_SAVE_MULTI_PROMPT, "%s", 
 			    GAME_SAVE_MULTI_TEXT);
@@ -1307,6 +1298,8 @@ void game_loop()
 		    update_status_window();
 		    break;
 		}
+
+		tmp = tilde_expand(tmp);
 
 		if (strstr(tmp, ".") == NULL && compression_cmd(tmp, 0)
 			== NULL) {
