@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.79 2003-01-30 18:36:40 bjk Exp $ */
+/* $Id: cboard.c,v 1.80 2003-01-30 19:24:09 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1825,7 +1825,7 @@ int main(int argc, char *argv[])
     tagw = newwin(TAG_HEIGHT, TAG_WIDTH, 0, 0);
     tagp = new_panel(tagw);
     keypad(boardw, TRUE);
-    leaveok(boardw, TRUE);
+//  leaveok(boardw, TRUE);
     leaveok(tagw, TRUE);
     leaveok(statusw, TRUE);
     leaveok(historyw, TRUE);
