@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.21 2003-02-03 17:28:46 bjk Exp $ */
+/* $Id: strings.h,v 1.22 2003-02-03 18:13:39 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -179,9 +179,9 @@
 #define HISTORY_MOVE_STEP	" (half step)"
 #define HISTORY_MOVE_STR	"Move:"
 #define HISTORY_MOVE_NEXT_STR	"Next move:"
-#define HISTORY_ANNO_NEXT	"(press ']')"
+#define HISTORY_ANNO_NEXT	"(press 'v')"
 #define HISTORY_MOVE_PREV_STR	"Prev move:"
-#define HISTORY_ANNO_PREV	"(press '[')"
+#define HISTORY_ANNO_PREV	"(press 'V')"
 
 /* White and black window strings. */
 #define BW_NAME_STR	"Name:"

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.82 2003-02-03 17:28:46 bjk Exp $ */
+/* $Id: pgn.c,v 1.83 2003-02-03 18:13:39 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -495,6 +495,7 @@ static void nag_text(FILE *fp)
 	break;
     }
 
+    skip_leading_space(fp);
     return;
 }
 
@@ -572,7 +573,7 @@ static void pgn_tag(FILE *fp)
     }
 
     *v = '\0';
-
+    
     while (isspace(*--v))
 	*v = '\0';
 
@@ -593,6 +594,8 @@ static void pgn_tag(FILE *fp)
 
     free(name);
     free(value);
+
+    skip_leading_space(fp);
     return;
 }
 
@@ -617,6 +620,7 @@ static int eog_marker(FILE *fp)
 	}
     }
 
+    skip_leading_space(fp);
     return 1;
 }
 

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.89 2003-02-03 17:41:36 bjk Exp $ */
+/* $Id: cboard.c,v 1.90 2003-02-03 18:13:38 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -431,7 +431,8 @@ void update_history_window()
     mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    get_history_by_index(game[gindex].hindex, &h);
+    if (get_history_by_index(game[gindex].hindex, &h))
+	memset(&h, 0, sizeof(HISTORY));
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
 	    ((h.comment && h.comment[0]) || h.nag[0]) ? HISTORY_ANNO_NEXT : "");
@@ -439,7 +440,7 @@ void update_history_window()
 	    HISTORY_WIDTH - 13, buf);
 
     if (get_history_by_index(game[gindex].hindex - 1, &h))
-	h.move[0] = 0;
+	memset(&h, 0, sizeof(HISTORY));
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
 	    ((h.comment && h.comment[0]) || h.nag[0]) ? HISTORY_ANNO_PREV : "");
@@ -1068,9 +1069,9 @@ void game_loop()
 	switch (c) {
 	    int annotate;
 
-	    case '_':
-	    case '+':
-	    case 'f':
+	    case '}':
+	    case '{':
+	    case '?':
 		if (gtotal < 2)
 		    break;
 
@@ -1140,8 +1141,8 @@ void game_loop()
 	    case 'H':
 	        ccol = 8;
 		break;
-	    case '{':
-	    case '}':
+	    case ']':
+	    case '[':
 	    case '/':
 		if (game[gindex].htotal < 2)
 		    break;
@@ -1165,10 +1166,10 @@ void game_loop()
 		parse_history_move(board, game[gindex].hindex);
 		update_all();
 		break;
-	    case ']':
+	    case 'v':
 	        view_annotation(game[gindex].hindex);
 		break;
-	    case '[':
+	    case 'V':
 	        view_annotation(game[gindex].hindex - 1);
 		break;
 	    case '>':
