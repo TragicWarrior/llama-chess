@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.2 2002-12-05 20:49:27 bjk Exp $ */
+/* $Id: cboard.c,v 1.3 2002-12-05 21:43:21 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -432,6 +432,7 @@ void game_loop()
 
     if (data.pgnfile[0]) {
 	send_to_engine("pgnload %s\n", data.pgnfile);
+	browse_history = 1;
 	init_history();
     }
     else
@@ -510,7 +511,7 @@ void game_loop()
 		if (browse_history) {
 		    if (history_index != history_total) {
 			if ((c = message(NULL, YESNO, 
-					"Resume game from previous history?")) != 'y')
+					"Resume game from history?")) != 'y')
 			    break;
 
 			history_total = history_index;
@@ -682,8 +683,8 @@ void game_loop()
 		    break;
 		}
 
-		if ((islower(selected_piece.icon) && status.bw != BLACK) ||
-			(isupper(selected_piece.icon) && status.bw != WHITE)) {
+		if ((islower(selected_piece.icon) && status.turn != BLACK) ||
+			(isupper(selected_piece.icon) && status.turn != WHITE)) {
 		    selected_piece.icon = 0;
 		    break;
 		}
