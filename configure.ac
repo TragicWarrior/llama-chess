@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $
+dnl $Id: configure.ac,v 1.2 2002-12-07 21:32:55 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.1, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -22,13 +22,14 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 dnl Checks for library functions.
-AC_CHECK_LIB(curses, initscr)
+AC_CHECK_LIB(ncurses, initscr)
 AC_CHECK_LIB(panel, new_panel)
+AC_CHECK_LIB(form, new_form)
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([limits.h sys/time.h unistd.h stdlib.h string.h curses.h \
-		 panel.h getopt.h])
+AC_CHECK_HEADERS([limits.h sys/time.h unistd.h stdlib.h string.h ncurses.h \
+		 panel.h form.h getopt.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
