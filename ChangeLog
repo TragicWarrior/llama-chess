@@ -1,0 +1,33 @@
+2002-12-05 Thursday 15:49  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.2), common.h (1.2), engine.c (1.2):
+	
+	Removed engine_version[].
+
+2002-12-05 Thursday 15:49  Ben Kibbey <bjk@arbornet.org>
+
+	* src/help.h (1.2):
+	
+	Changed load/save command text.
+
+2002-12-05 Thursday 15:38  Ben Kibbey <bjk@arbornet.org>
+
+	* Makefile.am (1.1), configure.ac (1.1), src/Makefile.am (1.1),
+	src/cboard.c (1.1), src/cboard.h (1.1), src/common.h (1.1),
+	src/engine.c (1.1), src/help.c (1.1), src/help.h (1.1), src/input.c
+	(1.1), src/message.c (1.1), src/misc.c (1.1), src/pgn.c (1.1),
+	src/pgn.h (1.1):
+	
+	Initial revision
+
+2002-12-05 Thursday 15:38  Ben Kibbey <bjk@arbornet.org>
+
+	* Makefile.am (1.1.1.1), configure.ac (1.1.1.1), src/Makefile.am
+	(1.1.1.1), src/cboard.c (1.1.1.1), src/cboard.h (1.1.1.1),
+	src/common.h (1.1.1.1), src/engine.c (1.1.1.1), src/help.c
+	(1.1.1.1), src/help.h (1.1.1.1), src/input.c (1.1.1.1),
+	src/message.c (1.1.1.1), src/misc.c (1.1.1.1), src/pgn.c (1.1.1.1),
+	src/pgn.h (1.1.1.1):
+	
+	Initial import.
+
