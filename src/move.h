@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.9 2003-01-28 17:39:17 bjk Exp $ */
+/* $Id: move.h,v 1.10 2003-01-29 17:06:28 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,5 +38,6 @@ enum {
 
 char *random_agony(void);
 void copy_board(BOARD, BOARD);
+void update_tag_window();
 
 #endif
