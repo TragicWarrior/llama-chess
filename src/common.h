@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.8 2002-12-09 21:51:53 bjk Exp $ */
+/* $Id: common.h,v 1.9 2002-12-10 22:18:10 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -63,7 +63,6 @@ FILE *debugfp;
 #define YESNO			"[ Yes or No ]"
 #define ERROR			"[ ERROR ]"
 #define CONFIRM			"[ CONFIRM ]"
-#define ENGINE_COMMAND_PROMPT	"Command: "
 #define UNKNOWN			"not available"
 
 #define CALCPOSY(y)		((y > LINES - 1) ? 0 : LINES / 2 - y / 2)
@@ -108,6 +107,7 @@ struct pgndata {
 
 struct history_s {
     char move[MAX_MOVE_LEN];
+    char comment[MAX_PGN_LINE_LEN];
 } *history;
 
 int cursor_y, cursor_x;
@@ -128,13 +128,15 @@ void parse_engine_output(char *);
 void draw_window_title(WINDOW *, const char *, int);
 char *real_filename(char *);
 char *get_input_str(const char *, const char *);
+char *get_input_str_clear(const char *, const char *);
 void help(const char *, const char **);
 char *trim(char *);
+char *itoa(long);
 
 enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
-    FIELD_TYPE_PGN_TAG_NAME};
-char *get_input(const char *, const char *, int, ...);
+    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND};
+char *get_input(const char *, const char *, int, int, int, ...);
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
