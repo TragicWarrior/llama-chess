@@ -1,4 +1,4 @@
-/* $Id: message.c,v 1.5 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: message.c,v 1.6 2002-12-28 21:07:50 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -64,17 +64,13 @@ int dump_message(const char *title, const char *prompt, int center,
 	}
     }
 
+    pos = (n > pos) ? n : pos;
+
     if (pos) {
 	if (pos > MSG_WIDTH)
 	    width = MSG_WIDTH;
 	else
 	    width = pos;
-    }
-    else {
-	if (n > MSG_WIDTH)
-	    width = MSG_WIDTH;
-	else
-	    width = n;
     }
 
     for (i = n = pos = 0; line[i]; i++, n++, pos++) {
