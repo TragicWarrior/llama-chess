@@ -1,4 +1,4 @@
-/* $Id: message.c,v 1.3 2002-12-20 00:30:55 bjk Exp $ */
+/* $Id: message.c,v 1.4 2002-12-20 21:45:18 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -28,17 +28,18 @@
 #include "common.h"
 #include "message.h"
 
-static int dump_message(const char *title, const char *prompt, 
+static int dump_message(const char *title, const char *prompt, int center,
 	const char *extra_help, void(*custom_func)(void*), void *arg, int ckey,
 	const char *format, va_list ap)
 {
     WINDOW *win;
     PANEL *panel;
-    FIELD *fields[2];
-    FORM *form;
-    char *line;
+    char *line, **lines = NULL;
     int width, height;
-    int c;
+    int i, n, pos;
+    int total = 0;
+    char buf[LINE_MAX], *p;
+    char *tmp;
 
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, format, ap);
@@ -47,37 +48,89 @@ static int dump_message(const char *title, const char *prompt,
     vsnprintf(line, LINE_MAX, format, ap);
 #endif
 
-    width = (strlen(line) < MSG_WIDTH) ? strlen(line) : MSG_WIDTH;
-    height = (width < MSG_WIDTH) ? 1 : strlen(line) / MSG_WIDTH + 1;
+    /* Get the longest line to dynamically adjust the message box width. */
+    for (i = n = pos = 0; line[i]; i++, n++) {
+	if (line[i] == '\n') {
+	    if (n > pos)
+		pos = n;
 
-    fields[0] = new_field(height, width, 0, 0, 0, 0);
-    set_field_buffer(fields[0], 0, line);
-    set_field_just(fields[0], JUSTIFY_CENTER);
-    field_opts_off(fields[0], O_EDIT);
-    fields[1] = NULL;
-    form = new_form(fields);
-    scale_form(form, &height, &width);
+	    n = 0;
+	}
+    }
 
-    if (width < strlen(prompt))
+    if (pos) {
+	if (pos > MSG_WIDTH)
+	    width = MSG_WIDTH;
+	else
+	    width = pos;
+    }
+    else {
+	if (n > MSG_WIDTH)
+	    width = MSG_WIDTH;
+	else
+	    width = n;
+    }
+
+    for (i = n = pos = 0; line[i]; i++, n++, pos++) {
+	if (line[i] == '\t')
+	    continue;
+
+	if (line[i] == '\n')
+	    pos = 0;
+
+	if (pos > width) {
+	    while (line[--i] != ' ')
+		buf[--n] = ' ';
+
+	    buf[n++] = '\n';
+	    pos = 0;
+	}
+
+	buf[n] = line[i];
+    }
+
+    free(line);
+
+    buf[n] = 0;
+    p = buf;
+
+    while ((tmp = strsep(&p, "\n")) != NULL) {
+	tmp = trim(tmp);
+
+	if (!*tmp)
+	    continue;
+
+	lines = Realloc(lines, (total + 2) * sizeof(char *));
+	lines[total++] = strdup(tmp);
+    }
+
+    lines[total] = NULL;
+
+    if (prompt && width < strlen(prompt))
 	width = strlen(prompt);
+
+    if (extra_help && width < strlen(extra_help))
+	width = strlen(extra_help);
 
     if (title && width < strlen(title))
 	width = strlen(title);
 
     width += 2;
+    height = total;
 
     if (extra_help)
 	height++;
 
-    win = newwin((title) ? height + 5 : height + 4, width + 2,
-	    CALCPOSY(((title) ? height + 5 : height + 4)),
-	    CALCPOSX(width));
-
-    draw_window_title(win, title, width + 2);
-
+    win = newwin((title) ? height + 5 : height + 4, width,
+	    CALCPOSY(((title) ? height + 5 : height + 4)), CALCPOSX(width));
     panel = new_panel(win);
-    set_form_win(form, win);
-    set_form_sub(form, derwin(win, height, width, (title) ? 2 : 1, 1));
+    draw_window_title(win, title, width);
+
+    wattron(win, MESSAGE_CP);
+
+    for (i = 0; lines[i]; i++)
+	mvwprintw(win, (title) ? 2 + i: 1 + i, 
+		(center) ? CENTERX(width, lines[i]) : 1, "%s", lines[i]);
 
     if (extra_help)
 	mvwprintw(win, (title) ? height + 2 : height + 1, 
@@ -85,28 +138,29 @@ static int dump_message(const char *title, const char *prompt,
 
     mvwprintw(win, (title) ? height + 3 : height + 2, 
 	    CENTERX(width, prompt), "%s", prompt);
-    post_form(form);
+
+    wattroff(win, MESSAGE_CP);
 
     while (1) {
 	update_panels();
 	doupdate();
 
-	c = wgetch(win);
+	n = wgetch(win);
 
-	if (!custom_func || c != ckey)
+	if (!custom_func || n != ckey)
 	    break;
 
 	custom_func(arg);
     }
 
-    unpost_form(form);
-    free_form(form);
-    free_field(fields[0]);
     del_panel(panel);
     delwin(win);
-    free(line);
 
-    return c;
+    for (i = 0; i < total; i++)
+	free(lines[i]);
+
+    free(lines);
+    return n;
 }
 
 int show_message(const char *title, const char *prompt, 
@@ -117,7 +171,7 @@ int show_message(const char *title, const char *prompt,
     int ret;
 
     va_start(ap, format);
-    ret = dump_message(title, prompt, extra_help, custom_func, arg, ckey, 
+    ret = dump_message(title, prompt, 0, extra_help, custom_func, arg, ckey, 
 	    format, ap);
     va_end(ap);
 
@@ -130,7 +184,20 @@ int message(const char *title, const char *prompt, const char *format, ...)
     int ret;
 
     va_start(ap, format);
-    ret = dump_message(title, prompt, NULL, NULL, NULL, 0, format, ap);
+    ret = dump_message(title, prompt, 1, NULL, NULL, NULL, 0, format, ap);
+    va_end(ap);
+
+    return ret;
+}
+
+int message_uncentered(const char *title, const char *prompt, 
+	const char *format, ...)
+{
+    va_list ap;
+    int ret;
+
+    va_start(ap, format);
+    ret = dump_message(title, prompt, 0, NULL, NULL, NULL, 0, format, ap);
     va_end(ap);
 
     return ret;
