@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.43 2003-01-23 23:11:02 bjk Exp $ */
+/* $Id: common.h,v 1.44 2003-01-24 20:22:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -131,9 +131,9 @@ struct games {
     struct tags *tag;
     int tindex;
     struct history *history;
-    int sockfd;
     int hindex;
     int htotal;
+    int sockfd;
     int openingside;
     int wcaptures;
     int bcaptures;
@@ -172,13 +172,14 @@ struct colors {
 };
 
 struct {
-    int history_jump;
+    int jumpcount;
     int book_method;
     int engine_depth;
     int historyagony;
     int agony;
     int linegraphics;
     int saveprompt;
+    int deleteprompt;
     int clevel;
     int validmoves;
     char ics_server[MAXHOSTNAMELEN];
