@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.31 2002-12-20 00:42:14 bjk Exp $ */
+/* $Id: pgn.c,v 1.32 2002-12-20 21:45:59 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -322,26 +322,33 @@ static void add_move(FILE *fp, const char *move)
     return;
 }
 
+static void reset_game_data()
+{
+    if (gtotal)
+	free_game_data();
+
+    gtotal = gindex = 0;
+
+    return;
+}
+
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
     char buf[LINE_MAX], *tmp;
     int tag_section = 0;
 
-    if (gtotal)
-	free_game_data();
-
-    gtotal = gindex = 0;
-
     if (!*filename) {
+	reset_game_data();
 	init_data();
 	return 0;
     }
 
-    game = Calloc(1, sizeof(struct games));
-
     if ((fp = fopen(filename, "r")) == NULL)
 	return 1;
+
+    reset_game_data();
+    game = Calloc(1, sizeof(struct games));
 
     while ((tmp = fgets(buf, sizeof(buf), fp)) != NULL) {
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
