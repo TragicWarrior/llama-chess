@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.14 2003-01-28 17:39:17 bjk Exp $ */
+/* $Id: strings.h,v 1.15 2003-01-29 00:53:27 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -50,6 +50,7 @@
 
 /* Error strings. */
 #define E_REGCOMP_TITLE	"Error Compiling Regular Expression"
+#define E_REGEXEC_TITLE	"Error Matching Regular Expression"
 #define E_RESUME_BLACK	"Cannot resume a game with black starting position " \
     "(yet)."
 #define E_HOME_ENV	"The HOME environment variable is unset."
@@ -172,6 +173,7 @@
 #define ENGINE_MOVE_HISTORY_STR	" (move history)"
 
 /* History window strings. */
+#define HISTORY_MOVE_STEP	" (half step)"
 #define HISTORY_MOVE_STR	"Move:"
 #define HISTORY_MOVE_NEXT_STR	"Next move:"
 #define HISTORY_ANNO_NEXT	"(press ']')"

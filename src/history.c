@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.35 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: history.c,v 1.36 2003-01-29 00:53:27 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -425,11 +425,11 @@ void parse_history_move(BOARD b, int index)
 
 void history_previous(BOARD b, int n)
 {
-    if (game[gindex].hindex - n < 0) {
-	if (n != 1)
-	    game[gindex].hindex = 0;
-	else
+    if (game[gindex].hindex - n <= 0) {
+	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
 	    game[gindex].hindex = game[gindex].htotal;
+	else
+	    game[gindex].hindex = 0;
     }
     else
 	game[gindex].hindex -= n;
@@ -441,10 +441,10 @@ void history_previous(BOARD b, int n)
 void history_next(BOARD b, int n)
 {
     if (game[gindex].hindex + n > game[gindex].htotal) {
-	if (n != 1)
-	    game[gindex].hindex = game[gindex].htotal;
-	else
+	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
 	    game[gindex].hindex = 0;
+	else
+	    game[gindex].hindex = game[gindex].htotal;
     }
     else
 	game[gindex].hindex += n;

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.48 2003-01-28 17:39:17 bjk Exp $ */
+/* $Id: common.h,v 1.49 2003-01-29 00:53:26 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -215,6 +215,7 @@ int gindex, gtotal; /* Current game and total number of games. */
 int browse_history; /* 1 if in history mode. */
 int engine_initialized;
 int oldhistorytotal; /* This is a failsafe when resuming a game. */
+int movestep;
 
 enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,

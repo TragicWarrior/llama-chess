@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.71 2003-01-28 17:39:17 bjk Exp $ */
+/* $Id: cboard.c,v 1.72 2003-01-29 00:53:26 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -330,10 +330,12 @@ void update_status_window()
 {
     int i;
     char buf[STATUS_WIDTH - 7];
+    char tmp[15];
 
     snprintf(buf, sizeof(buf), "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
 	    (game[gindex].delete) ? GAME_NOTSAVED : "");
-    mvwprintw(statusw, 2, 1, "%s %-*s", STATUS_GAME_STR, STATUS_WIDTH - 8, buf);
+    mvwprintw(statusw, 2, 1, "%*s %-*s", 7, STATUS_GAME_STR, STATUS_WIDTH - 10,
+	    buf);
 
     switch (status.engine) {
 	case ENGINE_THINKING:
@@ -361,20 +363,30 @@ void update_status_window()
 	    break;
     }
 
-    mvwprintw(statusw, 3, 1, "%s %-*s", STATUS_ENGINE_STR, STATUS_WIDTH - 10, 
-	    " ");
+    mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, 
+	    STATUS_WIDTH - 10, " ");
     wattron(statusw, CP_STATUS_ENGINE);
     mvwaddstr(statusw, 3, 9, buf);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, 4, 1, "%s %-*i", STATUS_DEPTH_STR, STATUS_WIDTH - 9,
-	    config.engine_depth);
+    mvwprintw(statusw, 4, 1, "%*s %-*i", 7, STATUS_DEPTH_STR,
+	    STATUS_WIDTH - 10, config.engine_depth);
 
-    mvwprintw(statusw, 5, 1, "%s %-*s", STATUS_BOOK_STR, STATUS_WIDTH - 8,
+    mvwprintw(statusw, 5, 1, "%*s %-*s", 7, STATUS_BOOK_STR, STATUS_WIDTH - 10,
 	    book_method(config.book_method));
 
-    mvwprintw(statusw, 6, 1, "%s %-*s", STATUS_TURN_STR, STATUS_WIDTH - 8,
+    mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, STATUS_WIDTH - 10,
 	    (status.turn == WHITE) ? WHITE_STR : BLACK_STR);
+
+    strncpy(tmp, WHITE_STR, sizeof(tmp));
+    tmp[0] = toupper(tmp[0]);
+    snprintf(buf, sizeof(buf), "c/%i", game[gindex].wcaptures);
+    mvwprintw(statusw, 7, 1, "%*s: %-*s", 6, tmp, STATUS_WIDTH - 10, buf);
+
+    strncpy(tmp, BLACK_STR, sizeof(tmp));
+    tmp[0] = toupper(tmp[0]);
+    snprintf(buf, sizeof(buf), "c/%i", game[gindex].bcaptures);
+    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, STATUS_WIDTH - 10, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -393,15 +405,19 @@ void update_history_window()
 {
     char buf[HISTORY_WIDTH];
     struct history h = {{0},NULL,{0}};
+    int index = game[gindex].hindex;
+
+    index = (game[gindex].hindex + 1) / 2;
 
     if (game[gindex].htotal)
-	snprintf(buf, sizeof(buf), "%u %s %u", game[gindex].hindex, N_OF_N_STR,
-		game[gindex].htotal);
+	snprintf(buf, sizeof(buf), "%u %s %u%s", index, N_OF_N_STR,
+		game[gindex].htotal / 2, (movestep == 1) 
+		? HISTORY_MOVE_STEP : "");
     else
 	strncpy(buf, UNAVAILABLE, sizeof(buf));
 
-    mvwprintw(historyw, 2, 1, "%s %-*s", HISTORY_MOVE_STR, HISTORY_WIDTH - 13,
-	    buf);
+    mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
+	    HISTORY_WIDTH - 13, buf);
 
     get_history_by_index(game[gindex].hindex, &h);
 
@@ -757,21 +773,30 @@ static int find_move_exp(const char *str, int which, int count)
 	return -1;
     }
 
-    incr = (which == 0 || which == 1) ? 1 : -(1);
+    incr = (which == -1) ? -(1) : 1;
 
     for (i = game[gindex].hindex + incr, found = 0; ; i += incr) {
 	if (i == game[gindex].hindex)
 	    break;
 
-	if (i >= game[gindex].htotal)
+	if (i > game[gindex].htotal)
 	    i = 0;
 	else if (i < 0)
 	    i = game[gindex].htotal;
 
-	if (regexec(&r, game[gindex].history[i].move, 0, 0, 0) == 0) {
+	ret = regexec(&r, game[gindex].history[i].move, 0, 0, 0);
+
+	if (ret == 0) {
 	    if (count == ++found) {
 		regfree(&r);
 		return i;
+	    }
+	}
+	else {
+	    if (ret != REG_NOMATCH) {
+		regerror(ret, &r, errbuf, sizeof(errbuf));
+		message(E_REGEXEC_TITLE, ANYKEY, "%s", errbuf);
+		return -1;
 	    }
 	}
     }
@@ -795,6 +820,7 @@ void game_loop()
 	init_history(board);
 
     status.notify = GAME_HELP_PROMPT;
+    movestep = 2;
 
     flushinp();
     update_all();
@@ -901,8 +927,10 @@ void game_loop()
 
 	    case '{':
 	    case '}':
-	    case 'f':
-	        if (!*regexp || c == 'f') {
+	    case '/':
+		/* FIXME the result index should be in the previous move
+		 * position. */
+	        if (!*regexp || c == '/') {
 		    if ((tmp = get_input(FIND_REGEXP, regexp, 1, 1, NULL, 
 				    NULL, NULL, 0, -1)) == NULL)
 			break;
@@ -918,8 +946,7 @@ void game_loop()
 			break;
 		}
 
-		/* FIXME previous '{'. */
-		game[gindex].hindex = (c == '}' || c == 'f') ? n + 1 : n - 1;
+		game[gindex].hindex = n;
 		parse_history_move(board, game[gindex].hindex);
 		update_all();
 		break;
@@ -962,7 +989,7 @@ void game_loop()
 		if (i > game[gindex].htotal || i < 0)
 		    break;
 
-		game[gindex].hindex = i;
+		game[gindex].hindex = i * 2;
 		init_history(board);
 		update_all();
 		break;
@@ -1323,7 +1350,8 @@ void game_loop()
 	    case KEY_UP:
 		if (browse_history) {
 		    history_next(board, (count > 0) ?
-			    config.jumpcount * count : config.jumpcount);
+			    config.jumpcount * count * movestep : 
+			    config.jumpcount * movestep);
 		    update_all();
 		    break;
 		}
@@ -1350,7 +1378,8 @@ void game_loop()
 	    case KEY_DOWN:
 		if (browse_history) {
 		    history_previous(board, (count) ?
-			    config.jumpcount * count : config.jumpcount);
+			    config.jumpcount * count * movestep : 
+			    config.jumpcount * movestep);
 		    update_all();
 		    break;
 		}
@@ -1376,7 +1405,8 @@ void game_loop()
 		break;
 	    case KEY_LEFT:
 		if (browse_history) {
-		    history_previous(board, (count) ? count : 1);
+		    history_previous(board, (count) ?
+			    count * movestep : movestep);
 		    update_all();
 		    break;
 		}
@@ -1402,7 +1432,7 @@ void game_loop()
 		break;
 	    case KEY_RIGHT:
 		if (browse_history) {
-		    history_next(board, (count) ? count : 1);
+		    history_next(board, (count) ? count * movestep : movestep);
 		    update_all();
 		    break;
 		}
@@ -1442,8 +1472,15 @@ void game_loop()
 		SEND_TO_ENGINE("\nswitch\n");
 		break;
 	    case ' ':
-		if (browse_history)
+		if (browse_history) {
+		    if (movestep == 1)
+			movestep = 2;
+		    else
+			movestep = 1;
+
+		    update_history_window();
 		    break;
+		}
 
 		if (status.engine != ENGINE_READY || !engine_initialized) {
 		    if (start_chess_engine() < 0) {

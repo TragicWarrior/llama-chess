@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.51 2003-01-28 17:39:17 bjk Exp $ */
+/* $Id: cboard.h,v 1.52 2003-01-29 00:53:26 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -62,7 +62,7 @@ const char *mainhelp[] = {
     " LEFT - cursor left/hist rev*   c - send a command to the game engine",
     "RIGHT - cursor right/hist fwd*  w - switch playing sides",
     " 0..9 - command repeat count    u - undo previous move*",
-    "SPACE - select piece            g - force engine to make next move",
+    "SPACE - select piece/half step  g - force engine to make next move",
     "ENTER - commit selected piece   h - toggle history mode",
     "  ESC - cancel selected piece   a - annotate previous move",
     "                                ] - view the next moves annotation",
