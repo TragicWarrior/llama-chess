@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.35 2002-12-26 17:40:37 bjk Exp $ */
+/* $Id: pgn.c,v 1.36 2002-12-26 17:53:58 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -975,9 +975,19 @@ char *browse_directory(void *arg)
     char path[FILENAME_MAX] = {0};
     static char file[FILENAME_MAX];
     char *oldwd = getcwd(NULL, 0);
+    DIR *dp;
 
-    if (config.savedirectory[0])
-	strncpy(path, config.savedirectory, sizeof(path));
+    if (config.savedirectory[0]) {
+	if ((dp = opendir(config.savedirectory)) == NULL) {
+	    message(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+		    strerror(errno));
+	    getcwd(path, sizeof(path));
+	}
+	else {
+	    closedir(dp);
+	    strncpy(path, config.savedirectory, sizeof(path));
+	}
+    }
     else
 	getcwd(path, sizeof(path));
 
