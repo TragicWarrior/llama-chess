@@ -1,4 +1,4 @@
-/* $Id: colors.h,v 1.6 2003-01-25 14:57:24 bjk Exp $ */
+/* $Id: colors.h,v 1.7 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -63,17 +63,17 @@
 	COLOR_PAIR(11) | config.color[CONF_SNOTIFY].attrs : \
 	config.color[CONF_SNOTIFY].nattrs)
 
-#define CP_WHITE_WINDOW	((COLORS) ? \
-	COLOR_PAIR(12) | config.color[CONF_WWINDOW].attrs : \
-	config.color[CONF_WWINDOW].nattrs)
+#define CP_TAG_WINDOW	((COLORS) ? \
+	COLOR_PAIR(12) | config.color[CONF_TWINDOW].attrs : \
+	config.color[CONF_TWINDOW].nattrs)
 
-#define CP_WHITE_BORDER	((COLORS) ? \
-	COLOR_PAIR(13) | config.color[CONF_WBORDER].attrs : \
-	config.color[CONF_WBORDER].nattrs)
+#define CP_TAG_BORDER	((COLORS) ? \
+	COLOR_PAIR(13) | config.color[CONF_TBORDER].attrs : \
+	config.color[CONF_TBORDER].nattrs)
 
-#define CP_WHITE_TITLE	((COLORS) ? \
-	COLOR_PAIR(14) | config.color[CONF_WTITLE].attrs : \
-	config.color[CONF_WTITLE].nattrs)
+#define CP_TAG_TITLE	((COLORS) ? \
+	COLOR_PAIR(14) | config.color[CONF_TTITLE].attrs : \
+	config.color[CONF_TTITLE].nattrs)
 
 #define CP_HISTORY_WINDOW	((COLORS) ? \
 	COLOR_PAIR(15) | config.color[CONF_HWINDOW].attrs : \
@@ -119,28 +119,16 @@
 	COLOR_PAIR(25) | config.color[CONF_IPROMPT].attrs : \
 	config.color[CONF_IPROMPT].nattrs)
 
-#define CP_BLACK_WINDOW	((COLORS) ? \
-	COLOR_PAIR(12) | config.color[CONF_BWINDOW].attrs : \
-	config.color[CONF_BWINDOW].nattrs)
-
-#define CP_BLACK_BORDER	((COLORS) ? \
-	COLOR_PAIR(13) | config.color[CONF_BBORDER].attrs : \
-	config.color[CONF_BBORDER].nattrs)
-
-#define CP_BLACK_TITLE	((COLORS) ? \
-	COLOR_PAIR(14) | config.color[CONF_BTITLE].attrs : \
-	config.color[CONF_BTITLE].nattrs)
-
 #define CP_BOARD_MOVES	((COLORS) ? \
-	COLOR_PAIR(29) | config.color[CONF_BMOVES].attrs : \
+	COLOR_PAIR(26) | config.color[CONF_BMOVES].attrs : \
 	config.color[CONF_BMOVES].nattrs)
 
 #define CP_BOARD_COUNT	((COLORS) ? \
-	COLOR_PAIR(30) | config.color[CONF_BCOUNT].attrs : \
+	COLOR_PAIR(27) | config.color[CONF_BCOUNT].attrs : \
 	config.color[CONF_BCOUNT].nattrs)
 
 #define CP_BOARD_WINDOW	((COLORS) ? \
-	COLOR_PAIR(31) | config.color[CONF_BDWINDOW].attrs : \
+	COLOR_PAIR(28) | config.color[CONF_BDWINDOW].attrs : \
 	config.color[CONF_BDWINDOW].nattrs)
 
 #endif

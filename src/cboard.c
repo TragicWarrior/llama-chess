@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.67 2003-01-27 14:30:01 bjk Exp $ */
+/* $Id: cboard.c,v 1.68 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -322,7 +322,7 @@ char *book_method(int method)
     return book;
 }
 
-void update_status()
+void update_status_window()
 {
     int i;
     char buf[STATUS_WIDTH - 7];
@@ -385,7 +385,7 @@ void update_status()
     return;
 }
 
-void update_history()
+void update_history_window()
 {
     char buf[HISTORY_WIDTH];
     struct history h = {{0},NULL,{0}};
@@ -416,27 +416,50 @@ void update_history()
     return;
 }
 
-void update_white_black()
+void update_tag_window()
 {
-    char *white, *black;
+    int i;
 
-    if (game[gindex].tag[TAG_WHITE].value[0] == '?' || 
-	    game[gindex].tag[TAG_WHITE].value[0] == '\0')
-	white = UNAVAILABLE;
-    else 
-	white = game[gindex].tag[TAG_WHITE].value;
+    for (i = 0; i < 7; i++) {
+	char buf[TAG_WIDTH - 6 - 3];
+	char *value, *p;
+	int len;
+	int n;
 
-    if (game[gindex].tag[TAG_BLACK].value[0] == '?' || 
-	    game[gindex].tag[TAG_BLACK].value[0] == '\0')
-	black = UNAVAILABLE;
-    else 
-	black = game[gindex].tag[TAG_BLACK].value;
+	if ((game[gindex].tag[i].value[0] == '?' ||
+		    game[gindex].tag[i].value[0] == '-') &&
+		game[gindex].tag[i].value[1] == '\0')
+	    value = UNAVAILABLE;
+	else
+	    value = game[gindex].tag[i].value;
 
-    mvwprintw(whitew, 2, 1, "%s %-*s", BW_NAME_STR, BW_WIDTH - 8, white);
-    mvwprintw(blackw, 2, 1, "%s %-*s", BW_NAME_STR, BW_WIDTH - 8, black);
 
-    mvwprintw(whitew, 3, 1, "%s %-2i", BW_CAPTURE_STR, game[gindex].wcaptures);
-    mvwprintw(blackw, 3, 1, "%s %-2i", BW_CAPTURE_STR, game[gindex].bcaptures);
+	if (strcmp(game[gindex].tag[i].name, "Result") == 0) {
+	    for (n = 0; n < NARRAY(fancy_results); n++) {
+		if (strcmp(value, fancy_results[n].pgn) == 0) {
+		    value = fancy_results[n].fancy;
+		    break;
+		}
+	    }
+	}
+
+	len = strlen(value);
+
+	if (len > TAG_WIDTH - 6 - 4) {
+	    strncpy(buf, game[gindex].tag[i].value, sizeof(buf));
+
+	    p = buf + (TAG_WIDTH - 6 - 4 - 4);
+	    *p++ = '.';
+	    *p++ = '.';
+	    *p++ = '.';
+	    *p = '\0';
+	    value = buf;
+	}
+
+	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, game[gindex].tag[i].name,
+		TAG_WIDTH - 6 - 4, value);
+    }
+
     return;
 }
 
@@ -479,9 +502,9 @@ void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
 
 void update_all()
 {
-    update_status();
-    update_white_black();
-    update_history();
+    update_status_window();
+    update_tag_window();
+    update_history_window();
     return;
 }
 
@@ -921,7 +944,7 @@ void game_loop()
 		    break;
 		}
 
-		update_status();
+		update_status_window();
 		break;
 	    case 'D':
 		if (gtotal < 2) {
@@ -979,7 +1002,7 @@ void game_loop()
 		strncpy(game[gindex].history[annotate].comment,
 			(tmp) ? tmp : "", len);
 
-		update_history();
+		update_history_window();
 		break;
 	    case 'i':
 		edit_tags(0);
@@ -1045,11 +1068,12 @@ void game_loop()
 		if (browse_history || !game[gindex].htotal)
 		    break;
 
-		history_previous(board, 2);
+		history_previous(board, (count) ? count * 2 : 2);
+		oldhistorytotal = game[gindex].htotal;
 		game[gindex].htotal = game[gindex].hindex;
 
-		SEND_TO_ENGINE("remove\n");
-		update_history();
+		SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
+		update_history_window();
 		break;
 	    case 'r':
 		if ((tmp = get_input(GAME_LOAD_TITLE, NULL, 1, 1,
@@ -1495,6 +1519,15 @@ static void set_defaults()
 {
     struct stat st;
 
+    fancy_results[0].pgn = "1-0";
+    fancy_results[1].pgn = "0-1";
+    fancy_results[2].pgn = "1/2-1/2";
+    fancy_results[3].pgn = "*";
+    fancy_results[0].fancy = TAG_RESULT_FANCY_WHITE;
+    fancy_results[1].fancy = TAG_RESULT_FANCY_BLACK;
+    fancy_results[2].fancy = TAG_RESULT_FANCY_DRAW;
+    fancy_results[3].fancy = TAG_RESULT_FANCY_NA;
+
     status.engine = ENGINE_OFFLINE;
 
     config.engine_cmd = strdup("gnuchess xboard");
@@ -1657,14 +1690,11 @@ int main(int argc, char *argv[])
     historyp = new_panel(historyw);
     statusw = newwin(STATUS_HEIGHT, STATUS_WIDTH, LINES - STATUS_HEIGHT, 0);
     statusp = new_panel(statusw);
-    whitew = newwin(BW_HEIGHT, BW_WIDTH, 0, 0);
-    whitep = new_panel(whitew);
-    blackw = newwin(BW_HEIGHT, BW_WIDTH, BW_HEIGHT, 0);
-    blackp = new_panel(blackw);
+    tagw = newwin(TAG_HEIGHT, TAG_WIDTH, 0, 0);
+    tagp = new_panel(tagw);
     keypad(boardw, TRUE);
     leaveok(boardw, TRUE);
-    leaveok(whitew, TRUE);
-    leaveok(blackw, TRUE);
+    leaveok(tagw, TRUE);
     leaveok(statusw, TRUE);
     leaveok(historyw, TRUE);
     curs_set(0);
@@ -1675,12 +1705,9 @@ int main(int argc, char *argv[])
     wbkgd(statusw, CP_STATUS_WINDOW);
     draw_window_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
 	    CP_STATUS_TITLE, CP_STATUS_BORDER);
-    wbkgd(whitew, CP_WHITE_WINDOW);
-    draw_window_title(whitew, WHITE_WINDOW_TITLE, BW_WIDTH, CP_WHITE_TITLE, 
-	    CP_WHITE_BORDER);
-    wbkgd(blackw, CP_BLACK_WINDOW);
-    draw_window_title(blackw, BLACK_WINDOW_TITLE, BW_WIDTH, CP_BLACK_TITLE, 
-	    CP_BLACK_BORDER);
+    wbkgd(tagw, CP_TAG_WINDOW);
+    draw_window_title(tagw, TAG_WINDOW_TITLE, TAG_WIDTH, CP_TAG_TITLE, 
+	    CP_TAG_BORDER);
     wbkgd(historyw, CP_HISTORY_WINDOW);
     draw_window_title(historyw, HISTORY_WINDOW_TITLE, HISTORY_WIDTH,
 	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
@@ -1694,12 +1721,10 @@ int main(int argc, char *argv[])
     del_panel(boardp);
     del_panel(historyp);
     del_panel(statusp);
-    del_panel(whitep);
-    del_panel(blackp);
+    del_panel(tagp);
     delwin(boardw);
     delwin(historyw);
     delwin(statusw);
-    delwin(whitew);
-    delwin(blackw);
+    delwin(tagw);
     exit(EXIT_SUCCESS);
 }

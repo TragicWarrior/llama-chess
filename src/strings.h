@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.11 2003-01-24 20:29:17 bjk Exp $ */
+/* $Id: strings.h,v 1.12 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -97,8 +97,7 @@
 
 /* Window titles. */
 #define HISTORY_WINDOW_TITLE	"Move History"
-#define WHITE_WINDOW_TITLE	"White"
-#define BLACK_WINDOW_TITLE	"Black"
+#define TAG_WINDOW_TITLE	"Seven Tag Roster"
 #define STATUS_WINDOW_TITLE	"Game Status"
 
 /* Annotation viewing and editing windows. */
@@ -128,6 +127,10 @@
 #define TAG_EDIT_TAG_TITLE	"Editing Tag"
 #define TAG_VIEW_TAG_TITLE	"Viewing Tag"
 #define TAG_NEW_TITLE		"New Tag Name"
+#define TAG_RESULT_FANCY_WHITE	"white wins"
+#define TAG_RESULT_FANCY_BLACK	"black wins"
+#define TAG_RESULT_FANCY_DRAW	"draw"
+#define TAG_RESULT_FANCY_NA	"undetermined"
 
 /* The file browser. */
 #define BROWSER_HELP		"File Browser Keys"

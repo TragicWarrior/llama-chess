@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.30 2003-01-25 17:43:29 bjk Exp $ */
+/* $Id: engine.c,v 1.31 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -78,7 +78,7 @@ void send_to_engine(const char *format, ...)
 				"Process no longer exists.");
 			engine_initialized = 0;
 			status.engine = ENGINE_OFFLINE;
-			update_status();
+			update_status_window();
 			return;
 		    }
 
@@ -288,9 +288,10 @@ void stop_engine()
 int start_chess_engine()
 {
     char **args;
+    int i;
 
     status.engine = ENGINE_INITIALIZING;
-    update_status();
+    update_status_window();
     update_panels();
     doupdate();
 
@@ -313,10 +314,15 @@ int start_chess_engine()
 	    break;
     }
 
+    for (i = 0; args[i]; i++)
+	free(args[i]);
+
+    free(args);
+
     if (enginepid > 0)
 	set_engine_defaults();
 
-    update_status();
+    update_status_window();
     return enginepid;
 }
 
@@ -440,4 +446,3 @@ engine_move:
 
     return;
 }
-

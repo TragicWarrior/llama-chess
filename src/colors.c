@@ -1,4 +1,4 @@
-/* $Id: colors.c,v 1.9 2003-01-25 14:57:24 bjk Exp $ */
+/* $Id: colors.c,v 1.10 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -47,12 +47,12 @@ void init_color_pairs()
 	    config.color[CONF_SENGINE].bg);
     init_pair(11, config.color[CONF_SNOTIFY].fg, 
 	    config.color[CONF_SNOTIFY].bg);
-    init_pair(12, config.color[CONF_WWINDOW].fg, 
-	    config.color[CONF_WWINDOW].bg);
-    init_pair(13, config.color[CONF_WBORDER].fg, 
-	    config.color[CONF_WBORDER].bg);
-    init_pair(14, config.color[CONF_WTITLE].fg, 
-	    config.color[CONF_WTITLE].bg);
+    init_pair(12, config.color[CONF_TWINDOW].fg, 
+	    config.color[CONF_TWINDOW].bg);
+    init_pair(13, config.color[CONF_TBORDER].fg, 
+	    config.color[CONF_TBORDER].bg);
+    init_pair(14, config.color[CONF_TTITLE].fg, 
+	    config.color[CONF_TTITLE].bg);
     init_pair(15, config.color[CONF_HWINDOW].fg, 
 	    config.color[CONF_HWINDOW].bg);
     init_pair(16, config.color[CONF_HBORDER].fg, 
@@ -75,17 +75,11 @@ void init_color_pairs()
 	    config.color[CONF_ITITLE].bg);
     init_pair(25, config.color[CONF_IPROMPT].fg, 
 	    config.color[CONF_IPROMPT].bg);
-    init_pair(26, config.color[CONF_BWINDOW].fg, 
-	    config.color[CONF_BWINDOW].bg);
-    init_pair(27, config.color[CONF_BBORDER].fg, 
-	    config.color[CONF_BBORDER].bg);
-    init_pair(28, config.color[CONF_BTITLE].fg, 
-	    config.color[CONF_BTITLE].bg);
-    init_pair(29, config.color[CONF_BMOVES].fg, 
+    init_pair(26, config.color[CONF_BMOVES].fg, 
 	    config.color[CONF_BMOVES].bg);
-    init_pair(30, config.color[CONF_BCOUNT].fg, 
+    init_pair(27, config.color[CONF_BCOUNT].fg, 
 	    config.color[CONF_BCOUNT].bg);
-    init_pair(31, config.color[CONF_BDWINDOW].fg, 
+    init_pair(28, config.color[CONF_BDWINDOW].fg, 
 	    config.color[CONF_BDWINDOW].bg);
     return;
 }
@@ -129,20 +123,13 @@ void set_default_colors()
     config.color[CONF_SNOTIFY].fg = COLOR_RED;
     config.color[CONF_SNOTIFY].bg = COLOR_BLACK;
     config.color[CONF_SNOTIFY].nattrs = A_BOLD;
-    config.color[CONF_WWINDOW].fg = COLOR_WHITE;
-    config.color[CONF_WWINDOW].bg = COLOR_BLACK;
-    config.color[CONF_WBORDER].fg = COLOR_CYAN;
-    config.color[CONF_WBORDER].bg = COLOR_BLACK;
-    config.color[CONF_WTITLE].fg = COLOR_WHITE;
-    config.color[CONF_WTITLE].bg = COLOR_BLUE;
-    config.color[CONF_WTITLE].nattrs = A_REVERSE;
-    config.color[CONF_BWINDOW].fg = COLOR_WHITE;
-    config.color[CONF_BWINDOW].bg = COLOR_BLACK;
-    config.color[CONF_BBORDER].fg = COLOR_CYAN;
-    config.color[CONF_BBORDER].bg = COLOR_BLACK;
-    config.color[CONF_BTITLE].fg = COLOR_WHITE;
-    config.color[CONF_BTITLE].bg = COLOR_BLUE;
-    config.color[CONF_BTITLE].nattrs = A_REVERSE;
+    config.color[CONF_TWINDOW].fg = COLOR_WHITE;
+    config.color[CONF_TWINDOW].bg = COLOR_BLACK;
+    config.color[CONF_TBORDER].fg = COLOR_CYAN;
+    config.color[CONF_TBORDER].bg = COLOR_BLACK;
+    config.color[CONF_TTITLE].fg = COLOR_WHITE;
+    config.color[CONF_TTITLE].bg = COLOR_BLUE;
+    config.color[CONF_TTITLE].nattrs = A_REVERSE;
     config.color[CONF_HWINDOW].fg = COLOR_WHITE;
     config.color[CONF_HWINDOW].bg = COLOR_BLACK;
     config.color[CONF_HBORDER].fg = COLOR_CYAN;

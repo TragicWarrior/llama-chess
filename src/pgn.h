@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.24 2003-01-24 20:29:17 bjk Exp $ */
+/* $Id: pgn.h,v 1.25 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -25,16 +25,6 @@
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 #define MAX_VALUE_WIDTH	30
-
-const struct {
-    char *pgn;
-    char *fancy;
-} fancy_results[] = {
-    {"1-0", "white wins"},
-    {"0-1", "black wins"},
-    {"1/2-1/2", "draw"},
-    {"*", "undetermined"}
-};
 
 struct country_codes {
     char code[4];

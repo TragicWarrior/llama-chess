@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.46 2003-01-25 15:54:06 bjk Exp $ */
+/* $Id: common.h,v 1.47 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -152,11 +152,15 @@ struct {
     int destcol;
 } sp;
 
+struct {
+    char *pgn;
+    char *fancy;
+} fancy_results[4];
+
 enum { 
     CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,
     CONF_BCOORDS, CONF_BMOVES, CONF_BCOUNT, CONF_BDWINDOW,
-    CONF_WWINDOW, CONF_WTITLE, CONF_WBORDER,
-    CONF_BWINDOW, CONF_BTITLE, CONF_BBORDER,
+    CONF_TWINDOW, CONF_TTITLE, CONF_TBORDER,
     CONF_SWINDOW, CONF_STITLE, CONF_SBORDER, CONF_SNOTIFY, CONF_SENGINE,
     CONF_HWINDOW, CONF_HTITLE, CONF_HBORDER,
     CONF_MWINDOW, CONF_MTITLE, CONF_MBORDER, CONF_MPROMPT,

@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.24 2003-01-25 15:54:06 bjk Exp $ */
+/* $Id: rcfile.c,v 1.25 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -226,18 +226,12 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_SNOTIFY]);
 	else if (strcmp(var, "status_engine") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_SENGINE]);
-	else if (strcmp(var, "white_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_WWINDOW]);
-	else if (strcmp(var, "white_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_WTITLE]);
-	else if (strcmp(var, "white_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_WBORDER]);
-	else if (strcmp(var, "black_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BWINDOW]);
-	else if (strcmp(var, "black_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BTITLE]);
-	else if (strcmp(var, "black_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BBORDER]);
+	else if (strcmp(var, "tag_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_TWINDOW]);
+	else if (strcmp(var, "tag_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_TTITLE]);
+	else if (strcmp(var, "tag_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_TBORDER]);
 	else if (strcmp(var, "history_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_HWINDOW]);
 	else if (strcmp(var, "history_title") == 0)

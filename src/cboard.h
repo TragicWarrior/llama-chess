@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.48 2003-01-27 14:30:01 bjk Exp $ */
+/* $Id: cboard.h,v 1.49 2003-01-27 16:55:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -25,12 +25,12 @@
 #define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)
 #define BOARD_HEIGHT	18
 #define BOARD_WIDTH	34
-#define STATUS_HEIGHT	(10)
+#define STATUS_HEIGHT	(LINES - TAG_HEIGHT)
 #define STATUS_WIDTH	(COLS - BOARD_WIDTH)
-#define BW_HEIGHT	(LINES - STATUS_HEIGHT) / 2
-#define BW_WIDTH	(COLS - BOARD_WIDTH)
+#define TAG_HEIGHT	10
+#define TAG_WIDTH	(COLS - BOARD_WIDTH)
 #define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
-#define HISTORY_WIDTH	(COLS - BW_WIDTH)
+#define HISTORY_WIDTH	(COLS - STATUS_WIDTH)
 
 enum {
     UP, DOWN, LEFT, RIGHT
@@ -44,8 +44,8 @@ const char *book_methods[] = {
 
 WINDOW *boardw;
 PANEL *boardp;
-WINDOW *whitew, *blackw;
-PANEL *whitep, *blackp;
+WINDOW *tagw;
+PANEL *tagp;
 WINDOW *statusw;
 PANEL *statusp;
 WINDOW *historyw;
@@ -61,18 +61,18 @@ const char *mainhelp[] = {
     " DOWN - cursor down/hist jump*  b - cycle through book modes",
     " LEFT - cursor left/hist rev*   c - send a command to the game engine",
     "RIGHT - cursor right/hist fwd*  w - switch playing sides",
-    " 0..9 - command repeat count    u - undo previous move",
+    " 0..9 - command repeat count    u - undo previous move*",
     "SPACE - select piece            g - force engine to make next move",
     "ENTER - commit selected piece   h - toggle history mode",
     "  ESC - cancel selected piece   a - annotate previous move",
     "                                ] - view the next moves annotation",
     "    n - new game or round       [ - view the previous moves annotation",
-    "    N - new game from scratch   i - show PGN roster tags",
+    "    N - new game from scratch   i - view PGN roster tags",
     "    > - next game or round*     j - jump to move number*",
     "    < - previous game or round* q - quit",
     "    J - jump to game or round*",
-    "    d - toggle game for deletion",
-    "    D - delete game(s)",
+    "    d - toggle game delete flag",
+    "    D - delete flagged games",
     " ",
     "    r - resume a saved game",
     "    s - save game",
