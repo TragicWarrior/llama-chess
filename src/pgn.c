@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.27 2002-12-19 17:05:58 bjk Exp $ */
+/* $Id: pgn.c,v 1.28 2002-12-19 17:08:38 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -337,6 +337,8 @@ int parse_pgn_file(const char *filename)
 	init_data();
 	return 0;
     }
+
+    game = Calloc(1, sizeof(struct games));
 
     if ((fp = fopen(filename, "r")) == NULL)
 	return 1;
