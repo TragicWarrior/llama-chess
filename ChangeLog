@@ -1,3 +1,13 @@
+2002-12-06 Friday 15:38  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.10), cboard.h (1.5), pgn.c (1.4):
+	
+	PGN conformance when exporting the "Date" tag.
+	
+	Remove the UNKNOWN string from unmodified tags.
+	
+	Move PGN specified functions to pgn.c.
+
 2002-12-06 Friday 15:07  Ben Kibbey <bjk@arbornet.org>
 
 	* src/cboard.c (1.9):
