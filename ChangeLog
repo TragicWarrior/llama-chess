@@ -1,3 +1,9 @@
+2002-12-19 Thursday 12:08  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.28):
+	
+	Fix for segfault when saving.
+
 2002-12-19 Thursday 12:05  Ben Kibbey <bjk@arbornet.org>
 
 	* src/pgn.c (1.27):
