@@ -10,7 +10,8 @@ order):
 - ICS network game support.
 
 - RAV move text support. CBoard should read a file which has this with no
-  problems, but it currently doesn't parse it.
+  problems, but it currently doesn't parse it. Include the RAV depth next to
+  the piece.
 
 - FEN move parsing.
 
@@ -24,8 +25,6 @@ order):
 ? Show cursor direction keys on the board next to the move numbers.
 
 ? A menu to select a game from a file.
-
-? Search for a game by regular expressions in tags.
 
 - Support chess engines other than GNU Chess. This should be a configuration
   parameter to specify a path to the executable. Also, I'm not sure if parsing
