@@ -1,4 +1,4 @@
-/* $Id: colors.c,v 1.11 2003-01-27 18:10:08 bjk Exp $ */
+/* $Id: colors.c,v 1.12 2003-01-30 18:36:40 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -75,11 +75,13 @@ void init_color_pairs()
 	    config.color[CONF_ITITLE].bg);
     init_pair(25, config.color[CONF_IPROMPT].fg, 
 	    config.color[CONF_IPROMPT].bg);
-    init_pair(26, config.color[CONF_BMOVES].fg, 
-	    config.color[CONF_BMOVES].bg);
-    init_pair(27, config.color[CONF_BCOUNT].fg, 
+    init_pair(26, config.color[CONF_BMOVESW].fg, 
+	    config.color[CONF_BMOVESW].bg);
+    init_pair(27, config.color[CONF_BMOVESB].fg, 
+	    config.color[CONF_BMOVESB].bg);
+    init_pair(28, config.color[CONF_BCOUNT].fg, 
 	    config.color[CONF_BCOUNT].bg);
-    init_pair(28, config.color[CONF_BDWINDOW].fg, 
+    init_pair(29, config.color[CONF_BDWINDOW].fg, 
 	    config.color[CONF_BDWINDOW].bg);
     return;
 }
@@ -90,9 +92,12 @@ void set_default_colors()
     config.color[CONF_BDWINDOW].bg = COLOR_BLACK;
     config.color[CONF_BCOORDS].fg = COLOR_YELLOW;
     config.color[CONF_BCOORDS].bg = COLOR_BLACK;
-    config.color[CONF_BMOVES].fg = COLOR_BLUE;
-    config.color[CONF_BMOVES].bg = COLOR_CYAN;
-    config.color[CONF_BMOVES].nattrs = A_REVERSE;
+    config.color[CONF_BMOVESW].fg = COLOR_BLUE;
+    config.color[CONF_BMOVESW].bg = COLOR_MAGENTA;
+    config.color[CONF_BMOVESW].nattrs = A_REVERSE;
+    config.color[CONF_BMOVESB].fg = COLOR_WHITE;
+    config.color[CONF_BMOVESB].bg = COLOR_BLUE;
+    config.color[CONF_BMOVESB].nattrs = A_REVERSE;
     config.color[CONF_BCOUNT].fg = COLOR_MAGENTA;
     config.color[CONF_BCOUNT].bg = COLOR_CYAN;
     config.color[CONF_BCOUNT].attrs = A_BOLD;

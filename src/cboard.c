@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.78 2003-01-30 17:52:28 bjk Exp $ */
+/* $Id: cboard.c,v 1.79 2003-01-30 18:36:40 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -91,7 +91,8 @@ void draw_board(BOARD b, int crow, int ccol)
 	bcol = 0;
 
 	for (col = 0; col < maxx; col++) {
-	    int attrs = CP_BOARD_WHITE;
+	    int attrwhich = -1;
+	    int attrs = 0;
 	    chtype piece, movecount = 0;
 	    int bold = 0;
 
@@ -161,16 +162,22 @@ void draw_board(BOARD b, int crow, int ccol)
 
 		    if (((ncols % 2) && !(offset % 2)) || (!(ncols % 2) 
 				&& (offset % 2)))
-			attrs = CP_BOARD_BLACK;
+			attrwhich = BLACK;
+		    else
+			attrwhich = WHITE;
 
 		    if (config.validmoves && b[brow][bcol].valid) {
-			attrs = CP_BOARD_MOVES;
+			attrs = (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE :
+			    CP_BOARD_MOVES_BLACK;
 
 			if (b[brow][bcol].movecount) {
 			    if (brow + 1 != crow && bcol + 1 != ccol)
 				movecount = (b[brow][bcol].movecount + '0');
 			}
 		    }
+		    else
+			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE :
+			    CP_BOARD_BLACK;
 
 		    if (row == ROWTOMATRIX(crow) && col == COLTOMATRIX(ccol)) {
 			attrs = CP_BOARD_CURSOR;

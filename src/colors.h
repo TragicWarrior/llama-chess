@@ -1,4 +1,4 @@
-/* $Id: colors.h,v 1.7 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: colors.h,v 1.8 2003-01-30 18:36:40 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -119,16 +119,20 @@
 	COLOR_PAIR(25) | config.color[CONF_IPROMPT].attrs : \
 	config.color[CONF_IPROMPT].nattrs)
 
-#define CP_BOARD_MOVES	((COLORS) ? \
-	COLOR_PAIR(26) | config.color[CONF_BMOVES].attrs : \
-	config.color[CONF_BMOVES].nattrs)
+#define CP_BOARD_MOVES_WHITE	((COLORS) ? \
+	COLOR_PAIR(26) | config.color[CONF_BMOVESW].attrs : \
+	config.color[CONF_BMOVESW].nattrs)
+
+#define CP_BOARD_MOVES_BLACK	((COLORS) ? \
+	COLOR_PAIR(27) | config.color[CONF_BMOVESB].attrs : \
+	config.color[CONF_BMOVESB].nattrs)
 
 #define CP_BOARD_COUNT	((COLORS) ? \
-	COLOR_PAIR(27) | config.color[CONF_BCOUNT].attrs : \
+	COLOR_PAIR(28) | config.color[CONF_BCOUNT].attrs : \
 	config.color[CONF_BCOUNT].nattrs)
 
 #define CP_BOARD_WINDOW	((COLORS) ? \
-	COLOR_PAIR(28) | config.color[CONF_BDWINDOW].attrs : \
+	COLOR_PAIR(29) | config.color[CONF_BDWINDOW].attrs : \
 	config.color[CONF_BDWINDOW].nattrs)
 
 #endif
