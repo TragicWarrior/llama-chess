@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: pgn.c,v 1.2 2002-12-05 23:48:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -46,6 +46,7 @@ static void add_pgn_data(int index, const char *token, const char *value)
 
     strncpy(pgn[index].token, token, sizeof(pgn[index].token));
     strncpy(pgn[index].value, value, sizeof(pgn[index].value));
+    memset(&pgn[index + 1], 0, sizeof(struct pgndata));
     return;
 }
 
@@ -76,10 +77,14 @@ static void init_data()
     return;
 }
 
+/* We can count the number of games in a file, but only one can be loaded. The
+ * last one, since games are more than likely appended to the file.
+ */
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
     char buf[MAX_PGN_LINE_LEN], *tmp;
+    int tag_section = 0;
 
     if (!filename[0]) {
 	init_data();
@@ -89,7 +94,7 @@ int parse_pgn_file(const char *filename)
     if ((fp = fopen(filename, "r")) == NULL)
 	return 1;
 
-    pgn_index = 0;
+    pgn_index = status.rounds = 0;
 
     while ((tmp = fgets(buf, sizeof(buf), fp)) != NULL) {
 	char *token, *value;
@@ -102,11 +107,23 @@ int parse_pgn_file(const char *filename)
 	if (tmp[0] == '%')
 	    continue;
 
+	if (tag_section && tmp[0] == '\n') {
+	    tag_section = 0;
+	    status.rounds++;
+	    continue;
+	}
+
 	if (tmp[len - 1] == '\n')
 	    tmp[len-- - 1] = 0;
 
 	/* Must be a roster tag... */
 	if (tmp[0] == '[') {
+	    if (!tag_section) {
+		tag_section = 1;
+		pgn_index = 0; /* Reset everytime a new tag section is
+				  detected. */
+	    }
+
 	    tmp++;
 
 	    if ((token = strsep(&tmp, " ")) != NULL) {
@@ -126,6 +143,9 @@ int parse_pgn_file(const char *filename)
 			    value = fancy_results[i].fancy;
 		    }
 		}
+
+		if (!value[0])
+		    value = UNKNOWN;
 
 		add_pgn_data(pgn_index++, token, value);
 	    }

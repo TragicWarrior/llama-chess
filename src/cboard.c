@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.4 2002-12-05 22:06:16 bjk Exp $ */
+/* $Id: cboard.c,v 1.5 2002-12-05 23:48:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -293,6 +293,8 @@ void update_status()
     mvwprintw(statusw, 4, 1, "  Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
+    mvwprintw(statusw, 5, 1, " Round: %i", status.rounds);
+
     if (status.notify) {
 	wattron(statusw, NOTIFY_STATUS);
 	mvwprintw(statusw, STATUS_HEIGHT - 2,
@@ -305,18 +307,28 @@ void update_status()
 
 void update_data()
 {
-    int w = DATA_WIDTH - 10;
+    int w;
     char *tmp;
-    int i;
+    int i, tlen = 0;
+
+    /* Get the longest token length. */
+    for (i = 0; (i < DATA_HEIGHT - 2 && pgn[i].token[0]); i++) {
+	int ttlen = strlen(pgn[i].token);
+
+	if (tlen < ttlen)
+	    tlen = ttlen;
+    }
+
+    w = DATA_WIDTH - tlen - 4;
 
     if ((tmp = real_filename(data.pgnfile)) == NULL)
 	tmp = "none";
 
-    mvwprintw(dataw, 2, 1, "  File: %-*s", w, tmp);
+    mvwprintw(dataw, 2, 1, "%*s: %-*s", tlen, "File", w, tmp);
 
-    /* The first seven are standard (or should be). */
-    for (i = 0; i < 7; i++)
-	mvwprintw(dataw, i + 3, 1, "%6s: %-*s", pgn[i].token, w, pgn[i].value);
+    for (i = 0; (i < DATA_HEIGHT - 2 && pgn[i].token[0]); i++)
+	mvwprintw(dataw, i + 3, 1, "%*s: %-*s", tlen, pgn[i].token, w,
+		pgn[i].value);
 
     /*
     mvwprintw(dataw, 6, 1, " White: %-*s", w,
@@ -348,6 +360,10 @@ void draw_window_title(WINDOW *win, const char *title, int width)
 
 void refresh_all()
 {
+    werase(statusw);
+    werase(historyw);
+    werase(dataw);
+    werase(boardw);
     update_status();
     update_data();
     update_history();
@@ -572,10 +588,12 @@ void game_loop()
 		    break;
 
 		send_to_engine("pgnsave %s\n", tmp);
+
 		/* FIXME this is no good if the save fails */
 		strncpy(data.pgnfile, tmp, sizeof(data.pgnfile));
 		parse_pgn_file(data.pgnfile);
 		update_data();
+		update_status();
 		break;
 	    case '?':
 		help();
@@ -591,6 +609,8 @@ void game_loop()
 		    data.pgnfile[0] = 0;
 		    parse_pgn_file(data.pgnfile);
 		}
+
+		refresh_all();
 
 		/* FIXME should be done in engine.c*/
 		status.engine = ENGINE_READY;
@@ -817,8 +837,6 @@ int main(int argc, char *argv[])
     nonl();
 
     draw_window_title(dataw, DATA_TITLE, DATA_WIDTH);
-    mvwprintw(dataw, DATA_HEIGHT - 2, CENTERX(DATA_WIDTH, HELP_PROMPT),
-	    "%s", HELP_PROMPT);
     draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH);
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH);
 

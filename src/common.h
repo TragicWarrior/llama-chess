@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.2 2002-12-05 20:49:27 bjk Exp $ */
+/* $Id: common.h,v 1.3 2002-12-05 23:48:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -79,6 +79,7 @@ struct {
     int book_method;
     char *notify;
     int turn;
+    int rounds;
 } status;
 
 struct pgndata {
