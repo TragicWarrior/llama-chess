@@ -28,8 +28,8 @@
 .Nm cboard
 .Op Fl hv
 .Op Fl p Ar pgnfile
-.Op Fl i Ar server Op :port
-.Op Fl u Ar user Op :password
+.Op Fl i Ar server Op Ar :port
+.Op Fl u Ar user Op Ar :password
 .
 .Sh DESCRIPTION
 .
@@ -43,7 +43,7 @@ The following command line options are available:
 .Bl -tag -width
 .It Fl p Ar pgnfile
 Load a PGN formatted file. If the filename extension ends with .Z, .bz, .bz2,
-.gz or .zip, then it will be uncompressed (and compressed if saving)
+\&.gz or \&.zip, then it will be uncompressed (and compressed if saving)
 automatically provided you have
 .Xr compress 1 ,
 .Xr bzip2 1 ,
@@ -51,9 +51,9 @@ automatically provided you have
 and
 .Xr zip 1
 installed.
-.It Fl i Ar server Op :port
+.It Fl i Ar server Op Ar :port
 ICS server and option port.
-.It Fl u Ar user Op :password
+.It Fl u Ar user Op Ar :password
 ICS username and optional password.
 .It Fl v
 Version information.
@@ -82,7 +82,7 @@ The default is
 The chess engine command to execute with any arguments. The default is
 \&"
 .Ar gnuchess xboard
-\&".
+\&". Others haven\&'t been tested.
 .Pp
 .It Cm jumpcount Ar integer
 When viewing move history, you can jump more than one move to the next or
@@ -112,7 +112,7 @@ default tag values.
 .Pp
 .It Cm line_graphics Ar on|off
 Enable or disable board line graphics. The default is
-.Ar on .
+.Ar off .
 .Pp
 .It Cm save_directory Pa path
 If set, the default directory where games will be saved and opened from in the

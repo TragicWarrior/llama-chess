@@ -2,7 +2,7 @@
 # This is an example configuration file for CBoard. All of the settings below
 # are the program defaults. Empty lines and lines beginning with '#' are
 # ignored. Parameters and values are separated by one or more space or TAB
-# characters.
+# characters and must be on the same line.
 ###############################################################################
 # The engine command and any arguments. Only the default has been tested.
 engine_cmd	gnuchess xboard
@@ -38,7 +38,7 @@ save_prompt	on
 # deleting.
 delete_prompt	on
 
-# Compression level of gzip'd and .zip'd files.
+# Compression level of .gz'd, .bz2'd and .zip'd files.
 clevel		6
 
 # If "on", chess board line graphics will be drawn.
@@ -64,8 +64,8 @@ ics_user	guest
 # names which must be one of: black, white, red, magenta, yellow, blue, cyan
 # or green. 
 #
-# Each ..._window parameter sets the defaults for all characters in the given
-# window.
+# Each ..._window parameter sets the defaults for all characters in the
+# associated window.
 #
 # The third and fourth values are attributes for the color and non-color
 # terminal. To include more than one attribute for a value, separate them with
