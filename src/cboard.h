@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.56 2003-01-31 20:47:38 bjk Exp $ */
+/* $Id: cboard.h,v 1.57 2003-02-01 15:55:07 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,7 +19,7 @@
 #ifndef CBOARD_H
 #define CBOARD_H
 
-#define COPYRIGHT	"Copyright (C) 2002-2003 " PACKAGE_BUGREPORT
+#define COPYRIGHT	"Copyright (C) 2002-2003 " ## PACKAGE_BUGREPORT
 #define LINE_GRAPHIC(c)	((!config.linegraphics) ? ' ' : c)
 #define ROWTOMATRIX(r)	((8 - r) * 2 + 2 - 1)
 #define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)
@@ -55,27 +55,38 @@ BOARD board;
 int quit;
 char **agony;
 
+const char *cmdlinehelp[] = {
+    "Usage: cboard [-hv] [-p <pgnfile>] [-i hostname[:port]] "
+	"[-u username[:passwd]]\n",
+    "  -p  Load PGN file.\n",
+    "  -i  ICS hostname and optional port.\n",
+    "  -u  ICS username and optional password.\n",
+    "  -v  Version information.\n",
+    "  -h  This help text.\n",
+    NULL
+};
+
 const char *mainhelp[] = {
-    "   UP - cursor up/hist jump*    R - refresh screen",
-    " DOWN - cursor down/hist jump*  b - cycle through book modes",
-    " LEFT - cursor left/hist rev*   c - send a command to the game engine",
-    "RIGHT - cursor right/hist fwd*  w - switch playing sides",
-    " 0..9 - command repeat count    u - undo previous move*",
-    "SPACE - select piece/half step  g - force engine to make next move",
-    "ENTER - commit selected piece   h - toggle history mode",
-    "  ESC - cancel selected piece   a - annotate previous move",
-    "                                ] - view the next moves annotation",
-    "    n - new game or round       [ - view the previous moves annotation",
-    "    N - new game from scratch   i - view PGN roster tags",
-    "    > - next game or round*     j - jump to move number*",
-    "    < - previous game or round*",
-    "    J - jump to game or round*  / - find move text expression*",
-    "    d - toggle delete flag*     } - find next move text expression*",
-    "    D - delete flagged games    { - find previous move text expression*",
-    " ",
-    "    r - resume a saved game     q - quit",
-    "    s - save game",
-    "    S - save game with prompt   * = can take a repeat count",
+    "    UP - cursor up/hist jump*     R - refresh screen",
+    "  DOWN - cursor down/hist jump*   b - cycle through book modes",
+    "  LEFT - cursor left/hist rev*    c - send a command to the game engine",
+    " RIGHT - cursor right/hist fwd*   w - switch playing sides",
+    "  0..9 - command repeat count     u - undo previous move*",
+    " SPACE - select piece/half step   g - force engine to make next move",
+    " ENTER - commit selected piece    h - toggle history mode",
+    "   ESC - cancel selected piece    a - annotate previous move",
+    "!-*A-H - move cursor to rank/file ] - view the next moves annotation",
+    "     n - new game or round        [ - view the previous moves annotation",
+    "     N - new game from scratch    i - view PGN roster tags",
+    "     > - next game or round*      j - jump to move number*",
+    "     < - previous game or round*",
+    "     J - jump to game or round*   / - find move text expression*",
+    "     x - toggle delete flag*      } - find next move text expression*",
+    "     X - delete flagged games     { - find previous move text expression*",
+    "     r - resume a saved game",
+    "     s - save game",
+    "     S - save game with prompt",
+    "     q - quit                     * = can take a repeat count",
     NULL
 };
 

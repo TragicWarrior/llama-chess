@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.84 2003-01-31 21:16:43 bjk Exp $ */
+/* $Id: cboard.c,v 1.85 2003-02-01 15:55:07 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -973,6 +973,54 @@ void game_loop()
 	switch (c) {
 	    int annotate;
 
+	    case '!':
+	        crow = 1;
+		break;
+	    case '@':
+	        crow = 2;
+		break;
+	    case '#':
+	        crow = 3;
+		break;
+	    case '$':
+	        crow = 4;
+		break;
+	    case '%':
+	        crow = 5;
+		break;
+	    case '^':
+	        crow = 6;
+		break;
+	    case '&':
+	        crow = 7;
+		break;
+	    case '*':
+	        crow = 8;
+		break;
+	    case 'A':
+	        ccol = 1;
+		break;
+	    case 'B':
+	        ccol = 2;
+		break;
+	    case 'C':
+	        ccol = 3;
+		break;
+	    case 'D':
+	        ccol = 4;
+		break;
+	    case 'E':
+	        ccol = 5;
+		break;
+	    case 'F':
+	        ccol = 6;
+		break;
+	    case 'G':
+	        ccol = 7;
+		break;
+	    case 'H':
+	        ccol = 8;
+		break;
 	    case '{':
 	    case '}':
 	    case '/':
@@ -1016,7 +1064,7 @@ void game_loop()
 
 		if (delete_count) {
 		    markend = gindex;
-		    pushkey = 'd';
+		    pushkey = 'x';
 		    delete_count = 0;
 		}
 
@@ -1084,7 +1132,7 @@ void game_loop()
 		update_all();
 		update_tag_window();
 		break;
-	    case 'd':
+	    case 'x':
 		pushkey = 0;
 
 		if (gtotal < 2)
@@ -1116,7 +1164,7 @@ void game_loop()
 		markstart = markend = -1;
 		update_status_window();
 		break;
-	    case 'D':
+	    case 'X':
 		if (gtotal < 2) {
 		    cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
 		    break;
@@ -1600,13 +1648,10 @@ void game_loop()
 
 void usage(const char *pn)
 {
-    printf("Usage: %s [-hv] [-p <pgnfile>] [-i hostname[:port]] "
-	    "[-u username[:passwd]]\n", pn);
-    printf("  -p  Load PGN file.\n");
-    printf("  -i  ICS hostname and optional port.\n");
-    printf("  -u  ICS username and optional password.\n");
-    printf("  -v  Version information.\n");
-    printf("  -h  This help text.\n");
+    int i;
+
+    for (i = 0; cmdlinehelp[i]; i++)
+	fputs(cmdlinehelp[i], stderr);
 
     exit(EXIT_FAILURE);
 }
