@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.78 2003-02-01 20:46:11 bjk Exp $ */
+/* $Id: pgn.c,v 1.79 2003-02-01 20:56:06 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -700,6 +700,7 @@ int parse_pgn_file(BOARD b, const char *filename)
     int tag_section = 0;
     int row, col;
     int parse_error = 0;
+    int nulltags = 1;
 
     if (!*filename) {
 	reset_game_data();
@@ -784,8 +785,10 @@ int parse_pgn_file(BOARD b, const char *filename)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
-	    if (c == '\n' && nextchar == '\n')
+	    if (c == '\n' && nextchar == '\n') {
 		parse_error = 0;
+		nulltags = 1;
+	    }
 	    else
 		continue;
 	}
@@ -820,6 +823,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
 	if (c == '[') {
 	    if (!tag_section) {
+		nulltags = 0;
 		tag_section = 1;
 		new_game(pgnboard);
 	    }
@@ -832,6 +836,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 	if ((isdigit(c) && (nextchar == '-' || nextchar == '/')) || c == '*') {
 	    ungetc(c, fp);
 	    eog_marker(fp);
+	    nulltags = 1;
 	    continue;
 	}
 
@@ -840,6 +845,11 @@ int parse_pgn_file(BOARD b, const char *filename)
 	    ungetc(c, fp);
 
 	    tag_section = 0;
+
+	    if (nulltags) {
+		new_game(pgnboard);
+		nulltags = 0;
+	    }
 
 	    if (move_text(fp))
 		parse_error = 1;
