@@ -1,9 +1,11 @@
 EXTRA_DIST = config.example nag.data agony.data cc.data
 
-install-data-local:
-	mkdir -m 0755 -p ${datadir}/cboard || exit 1
+install-data-hook:
+	$(INSTALL) -d -m 0755 $(datadir)/cboard
 
 	for file in ${EXTRA_DIST}; do \
-	    test -f $$file && cp -f $$file ${datadir}/cboard; \
-	    chmod 0644 ${datadir}/cboard/$$file; \
+	    $(INSTALL) -m 0644 $(srcdir)/$$file $(datadir)/cboard; \
 	done
+
+uninstall:
+	rm -rf $(datadir)/cboard
