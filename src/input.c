@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.14 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: input.c,v 1.15 2002-12-23 19:53:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -79,8 +79,8 @@ static bool validate_pgn_round(int c, const void *arg)
  * just use -1 as the type with no arguments.
  */
 char *get_input(const char *title, const char *init, int lines, int clear,
-	const char *extra_help, void (*custom_func)(void *), void *arg, 
-	int type, ...)
+	const char *extra_help, char *(*custom_func)(void *), void *arg, 
+	chtype ckey, int type, ...)
 {
     WINDOW *win;
     PANEL *panel;
@@ -185,18 +185,23 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     form_driver(form, REQ_END_FIELD);
 
     while (1) {
-	int c;
+	chtype c;
 
 	update_panels();
 	doupdate();
 
 	c = wgetch(win);
 
+	if (c == ckey && custom_func) {
+	    if ((tmp = custom_func(arg)) != NULL) {
+		set_field_buffer(fields[0], 0, tmp);
+		form_driver(form, REQ_END_LINE);
+	    }
+
+	    continue;
+	}
+
 	switch (c) {
-	    case CTRL('T'):
-		if (custom_func)
-		    custom_func(arg);
-		break;
 	    case CTRL('X'):
 		form_driver(form, REQ_DEL_WORD);
 		break;
