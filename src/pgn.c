@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.66 2003-01-27 21:57:32 bjk Exp $ */
+/* $Id: pgn.c,v 1.67 2003-01-28 17:38:20 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -372,8 +372,7 @@ int move_text(FILE *fp)
 
     add_to_history(&game[gindex].history, &game[gindex].hindex,
 	    &game[gindex].htotal, p);
-
-    /*
+/*
     printf("%s\n", p);
     dump_board(pgnboard);
     */
@@ -565,6 +564,15 @@ static void pgn_tag(FILE *fp)
 
     if (*v == '\"')
 	*v = '\0';
+
+    if (value[0] == '\0') {
+	if (strcmp(name, "Result") == 0)
+	    value[0] = '*';
+	else
+	    value[0] = '?';
+
+	value[1] = '\0';
+    }
 
     add_tag(&game[gindex].tag, &game[gindex].tindex, name, 
 	    remove_tag_escapes(value));
