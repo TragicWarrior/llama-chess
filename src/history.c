@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.6 2002-12-14 20:58:05 bjk Exp $ */
+/* $Id: history.c,v 1.7 2002-12-16 17:54:18 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -33,6 +33,21 @@
 #include "common.h"
 #include "history.h"
 
+void view_annotation(int index)
+{
+    char buf[MAX_PGN_MOVE_LEN + strlen(VIEW_ANNOTATION) + 4];
+
+    if (!game[gindex].history[index].comment[0])
+	return;
+
+    snprintf(buf, sizeof(buf), "%s \"%s\"", VIEW_ANNOTATION,
+	    game[gindex].history[index].move);
+
+    message(buf, ANYKEY, "%s", 
+	    game[gindex].history[index].comment);
+    return;
+}
+
 int get_history_by_index(int index, struct history *h)
 {
     if (index < 0 || index > game[gindex].htotal - 1)
@@ -54,7 +69,8 @@ void history_edit_nag()
     PANEL *panel;
     ITEM **mitems = NULL;
     MENU *menu;
-    int i;
+    int i, n;
+    int itemcount = 0;
     int rows, cols;
     char *mbuf = NULL;
 
@@ -76,7 +92,7 @@ void history_edit_nag()
     set_menu_grey(menu, A_NORMAL);
     set_menu_mark(menu, NULL);
     set_menu_spacing(menu, 0, 0, 0);
-    menu_opts_off(menu, O_NONCYCLIC|O_SHOWDESC);
+    menu_opts_off(menu, O_NONCYCLIC|O_SHOWDESC|O_ONEVALUE);
     post_menu(menu);
     panel = new_panel(win);
     cbreak();
@@ -84,13 +100,18 @@ void history_edit_nag()
     keypad(win, TRUE);
     set_menu_pattern(menu, mbuf);
     draw_window_title(win, NAG_TITLE, cols + 2);
-    set_current_item(menu, 
-	    mitems[game[gindex].history[game[gindex].hindex].nag]);
+
+    for (i = 0; i < MAX_PGN_NAG; i++) {
+	if (game[gindex].history[game[gindex].hindex].nag[i]) {
+	    set_item_value(mitems[game[gindex].history[game[gindex].hindex].nag[i]], TRUE);
+	    set_current_item(menu, mitems[game[gindex].history[game[gindex].hindex].nag[i]]);
+	    itemcount++;
+	}
+    }
 
     while (1) {
 	int c;
 	char *tmp;
-	int pages, page;
 	char buf[cols - 4];
 
 	wattron(win, A_REVERSE);
@@ -99,14 +120,21 @@ void history_edit_nag()
 	    mvwprintw(win, rows + 2, c, " ");
 
 	c = item_index(current_item(menu)) + 1;
-	pages = item_count(menu) / (rows - 4);
-	page = c / pages + 1;
 
-	snprintf(buf, sizeof(buf), "Page %i of %i  Item %i of %i", 
-		page, pages, c, item_count(menu));
+	snprintf(buf, sizeof(buf), "Item %i of %i (%i of %i selected) %s", c, 
+		item_count(menu), itemcount, MAX_PGN_NAG, NAG_PROMPT);
 	mvwprintw(win, rows + 2, CENTERX(cols, buf), "%s", buf);
 
 	wattroff(win, A_REVERSE);
+
+	if (!itemcount) {
+	    for (i = 0; mitems[i]; i++)
+		set_item_value(mitems[i], FALSE);
+
+	    set_item_value(mitems[0], TRUE);
+	}
+	else
+	    set_item_value(mitems[0], FALSE);
 
 	/* This nl() statement needs to be here because NL is recognized
 	 * for some reason after the first selection.
@@ -118,6 +146,59 @@ void history_edit_nag()
 	c = wgetch(win);
 
 	switch (c) {
+	    int found;
+
+	    case CTRL('G'):
+		help(NAG_HELP, naghelp);
+		break;
+	    case KEY_LEFT:
+		if (!itemcount)
+		    break;
+
+		found = 0;
+
+		for (i = item_index(current_item(menu)) + 1; mitems[i]; i++) {
+		    if (item_value(mitems[i]) == TRUE) {
+			found = i;
+			break;
+		    }
+		}
+
+		if (!found) {
+		    for (i = 0; mitems[i]; i++) {
+			if (item_value(mitems[i]) == TRUE) {
+			    found = i;
+			    break;
+			}
+		    }
+		}
+
+		set_current_item(menu, mitems[found]);
+		break;
+	    case KEY_RIGHT:
+		if (!itemcount)
+		    break;
+
+		found = 0;
+
+		for (i = item_index(current_item(menu)) - 1; i > 0; i--) {
+		    if (item_value(mitems[i]) == TRUE) {
+			found = i;
+			break;
+		    }
+		}
+
+		if (!found) {
+		    for (i = item_count(menu) - 1; i > 0; i--) {
+			if (item_value(mitems[i]) == TRUE) {
+			    found = i;
+			    break;
+			}
+		    }
+		}
+
+		set_current_item(menu, mitems[found]);
+		break;
 	    case KEY_UP:
 		menu_driver(menu, REQ_UP_ITEM);
 		break;
@@ -131,6 +212,25 @@ void history_edit_nag()
 	    case KEY_NPAGE:
 	    case CTRL('N'):
 		menu_driver(menu, REQ_SCR_DPAGE);
+		break;
+	    case ' ':
+		if (item_index(current_item(menu)) == 0 && 
+			item_value(current_item(menu)) == FALSE) {
+		    itemcount = 0;
+		    break;
+		}
+
+		if (item_value(current_item(menu)) == TRUE) {
+		    set_item_value(current_item(menu), FALSE);
+		    itemcount--;
+		}
+		else {
+		    if (itemcount + 1 > MAX_PGN_NAG)
+			break;
+
+		    set_item_value(current_item(menu), TRUE);
+		    itemcount++;
+		}
 		break;
 	    case '\n':
 		goto gotitem;
@@ -155,7 +255,13 @@ void history_edit_nag()
     }
 
 gotitem:
-    game[gindex].history[game[gindex].hindex].nag = item_index(current_item(menu));
+    for (i = 0; i < MAX_PGN_NAG; i++)
+	game[gindex].history[game[gindex].hindex].nag[i] = 0;
+
+    for (i = 0, n = 0; mitems[i] && n < MAX_PGN_NAG; i++) {
+	if (item_value(mitems[i]) == TRUE)
+	    game[gindex].history[game[gindex].hindex].nag[n++] = i;
+    }
 
 done:
     unpost_menu(menu);
@@ -190,8 +296,8 @@ void move_piece(char *move)
     int row, srow;
     int col = 0, scol = 0;
     int n;
-    char dst[MAX_MOVE_LEN + 1], *d = dst;
-    char src[MAX_MOVE_LEN + 1], *s = src;
+    char dst[MAX_PGN_MOVE_LEN + 1], *d = dst;
+    char src[MAX_PGN_MOVE_LEN + 1], *s = src;
     char tsrc[2], *t = tsrc;
     char tdst[2], *tt = tdst;
     char *p = move;

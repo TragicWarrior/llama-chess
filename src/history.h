@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.4 2002-12-14 20:58:05 bjk Exp $ */
+/* $Id: history.h,v 1.5 2002-12-16 17:54:18 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -17,6 +17,23 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #define NAG_TITLE	"Editing NAG Information"
+#define NAG_PROMPT	"Type CTRL-g for help"
+#define NAG_HELP	"NAG Menu Keys"
+#define VIEW_ANNOTATION	"Viewing Annotation for"
+
+const char *naghelp[] = {
+    "[a-zA-Z0-9] - jump to item",
+    "         UP - previous item",
+    "       DOWN - next item",
+    "       LEFT - previous selected item",
+    "      RIGHT - next selected item",
+    "     CTRL-p - previous page",
+    "     CTRL-n - next page",
+    "      SPACE - toggle current item",
+    "      ENTER - quit with changes",
+    "     ESCAPE - quit without changes",
+    NULL
+};
 
 const char *nag[] = {
     NULL,
