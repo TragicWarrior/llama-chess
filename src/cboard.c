@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.69 2003-01-27 18:09:42 bjk Exp $ */
+/* $Id: cboard.c,v 1.70 2003-01-27 18:25:44 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -503,7 +503,6 @@ void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
 void update_all()
 {
     update_status_window();
-    update_tag_window();
     update_history_window();
     return;
 }
@@ -518,6 +517,7 @@ static void init_active_game()
     }
 
     update_all();
+    update_tag_window();
     return;
 }
 
@@ -752,6 +752,7 @@ void game_loop()
 
     flushinp();
     update_all();
+    update_tag_window();
     wtimeout(boardw, 70);
 
     while (!quit) {
@@ -925,6 +926,7 @@ void game_loop()
 		gindex = i;
 		init_history(board);
 		update_all();
+		update_tag_window();
 		break;
 	    case 'd':
 		if (gtotal < 2)
@@ -980,6 +982,7 @@ void game_loop()
 		delete_game((!n) ? gindex : -1);
 		init_history(board);
 		update_all();
+		update_tag_window();
 		break;
 	    case 'a':
 	        annotate = game[gindex].hindex;
@@ -1097,6 +1100,7 @@ void game_loop()
 		strncpy(pgnfile, tmp, sizeof(pgnfile));
 		init_history(board);
 		update_all();
+		update_tag_window();
 		break;
 	    case 'S':
 	    case 's':
@@ -1170,6 +1174,7 @@ void game_loop()
 		status.notify = NOTIFY_SAVED;
 		switch_turn();
 		update_all();
+		update_tag_window();
 		break;
 	    case CTRL('G'):
 		help(GAME_HELP, mainhelp);
@@ -1207,6 +1212,7 @@ void game_loop()
 		status.engine = ENGINE_READY;
 		status.notify = NULL;
 		update_all();
+		update_tag_window();
 		break;
 	    case CTRL('L'):
 	    case 'R':
