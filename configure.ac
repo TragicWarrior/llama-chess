@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.4 2002-12-16 17:48:23 bjk Exp $
+dnl $Id: configure.ac,v 1.5 2002-12-17 15:34:25 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.1, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -47,5 +47,5 @@ AC_DEFINE([MAX_PGN_NAG], 5, [Maximum number of NAG entries per move.])
 
 AM_WITH_DMALLOC
 
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile])
 AC_OUTPUT
