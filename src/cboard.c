@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.45 2002-12-27 14:36:01 bjk Exp $ */
+/* $Id: cboard.c,v 1.46 2002-12-30 19:00:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -929,7 +929,10 @@ int main(int argc, char *argv[])
     }
 
     srandom(getpid());
-    initscr();
+    if (initscr() == NULL)
+	errx(EXIT_FAILURE, "Could not initialize curses.");
+    else
+	curses_initialized = 1;
 
     if (start_chess_engine()) {
 	endwin();

@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.11 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: history.h,v 1.12 2002-12-30 19:00:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -44,7 +44,7 @@ const char *naghelp[] = {
     NULL
 };
 
-void init_board(void);
+void init_board(struct board_matrix[][]);
 void update_status(void);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);

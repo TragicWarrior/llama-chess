@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.30 2002-12-30 14:25:44 bjk Exp $ */
+/* $Id: common.h,v 1.31 2002-12-30 19:00:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -73,7 +73,9 @@ enum {
 
 struct board_matrix {
     chtype icon;
-} board[8][8];
+};
+
+struct board_matrix board[8][8];
 
 enum { 
     BOOK_OFF, BOOK_PREFER, BOOK_BEST, BOOK_WORST, BOOK_RANDOM, BOOK_MAX
@@ -181,6 +183,7 @@ struct {
 /* Chess engine file descriptors. 0 = from, 1 = to. */
 int enginefd[2];
 
+int curses_initialized;
 char pgnfile[FILENAME_MAX];
 int gindex, gtotal; /* Current game and total number of games. */
 int cursor_y, cursor_x; /* Current cursor position. */
