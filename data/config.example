@@ -44,7 +44,7 @@ ics_server	ics.freechess.org
 ics_port	5000
 
 # ICS username.
-#ics_user	username
+ics_user	guest
 
 # ICS user password.
 #ics_passwd	password
