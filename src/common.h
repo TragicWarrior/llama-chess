@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.55 2003-01-31 19:51:36 bjk Exp $ */
+/* $Id: common.h,v 1.56 2003-02-01 15:56:00 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -240,6 +240,7 @@ char *trim(char *);
 
 #ifdef DEBUG
 void DUMP(const char *, ...);
+void dump_board(BOARD, int);
 #endif
 
 #ifdef WITH_DMALLOC
