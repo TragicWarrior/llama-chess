@@ -1,3 +1,9 @@
+2003-01-09 Thursday 13:02  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.51):
+	
+	PGN conformance when editing the "Round" tag.
+
 2003-01-09 Thursday 12:58  Ben Kibbey <bjk@arbornet.org>
 
 	* src/pgn.c (1.50):
