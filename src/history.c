@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.1 2002-12-06 21:41:20 bjk Exp $ */
+/* $Id: history.c,v 1.2 2002-12-10 22:15:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -53,7 +53,8 @@ void update_history()
     char buf[16];
 
     if (history_total)
-	snprintf(buf, sizeof(buf), "%u of %u", history_index,
+	snprintf(buf, sizeof(buf), "%u%s of %u", history_index, 
+		(history[history_index].comment[0]) ? "*" : "",
 		history_total);
     else
 	strncpy(buf, UNKNOWN, sizeof(buf));

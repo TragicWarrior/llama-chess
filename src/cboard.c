@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.15 2002-12-09 21:18:32 bjk Exp $ */
+/* $Id: cboard.c,v 1.16 2002-12-10 22:15:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -272,7 +272,8 @@ void draw_window_title(WINDOW *win, const char *title, int width)
     for (i = 1; i < width - 1; i++)
 	mvwprintw(win, 1, i, "%c", ' ');
 
-    mvwprintw(win, 1, CENTERX(width, title), "%s", title);
+    if (title)
+	mvwprintw(win, 1, CENTERX(width, title), "%s", title);
 
     wattroff(win, WINDOW_TITLE);
     wattron(win, WINDOW_BORDER);
@@ -324,6 +325,7 @@ void game_loop()
 	char enginebuf[8192] = {0};
 	struct timeval tv;
 	char *tmp;
+	char buf[78];
 	struct pgndata *tmppgn = NULL;
 
 	tv.tv_sec = 0;
@@ -359,6 +361,25 @@ void game_loop()
 	    continue;
 
 	switch (c) {
+	    int annotate;
+
+	    case 'a':
+	        annotate = history_index;
+
+		if (annotate && history[annotate - 1].move[0])
+		    annotate--;
+		else
+		    break;
+
+		snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATE_HISTORY,
+			history[annotate].move);
+
+		if ((tmp = get_input(buf, history[annotate].comment, 0, 0, 
+				-1)) != NULL)
+		    strncpy(history[annotate].comment, tmp,
+			    sizeof(history[annotate].comment));
+		update_history();
+		break;
 	    case 'i':
 		if (!data.pgnfile[0])
 		    break;
@@ -448,8 +469,8 @@ void game_loop()
 			break;
 		}
 
-		if ((tmp = get_input_str("Save game filename", data.pgnfile))
-			== NULL) {
+		if ((tmp = get_input_str_clear("Save game filename", 
+				data.pgnfile)) == NULL) {
 		    if (tmppgn)
 			free(tmppgn);
 		    break;
@@ -469,7 +490,7 @@ void game_loop()
 		update_data();
 		update_status();
 		break;
-	    case '?':
+	    case '':
 		help(MAIN_HELP, mainhelp);
 		break;
 	    case 'N':
@@ -682,8 +703,8 @@ int main(int argc, char *argv[])
     if (parse_pgn_file(data.pgnfile) != 0)
 	err(EXIT_FAILURE, "%s", data.pgnfile);
 
-    init_chess_engine();
     initscr();
+    init_chess_engine();
 
     if (has_colors() == TRUE && start_color() == OK) {
 	init_pair(1, COLOR_WHITE, COLOR_RED);
