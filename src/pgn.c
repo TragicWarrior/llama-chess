@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.65 2003-01-24 20:29:17 bjk Exp $ */
+/* $Id: pgn.c,v 1.66 2003-01-27 21:57:32 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -830,6 +830,7 @@ done:
     if (command)
 	unlink(filename);
 
+    //exit(0);
     return 0;
 }
 

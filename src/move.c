@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.14 2003-01-23 23:11:02 bjk Exp $ */
+/* $Id: move.c,v 1.15 2003-01-27 21:57:31 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -798,7 +798,6 @@ int checktest(BOARD b, int kr, int kc, int okr, int okc)
 {
     int row, col;
 
-    return 0;
     /* See if the move would leave ourselves in check. */
     if (selfchecktest(b, kr, kc))
 	return -1;
@@ -879,6 +878,30 @@ void get_valid_moves(BOARD b, int p, int srow, int scol, int *minr, int *maxr,
     return;
 }
 
+/* FIXME promotions? */
+static int checkmate_pawn_test(BOARD b, int row, int col, int *srow, int *scol)
+{
+    int r, c;
+
+    r = 0;
+    c = col;
+
+    if (!get_source_yx(b, PAWN, row, col, &r, &c))
+	return 0;
+
+    c = col - 1;
+
+    if (!get_source_yx(b, PAWN, row, col, &r, &c))
+	return 0;
+
+    c = col + 1;
+
+    if (!get_source_yx(b, PAWN, row, col, &r, &c))
+	return 0;
+
+    return 1;
+}
+
 static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 {
     int row, col;
@@ -894,52 +917,48 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 	for (col = 1; VALIDFILE(col); col++) {
 	    int n;
 
-	    srow = scol = 0;
-
 	    for (n = 0; n < MAX_PIECES; n++) {
-		int p, sp;
-		int nkc = kc, nkr = kr, nokc = okc, nokr = okr;
+		int p;
+		int nkr = kr, nkc = kc, nokr = okr, nokc = okc;
 		BOARD t;
 
-		if (get_source_yx(b, n, row, col, &srow, &scol))
-		    continue;
+		srow = scol = 0;
 
-		/*
-		if ((srow == kr && scol == kc) || 
-		    (srow == okr && scol == okc))
-		    continue;
-		    */
+		if (n == PAWN) {
+		    if (checkmate_pawn_test(b, row, col, &srow, &scol))
+			continue;
+		}
+		else {
+		    if (get_source_yx(b, n, row, col, &srow, &scol))
+			continue;
+		}
 
 		/* Valid move. */
 		copy_board(b, t);
-		p = t[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
-		sp = t[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
-		t[ROWTOBOARD(row)][COLTOBOARD(col)].icon = sp;
+		p = t[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
+		t[ROWTOBOARD(row)][COLTOBOARD(col)].icon = p;
 		t[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = 
 		    int_to_piece(OPEN_SQUARE);
 
-		if (piece_to_int(sp) == KING) {
-		    if (piece_side(sp) != status.turn) {
-			nokr = srow;
-			nokc = scol;
+		if (piece_to_int(p) == KING) {
+		    switch_turn();
+
+		    if (piece_side(p) != status.turn) {
+			nokr = row;
+			nokc = col;
 		    }
 		    else {
-			nkr = srow;
-			nkc = scol;
+			nkr = row;
+			nkc = col;
 		    }
+
+		    switch_turn();
 		}
 
 		switch_turn();
 		check = checktest(t, nkr, nkc, nokr, nokc);
-		/*
-		printf("%i %i %i %i %c %c %i\n", scol, srow, col, row, sp, p, status.turn);
-		dump_board(t);
-		printf("ACK: %i\n", check);
-		*/
-
 		switch_turn();
 
-		/* Valid move and noones in check. */
 		if (check == 0)
 		    goto done;
 	    }
