@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.16 2002-12-10 22:15:49 bjk Exp $ */
+/* $Id: cboard.c,v 1.17 2002-12-10 22:31:13 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -234,6 +234,7 @@ void update_data()
     int w;
     char *tmp;
     int i, tlen = 0;
+    int n;
 
     /* Get the longest tag length. */
     for (i = 0; (i < DATA_HEIGHT - 4 && pgn[i].token[0]); i++) {
@@ -250,9 +251,13 @@ void update_data()
 
     mvwprintw(dataw, 2, 1, "%*s: %-*s", tlen, "File", w, tmp);
 
-    for (i = 0; (i < DATA_HEIGHT - 4 && pgn[i].token[0]); i++)
+    for (i = 0; (i < DATA_HEIGHT - 4 && pgn[i].token[0]); i++) {
+	for (n = tlen; n < w; n++)
+	    mvwprintw(dataw, i + 3, n, " ");
+
 	mvwprintw(dataw, i + 3, 1, "%*s: %-.*s", tlen, pgn[i].token, w,
 		pgn[i].value);
+    }
 
     /*
     mvwprintw(dataw, 6, 1, " White: %-*s", w,
