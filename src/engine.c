@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.11 2002-12-17 14:10:09 bjk Exp $ */
+/* $Id: engine.c,v 1.12 2002-12-17 18:42:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -93,110 +93,6 @@ void send_to_engine(const char *format, ...)
     }
 
     free(line);
-    return;
-}
-
-void parse_engine_output(char *str)
-{
-    char *tmp;
-    char move[MAX_PGN_MOVE_LEN + 1];
-
-    /* Human move. Add it to the move history (if not browsing). */
-    if (!browse_history) {
-	if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) == 1) {
-	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		    &game[gindex].htotal, move);
-
-	    if (status.turn == WHITE)
-		status.turn = BLACK;
-	    else if (status.turn == BLACK)
-		status.turn = WHITE;
-
-	    status.engine = ENGINE_THINKING;
-	    move_piece(move);
-	    sp.icon = 0;
-
-	    /* This needs to be here in case the engine move text is bunched
-	     * up with the white move text.
-	     */
-	    goto engine_move;
-	}
-
-	/* This is needed when leaving history mode and the turn is now black
-	 * since we just went. This cancels 'manual'.
-	 */
-	/* FIXME this relies on the fifo stuff. */
-	if (cancel_manual_mode) {
-	    SEND_TO_ENGINE("go\n");
-	    cancel_manual_mode = 0;
-	}
-    }
-
-    /* Engine move. */
-engine_move:
-    /*
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) 
-	    == 1) {
-    */
-    if ((tmp = strstr(str, "My move is: ")) != NULL) {
-	tmp += 12;
-	tmp = trim(tmp);
-	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, tmp);
-
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-	else if (status.turn == BLACK)
-	    status.turn = WHITE;
-
-	move_piece(tmp);
-	RETURN;
-    }
-
-    /* Miscellaneous one-liners. */
-
-    /* 'depth' command. */
-    if (strstr(str, "Search to a depth of ") != NULL) {
-	tmp = strsep(&str, "Search to a depth of ");
-	tmp += 21;
-	tmp = trim(tmp);
-	status.depth = atoi(tmp);
-    }
-
-    /* 'switch' command. */
-    if (strstr(str, "White to move") != NULL) {
-	status.bw = status.turn = WHITE;
-	RETURN;
-    }
-    else if (strstr(str, "Black to move") != NULL) {
-	status.bw = status.turn = BLACK;
-	RETURN;
-    }
-
-    /* Bad engine command or move. */
-    if ((tmp = strstr(str, "Illegal move: ")) != NULL) {
-	status.notify = "Illegal move";
-	RETURN;
-    }
-
-    if ((tmp = strstr(str, "Cannot open file ")) != NULL) {
-	status.notify = "Engine could not open file";
-	RETURN;
-    }
-
-    if ((tmp = strstr(str, " No book found.")) != NULL)
-	status.book_method = -1; 
-    else if ((tmp = strstr(str, "book now off.")) != NULL)
-	status.book_method = BOOK_OFF;
-    else if ((tmp = strstr(str, "book now on.")) != NULL)
-	status.book_method = BOOK_PREFER;
-    else if ((tmp = strstr(str, "book now best.")) != NULL)
-	status.book_method = BOOK_BEST;
-    else if ((tmp = strstr(str, "book now worst.")) != NULL)
-	status.book_method = BOOK_WORST;
-    else if ((tmp = strstr(str, "book now random.")) != NULL)
-	status.book_method = BOOK_RANDOM;
-
     return;
 }
 
@@ -307,3 +203,164 @@ pid_t init_chess_engine()
     engine_initialized = 1;
     return pid;
 }
+
+void set_engine_defaults()
+{
+    SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
+    SEND_TO_ENGINE("depth %i\n", config.engine_depth);
+    return;
+}
+
+int start_chess_engine()
+{
+    status.engine = ENGINE_INITIALIZING;
+    update_status();
+    update_panels();
+    doupdate();
+
+    enginepid = init_chess_engine();
+
+    switch (enginepid) {
+	/* Pty allocation. */
+	case -1:
+	/* Could not execute engine. */
+	case -2:
+	    status.engine = ENGINE_OFFLINE;
+
+	    if (errno) {
+		message(ERROR, ANYKEY, "gnuchess: %s",
+			strerror(errno));
+		break;
+	    }
+
+	    message(ERROR, ANYKEY, "Could not allocate PTY");
+	    break;
+	default:
+	    status.engine = ENGINE_READY;
+	    break;
+    }
+
+    set_engine_defaults();
+    return 0;
+}
+
+void parse_engine_output(char *str)
+{
+    char *tmp;
+    char move[MAX_PGN_MOVE_LEN + 1];
+
+    /* Human move. Add it to the move history (if not browsing). */
+    if (!browse_history) {
+	if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) == 1) {
+	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		    &game[gindex].htotal, move);
+
+	    if (status.turn == WHITE)
+		status.turn = BLACK;
+	    else if (status.turn == BLACK)
+		status.turn = WHITE;
+
+	    status.engine = ENGINE_THINKING;
+	    move_piece(move);
+	    sp.icon = 0;
+
+	    /* This needs to be here in case the engine move text is bunched
+	     * up with the white move text.
+	     */
+	    goto engine_move;
+	}
+
+	/* This is needed when leaving history mode and the turn is now black
+	 * since we just went. This cancels 'manual'.
+	 */
+	/* FIXME this relies on the fifo stuff. */
+	if (cancel_manual_mode) {
+	    SEND_TO_ENGINE("go\n");
+	    cancel_manual_mode = 0;
+	}
+    }
+
+    /* Engine move. */
+engine_move:
+    /*
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) 
+	    == 1) {
+    */
+    if ((tmp = strstr(str, "My move is: ")) != NULL) {
+	tmp += 12;
+	tmp = trim(tmp);
+	add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		&game[gindex].htotal, tmp);
+
+	if (status.turn == WHITE)
+	    status.turn = BLACK;
+	else if (status.turn == BLACK)
+	    status.turn = WHITE;
+
+	move_piece(tmp);
+	RETURN;
+    }
+
+    /* Miscellaneous one-liners. */
+
+    /* The engine is now reading a FIFO. Dump what we need to it. */
+    if (strstr(str, "pgnload") != NULL) {
+	tmp = strstr(str, "pgnload");
+	tmp += 8;
+	tmp = trim(tmp);
+
+	if (save_pgn(tmp, game[gindex].pgn, 1)) {
+	    message(ERROR, ANYKEY, "%s", strerror(errno));
+	    game[gindex].htotal = oldhistorytotal;
+	    return;
+	}
+
+	set_engine_defaults();
+	return;
+    }
+
+    /* 'depth' command. */
+    if (strstr(str, "Search to a depth of ") != NULL) {
+	tmp = strsep(&str, "Search to a depth of ");
+	tmp += 21;
+	tmp = trim(tmp);
+	status.depth = atoi(tmp);
+    }
+
+    /* 'switch' command. */
+    if (strstr(str, "White to move") != NULL) {
+	status.bw = status.turn = WHITE;
+	RETURN;
+    }
+    else if (strstr(str, "Black to move") != NULL) {
+	status.bw = status.turn = BLACK;
+	RETURN;
+    }
+
+    /* Bad engine command or move. */
+    if ((tmp = strstr(str, "Illegal move: ")) != NULL) {
+	status.notify = "Illegal move";
+	RETURN;
+    }
+
+    if ((tmp = strstr(str, "Cannot open file ")) != NULL) {
+	status.notify = "Engine could not open file";
+	RETURN;
+    }
+
+    if ((tmp = strstr(str, " No book found.")) != NULL)
+	status.book_method = -1; 
+    else if ((tmp = strstr(str, "book now off.")) != NULL)
+	status.book_method = BOOK_OFF;
+    else if ((tmp = strstr(str, "book now on.")) != NULL)
+	status.book_method = BOOK_PREFER;
+    else if ((tmp = strstr(str, "book now best.")) != NULL)
+	status.book_method = BOOK_BEST;
+    else if ((tmp = strstr(str, "book now worst.")) != NULL)
+	status.book_method = BOOK_WORST;
+    else if ((tmp = strstr(str, "book now random.")) != NULL)
+	status.book_method = BOOK_RANDOM;
+
+    return;
+}
+

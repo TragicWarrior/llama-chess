@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.17 2002-12-17 14:09:14 bjk Exp $ */
+/* $Id: common.h,v 1.18 2002-12-17 18:42:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -131,11 +131,12 @@ struct {
 int enginefd[2];
 
 char pgnfile[FILENAME_MAX];
-int gindex, gtotal;
-int cursor_y, cursor_x;
-int browse_history;
+int gindex, gtotal; /* Current game and total number of games. */
+int cursor_y, cursor_x; /* Current cursor position. */
+int browse_history; /* 1 if in history mode. */
 int cancel_manual_mode;
 int engine_initialized;
+int oldhistorytotal; /* This is a failsafe when resuming a game. */
 WINDOW *historyw;
 PANEL *historyp;
 

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.21 2002-12-16 17:54:55 bjk Exp $ */
+/* $Id: pgn.c,v 1.22 2002-12-17 18:42:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -83,8 +83,8 @@ char *parse_piece(char *str)
     return tmp;
 }
 
-/* Returns 1 if a duplicate was found. 0 otherwise. The index argument is a
- * pointer to int, and incremented automatically.
+/* Returns 1 if a duplicate tag was found. 0 otherwise. The index argument is
+ * a pointer to int, and incremented automatically.
  */
 int add_pgn_data(struct pgndata **dst, int *n, char *token, char *value)
 {
@@ -379,10 +379,33 @@ static char *pgn_escapes(const char *str)
     return buf;
 }
 	
-static void dump_save_data(FILE *fp, struct pgndata *data)
+
+int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 {
+    FILE *fp;
     int i, n;
     int len = 0;
+    int data_index = 0;
+    struct pgndata *data = NULL;
+
+    /* This is a hack to resume an existing game when more than one game is
+     * available. Also resuming a saved game and a game from history.
+     */
+    if (isfifo) {
+	if ((fp = fopen(filename, "w")) == NULL) {
+	    unlink(filename);
+	    return 1;
+	}
+    }
+    else
+	if ((fp = fopen(filename, "a")) == NULL)
+	    return 1;
+
+    /* Modify a backup of the data so all the fancy tag names are kept while
+     * PGN data is saved (history).
+     */
+    for (i = 0; pgn[i].token[0]; i++)
+	add_pgn_data(&data, &data_index, pgn[i].token, pgn[i].value);
 
     for (i = 0; data[i].token[0]; i++) {
 	struct tm tp;
@@ -440,52 +463,13 @@ static void dump_save_data(FILE *fp, struct pgndata *data)
 	fprintf(fp, "\n");
 
     fprintf(fp, "%s\n\n", pgn_escapes(data[PGN_RESULT].value));
-    fflush(fp);
 
-    return;
-}
-
-int save_pgn(char *filename, struct pgndata *data, int isfifo)
-{
-    FILE *fp;
-    int fd;
-    char *tmp;
-
-    /* This is a hack to resume an exitsting game when more than one game is
-     * in a file.
-     *
-     * FIXME
-     */
-    if (isfifo) {
-	tmp = tmpnam(NULL);
-
-	if (mkfifo(tmp, 0600) == -1)
-	    return 1;
-
-	filename = tmp;
-
-	SEND_TO_ENGINE("\npgnload %s\n", filename);
-
-	if ((fd = open(filename, O_WRONLY)) == -1) {
-	    unlink(filename);
-	    return 1;
-	}
-
-	if ((fp = fdopen(fd, "w")) == NULL) {
-	    unlink(filename);
-	    return 1;
-	}
-    }
-    else
-	if ((fp = fopen(filename, "a")) == NULL)
-	    return 1;
-
-    dump_save_data(fp, data);
     fclose(fp);
 
     if (isfifo)
 	unlink(filename);
 
+    free(data);
     return 0;
 }
 

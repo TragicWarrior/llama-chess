@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.30 2002-12-17 14:25:01 bjk Exp $ */
+/* $Id: cboard.c,v 1.31 2002-12-17 18:42:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -161,7 +161,7 @@ void parse_piece_command()
     return;
 }
 
-static char *book_method(int method)
+char *book_method(int method)
 {
     char *book;
 
@@ -364,49 +364,11 @@ void refresh_all()
     return;
 }
 
-static int start_chess_engine()
-{
-    status.engine = ENGINE_INITIALIZING;
-    update_status();
-    update_panels();
-    doupdate();
-
-    enginepid = init_chess_engine();
-
-    switch (enginepid) {
-	/* Pty allocation. */
-	case -1:
-	/* Could not execute engine. */
-	case -2:
-	    status.engine = ENGINE_OFFLINE;
-
-	    if (errno) {
-		message(ERROR, ANYKEY, "gnuchess: %s",
-			strerror(errno));
-		break;
-	    }
-
-	    message(ERROR, ANYKEY, "Could not allocate PTY");
-	    break;
-	default:
-	    status.engine = ENGINE_READY;
-	    break;
-    }
-
-    return enginepid;
-}
-
-static void set_engine_defaults()
-{
-    SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
-    SEND_TO_ENGINE("depth %i\n", config.engine_depth);
-    return;
-}
-
 void game_loop()
 {
     int rrow = 8, rcol = 1;
     int error_recover = 0;
+    int gactive = gindex;
 
     cursor_x = 2, cursor_y = 1;
     gindex = gtotal - 1;
@@ -415,6 +377,7 @@ void game_loop()
 	init_history();
 
     flushinp();
+    wtimeout(boardw, 70);
     update_all();
 
     while (!quit) {
@@ -471,7 +434,6 @@ blah:
 
 	switch (c) {
 	    int annotate;
-	    int oldhistorytotal;
 
 	    case 'v':
 	        view_annotation(game[gindex].hindex);
@@ -485,6 +447,15 @@ blah:
 		else
 		    gindex++;
 
+		if (gindex != gactive) {
+		    browse_history = 1;
+		    init_history();
+		}
+		else {
+		    browse_history = 0;
+		    status.engine = ENGINE_READY;
+		}
+
 		update_all();
 		break;
 	    case '<':
@@ -492,6 +463,15 @@ blah:
 		    gindex = gtotal - 1;
 		else
 		    gindex--;
+
+		if (gindex != gactive) {
+		    browse_history = 1;
+		    init_history();
+		}
+		else {
+		    browse_history = 0;
+		    status.engine = ENGINE_READY;
+		}
 
 		update_all();
 		break;
@@ -542,40 +522,34 @@ blah:
 		SEND_TO_ENGINE("book %s\n", book_methods[status.book_method]);
 		break;
 	    case 'h':
-		if (!engine_initialized)
-		    break;
-
 		if (browse_history) {
 		    if (game[gindex].hindex != game[gindex].htotal) {
-			message(NULL, ANYKEY, "Resuming a game from history "
-				"is broken right now.");
-			break;
-
 			if ((c = message(NULL, YESNO, 
 					"Resume game from history?")) != 'y')
 			    break;
-
-			if (!engine_initialized) {
-			    if (start_chess_engine() < 0)
-				break;
-			}
-
-			oldhistorytotal = game[gindex].htotal;
-			game[gindex].htotal = game[gindex].hindex;
-
-			if (save_pgn(NULL, game[gindex].pgn, 1)) {
-			    message(ERROR, ANYKEY, "%s", strerror(errno));
-			    game[gindex].htotal = oldhistorytotal;
-			    break;
-			}
 		    }
 
+		    if (!engine_initialized) {
+			if (start_chess_engine() < 0)
+			    break;
+		    }
+
+		    tmp = tmpnam(NULL);
+
+		    if (mkfifo(tmp, 0600) == -1) {
+			message(ERROR, ANYKEY, "Could not create FIFO");
+			break;
+		    }
+
+		    oldhistorytotal = game[gindex].htotal;
+		    game[gindex].htotal = game[gindex].hindex;
+		    gactive = gindex;
 		    browse_history = 0;
 		    status.engine = ENGINE_READY;
 
+		    SEND_TO_ENGINE("\npgnload %s\n", tmp);
 		    update_all();
 		    break;
-
 		    /* FIXME */
 		    if (status.bw != status.turn) {
 			SEND_TO_ENGINE("go\n");
@@ -677,7 +651,6 @@ blah:
 		SEND_TO_ENGINE("\nnew\n");
 		set_engine_defaults();
 		update_all();
-		wtimeout(boardw, 70);
 		break;
 	    case 'R':
 		refresh_all();
@@ -940,8 +913,12 @@ int main(int argc, char *argv[])
 	    errx(EXIT_FAILURE, "%s: parse error", pgnfile);
     }
 
-    //init_chess_engine();
     initscr();
+
+    if (start_chess_engine()) {
+	endwin();
+	exit(EXIT_FAILURE);
+    }
 
     if (has_colors() == TRUE && start_color() == OK) {
 	init_pair(1, COLOR_WHITE, COLOR_RED);
