@@ -1,3 +1,13 @@
+2002-12-12 Thursday 10:07  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.20), cboard.h (1.14), common.h (1.12), engine.c
+	(1.7), engine.h (1.4), history.c (1.4), input.h (1.4), message.h
+	(1.2), pgn.c (1.16), pgn.h (1.7):
+	
+	Games are stored in an array of 'games' structures. Keys '<' and
+	'>' cycle through the games or rounds when more than one game is
+	contained in a PGN file.
+
 2002-12-11 Wednesday 12:45  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: common.h (1.11), engine.c (1.6), engine.h (1.3), history.c
