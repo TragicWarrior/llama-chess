@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.31 2002-12-17 18:42:53 bjk Exp $ */
+/* $Id: cboard.c,v 1.32 2002-12-17 21:25:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -364,12 +364,41 @@ void refresh_all()
     return;
 }
 
+static void game_next_prev(int n)
+{
+    if (gtotal < 2)
+	return;
+
+    if (n == 1) {
+	if (gindex + 1 == gtotal)
+	    gindex = 0;
+	else
+	    gindex++;
+    }
+    else {
+	if (gindex - 1 < 0)
+	    gindex = gtotal - 1;
+	else
+	    gindex--;
+    }
+
+    init_history();
+
+    if (gindex == gactive) {
+	browse_history = 0;
+	status.engine = ENGINE_READY;
+    }
+
+    update_all();
+    return;
+}
+
 void game_loop()
 {
     int rrow = 8, rcol = 1;
     int error_recover = 0;
-    int gactive = gindex;
 
+    gactive = gindex;
     cursor_x = 2, cursor_y = 1;
     gindex = gtotal - 1;
 
@@ -442,38 +471,10 @@ blah:
 	        view_annotation(game[gindex].hindex - 1);
 		break;
 	    case '>':
-		if (gindex + 1 == gtotal)
-		    gindex = 0;
-		else
-		    gindex++;
-
-		if (gindex != gactive) {
-		    browse_history = 1;
-		    init_history();
-		}
-		else {
-		    browse_history = 0;
-		    status.engine = ENGINE_READY;
-		}
-
-		update_all();
+		game_next_prev(1);
 		break;
 	    case '<':
-		if (gindex - 1 < 0)
-		    gindex = gtotal - 1;
-		else
-		    gindex--;
-
-		if (gindex != gactive) {
-		    browse_history = 1;
-		    init_history();
-		}
-		else {
-		    browse_history = 0;
-		    status.engine = ENGINE_READY;
-		}
-
-		update_all();
+		game_next_prev(0);
 		break;
 	    case 'a':
 	        annotate = game[gindex].hindex;
@@ -550,14 +551,6 @@ blah:
 		    SEND_TO_ENGINE("\npgnload %s\n", tmp);
 		    update_all();
 		    break;
-		    /* FIXME */
-		    if (status.bw != status.turn) {
-			SEND_TO_ENGINE("go\n");
-			break;
-		    }
-		    
-		    cancel_manual_mode = 1;
-		    break;
 		}
 
 		if (!game[gindex].htotal)
@@ -590,6 +583,7 @@ blah:
 		}
 
 		gindex = gtotal - 1;
+		gactive = gindex;
 		strncpy(pgnfile, tmp, sizeof(pgnfile));
 		init_history();
 		update_all();
@@ -624,6 +618,7 @@ blah:
 		strncpy(pgnfile, tmp, sizeof(pgnfile));
 		parse_pgn_file(pgnfile);
 		gindex = gtotal - 1;
+		gactive = gindex;
 		update_all();
 		break;
 	    case CTRL('G'):
