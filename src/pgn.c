@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.72 2003-01-31 21:22:27 bjk Exp $ */
+/* $Id: pgn.c,v 1.73 2003-02-01 15:54:08 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -374,7 +374,7 @@ int move_text(FILE *fp)
 	    &game[gindex].htotal, p);
 /*
     printf("%s\n", p);
-    dump_board(pgnboard);
+    dump_board(pgnboard, 0);
     */
     return 0;
 }
@@ -607,24 +607,27 @@ static int eog_marker(FILE *fp)
 }
 
 #ifdef DEBUG
-void dump_board(BOARD b)
+#define DEBUG_BOARD(n, fmt, args...) \
+    ((n) ? DUMP(fmt, ##args) : printf(fmt, ##args))
+
+void dump_board(BOARD b, int which)
 {
     int row, col;
 
     for (row = 0; row < 8; row++) {
 	for (col = 0; col < 8; col++) {
 	    if (b[row][col].icon == '.') {
-		printf(". ");
+		DEBUG_BOARD(which, ". ");
 		continue;
 	    }
 
-	    printf("%c ", (int)b[row][col].icon);
+	    DEBUG_BOARD(which, "%c ", (int)b[row][col].icon);
 	}
 
-	printf("\n");
+	DEBUG_BOARD(which, "\n");
     }
 
-    printf("\n");
+    DEBUG_BOARD(which, "\n");
     return;
 }
 #endif
