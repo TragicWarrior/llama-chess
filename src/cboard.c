@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.5 2002-12-05 23:48:33 bjk Exp $ */
+/* $Id: cboard.c,v 1.6 2002-12-06 00:00:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -610,6 +610,7 @@ void game_loop()
 		    parse_pgn_file(data.pgnfile);
 		}
 
+		status.rounds = 0;
 		refresh_all();
 
 		/* FIXME should be done in engine.c*/
