@@ -1,3 +1,11 @@
+2002-12-18 Wednesday 12:06  Ben Kibbey <bjk@arbornet.org>
+
+	* src/engine.c (1.17):
+	
+	Reset selected piece after an illegal move.
+	
+	Small parsing fix.
+
 2002-12-18 Wednesday 09:48  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.h (1.22), common.h (1.20), engine.c (1.16), engine.h
