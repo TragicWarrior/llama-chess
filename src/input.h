@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.1 2002-12-07 15:54:52 bjk Exp $ */
+/* $Id: input.h,v 1.2 2002-12-07 21:32:26 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,3 +19,11 @@
 #define INPUT_HEIGHT	4
 #define INPUT_WIDTH	((COLS > 60) ? 60 : COLS - 2)
 #define MAXINPUTSIZE	255
+#define INPUT_HELP	"Line Editing Keys"
+
+const char *inputhelp[] = {
+    "blah",
+    NULL
+};
+
+char *trim(char *);

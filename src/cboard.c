@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.12 2002-12-06 21:54:40 bjk Exp $ */
+/* $Id: cboard.c,v 1.13 2002-12-07 21:32:26 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -351,6 +351,7 @@ void game_loop()
 
     cursor_x = 2, cursor_y = 1;
 
+    /* FIXME fiddle */
     wtimeout(boardw, 1000);
     send_to_engine("nopost\n");
 
@@ -504,7 +505,7 @@ void game_loop()
 		update_status();
 		break;
 	    case '?':
-		help();
+		help(MAIN_HELP, mainhelp);
 		break;
 	    case 'N':
 		if (message(NULL, YESNO, "Really start a new game?") != 'y')

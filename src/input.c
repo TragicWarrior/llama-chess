@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.3 2002-12-07 15:54:52 bjk Exp $ */
+/* $Id: input.c,v 1.4 2002-12-07 21:32:26 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,104 +18,132 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include <panel.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#ifdef HAVE_FORM_H
+#include <form.h>
+#endif
+
 #include "common.h"
 #include "input.h"
 
-static void cleanup(WINDOW *win, PANEL *panel)
+static void cleanup(WINDOW *win, PANEL *panel, FORM *f, FIELD **fields)
 {
+    int i;
+
+    unpost_form(f);
+    free_form(f);
+
+    for (i = 0; fields[i]; i++)
+	free_field(fields[i]);
+
     del_panel(panel);
     delwin(win);
+
     return;
 }
 
-char *get_input(const char *prompt, char *init)
+char *get_input(const char *prompt, const char *init)
 {
-    int y, x, width;
-    static char dst[MAXINPUTSIZE];
-    int i = 0, pos = 0, len;
-
-    bzero(dst, sizeof(dst));
-
-    nl();
-    echo();
-    curs_set(1);
+    WINDOW *win;
+    PANEL *panel;
+    FIELD *fields[2];
+    FORM *finput;
+    int width, len;
+    int y, x;
+    static unsigned char dst[255];
+    char *tmp;
 
     len = strlen(prompt);
     width = (len + 4 > INPUT_WIDTH && len + 4 < COLS - 2) ?
-	len + 4 : INPUT_WIDTH;
+	    len + 4 : INPUT_WIDTH;
 
-    x = 1;
-    y = 2;
+    fields[0] = new_field(1, width - 4, 0, 0, 0, 0);
 
-    if (init) {
-	len = strlen(init);
+    if (init)
+	set_field_buffer(fields[0], 0, init);
 
-	if (len + 4 > width && len + 4 < COLS - 2)
-	    width = strlen(init) + 4;
+    field_opts_off(fields[0], O_STATIC|O_WRAP|O_BLANK);
+    fields[1] = NULL;
+    finput = new_form(fields);
 
-	strncpy(dst, init, sizeof(dst));
-	i = pos = strlen(dst);
-    }
+    scale_form(finput, &y, &x);
+
+    win = newwin(y + 3, x + 4, CALCPOSY(y), CALCPOSX(x));
+    set_form_win(finput, win);
+    set_form_sub(finput, derwin(win, y, x, 2, 1));
+    post_form(finput);
+    nl();
+    noecho();
+    cbreak();
+    keypad(win, TRUE);
+    curs_set(1);
+    panel = new_panel(win);
+    draw_window_title(win, prompt, width);
 
     while (1) {
-	WINDOW *win;
-	PANEL *panel;
-	int c, n;
-
-	win = newwin(INPUT_HEIGHT, width, CALCPOSY(INPUT_HEIGHT), 
-		CALCPOSX(width));
-	panel = new_panel(win);
-	draw_window_title(win, prompt, width);
-
-	for (n = 0; dst[pos + n]; n++)
-	    mvwaddch(win, y, x + n, dst[pos + n]);
+	int c;
 
 	update_panels();
 	doupdate();
 
 	c = wgetch(win);
+	c &= A_CHARTEXT;
 
 	switch (c) {
-	    case KEY_ESCAPE:
-		if (init)
-		    strncpy(dst, init, sizeof(dst));
-		else
-		    dst[0] = 0;
-	    case '\n':
-		cleanup(win, panel);
-		goto done;
+	    case '':
+		form_driver(finput, REQ_PREV_WORD);
+		break;
+	    case '':
+		form_driver(finput, REQ_NEXT_WORD);
+		break;
+	    case '':
+		form_driver(finput, REQ_BEG_LINE);
+		break;
+	    case '':
+		form_driver(finput, REQ_END_LINE);
+		break;
+	    case '':
+		form_driver(finput, REQ_CLR_EOL);
+		break;
+	    case '':
+		form_driver(finput, REQ_CLR_FIELD);
+		break;
+	    case '':
+		help(INPUT_HELP, inputhelp);
+		break;
+	    case KEY_LEFT:
+		form_driver(finput, REQ_PREV_CHAR);
+		break;
+	    case KEY_RIGHT:
+		form_driver(finput, REQ_NEXT_CHAR);
+		break;
 	    case '\010':
-		if (i)
-		    dst[--i] = 0;
-
-		if (pos)
-		    pos--;
-
-		cleanup(win, panel);
-		continue;
+	    case KEY_BACKSPACE:
+		form_driver(finput, REQ_DEL_PREV);
+		break;
+	    case KEY_F(1):
+		help(INPUT_HELP, inputhelp);
+		break;
+	    case '\n':
+	    case KEY_ESCAPE:
+		goto done;
 	    default:
+		form_driver(finput, c);
+		form_driver(finput, REQ_VALIDATION);
 		break;
 	}
-
-	if (i < sizeof(dst) - 1) {
-	    dst[i++] = c;
-
-	    if (i >= width - 2)
-		pos++;
-	}
-
-	cleanup(win, panel);
     }
 
 done:
+    tmp = trim(field_buffer(fields[0], 0));
+    strncpy(dst, (tmp) ? tmp : "", sizeof(dst));
+    cleanup(win, panel, finput, fields);
     noecho();
     nonl();
     curs_set(0);
-    return (!dst[0] || dst[0] == '\n') ? NULL : dst;
+    return (dst[0]) ? dst : NULL;
 }

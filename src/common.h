@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.5 2002-12-06 21:54:40 bjk Exp $ */
+/* $Id: common.h,v 1.6 2002-12-07 21:32:26 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -63,6 +63,7 @@
 #define CENTERX(x, str)		(x / 2 - strlen(str) / 2)
 
 #define MESSAGE_CP		((COLORS) ? COLOR_PAIR(8) : 0)
+
 enum {WHITE, BLACK};
 
 struct {
@@ -111,14 +112,15 @@ int pgn_index;
 WINDOW *historyw;
 PANEL *historyp;
 
+void draw_window_title(WINDOW *, const char *, int);
 void *Calloc(size_t, size_t);
 void *Realloc(void *, size_t);
 int message(const char *, const char *, const char *, ...);
 void parse_engine_output(char *);
-void help(void);
 void draw_window_title(WINDOW *, const char *, int);
 char *real_filename(char *);
-char *get_input(const char *, char *);
+char *get_input(const char *, const char *);
+void help(const char *, const char **);
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.8 2002-12-07 14:29:08 bjk Exp $ */
+/* $Id: cboard.h,v 1.9 2002-12-07 21:32:26 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -29,7 +29,7 @@
 
 #define STATUS_TITLE	"Game Status"
 #define DATA_TITLE	"Game Information"
-#define HELP_PROMPT	"Type '?' for available command keys."
+#define MAIN_HELP	"Command Keys"
 
 /* order must match the BOOK_... enumeration on common.h */
 const char *book_methods[] = {
@@ -41,6 +41,23 @@ struct {
     int row;
     int col;
 } selected_piece;
+
+const char *mainhelp[] = {
+    "UP/j    - cursor up              N - new game",
+    "DOWN/k  - cursor down            R - refresh screen",
+    "LEFT/l  - cursor left/reverse    c - send a command to the game engine",
+    "RIGHT/; - cursor right/forward   v - version information",
+    "                                 q - quit",
+    "SPACE   - select piece           w - switch sides",
+    "ENTER   - move selected piece    s - save game in PGN format",
+    "ESC     - cancel selected piece  r - resume a PGN game",
+    "                                 u - take back previous move",
+    "                                 h - toggle viewing of movement history",
+    "                                 g - force engine to make next move",
+    "                                 b - cycle through book modes",
+    "                                 i - PGN information",
+    NULL
+};
 
 WINDOW *boardw;
 PANEL *boardp;
