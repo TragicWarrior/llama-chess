@@ -11,4 +11,4 @@ When saving multiple games, sort them by tag values specified by the standard.
 
 A command to show pinned pieces.
 
-Cursor keys cycle valid moves, not suqares (option)
+Show cursor direction keys on the board next to the move numbers. (?)
