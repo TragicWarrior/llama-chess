@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.71 2003-01-31 20:47:38 bjk Exp $ */
+/* $Id: pgn.c,v 1.72 2003-01-31 21:22:27 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1437,7 +1437,7 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 	    if (data[i].value[0])
 		mitems[i] = new_item(data[i].name,
 			(strlen(data[i].value) > MAX_VALUE_WIDTH - 1)
-			? "Press ENTER..." : data[i].value);
+			? PRESS_ENTER : data[i].value);
 	    else
 		mitems[i] = new_item(data[i].name, UNKNOWN);
 	}
