@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.13 2002-12-23 19:56:24 bjk Exp $ */
+/* $Id: rcfile.c,v 1.14 2002-12-27 14:36:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -90,7 +90,7 @@ static void parse_color(const char *filename, int line, const char *str,
     char fg[16], bg[16], attr[64], nattr[64];
     struct colors ctmp = *c;
     int n;
-
+    
     if ((n = sscanf(str, "%[a-zA-Z] %[a-zA-Z] %[a-zA-Z,] %[a-zA-Z,]", fg, bg,
 		    attr, nattr)) < 2)
 	errx(EXIT_FAILURE, "%s(%i): parse error", filename, line);
@@ -109,6 +109,17 @@ static void parse_color(const char *filename, int line, const char *str,
     return;
 }
 
+static int on_or_off(const char *filename, int lines, const char *str)
+{
+    if (strcmp(str, "on") == 0)
+	return 1;
+
+    if (strcmp(str, "off") == 0)
+	return 0;
+
+    errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, lines, str);
+}
+
 void parse_rcfile(const char *filename)
 {
     FILE *fp;
@@ -120,6 +131,7 @@ void parse_rcfile(const char *filename)
 	err(EXIT_FAILURE, "%s", filename);
 
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
+	int n;
 	char var[30], val[50];
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
 	char *tmp;
@@ -130,8 +142,8 @@ void parse_rcfile(const char *filename)
 	if (!line[0] || line[0] == '#')
 	    continue;
 
-	if (sscanf(line, "%s %[^\n]", var, val) != 2)
-	    errx(EXIT_FAILURE, "%s(%i): parse error", filename, lines);
+	if ((n = sscanf(line, "%s %[^\n]", var, val)) != 2)
+	    errx(EXIT_FAILURE, "%s(%i): parse error %i", filename, lines,n);
 
 	strncpy(val, trim(val), sizeof(val));
 	strncpy(var, trim(var), sizeof(var));
@@ -165,20 +177,10 @@ void parse_rcfile(const char *filename)
 
 	    config.engine_depth = atoi(val);
 	}
-	else if (strcmp(var, "historyagony") == 0) {
-	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
-
-	    config.historyagony = atoi(val);
-	}
-	else if (strcmp(var, "agony") == 0) {
-	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
-
-	    config.agony = atoi(val);
-	}
+	else if (strcmp(var, "historyagony") == 0)
+	    config.historyagony = on_or_off(filename, lines, val);
+	else if (strcmp(var, "agony") == 0)
+	    config.agony = on_or_off(filename, lines, val);
 	else if (strcmp(var, "pgntag") == 0) {
 	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
 		    n > 2)
@@ -220,12 +222,18 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_SNOTIFY]);
 	else if (strcmp(var, "status_engine") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_SENGINE]);
-	else if (strcmp(var, "data_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_DWINDOW]);
-	else if (strcmp(var, "data_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_DTITLE]);
-	else if (strcmp(var, "data_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_DBORDER]);
+	else if (strcmp(var, "white_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_WWINDOW]);
+	else if (strcmp(var, "white_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_WTITLE]);
+	else if (strcmp(var, "white_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_WBORDER]);
+	else if (strcmp(var, "black_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BWINDOW]);
+	else if (strcmp(var, "black_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BTITLE]);
+	else if (strcmp(var, "black_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BBORDER]);
 	else if (strcmp(var, "history_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_HWINDOW]);
 	else if (strcmp(var, "history_title") == 0)
@@ -251,6 +259,8 @@ void parse_rcfile(const char *filename)
 	else if (strcmp(var, "save_directory") == 0)
 	    strncpy(config.savedirectory, tilde_expand(val),
 		    sizeof(config.savedirectory));
+	else if (strcmp(var, "line_graphics") == 0)
+	    config.linegraphics = on_or_off(filename, lines, val);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.14 2002-12-26 17:40:38 bjk Exp $ */
+/* $Id: pgn.h,v 1.15 2002-12-27 14:36:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -37,9 +37,6 @@
 #define MAX_VALUE_WIDTH	30
 #define BROWSER_HELP	"File Browser Keys"
 #define CHANGE_DIRECTORY	"Change Directory"
-
-enum {PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK,
-    PGN_RESULT };
 
 const struct {
     char *pgn;

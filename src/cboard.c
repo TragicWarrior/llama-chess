@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.44 2002-12-26 17:39:35 bjk Exp $ */
+/* $Id: cboard.c,v 1.45 2002-12-27 14:36:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,6 +38,14 @@
 #include "colors.h"
 #include "cboard.h"
 
+static chtype board_graphics(chtype c)
+{
+    if (!config.linegraphics)
+	return ' ';
+
+    return c;
+}
+
 void draw_board()
 {
     int row, col;
@@ -56,20 +64,23 @@ void draw_board()
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
 		    mvwaddch(boardw, row, col, 
-			    (row) ? ACS_LLCORNER | CP_BOARD_GRAPHICS :
-			    ACS_ULCORNER | CP_BOARD_GRAPHICS);
+			    board_graphics((row) ? 
+				ACS_LLCORNER | CP_BOARD_GRAPHICS : 
+				ACS_ULCORNER | CP_BOARD_GRAPHICS));
 		else if (col == maxx - 2)
 		    mvwaddch(boardw, row, col,
-			    (row) ? ACS_LRCORNER | CP_BOARD_GRAPHICS : 
-			    ACS_URCORNER | CP_BOARD_GRAPHICS);
+			    board_graphics((row) ?
+				ACS_LRCORNER | CP_BOARD_GRAPHICS : 
+				ACS_URCORNER | CP_BOARD_GRAPHICS));
 		else if (!(col % 4))
 		    mvwaddch(boardw, row, col, 
-			    (row) ? ACS_BTEE | CP_BOARD_GRAPHICS : 
-			    ACS_TTEE | CP_BOARD_GRAPHICS);
+			    board_graphics((row) ? 
+				ACS_BTEE | CP_BOARD_GRAPHICS : 
+				ACS_TTEE | CP_BOARD_GRAPHICS));
 		else {
 		    if (col != maxx - 1)
 			mvwaddch(boardw, row, col,
-				ACS_HLINE | CP_BOARD_GRAPHICS);
+				board_graphics(ACS_HLINE | CP_BOARD_GRAPHICS));
 		}
 
 		continue;
@@ -85,21 +96,25 @@ void draw_board()
 	    if ((col == 0 || col == maxx - 2) && row != maxy - 1) {
 		if (!(row % 2))
 		    mvwaddch(boardw, row, col,
-			    (col) ? ACS_RTEE | CP_BOARD_GRAPHICS : 
-			    ACS_LTEE | CP_BOARD_GRAPHICS);
+			    board_graphics((col) ?
+				ACS_RTEE | CP_BOARD_GRAPHICS : 
+				ACS_LTEE | CP_BOARD_GRAPHICS));
 		else
-		    mvwaddch(boardw, row, col, ACS_VLINE | CP_BOARD_GRAPHICS);
+		    mvwaddch(boardw, row, col,
+			    board_graphics(ACS_VLINE | CP_BOARD_GRAPHICS));
 
 		continue;
 	    }
 
 	    if ((row % 2) && !(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col, ACS_VLINE | CP_BOARD_GRAPHICS);
+		mvwaddch(boardw, row, col,
+			board_graphics(ACS_VLINE | CP_BOARD_GRAPHICS));
 		continue;
 	    }
 
 	    if (!(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col, ACS_PLUS | CP_BOARD_GRAPHICS);
+		mvwaddch(boardw, row, col,
+			board_graphics(ACS_PLUS | CP_BOARD_GRAPHICS));
 		continue;
 	    }
 
@@ -150,7 +165,8 @@ void draw_board()
 	    }
 	    else {
 		if (col != maxx - 1)
-		    mvwaddch(boardw, row, col, ACS_HLINE | CP_BOARD_GRAPHICS);
+		    mvwaddch(boardw, row, col,
+			    board_graphics(ACS_HLINE | CP_BOARD_GRAPHICS));
 	    }
 	}
     }
@@ -238,10 +254,6 @@ void update_status()
     mvwprintw(statusw, 6, 1, "    Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
-    snprintf(buf, sizeof(buf), "%i white  %i black", game[gindex].wcaptures,
-	    game[gindex].bcaptures);
-    mvwprintw(statusw, 7, 1, "Captures: %-*s", w, buf);
-
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
 
@@ -283,50 +295,15 @@ void update_history()
     return;
 }
 
-void update_data()
+void update_white_black()
 {
-    int w;
-    char *tmp;
-    int i, tlen = 0;
-    int n;
+    draw_window_title(whitew, game[gindex].pgn[PGN_WHITE].value, BW_WIDTH, 
+	    CP_WHITE_TITLE, CP_WHITE_BORDER);
+    draw_window_title(blackw, game[gindex].pgn[PGN_BLACK].value, BW_WIDTH, 
+	    CP_BLACK_TITLE, CP_BLACK_BORDER);
 
-    /* Get the longest tag length and clear the initial lines. */
-    for (i = 0; (i < DATA_HEIGHT - 6 && game[gindex].pgn[i].token[0]); i++) {
-	int ttlen = strlen(game[gindex].pgn[i].token);
-
-	if (tlen < ttlen)
-	    tlen = ttlen;
-
-	for (n = 1; n < DATA_WIDTH - 1; n++)
-	    mvwprintw(dataw, i + 3, n, " ");
-    }
-
-    w = DATA_WIDTH - tlen - 4;
-
-    if ((tmp = real_filename(pgnfile)) == NULL)
-	tmp = NONE;
-
-    mvwprintw(dataw, 2, 1, "%*s: %-*s", tlen, "File", w, tmp);
-
-    for (i = 0; (i < DATA_HEIGHT - 6 && game[gindex].pgn[i].token[0]); i++) {
-	char buf[w + 1];
-
-	if (strlen(game[gindex].pgn[i].value) > w)
-	    snprintf(buf, sizeof(buf), "%-.*s...", w - 3, 
-		    game[gindex].pgn[i].value);
-	else
-	    snprintf(buf, sizeof(buf), "%-.*s", w, game[gindex].pgn[i].value);
-
-	mvwprintw(dataw, i + 3, 1, "%*s: %-.*s", tlen,
-		game[gindex].pgn[i].token, w, buf);
-    }
-
-    for (; i < DATA_HEIGHT - 4; i++)
-	mvwprintw(dataw, i + 3, 1, "%*s", DATA_WIDTH - 4, " ");
-
-    mvwprintw(dataw, DATA_HEIGHT - 2, CENTERX(DATA_WIDTH, MAIN_HELP_PROMPT),
-	    "%s", MAIN_HELP_PROMPT);
-
+    mvwprintw(whitew, 2, 1, "Captures: %-2i", game[gindex].wcaptures);
+    mvwprintw(blackw, 2, 1, "Captures: %-2i", game[gindex].bcaptures);
     return;
 }
 
@@ -370,7 +347,7 @@ void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
 void update_all()
 {
     update_status();
-    update_data();
+    update_white_black();
     update_history();
     return;
 }
@@ -379,13 +356,16 @@ void refresh_all()
 {
     werase(statusw);
     werase(historyw);
-    werase(dataw);
+    werase(whitew);
+    werase(blackw);
     werase(boardw);
     update_all();
+    draw_window_title(whitew, game[gindex].pgn[PGN_WHITE].value, BW_WIDTH, 
+	    CP_WHITE_TITLE, CP_WHITE_BORDER);
+    draw_window_title(blackw, game[gindex].pgn[PGN_BLACK].value, BW_WIDTH, 
+	    CP_BLACK_TITLE, CP_BLACK_BORDER);
     draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
 	    CP_STATUS_BORDER);
-    draw_window_title(dataw, DATA_TITLE, DATA_WIDTH, CP_DATA_TITLE, 
-	    CP_DATA_BORDER);
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
 	    CP_HISTORY_BORDER);
     update_panels();
@@ -633,6 +613,7 @@ blah:
 		if (save_pgn(tmp, (tmppgn) ? tmppgn : game[gindex].pgn, 0)) {
 		    if (tmppgn)
 			free(tmppgn);
+
 		    break;
 		}
 
@@ -688,8 +669,7 @@ blah:
 	    case KEY_UP:
 		if (browse_history) {
 		    history_next(config.history_jump);
-		    update_history();
-		    update_status();
+		    update_all();
 		    break;
 		}
 
@@ -702,8 +682,7 @@ blah:
 	    case KEY_DOWN:
 		if (browse_history) {
 		    history_previous(config.history_jump);
-		    update_status();
-		    update_history();
+		    update_all();
 		    break;
 		}
 
@@ -716,8 +695,7 @@ blah:
 	    case KEY_LEFT:
 		if (browse_history) {
 		    history_previous(1);
-		    update_status();
-		    update_history();
+		    update_all();
 		    break;
 		}
 
@@ -730,8 +708,7 @@ blah:
 	    case KEY_RIGHT:
 		if (browse_history) {
 		    history_next(1);
-		    update_status();
-		    update_history();
+		    update_all();
 		    break;
 		}
 
@@ -876,6 +853,7 @@ static void set_defaults()
     config.engine_depth = 0;
     config.historyagony = 0;
     config.agony = 1;
+    config.linegraphics = 1;
 
     set_default_colors();
     set_pgn_defaults();
@@ -968,8 +946,10 @@ int main(int argc, char *argv[])
     historyp = new_panel(historyw);
     statusw = newwin(STATUS_HEIGHT, STATUS_WIDTH, LINES - STATUS_HEIGHT, 0);
     statusp = new_panel(statusw);
-    dataw = newwin(DATA_HEIGHT, DATA_WIDTH, 0, 0);
-    datap = new_panel(dataw);
+    whitew = newwin(BW_HEIGHT, BW_WIDTH, 0, 0);
+    whitep = new_panel(whitew);
+    blackw = newwin(BW_HEIGHT, BW_WIDTH, BW_HEIGHT, 0);
+    blackp = new_panel(blackw);
     keypad(boardw, TRUE);
     curs_set(0);
     cbreak();
@@ -978,9 +958,12 @@ int main(int argc, char *argv[])
     wbkgd(statusw, CP_STATUS_WINDOW);
     draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
 	    CP_STATUS_BORDER);
-    wbkgd(dataw, CP_DATA_WINDOW);
-    draw_window_title(dataw, DATA_TITLE, DATA_WIDTH, CP_DATA_TITLE, 
-	    CP_DATA_BORDER);
+    wbkgd(whitew, CP_WHITE_WINDOW);
+    draw_window_title(whitew, game[gindex].pgn[PGN_WHITE].value, BW_WIDTH, 
+	    CP_WHITE_TITLE, CP_WHITE_BORDER);
+    wbkgd(blackw, CP_BLACK_WINDOW);
+    draw_window_title(blackw, game[gindex].pgn[PGN_BLACK].value, BW_WIDTH, 
+	    CP_BLACK_TITLE, CP_BLACK_BORDER);
     wbkgd(historyw, CP_HISTORY_WINDOW);
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
 	    CP_HISTORY_BORDER);
@@ -992,12 +975,13 @@ int main(int argc, char *argv[])
     free_game_data();
     del_panel(boardp);
     del_panel(historyp);
-    /* this segfaults */
     del_panel(statusp);
-    del_panel(datap);
+    del_panel(whitep);
+    del_panel(blackp);
     delwin(boardw);
     delwin(historyw);
     delwin(statusw);
-    delwin(dataw);
+    delwin(whitew);
+    delwin(blackw);
     exit(EXIT_SUCCESS);
 }

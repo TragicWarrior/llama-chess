@@ -1,4 +1,4 @@
-/* $Id: colors.h,v 1.1 2002-12-21 21:20:54 bjk Exp $ */
+/* $Id: colors.h,v 1.2 2002-12-27 14:36:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -63,17 +63,17 @@
 	COLOR_PAIR(11) | config.color[CONF_SNOTIFY].attrs : \
 	config.color[CONF_SNOTIFY].nattrs)
 
-#define CP_DATA_WINDOW	((COLORS) ? \
-	COLOR_PAIR(12) | config.color[CONF_DWINDOW].attrs : \
-	config.color[CONF_DWINDOW].nattrs)
+#define CP_WHITE_WINDOW	((COLORS) ? \
+	COLOR_PAIR(12) | config.color[CONF_WWINDOW].attrs : \
+	config.color[CONF_WWINDOW].nattrs)
 
-#define CP_DATA_BORDER	((COLORS) ? \
-	COLOR_PAIR(13) | config.color[CONF_DBORDER].attrs : \
-	config.color[CONF_DBORDER].nattrs)
+#define CP_WHITE_BORDER	((COLORS) ? \
+	COLOR_PAIR(13) | config.color[CONF_WBORDER].attrs : \
+	config.color[CONF_WBORDER].nattrs)
 
-#define CP_DATA_TITLE	((COLORS) ? \
-	COLOR_PAIR(14) | config.color[CONF_DTITLE].attrs : \
-	config.color[CONF_DTITLE].nattrs)
+#define CP_WHITE_TITLE	((COLORS) ? \
+	COLOR_PAIR(14) | config.color[CONF_WTITLE].attrs : \
+	config.color[CONF_WTITLE].nattrs)
 
 #define CP_HISTORY_WINDOW	((COLORS) ? \
 	COLOR_PAIR(15) | config.color[CONF_HWINDOW].attrs : \
@@ -118,5 +118,17 @@
 #define CP_INPUT_PROMPT	((COLORS) ? \
 	COLOR_PAIR(25) | config.color[CONF_IPROMPT].attrs : \
 	config.color[CONF_IPROMPT].nattrs)
+
+#define CP_BLACK_WINDOW	((COLORS) ? \
+	COLOR_PAIR(12) | config.color[CONF_BWINDOW].attrs : \
+	config.color[CONF_BWINDOW].nattrs)
+
+#define CP_BLACK_BORDER	((COLORS) ? \
+	COLOR_PAIR(13) | config.color[CONF_BBORDER].attrs : \
+	config.color[CONF_BBORDER].nattrs)
+
+#define CP_BLACK_TITLE	((COLORS) ? \
+	COLOR_PAIR(14) | config.color[CONF_BTITLE].attrs : \
+	config.color[CONF_BTITLE].nattrs)
 
 #endif

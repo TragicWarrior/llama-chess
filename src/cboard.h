@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.31 2002-12-26 17:39:35 bjk Exp $ */
+/* $Id: cboard.h,v 1.32 2002-12-27 14:36:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -24,14 +24,13 @@
 #define BOARD_WIDTH	34
 #define STATUS_HEIGHT	(10)
 #define STATUS_WIDTH	(COLS - BOARD_WIDTH)
-#define DATA_HEIGHT	(LINES - STATUS_HEIGHT)
-#define DATA_WIDTH	(COLS - BOARD_WIDTH)
+#define BW_HEIGHT	(LINES - STATUS_HEIGHT) / 2
+#define BW_WIDTH	(COLS - BOARD_WIDTH)
 #define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
-#define HISTORY_WIDTH	(COLS - DATA_WIDTH)
+#define HISTORY_WIDTH	(COLS - BW_WIDTH)
 #define HISTORY_TITLE	"Move History"
 #define ENGINE_COMMAND_PROMPT	"Engine Command"
 #define STATUS_TITLE	"Game Status"
-#define DATA_TITLE	"Game Information"
 #define MAIN_HELP	"Command Keys"
 #define MAIN_HELP_PROMPT	"Type CTRL-g for available command keys"
 #define ANNOTATE_HISTORY	"Editing Annotation for"
@@ -68,10 +67,10 @@ const char *mainhelp[] = {
 
 WINDOW *boardw;
 PANEL *boardp;
+WINDOW *whitew, *blackw;
+PANEL *whitep, *blackp;
 WINDOW *statusw;
 PANEL *statusp;
-WINDOW *dataw;
-PANEL *datap;
 
 int selected_y, selected_x;
 int quit;

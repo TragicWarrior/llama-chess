@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.28 2002-12-23 19:56:24 bjk Exp $ */
+/* $Id: common.h,v 1.29 2002-12-27 14:36:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -66,6 +66,10 @@ FILE *debugfp;
 #define CENTERX(x, str)		(x / 2 - strlen(str) / 2)
 
 enum {WHITE, BLACK};
+
+enum {
+    PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK, PGN_RESULT
+};
 
 struct {
     chtype icon;
@@ -141,7 +145,8 @@ struct {
 enum { 
     CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,
     CONF_BCOORDS,
-    CONF_DWINDOW, CONF_DTITLE, CONF_DBORDER,
+    CONF_WWINDOW, CONF_WTITLE, CONF_WBORDER,
+    CONF_BWINDOW, CONF_BTITLE, CONF_BBORDER,
     CONF_SWINDOW, CONF_STITLE, CONF_SBORDER, CONF_SNOTIFY, CONF_SENGINE,
     CONF_HWINDOW, CONF_HTITLE, CONF_HBORDER,
     CONF_MWINDOW, CONF_MTITLE, CONF_MBORDER, CONF_MPROMPT,
@@ -162,6 +167,7 @@ struct {
     int engine_depth;
     int historyagony;
     int agony;
+    int linegraphics;
     char nagfile[FILENAME_MAX];
     char agonyfile[FILENAME_MAX];
     char configfile[FILENAME_MAX];
