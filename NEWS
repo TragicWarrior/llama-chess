@@ -1,0 +1,33 @@
+CBoard version 0.1.2
+--------------------
+Loading a saved game and resuming a game from previous history works now. This
+is done by having the chess engine read a FIFO and have CBoard write to it.
+This allows for easy game switching when more than one game has been loaded.
+
+Promotions, En Passant and castling moves are recognized now.
+
+Agony strings are stored in ~/.cboard/agony.data and can be disabled with a
+configuration file option (see below).
+
+Rewritten move text section in the PGN parser. Now move annotations are read
+and written and can be viewed with the 'v' and 'V' commands in history mode.
+This supports both move comments and NAG data (see below).
+
+There is no longer a -f command line option to specify a configuration file.
+The new configuration file is stored in the ~/.cboard directory along with a
+few data files. The files that need to be found in this directory are:
+
+    config     - This is optional, CBoard will use defaults if not found.
+    nag.data   - For viewing and editing move annotations.
+    agony.data - Agony strings displayed in the status window when a capture
+		 has been made.
+    fifo       - Used for resuming games.
+
+You can find the data files along with an example configuration file in the
+'etc/' directory of the archive. You'll have to copy them over to ~/.cboard
+yourself until I figure out a way to do it with 'make install'.
+
+See the manual page for configuration file options; there are a few new ones.
+
+SANS move format is the next major thing that needs to be done. It seems like
+I'm going in reverse order of how things should be developed, but oh well.
