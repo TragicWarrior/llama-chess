@@ -7,3 +7,6 @@ needs moving to update the pieces (sometimes). Won't do it on Debian so I'm
 guessing it's RedHat specific.
 
 The 'draw' game result isn't recognized.
+
+Valid moves (when a piece is selected) wont check for certain things like
+check and others, giving false moves.
