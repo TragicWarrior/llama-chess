@@ -1,9 +1,5 @@
 SAN move format is broken with ambiguities and more.
 
-The PGN specification says import format shouldn't need move numbers. Right
-now theres no way around it. This affects black starting position also unless
-the move is in '1... e5' form.
-
 The first menu item isn't initially highlighted.
 
 Linux: Resuming a game specified on the command line is broken and the cursor
