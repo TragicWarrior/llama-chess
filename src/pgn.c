@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.30 2002-12-20 00:31:37 bjk Exp $ */
+/* $Id: pgn.c,v 1.31 2002-12-20 00:42:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -502,6 +502,20 @@ static char *pgn_escapes(const char *str)
     return buf;
 }
 	
+static void dump_comments_and_nag(FILE *fp, int index)
+{
+    int i;
+
+    for (i = 0; i < MAX_PGN_NAG; i++) {
+	if (game[gindex].history[index].nag[i])
+	    fprintf(fp, "$%i ", game[gindex].history[index].nag[i]);
+    }
+
+    if (game[gindex].history[index].comment[0])
+	fprintf(fp, "\n{%s}\n", game[gindex].history[index].comment);
+
+    return;
+}
 
 int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 {
@@ -570,7 +584,6 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
      * NAG data.
      */
     for (i = 0, n = 1; i < game[gindex].hindex; i += 2, n++) {
-	int x;
 	int wlen = strlen(game[gindex].history[i].move);
 	int blen = strlen(game[gindex].history[i + 1].move);
 
@@ -581,27 +594,13 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 
 	fprintf(fp, "%u. %s ", n, game[gindex].history[i].move);
 
-	if (!isfifo) {
-	    for (x = 0; x < MAX_PGN_NAG; x++) {
-		if (game[gindex].history[i].nag[x])
-		    fprintf(fp, "$%i ", game[gindex].history[i].nag[x]);
-	    }
-
-	    if (game[gindex].history[i].comment[0])
-		fprintf(fp, "\n{%s}\n", game[gindex].history[i].comment);
-	}
+	if (!isfifo)
+	    dump_comments_and_nag(fp, i);
 
 	fprintf(fp, "%s ", game[gindex].history[i + 1].move);
 
-	if (!isfifo) {
-	    for (x = 0; x < MAX_PGN_NAG; x++) {
-		if (game[gindex].history[i + 1].nag[x])
-		    fprintf(fp, "$%i ", game[gindex].history[i + 1].nag[x]);
-	    }
-
-	    if (game[gindex].history[i + 1].comment[0])
-		fprintf(fp, "\n{%s}\n", game[gindex].history[i + 1].comment);
-	}
+	if (!isfifo)
+	    dump_comments_and_nag(fp, i + 1);
 
 	len += wlen + blen + 6;
     }
@@ -757,11 +756,14 @@ struct pgndata *edit_pgn_data(int edit)
 
 		    newtag[0] = toupper(newtag[0]);
 
-		    if (add_pgn_data(&data, &data_index, newtag, NULL)) {
-			message(ERROR, ANYKEY, "%s \"%s\"", PGN_DUPLICATE,
-				newtag);
-			goto cleanup;
+		    for (i = 0; i < data_index; i++) {
+			if (strcasecmp(data[i].token, newtag) == 0) {
+			    selected = i;
+			    goto gotitem;
+			}
 		    }
+
+		    add_pgn_data(&data, &data_index, newtag, NULL);
 
 		    selected = data_index - 1;
 		    goto gotitem;
