@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.12 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: pgn.h,v 1.13 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,11 +19,12 @@
 #ifndef PGN_H
 #define PGN_H
 
+#define BROWSE_HEIGHT	12
 #define MAX_TIME_LEN	18
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 #define PGN_EDIT_TITLE	"Editing PGN Save Data"
-#define PGN_PROMPT	"Type CTRL-g for help"
+#define HELP_PROMPT	"Type CTRL-g for help"
 #define PGN_INFO_HELP	"PGN Information Keys"
 #define PGN_EDIT_HELP	"PGN Edit Keys"
 #define PGN_EDIT_TAG	"Editing PGN Roster Tag"
@@ -34,6 +35,8 @@
 #define PGN_INFO_TITLE	"PGN Information"
 #define OVERWRITE_PROMPT	"'a' to append, 'o' to overwrite"
 #define MAX_VALUE_WIDTH	30
+#define BROWSER_HELP	"File Browser Keys"
+#define CHANGE_DIRECTORY	"Change Directory"
 
 enum {PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK,
     PGN_RESULT };
@@ -46,6 +49,11 @@ const struct {
     {"0-1", "black wins"},
     {"1/2-1/2", "draw"},
     {"*", "undetermined"}
+};
+
+struct d_entries {
+    char *name;
+    char desc[25];
 };
 
 const char *pgn_edit_help[] = {
@@ -66,6 +74,18 @@ const char *pgn_info_help[] = {
     NULL
 };
 
+const char *file_browser_help[] = {
+    "     CTRL-x - change directory",
+    "          ~ - open home directory",
+    "    UP/DOWN - select menu entry",
+    "CTRL-P/PGUP - previous page",
+    "CTRL-N/PGDN - next page",
+    "[A-Za-z0-9] - jump to entry",
+    "      ENTER - commit selected entry",
+    "     ESCAPE - quit",
+    NULL
+};
+
 void add_to_history(struct history **, int *, int *, const char *);
 void reset_history(void);
 void free_game_data(void);
@@ -73,5 +93,6 @@ void send_to_engine(const char *, ...);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
+char *tilde_expand(char *);
 
 #endif

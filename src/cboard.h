@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.29 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: cboard.h,v 1.30 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -36,6 +36,9 @@
 #define MAIN_HELP_PROMPT	"Type CTRL-g for available command keys"
 #define ANNOTATE_HISTORY	"Editing Annotation for"
 #define NAG_PROMPT	"Type CTRL-t to edit NAG"
+#define EXTRA_BROWSE	"Type TAB for file browser"
+#define LOAD_PGN	"Load PGN filename"
+#define SAVE_PGN	"Save to PGN filename"
 
 /* The order must match the BOOK_... enumeration on common.h. */
 const char *book_methods[] = {
@@ -87,7 +90,7 @@ void history_next(int);
 void history_previous(int);
 void init_history(void);
 void parse_rcfile(const char *);
-void history_edit_nag(void *);
+char *history_edit_nag(void *);
 void view_annotation(int);
 int save_pgn(const char *, struct pgndata *, int);
 void set_engine_defaults(void);
@@ -98,5 +101,6 @@ void help(const char *, const char **);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void set_default_colors(void);
 void init_color_pairs(void);
+char *browse_directory(void *);
 
 #endif

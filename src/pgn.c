@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.33 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: pgn.c,v 1.34 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -37,6 +37,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -339,7 +340,7 @@ int parse_pgn_file(const char *filename)
     char buf[LINE_MAX], *tmp;
     int tag_section = 0;
 
-    if (!*filename) {
+   if (!*filename) {
 	reset_game_data();
 	init_data();
 	return 0;
@@ -642,7 +643,8 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     return 0;
 }
 
-static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items)
+static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items,
+	struct d_entries *entries)
 {
     int i;
 
@@ -651,6 +653,13 @@ static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items)
 
     for (i = 0; items[i]; i++)
 	free_item(items[i]);
+
+    if (entries) {
+	for (i = 0; entries[i].name; i++)
+	    free(entries[i].name);
+
+	free(entries);
+    }
 
     del_panel(panel);
     delwin(win);
@@ -692,8 +701,8 @@ struct pgndata *edit_pgn_data(int edit)
 	menu = new_menu(mitems);
 	scale_menu(menu, &rows, &cols);
 
-	if (cols < strlen(PGN_PROMPT))
-	    cols = strlen(PGN_PROMPT);
+	if (cols < strlen(HELP_PROMPT))
+	    cols = strlen(HELP_PROMPT);
 
 	cols += 2;
 
@@ -712,7 +721,7 @@ struct pgndata *edit_pgn_data(int edit)
 	draw_window_title(win, (edit) ? PGN_EDIT_TITLE : PGN_INFO_TITLE, 
 		cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
-	draw_prompt(win, rows + 3, cols, PGN_PROMPT, CP_MESSAGE_PROMPT);
+	draw_prompt(win, rows + 3, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
 
 	cbreak();
 	noecho();
@@ -779,7 +788,7 @@ struct pgndata *edit_pgn_data(int edit)
 			break;
 
 		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 1, 0, NULL, NULL,
-				    NULL, FIELD_TYPE_PGN_TAG_NAME)) == NULL)
+				    NULL, 0, FIELD_TYPE_PGN_TAG_NAME)) == NULL)
 			break;
 
 		    newtag[0] = toupper(newtag[0]);
@@ -807,7 +816,7 @@ struct pgndata *edit_pgn_data(int edit)
 		    goto gotitem;
 		    break;
 		case KEY_ESCAPE:
-		    cleanup(win, panel, menu, mitems);
+		    cleanup(win, panel, menu, mitems, NULL);
 		    goto done;
 		    break;
 		default:
@@ -859,11 +868,11 @@ gotitem:
 		goto cleanup;
 	}
 	else if (strcmp(data[selected].token, "Round") == 0)
-	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL,
+	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL, 0,
 		    FIELD_TYPE_PGN_ROUND);
 	else
 	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, NULL,
-		    -1);
+		    0, -1);
 
 	if (tmp) {
 	    if (strcmp(tmp, UNKNOWN) == 0)
@@ -874,7 +883,7 @@ gotitem:
 		sizeof(data[selected].value));
 
 cleanup:
-	cleanup(win, panel, menu, mitems);
+	cleanup(win, panel, menu, mitems, NULL);
     }
 
 done:
@@ -884,4 +893,240 @@ done:
     }
 
     return data;
+}
+
+static int sort_entries(const void *s1, const void *s2)
+{
+    const struct d_entries *ss1 = s1;
+    const struct d_entries *ss2 = s2;
+
+    return strcmp(ss1->name, ss2->name);
+}
+
+static struct d_entries *get_directory_entries(const char *path)
+{
+    DIR *dp;
+    struct dirent *entry;
+    struct d_entries *entries = NULL;
+    struct tm *tp;
+    int index = 0;
+
+    if ((dp = opendir(path)) == NULL)
+	return NULL;
+
+    while ((entry = readdir(dp)) != NULL) {
+	struct stat st;
+	int len;
+	char tbuf[MAX_TIME_LEN + 1];
+
+	if (entry->d_name[0] == '.' && entry->d_name[1] == 0)
+	    continue;
+
+	if (stat(entry->d_name, &st) == -1)
+	    continue;
+
+	entries = Realloc(entries, (index + 2) * sizeof(struct d_entries));
+	len = strlen(entry->d_name) + 2;
+	entries[index].name = (char *)Malloc(len);
+	strncpy(entries[index].name, entry->d_name, len);
+
+	if (S_ISDIR(st.st_mode))
+	    entries[index].name[len - 2] = '/';
+
+	tp = localtime(&st.st_mtime);
+	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
+
+	snprintf(entries[index].desc, sizeof(entries[index].desc), "%s %-i", 
+		tbuf, st.st_size / 1024);
+
+	memset(&entries[++index], 0, sizeof(struct d_entries));
+    }
+
+    closedir(dp);
+    qsort(entries, index, sizeof(struct d_entries), sort_entries);
+    return entries;
+}
+
+char *browse_directory(void *arg)
+{
+    int i;
+    char path[FILENAME_MAX] = {0};
+    static char file[FILENAME_MAX];
+    char *oldwd = getcwd(NULL, 0);
+
+    if (config.savedirectory[0])
+	strncpy(path, config.savedirectory, sizeof(path));
+    else
+	getcwd(path, sizeof(path));
+
+again:
+    while (1) {
+	WINDOW *win, *subw;
+	PANEL *panel;
+	ITEM **mitems = NULL;
+	MENU *menu;
+	char *tmp = NULL;
+	int rows, cols;
+	int selected = -1;
+	char *mbuf = NULL;
+	struct d_entries *entries = NULL;
+	struct stat st;
+	int index = 0;
+
+	if ((entries = get_directory_entries(path)) == NULL) {
+	    message(ERROR, ANYKEY, "%s", strerror(errno));
+	    return NULL;
+	}
+
+	for (i = 0; entries[i].name; i++) {
+	    mitems = Realloc(mitems, (index + 2) * sizeof(ITEM));
+	    mitems[index++] = new_item(entries[i].name, entries[i].desc);
+	}
+
+	mitems[index] = NULL;
+	menu = new_menu(mitems);
+	scale_menu(menu, &rows, &cols);
+
+	if (cols < strlen(path))
+	    cols = strlen(path);
+
+	if (cols < strlen(HELP_PROMPT))
+	    cols = strlen(HELP_PROMPT);
+
+	rows = BROWSE_HEIGHT;
+	cols += 2;
+
+	win = newwin(rows + 4, cols, CALCPOSY(rows) - 2, CALCPOSX(cols));
+	set_menu_format(menu, BROWSE_HEIGHT, 0);
+	set_menu_win(menu, win);
+	subw = derwin(win, rows, cols - 2, 2, 1);
+	set_menu_sub(menu, subw);
+	set_menu_fore(menu, A_REVERSE);
+	set_menu_grey(menu, A_NORMAL);
+	set_menu_mark(menu, NULL);
+	set_menu_spacing(menu, 2, 0, 0);
+	menu_opts_off(menu, O_NONCYCLIC);
+	post_menu(menu);
+	panel = new_panel(win);
+
+	draw_window_title(win, path, cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+	draw_prompt(win, rows + 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
+
+	cbreak();
+	noecho();
+	keypad(win, TRUE);
+	set_menu_pattern(menu, mbuf);
+
+	while (1) {
+	    int c;
+
+	    /* This nl() statement needs to be here because NL is recognized
+	     * for some reason after the first selection.
+	     */
+	    nl();
+	    update_panels();
+	    doupdate();
+
+	    c = wgetch(win);
+
+	    switch (c) {
+		case CTRL('P'):
+		case KEY_PPAGE:
+		    menu_driver(menu, REQ_SCR_UPAGE);
+		    break;
+		case CTRL('N'):
+		case KEY_NPAGE:
+		    menu_driver(menu, REQ_SCR_DPAGE);
+		    break;
+		case KEY_UP:
+		    menu_driver(menu, REQ_UP_ITEM);
+		    break;
+		case KEY_DOWN:
+		    menu_driver(menu, REQ_DOWN_ITEM);
+		    break;
+		case '\n':
+		    selected = item_index(current_item(menu));
+		    goto gotitem;
+		    break;
+		case KEY_ESCAPE:
+		    cleanup(win, panel, menu, mitems, entries);
+		    file[0] = 0;
+		    goto done;
+		    break;
+		case CTRL('G'):
+		    help(BROWSER_HELP, file_browser_help);
+		    break;
+		case '~':
+		    if (chdir(getenv("HOME")) == -1) {
+			message(ERROR, ANYKEY, "%s", strerror(errno));
+			break;
+		    }
+
+		    cleanup(win, panel, menu, mitems, entries);
+		    getcwd(path, sizeof(path));
+		    goto again;
+		    break;
+		case CTRL('X'):
+		    if ((tmp = get_input_str_clear(CHANGE_DIRECTORY, NULL)) 
+			    == NULL)
+			break;
+
+		    tmp = tilde_expand(tmp);
+
+		    if (chdir(tmp) == -1) {
+			message(ERROR, ANYKEY, "%s", strerror(errno));
+			break;
+		    }
+
+		    cleanup(win, panel, menu, mitems, entries);
+		    getcwd(path, sizeof(path));
+		    goto again;
+		    break;
+		default:
+		    tmp = menu_pattern(menu);
+
+		    if (tmp && tmp[strlen(tmp) - 1] != c) {
+			menu_driver(menu, REQ_CLEAR_PATTERN);
+			menu_driver(menu, c);
+		    }
+		    else {
+			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			    menu_driver(menu, c);
+		    }
+
+		    break;
+	    }
+	}
+
+gotitem:
+	snprintf(file, sizeof(file), "%s/%s", path, item_name(mitems[selected]));
+
+	if (stat(file, &st) == -1) {
+	    message(ERROR, ANYKEY, "%s", strerror(errno));
+	    cleanup(win, panel, menu, mitems, entries);
+	    continue;
+	}
+
+cleanup:
+	cleanup(win, panel, menu, mitems, entries);
+
+	if (S_ISDIR(st.st_mode)) {
+	    if (chdir(file) == -1)
+		message(ERROR, ANYKEY, "%s", strerror(errno));
+	    else
+		getcwd(path, sizeof(path));
+
+	    continue;
+	}
+
+	if (S_ISREG(st.st_mode))
+	    break;
+
+	message(ERROR, ANYKEY, "Not a regular file.");
+    }
+
+done:
+    chdir(oldwd);
+    free(oldwd);
+    return (*file) ? file : NULL;
 }

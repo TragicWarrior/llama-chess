@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.27 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: common.h,v 1.28 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -93,10 +93,10 @@ enum {
     send_to_engine(fmt, ##args) : 0
 
 #define get_input_str(title, init) \
-    get_input(title, init, 1, 0, NULL, NULL, NULL, -1, 20)
+    get_input(title, init, 1, 0, NULL, NULL, NULL, 0, -1, 20)
 
 #define get_input_str_clear(title, init) \
-    get_input(title, init, 1, 1, NULL, NULL, NULL, -1, 20)
+    get_input(title, init, 1, 1, NULL, NULL, NULL, 0, -1, 20)
 
 struct {
     int engine;
@@ -166,6 +166,7 @@ struct {
     char agonyfile[FILENAME_MAX];
     char configfile[FILENAME_MAX];
     char fifo[FILENAME_MAX];
+    char savedirectory[FILENAME_MAX];
     struct pgndata *pgn;
     struct colors color[CONF_MAX_COLORS];
     int pindex;
@@ -189,7 +190,7 @@ enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND};
 
 char *get_input(const char *, const char *, int, int, const char *,
-	void (*)(void *), void *, int, ...);
+	char *(*)(void *), void *, chtype, int, ...);
 void *Calloc(size_t, size_t);
 void *Realloc(void *, size_t);
 int dump_message(const char *, const char *, int, const char *, 

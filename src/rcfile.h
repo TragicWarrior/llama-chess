@@ -1,4 +1,4 @@
-/* $Id: rcfile.h,v 1.4 2002-12-19 16:53:05 bjk Exp $ */
+/* $Id: rcfile.h,v 1.5 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -21,4 +21,6 @@
 
 int isinteger(const char *);
 int add_pgn_data(struct pgndata **, int *, const char *, const char *);
+char *tilde_expand(char *);
+
 #endif

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.42 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: cboard.c,v 1.43 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -518,7 +518,7 @@ blah:
 
 		tmp = get_input(buf, game[gindex].history[annotate].comment, 
 			0, 0, NAG_PROMPT, history_edit_nag, (void *)annotate,
-			-1);
+			CTRL('T'), -1);
 
 		if (tmp)
 		    strncpy(game[gindex].history[annotate].comment, tmp,
@@ -592,8 +592,8 @@ blah:
 		update_history();
 		break;
 	    case 'r':
-		if ((tmp = get_input_str("Load saved game filename", NULL)) 
-			== NULL)
+		if ((tmp = get_input(LOAD_PGN, pgnfile, 1, 1, EXTRA_BROWSE,
+				browse_directory, NULL, '\t', -1)) == NULL)
 		    break;
 
 		if ((c = parse_pgn_file(tmp)) != 0) {
@@ -622,10 +622,11 @@ blah:
 			break;
 		}
 
-		if ((tmp = get_input_str_clear("Save game filename", 
-				pgnfile)) == NULL) {
+		if ((tmp = get_input(SAVE_PGN, pgnfile, 1, 1, EXTRA_BROWSE,
+				browse_directory, NULL, '\t', -1)) == NULL) {
 		    if (tmppgn)
 			free(tmppgn);
+
 		    break;
 		}
 

@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.22 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: history.c,v 1.23 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -134,7 +134,7 @@ void reset_history()
     return;
 }
 
-void history_edit_nag(void *arg)
+char *history_edit_nag(void *arg)
 {
     WINDOW *win, *subw;
     PANEL *panel;
@@ -357,7 +357,7 @@ done:
     del_panel(panel);
     delwin(win);
     delwin(subw);
-    return;
+    return NULL;
 }
 
 void add_to_history(struct history **h, int *n, int *t, const char *str)

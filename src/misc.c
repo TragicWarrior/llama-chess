@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.5 2002-12-16 18:47:17 bjk Exp $ */
+/* $Id: misc.c,v 1.6 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,6 +22,16 @@
 #include <string.h>
 #include <ctype.h>
 #include <string.h>
+
+void *Malloc(size_t size)
+{
+    void *ptr;
+
+    if ((ptr = malloc(size)) == NULL)
+	err(EXIT_FAILURE, "malloc()");
+
+    return ptr;
+}
 
 void *Realloc(void *ptr, size_t size)
 {
@@ -91,4 +101,20 @@ int isinteger(const char *str)
     }
 
     return 1;
+}
+
+char *tilde_expand(char *str)
+{
+    static char buf[FILENAME_MAX];
+
+    if (*str == '~') {
+	strncpy(buf, getenv("HOME"), sizeof(buf));
+
+	if (++str)
+	    strncat(buf, str, sizeof(buf));
+    }
+    else
+	return str;
+
+    return buf;
 }

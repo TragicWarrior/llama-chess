@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.12 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: rcfile.c,v 1.13 2002-12-23 19:56:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -122,6 +122,7 @@ void parse_rcfile(const char *filename)
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
 	char var[30], val[50];
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
+	char *tmp;
 
 	lines++;
 	line = trim(line);
@@ -247,6 +248,9 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_IBORDER]);
 	else if (strcmp(var, "input_prompt") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_IPROMPT]);
+	else if (strcmp(var, "save_directory") == 0)
+	    strncpy(config.savedirectory, tilde_expand(val),
+		    sizeof(config.savedirectory));
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);
