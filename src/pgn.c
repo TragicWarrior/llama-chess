@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.24 2002-12-18 21:54:23 bjk Exp $ */
+/* $Id: pgn.c,v 1.25 2002-12-18 21:59:20 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -325,6 +325,7 @@ int parse_pgn_file(const char *filename)
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
 	int i;
 	char tbuf[MAX_TIME_LEN + 1] = {0};
+	int offset;
 	struct tm tp;
 
 	/* Standard file comment. This has nothing to do with annotations. */
@@ -336,6 +337,7 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
 
+	offset = strlen(tmp);
 	tmp = trim(tmp);
 
 	/* Must be a roster tag... */
@@ -391,7 +393,7 @@ int parse_pgn_file(const char *filename)
 	    continue;
 
 	/* Must be move text... */
-	fseek(fp, -(strlen(tmp) + 2), SEEK_CUR);
+	fseek(fp, -(offset), SEEK_CUR);
 	game[gindex].hindex = game[gindex].htotal = 0;
 
 	while (!feof(fp)) {
