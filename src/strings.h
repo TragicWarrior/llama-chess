@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.19 2003-01-31 21:22:27 bjk Exp $ */
+/* $Id: strings.h,v 1.20 2003-02-01 19:39:21 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -50,6 +50,7 @@
 #define GAME_HELP_PROMPT	"Type CTRL-g for command keys"
 
 /* Error strings. */
+#define E_TAG_NAMETOOLONG	"Cannot add tag. Name too long."
 #define E_REGCOMP_TITLE	"Error Compiling Regular Expression"
 #define E_REGEXEC_TITLE	"Error Matching Regular Expression"
 #define E_RESUME_BLACK	"Cannot resume a game with black starting position " \

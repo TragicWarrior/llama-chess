@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.23 2003-02-01 17:49:03 bjk Exp $ */
+/* $Id: move.c,v 1.24 2003-02-01 19:39:21 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -327,11 +327,11 @@ int castle_move(BOARD b, int which)
 	    b[ROWTOBOARD(row)][COLTOBOARD(7)].icon = int_to_piece(KING);
 	    b[ROWTOBOARD(row)][COLTOBOARD(8)].icon = int_to_piece(OPEN_SQUARE);
 
-	    if (status.turn == WHITE) {
+	    if (status.turn == WHITE && status.side != WHITE) {
 		game[gindex].wk = game[gindex].rkw = 1;
 		status.notify = NOTIFY_WCASTLEK;
 	    }
-	    else {
+	    else if (status.turn == BLACK && status.side != BLACK) {
 		game[gindex].bk = game[gindex].rkb = 1;
 		status.notify = NOTIFY_BCASTLEK;
 	    }
@@ -359,11 +359,11 @@ int castle_move(BOARD b, int which)
 	    b[ROWTOBOARD(row)][COLTOBOARD(3)].icon = int_to_piece(KING);
 	    b[ROWTOBOARD(row)][COLTOBOARD(4)].icon = int_to_piece(ROOK);
 
-	    if (status.turn == WHITE) {
+	    if (status.turn == WHITE && status.side != WHITE) {
 		game[gindex].wk = game[gindex].rqw = 1;
 		status.notify = NOTIFY_WCASTLEQ;
 	    }
-	    else {
+	    else if (status.turn == BLACK && status.side != BLACK) {
 		game[gindex].bk = game[gindex].rqb = 1;
 		status.notify = NOTIFY_BCASTLEQ;
 	    }
@@ -450,6 +450,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    if (!validate_move) {
 			b[ROWTOBOARD(r)][COLTOBOARD(col)].icon =
 			    int_to_piece(OPEN_SQUARE);
+
+			if ((status.turn == WHITE && status.side != WHITE) ||
+				(status.turn == BLACK && status.side != BLACK))
 			status.notify = NOTIFY_ENPASSANT;
 		    }
 		}
@@ -1208,7 +1211,10 @@ int parse_move_text(BOARD b, char *move)
     if (!validate_move) {
 	if (promo) {
 	    piece = int_to_piece(promo);
-	    status.notify = NOTIFY_PROMOTION;
+
+	    if ((status.turn == WHITE && status.side != WHITE) ||
+		    (status.turn == BLACK && status.side != BLACK))
+		status.notify = NOTIFY_PROMOTION;
 	}
 	else 
 	    piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;

@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.28 2003-02-01 17:49:04 bjk Exp $ */
+/* $Id: pgn.h,v 1.29 2003-02-01 19:39:21 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -28,7 +28,7 @@ extern char *strptime(const char *, const char *, struct tm *);
 #define MAX_TIME_LEN	18
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
-#define MAX_VALUE_WIDTH	30
+#define MAX_VALUE_WIDTH	(COLS - 8)
 
 struct country_codes {
     char code[4];
