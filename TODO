@@ -13,7 +13,7 @@ order):
   problems, but it currently doesn't parse it. Include the RAV depth next to
   the piece.
 
-- FEN move parsing.
++ FEN move parsing.
 
 - When saving multiple games, sort them by tag values specified by the
   standard.

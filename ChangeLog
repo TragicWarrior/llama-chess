@@ -1,3 +1,277 @@
+2003-02-05 Wednesday 11:41  Ben Kibbey <bjk@arbornet.org>
+
+	* NEWS (1.7), configure.ac (1.17):
+	
+	Release version 0.1.6.
+
+2003-02-05 Wednesday 11:29  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.h (1.64):
+	
+	Forgot to update the '_' key.
+
+2003-02-05 Wednesday 11:26  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.96):
+	
+	Added command '_' to reduce engine depth. Fixes '+' too.
+
+2003-02-05 Wednesday 11:21  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.95), cboard.h (1.63), help.c (1.7), history.c
+	(1.46), history.h (1.23), input.c (1.22), input.h (1.10), pgn.c
+	(1.87), pgn.h (1.32), strings.h (1.25):
+	
+	Main command keys help redone.
+	
+	Added command '+' to set engine depth.
+
+2003-02-04 Tuesday 19:58  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.94), pgn.c (1.86):
+	
+	Forgot to change the find expression keys. Fixed.
+	
+	Parser fix for multi-game files.
+
+2003-02-04 Tuesday 19:26  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.93):
+	
+	Edit mode fixes.
+
+2003-02-04 Tuesday 17:01  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.92), cboard.h (1.62), common.h (1.60),
+	history.c (1.45), pgn.c (1.85), strings.h (1.24):
+	
+	The edit tags key 'e' has changed to 't'.
+	
+	Added a status structure and window member "mode" to display the
+	current mode: play, move history or edit.
+	
+	Edit mode will edit the pieces on the board (move them around,
+	delete with 'x' and insert with 'I'). There's no validation done,
+	and when leaving edit mode ('e' again) a FEN tag is created. This
+	mode will only work in an empty game.
+	
+	Broke FEN parsing. :)
+
+2003-02-04 Tuesday 13:27  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: Makefile.am (1.13), cboard.c (1.91), cboard.h (1.61),
+	common.h (1.59), epd.c (1.1), epd.h (1.1), history.c (1.44),
+	history.h (1.22), misc.c (1.12), move.c (1.26), pgn.c (1.84), pgn.h
+	(1.31), strings.h (1.23):
+	
+	Added epd.[ch] to the archive.
+	
+	Added FEN tag support (reading and writing). To write a fen tag, in
+	the tag editor you'd push CTRL-f and the current move in the
+	history would be used as the initial position.
+
+2003-02-03 Monday 13:23  Ben Kibbey <bjk@arbornet.org>
+
+	* src/move.c (1.25):
+	
+	One to many switch_turn() if checktest() returns 1 on self check.
+
+2003-02-03 Monday 13:13  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.90), cboard.h (1.60), pgn.c (1.83), strings.h
+	(1.22):
+	
+	Initial history structure in update_history_window(). Fixes
+	annotation info.
+	
+	Change command keys to make a little more sense in relation to move
+	and game commands.
+
+2003-02-03 Monday 12:41  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.89):
+	
+	Fix 'x' command count with '>' direction.
+	
+	Fix compile-time warning.
+
+2003-02-03 Monday 12:28  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.88), cboard.h (1.59), common.h (1.58), pgn.c
+	(1.82), strings.h (1.21):
+	
+	Added commands 'f', '+' and '_' to find games by tag expressions.
+	These commands accept a count.
+	
+	Initialize ncurses before parsing a file specified on the command
+	line. This will should any errors as if the file was specified with
+	the in-game 'r' command.
+	
+	Moved passwd structure to the config structure.
+	
+	Fix for multiple games in a PGN file.
+
+2003-02-01 Saturday 16:17  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.81):
+	
+	Nevermind. Dont look for EOG markers on parser error.
+	
+	No longer need EOG markers to determine the next game. Only two
+	consecutive newlines (standard).
+
+2003-02-01 Saturday 16:10  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.80):
+	
+	Fix for previous commit. Reset status.side and status.turn in
+	new_game().
+	
+	If there's a parse error, stop discarding move text when an EOG
+	marker is found also.
+
+2003-02-01 Saturday 15:56  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.79):
+	
+	No longer require tags in a PGN file, but a game termination marker
+	if theres more than one game.
+
+2003-02-01 Saturday 15:46  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: pgn.c (1.78), pgn.h (1.30):
+	
+	No longer need move numbers in a PGN file.
+
+2003-02-01 Saturday 14:48  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.77):
+	
+	Check title length when editing/viewing a tag.
+
+2003-02-01 Saturday 14:39  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: move.c (1.24), pgn.h (1.29), strings.h (1.20):
+	
+	Dont show some notify strings on our turn.
+	
+	Fix for very long tag names/values.
+
+2003-02-01 Saturday 14:39  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.76):
+	
+	Dont show some notify strings on our turn.
+	
+	Fix for very long tag names/values.
+	
+	Fix for aborting when adding a new tag.
+
+2003-02-01 Saturday 12:49  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.87), cboard.h (1.58), engine.c (1.34), engine.h
+	(1.17), history.c (1.43), history.h (1.21), move.c (1.23), pgn.c
+	(1.75), pgn.h (1.28):
+	
+	Check/mate fix.
+	
+	Castling fix.
+
+2003-02-01 Saturday 12:26  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.86):
+	
+	Dont init_history() when game[gindex].gameover.
+
+2003-02-01 Saturday 12:26  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.42):
+	
+	Dont update status.notify on validation.
+
+2003-02-01 Saturday 10:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: common.h (1.57), pgn.c (1.74):
+	
+	ignore
+
+2003-02-01 Saturday 10:56  Ben Kibbey <bjk@arbornet.org>
+
+	* src/common.h (1.56):
+	
+	Added dump_board() prototype when DEBUG is #defined.
+
+2003-02-01 Saturday 10:55  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.85), cboard.h (1.57), move.c (1.22):
+	
+	Commands 'd' and 'D' have changed to 'x' and 'X'.
+	
+	Added commands '!' - '*' and 'A' to 'H' to move the cursor to the
+	specified rank/file.
+
+2003-02-01 Saturday 10:54  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.73):
+	
+	dump_board() will take a board and int argument specifying to dump
+	to printf() or the DUMP() macro.
+
+2003-01-31 Friday 16:22  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: pgn.c (1.72), strings.h (1.19):
+	
+	"Press ENTER" moved to strings.h.
+
+2003-01-31 Friday 16:16  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.84):
+	
+	Fix for tag window values from the previous commit.
+
+2003-01-31 Friday 15:47  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.h (1.56), misc.c (1.11), pgn.c (1.71):
+	
+	Added the pgnfile to the status window.
+	
+	Dont update the pgnfile if the game save fails.
+
+2003-01-31 Friday 15:47  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.83):
+	
+	Added the pgnfile to the status window.
+	
+	Dont update the pgnfile if the game save fails.
+	
+	Expand tildes from the save dialog.
+
+2003-01-31 Friday 14:51  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.82), common.h (1.55), history.c (1.41), move.c
+	(1.21), pgn.c (1.70), strings.h (1.18):
+	
+	Changed macros message() to cmessage() and message_uncentered() to
+	message().
+
+2003-01-31 Friday 14:36  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.81), cboard.h (1.55), common.h (1.54), engine.c
+	(1.33), engine.h (1.16), history.c (1.40), input.c (1.21), move.c
+	(1.20), pgn.c (1.69), pgn.h (1.27), rcfile.h (1.8), strings.h
+	(1.17):
+	
+	The history, tag and game structures are typedef'd.
+	
+	Added a count to the 'd'elete command. It operates by first the
+	count keys, then 'd', then the direction to toggle ('<' or '>').
+	
+	Added command 'e' to edit tags. This removes the edit-tag prompt
+	when saving.
+	
+	A few save game fixes.
+
 2003-01-30 Thursday 14:28  Ben Kibbey <bjk@arbornet.org>
 
 	* NEWS (1.6), configure.ac (1.16):
