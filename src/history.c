@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.13 2002-12-17 22:36:44 bjk Exp $ */
+/* $Id: history.c,v 1.14 2002-12-17 22:57:45 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -291,6 +291,11 @@ void add_to_history(struct history **h, int *n, int *t, const char *str)
     return;
 }
 
+static char *random_agony()
+{
+    return agony[random() % (NARRAY(agony) - 1)];
+}
+
 void move_piece(char *move)
 {
     int row, srow;
@@ -330,13 +335,12 @@ void move_piece(char *move)
 	    game[gindex].bcaptures++;
 	else
 	    game[gindex].wcaptures++;
+
+	status.notify = random_agony();
     }
 
     board[row][col].icon = board[srow][scol].icon;
     board[srow][scol].icon = '.';
-
-    if (board[row][col].icon == '.')
-	return;
 
     upper = isupper(board[row][col].icon);
     piece = tolower(board[row][col].icon);

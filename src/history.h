@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.5 2002-12-16 17:54:18 bjk Exp $ */
+/* $Id: history.h,v 1.6 2002-12-17 22:57:46 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -176,6 +176,12 @@ const char *nag[] = {
     "Black has moderate time control pressure",
     "White has severe time control pressure",
     "Black has severe time control pressure"
+};
+
+const char *agony[] = {
+    "Ack!",
+    "Ahhhh my legs!",
+    "That's a fracture...",
 };
 
 void init_board(void);

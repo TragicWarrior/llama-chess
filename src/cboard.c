@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.32 2002-12-17 21:25:55 bjk Exp $ */
+/* $Id: cboard.c,v 1.33 2002-12-17 22:57:45 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -908,6 +908,7 @@ int main(int argc, char *argv[])
 	    errx(EXIT_FAILURE, "%s: parse error", pgnfile);
     }
 
+    srandom(getpid());
     initscr();
 
     if (start_chess_engine()) {
