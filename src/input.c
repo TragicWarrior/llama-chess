@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.8 2002-12-10 22:17:00 bjk Exp $ */
+/* $Id: input.c,v 1.9 2002-12-10 23:02:52 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -50,7 +50,7 @@ static bool validate_pgn_date(int c, const void *arg)
 
 static bool validate_pgn_round(int c, const void *arg)
 {
-    if (!isdigit(c))
+    if (!isdigit(c) && c != '.' && c != '-' && c != '?')
 	return FALSE;
 
     return TRUE;

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.12 2002-12-10 22:19:04 bjk Exp $ */
+/* $Id: pgn.c,v 1.13 2002-12-10 23:02:52 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -244,6 +244,12 @@ int save_pgn(const char *filename, struct pgndata *data)
 	    if (strptime(data[i].value, TIME_FORMAT, &tp) != NULL)
 		strftime(data[i].value, sizeof(data[i].value), PGN_TIME_FORMAT,
 			&tp);
+	}
+	else if (strcmp(data[i].token, "Round") == 0) {
+	    if (strcmp(data[i].value, UNKNOWN) == 0) {
+		data[i].value[0] = '?';
+		data[i].value[1] = 0;
+	    }
 	}
 	else if (strcmp(data[i].value, UNKNOWN) == 0)
 	    data[i].value[0] = 0;
