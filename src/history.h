@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.20 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: history.h,v 1.21 2003-02-01 17:49:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -42,7 +42,7 @@ void update_status_window(void);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
-int parse_move_text(BOARD, char *, int);
+int parse_move_text(BOARD, char *);
 void switch_turn(void);
 
 #endif

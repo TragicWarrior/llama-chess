@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.27 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: pgn.h,v 1.28 2003-02-01 17:49:04 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -105,7 +105,7 @@ void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
-int parse_move_text(BOARD, char *, int);
+int parse_move_text(BOARD, char *);
 char *a2a4tosan(BOARD, char *);
 int integer_len(int);
 

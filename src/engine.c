@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.33 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: engine.c,v 1.34 2003-02-01 17:49:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -338,7 +338,7 @@ void parse_engine_output(BOARD b, char *str)
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count)
 	    == 1) {
-	if (parse_move_text(b, move, 0)) {
+	if (parse_move_text(b, move)) {
 	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, move);
 	    return;
 	}
@@ -371,7 +371,7 @@ engine_move:
 	if ((p = a2a4tosan(b, move)) == NULL)
 	    return;
 
-	if (parse_move_text(b, p, 0)) {
+	if (parse_move_text(b, p)) {
 	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, p);
 	    return;
 	}

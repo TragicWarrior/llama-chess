@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.42 2003-02-01 17:26:09 bjk Exp $ */
+/* $Id: history.c,v 1.43 2003-02-01 17:49:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -411,6 +411,14 @@ void parse_history_move(BOARD b, int index)
     init_board(b);
     game[gindex].bcaptures = game[gindex].wcaptures = 0;
     status.turn = game[gindex].openingside;
+    game[gindex].enpassant = 0;
+    game[gindex].castle = 0;
+    game[gindex].wk = 0;
+    game[gindex].rkw = 0;
+    game[gindex].rqw = 0;
+    game[gindex].bk = 0;
+    game[gindex].rkb = 0;
+    game[gindex].rqb = 0;
 
     for (i = 0; i < index; i++) {
 	HISTORY h;
@@ -418,7 +426,7 @@ void parse_history_move(BOARD b, int index)
 	if (get_history_by_index(i, &h))
 	    break;
 	
-	if (parse_move_text(b, h.move, 1)) {
+	if (parse_move_text(b, h.move)) {
 	    cmessage(NULL, ANYKEY, "Invalid move \"%s\"", h.move);
 	    break;
 	}

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.74 2003-02-01 15:57:44 bjk Exp $ */
+/* $Id: pgn.c,v 1.75 2003-02-01 17:49:04 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -365,7 +365,7 @@ int move_text(FILE *fp)
 	return 1;
     }
 
-    if (parse_move_text(pgnboard, p, 0)) {
+    if (parse_move_text(pgnboard, p)) {
 	invalid_move(move);
 	return 1;
     }

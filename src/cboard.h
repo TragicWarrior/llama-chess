@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.57 2003-02-01 15:55:07 bjk Exp $ */
+/* $Id: cboard.h,v 1.58 2003-02-01 17:49:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -127,7 +127,7 @@ void free_tag_data(TAG *, int);
 void free_historydata(HISTORY **, int, int);
 void get_valid_moves(BOARD, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
-int parse_move_text(BOARD, char *, int);
+int parse_move_text(BOARD, char *);
 void parse_history_move(BOARD, int);
 void switch_turn(void);
 char *str_etc(const char *, int, int);

@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.22 2003-02-01 15:55:07 bjk Exp $ */
+/* $Id: move.c,v 1.23 2003-02-01 17:49:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -285,11 +285,14 @@ int valid_move(BOARD b, int row, int col, int srow, int scol)
     p1 = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
     p2 = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
+    if (piece_to_int(p1) == OPEN_SQUARE)
+	return 0;
+
     if (piece_side(p1) == piece_side(p2))
 	return 0;
 
-    if (piece_to_int(p1) == PAWN && piece_to_int(p2) != OPEN_SQUARE &&
-	    scol == col)
+    if (piece_to_int(p1) == PAWN && scol == col &&
+	    piece_to_int(p2) != OPEN_SQUARE)
 	return 0;
 
     return 1;
@@ -430,7 +433,7 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		/* En Passant. */
 		if (piece == OPEN_SQUARE) {
 		    /* Previous move was not 2 squares and a pawn. */
-		    if (game[gindex].enpassant == 0)
+		    if (!validate_move && game[gindex].enpassant == 0)
 			return 1;
 
 		    r = (status.turn == WHITE) ? 6 : 3;
@@ -641,11 +644,6 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 
 		    break;
 		}
-
-		if (status.turn == WHITE)
-		    game[gindex].wk = 1;
-		else
-		    game[gindex].bk = 1;
 	    }
 
 	    if (dist > 1)
@@ -658,6 +656,15 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 
     if (valid_move(b, row, col, *srow, *scol) == 0)
 	return 1;
+
+    if (piece == KING) {
+	if (!validate_move) {
+	    if (status.turn == WHITE)
+		game[gindex].wk = 1;
+	    else
+		game[gindex].bk = 1;
+	}
+    }
 
     return 0;
 }
@@ -796,45 +803,9 @@ static void kingsquare(BOARD b, int *kr, int *kc, int *okr,
     return;
 }
 
-static int selfchecktest(BOARD b, int kr, int kc)
+int checktest(BOARD b, int kr, int kc, int okr, int okc, int matetest)
 {
     int row, col;
-
-    if (!VALIDFILE(kr) || !VALIDFILE(kc))
-	return 0;
-
-    switch_turn();
-
-    for (row = 1; VALIDFILE(row); row++) {
-	for (col = 1; VALIDFILE(col); col++) {
-	    int srow = 0, scol = 0;
-	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
-	    int pi = piece_to_int(p);
-
-	    if (pi == OPEN_SQUARE || !val_piece_side(p))
-		continue;
-
-	    if (get_source_yx(b, pi, kr, kc, &srow, &scol) == 0) {
-		dump_board(b, 1);
-//		cmessage(ERROR, ANYKEY, "%i %i %i %i %c %i\n", kc, kr, scol, srow, int_to_piece(pi), status.turn);
-		switch_turn();
-		return 1;
-	    }
-	}
-    }
-
-    switch_turn();
-    return 0;
-}
-
-int checktest(BOARD b, int kr, int kc, int okr, int okc)
-{
-    int row, col;
-
-    /* See if the move would leave ourselves in check. */
-
-    if (selfchecktest(b, kr, kc))
-	return -1;
 
     switch_turn();
 
@@ -850,6 +821,18 @@ int checktest(BOARD b, int kr, int kc, int okr, int okc)
 
 	    if (pi == PAWN)
 		scol = col;
+
+	    /* See if the move would leave ourselves in check. */
+	    if (!matetest) {
+		switch_turn();
+
+		if (get_source_yx(b, pi, kr, kc, &srow, &scol) == 0) {
+		    switch_turn();
+		    return -1;
+		}
+
+		switch_turn();
+	    }
 
 	    if (get_source_yx(b, pi, okr, okc, &srow, &scol) == 0) {
 		switch_turn();
@@ -997,7 +980,7 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 		    }
 		}
 
-		check = checktest(t, nkr, nkc, nokr, nokc);
+		check = checktest(t, nkr, nkc, nokr, nokc, 1);
 
 		if (check == 0)
 		    goto done;
@@ -1046,7 +1029,7 @@ static int drawtest(BOARD b)
     return 0;
 }
 
-int parse_move_text(BOARD b, char *move, int reset)
+int parse_move_text(BOARD b, char *move)
 {
     char *p;
     int piece;
@@ -1055,29 +1038,9 @@ int parse_move_text(BOARD b, char *move, int reset)
     int dist = 0;
     int promo = -1;
     int kr, kc, okr, okc;
-    static int firstrun;
 
     if (strlen(move) < 2)
 	return 1;
-
-    if (reset) {
-	if (browse_history) {
-	    if (!firstrun) {
-		game[gindex].enpassant = 0;
-		firstrun = 1;
-	    }
-	}
-	else
-	    firstrun = 0;
-
-	game[gindex].castle = 0;
-	game[gindex].wk = 0;
-	game[gindex].rkw = 0;
-	game[gindex].rqw = 0;
-	game[gindex].bk = 0;
-	game[gindex].rkb = 0;
-	game[gindex].rqb = 0;
-    }
 
     status.notify = NULL;
     srow = row = col = scol = promo = piece = 0;
@@ -1247,9 +1210,11 @@ int parse_move_text(BOARD b, char *move, int reset)
 	    piece = int_to_piece(promo);
 	    status.notify = NOTIFY_PROMOTION;
 	}
-	else
+	else 
 	    piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
     }
+    else 
+	piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
 
     b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = int_to_piece(OPEN_SQUARE);
     b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
@@ -1269,7 +1234,7 @@ done:
     if (drawtest(b))
 	return 1;
 
-    switch (checktest(b, kr, kc, okr, okc)) {
+    switch (checktest(b, kr, kc, okr, okc, 0)) {
 	case 0:
 	    break;
 	case -1:

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.86 2003-02-01 17:26:48 bjk Exp $ */
+/* $Id: cboard.c,v 1.87 2003-02-01 17:49:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -283,7 +283,7 @@ static char *board_to_san(BOARD b)
 
     validate_move = 1;
 
-    if (parse_move_text(t, p, 0)) {
+    if (parse_move_text(t, p)) {
 	cmessage(ERROR, ANYKEY, "%s: %s", E_INVALID_MOVE, p);
 	validate_move = 0;
 	return NULL;

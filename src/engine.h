@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.16 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: engine.h,v 1.17 2003-02-01 17:49:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -36,7 +36,7 @@ void move_piece(char *);
 int save_pgn(const char *, int, int);
 void update_status_window(void);
 char *book_method(int);
-int parse_move_text(BOARD, char *, int);
+int parse_move_text(BOARD, char *);
 char *a2a4tosan(BOARD, char *);
 void switch_turn(void);
 void init_history(BOARD);
