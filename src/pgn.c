@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.40 2002-12-30 18:57:24 bjk Exp $ */
+/* $Id: pgn.c,v 1.41 2003-01-06 19:59:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -242,18 +242,23 @@ static void skip_leading_space(FILE *fp)
 
 int move_text(FILE *fp)
 {
+    char move[MAX_PGN_MOVE_LEN + 1] = {0};
     int c;
-    char move[MAX_PGN_MOVE_LEN + 1];
     int count;
 
-    /* Skip move number. */
-    while ((c = fgetc(fp)) == '.' || isdigit(c));
+    while((c = fgetc(fp)) != EOF) {
+	if (isspace(c) || isdigit(c) || c == '.')
+	    continue;
+
+	break;
+    }
+
     ungetc(c, fp);
 
-    if (fscanf(fp, " %[OoA-Ha-hNnQqKkRrBbPp1-8#=xX+-]%n", move, &count) != 1)
+    if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", move, &count) != 1)
 	return 1;
 
-    if (validate_move(pgnboard, move))
+    if (parse_move_text(pgnboard, move))
 	return 1;
 
     add_to_history(&game[gindex].history, &game[gindex].hindex,
@@ -453,6 +458,27 @@ static int eog_marker(FILE *fp)
     return 1;
 }
 
+void dump_board(struct board_matrix b[][8])
+{
+    int row, col;
+
+    for (row = 0; row < 8; row++) {
+	for (col = 0; col < 8; col++) {
+	    if (b[row][col].icon == '.') {
+		DEBUG(". ");
+		continue;
+	    }
+
+	    DEBUG("%c ", b[row][col].icon);
+	}
+
+	DEBUG("\n");
+    }
+
+    DEBUG("\n");
+    return;
+}
+
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
@@ -551,6 +577,11 @@ int parse_pgn_file(const char *filename)
 		|| c == 'Q' || c == 'B' || c == 'R' || c == 'P' || c == 'O') {
 	    ungetc(c, fp);
 
+	    if (isdigit(c))
+		status.turn = WHITE;
+	    else
+		status.turn = BLACK;
+
 	    tag_section = 0;
 
 	    if (move_text(fp))
@@ -577,7 +608,10 @@ int parse_pgn_file(const char *filename)
 	    board[row][col].icon = pgnboard[row][col].icon;
     }
 
+    /*
+    dump_board(board);
     exit(0);
+    */
     return 0;
 }
 

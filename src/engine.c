@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.20 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: engine.c,v 1.21 2003-01-06 19:59:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -273,6 +273,9 @@ void parse_engine_output(char *str)
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count)
 	    == 1) {
+	if (parse_move_text(board, move))
+	    return;
+
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, move);
 
@@ -282,7 +285,7 @@ void parse_engine_output(char *str)
 	    status.turn = WHITE;
 
 	status.engine = ENGINE_THINKING;
-	move_piece(move);
+
 	sp.icon = 0;
 	str += count;
 
@@ -305,6 +308,9 @@ void parse_engine_output(char *str)
 engine_move:
     if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, 
 		&count) == 1) {
+	if (parse_move_text(board, move))
+	    return;
+
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, move);
 
@@ -313,7 +319,6 @@ engine_move:
 	else if (status.turn == BLACK)
 	    status.turn = WHITE;
 
-	move_piece(move);
 	str += count;
 	RETURN;
     }

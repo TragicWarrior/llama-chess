@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.31 2002-12-30 19:00:55 bjk Exp $ */
+/* $Id: common.h,v 1.32 2003-01-06 19:59:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -47,7 +47,7 @@ FILE *debugfp;
 	fprintf(debugfp, fmt, ##args); \
         fclose(debugfp)
 
-#define ACK			message("ack", "ack", "ack")
+#define ACK			(curses_initialized && message("ack", "ack", "ack"))
 #define ACK2			message("ack2", "ack2", "ack2")
 
 #define NONE			"none"

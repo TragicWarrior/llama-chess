@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.25 2002-12-30 18:58:37 bjk Exp $ */
+/* $Id: history.c,v 1.26 2003-01-06 19:59:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -411,6 +411,7 @@ static char *random_agony()
     return agony[random() % index];
 }
 
+/*
 void move_piece(char *move)
 {
     int row, srow;
@@ -454,7 +455,6 @@ void move_piece(char *move)
 	status.notify = random_agony();
     }
     else {
-	/* En Passant. */
 	if (row == 2 && board[srow][scol].icon == 'P' && scol != col) {
 	    board[row + 1][col].icon = '.';
 	    game[gindex].wcaptures++;
@@ -477,7 +477,6 @@ void move_piece(char *move)
     else
 	status.turn = WHITE;
 
-    /* FIXME CBoard will always promote to queen, the engine doesn't. */
     if (piece == 'p' && (row == 0 || row == 7)) {
 	board[row][col].icon = (upper) ? 'Q' : move[4];
 	status.notify = (upper) ? "White promotion" :
@@ -508,6 +507,7 @@ void move_piece(char *move)
 
     return;
 }
+*/
 
 static void parse_history_move(int index)
 {
@@ -515,6 +515,7 @@ static void parse_history_move(int index)
 
     init_board(board);
     game[gindex].bcaptures = game[gindex].wcaptures = 0;
+    status.turn = WHITE;
 
     for (i = 0; i < index; i++) {
 	struct history h;
@@ -522,7 +523,13 @@ static void parse_history_move(int index)
 	if (get_history_by_index(i, &h))
 	    break;
 
-	move_piece(h.move);
+	if (parse_move_text(board, h.move))
+	    break;
+
+	if (status.turn == WHITE)
+	    status.turn = BLACK;
+	else
+	    status.turn = WHITE;
     }
 
     return;

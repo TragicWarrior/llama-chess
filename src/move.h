@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.1 2002-12-30 18:59:19 bjk Exp $ */
+/* $Id: move.h,v 1.2 2003-01-06 19:59:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,11 +16,27 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef MOVE_H
+#define MOVE_H
+
+#define VALIDFILE(f)	((f >= 1 && f <= 8) ? 1 : 0)
 #define VALIDROW(r)	((r >= '1' && r <= '8') ? 1 : 0)
 #define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
 #define ROWTOINT(r)	(r - 48)
-#define COLTOINT(c)	(c - 97)
-#define ROWTOBOARD(r)	(8 - ROWTOINT(r))
-#define COLTOBOARD(c)	(COLTOINT(c))
+#define COLTOINT(c)	(c - 96)
+#define ROWTOBOARD(r)	(8 - r)
+#define COLTOBOARD(c)	(c - 1)
 
-enum { OPEN_SQUARE, PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING };
+enum {
+    OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING
+};
+
+enum {
+    KINGSIDE = 1, QUEENSIDE
+};
+
+/* These are used to determine whether a castle is legal.
+ */
+int wk, bk, rqw, rkw, rqb, rkb;
+
+#endif
