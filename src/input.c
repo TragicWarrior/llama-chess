@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.17 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: input.c,v 1.18 2003-01-24 20:23:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -35,7 +35,7 @@
 
 static bool validate_pgn_tag_name(int c, const void *arg)
 {
-    if (!isalpha(c) && !isdigit(c) && c != '_')
+    if (!isalnum(c) && c != '_')
 	return FALSE;
 
     return TRUE;
@@ -75,9 +75,7 @@ static bool validate_pgn_round(int c, const void *arg)
  * defined in common.h. Remaining arguments are values for the type argument.
  * See field_type(3X) for validation types.
  *
- * FIXME
- * For some reason TYPE_ALNUM and TYPE_ALPHA don't like spaces. In this case
- * just use -1 as the type with no arguments.
+ * FIXME form validation is buggy (integers).
  */
 char *get_input(const char *title, const char *init, int lines, int clear,
 	const char *extra_help, char *(*custom_func)(void *), void *arg, 
@@ -106,6 +104,9 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 
     fields[0] = new_field((lines) ? lines : sizeof(dst) / width + 1, 
 	    width - 2, 0, 0, 0, 0);
+
+    if (lines == 1)
+	field_opts_off(fields[0], O_STATIC);
 
     TYPE_PGN_TAG_NAME = new_fieldtype(NULL, validate_pgn_tag_name);
     TYPE_PGN_DATE = new_fieldtype(NULL, validate_pgn_date);
