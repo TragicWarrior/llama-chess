@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.25 2002-12-18 21:59:20 bjk Exp $ */
+/* $Id: pgn.c,v 1.26 2002-12-19 16:55:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -109,9 +109,17 @@ int add_pgn_data(struct pgndata **dst, int *n, char *token, char *value)
     token = trim(token);
     value = trim(value);
 
+    /* If a duplicate was found, update the existing one to the new value. */
     for (i = 0; i < index; i++) {
-	if (strcasecmp(tdata[i].token, token) == 0)
+	if (strcasecmp(tdata[i].token, token) == 0) {
+	    if (value)
+		strncpy(tdata[i].value, value, sizeof(tdata[i].value));
+	    else
+		tdata[i].value[0] = 0;
+
+	    *dst = tdata;
 	    return 1;
+	}
     }
 
     tdata = Realloc(tdata, (index + 2) * sizeof(struct pgndata));
@@ -193,16 +201,18 @@ void init_board()
     return;
 }
 
-/* FIXME need a way to 'append' a game or round. */
-static void init_data()
+void set_pgn_defaults()
 {
     time_t now;
     char tbuf[MAX_TIME_LEN + 1] = {0};
     struct passwd *pwd;
     struct tm *tp;
+    int n;
 
     if ((pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
+
+    game = Calloc(1, sizeof(struct games));
 
     time(&now);
     tp = localtime(&now);
@@ -223,8 +233,19 @@ static void init_data()
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Result", 
 	    UNKNOWN);
 
-    gtotal = gindex + 1;
+    /* Add custom tags from the configuration file. */
+    for (n = 0; n < config.pindex; n++)
+	add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, 
+		config.pgn[n].token, config.pgn[n].value);
 
+    return;
+}
+
+/* FIXME need a way to 'append' a game or round. */
+static void init_data()
+{
+    set_pgn_defaults();
+    gtotal = gindex + 1;
     init_board();
     return;
 }
@@ -311,7 +332,6 @@ int parse_pgn_file(const char *filename)
 	free_game_data();
 
     gtotal = gindex = 0;
-    game = Calloc(1, sizeof(struct games));
 
     if (!filename[0]) {
 	init_data();
@@ -345,7 +365,9 @@ int parse_pgn_file(const char *filename)
 	    if (!tag_section) {
 		tag_section = 1;
 		game = Realloc(game, (gindex + 2) * sizeof(struct games));
-		game[gindex].pindex = 0;
+		game[gindex + 1].pindex = game[gindex + 1].hindex = 0;
+		memset(&game[gindex + 1].pgn, 0, sizeof(struct pgndata));
+		memset(&game[gindex + 1].history, 0, sizeof(struct history));
 	    }
 
 	    tmp++;
@@ -439,6 +461,7 @@ done:
     }
 
     gtotal = gindex;
+
     fclose(fp);
     return 0;
 }
@@ -479,10 +502,8 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
      * available. Also resuming a saved game and a game from history.
      */
     if (isfifo) {
-	if ((fp = fopen(filename, "w")) == NULL) {
-	    unlink(filename);
+	if ((fp = fopen(filename, "w")) == NULL)
 	    return 1;
-	}
     }
     else
 	if ((fp = fopen(filename, "a")) == NULL)
@@ -572,10 +593,6 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     fprintf(fp, "%s\n\n", pgn_escapes(data[PGN_RESULT].value));
 
     fclose(fp);
-
-    if (isfifo)
-	unlink(filename);
-
     free(data);
     return 0;
 }

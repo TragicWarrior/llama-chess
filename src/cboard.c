@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.35 2002-12-18 17:24:39 bjk Exp $ */
+/* $Id: cboard.c,v 1.36 2002-12-19 16:55:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -536,20 +536,13 @@ blah:
 			    break;
 		    }
 
-		    tmp = tmpnam(NULL);
-
-		    if (mkfifo(tmp, 0600) == -1) {
-			message(ERROR, ANYKEY, "Could not create FIFO");
-			break;
-		    }
-
 		    oldhistorytotal = game[gindex].htotal;
 		    game[gindex].htotal = game[gindex].hindex;
 		    gactive = gindex;
 		    browse_history = 0;
 		    status.engine = ENGINE_READY;
 
-		    SEND_TO_ENGINE("\npgnload %s\n", tmp);
+		    SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
 		    update_all();
 		    break;
 		}
@@ -793,8 +786,7 @@ blah:
 
 void usage(const char *pn)
 {
-    printf("Usage: %s [-hv] [-f <rcfile>] [-p <pgnfile>]\n", pn);
-    printf("  -f  Alternate configuration file. The default is ~/.cboardrc.\n");
+    printf("Usage: %s [-hv] [-p <pgnfile>]\n", pn);
     printf("  -p  Load PGN file.\n");
     printf("  -v  Version information.\n");
     printf("  -h  This help text.\n");
@@ -855,24 +847,20 @@ static void set_defaults()
     config.history_jump = 5;
     config.book_method = BOOK_RANDOM;
     config.engine_depth = 0;
+
+    set_pgn_defaults();
     return;
 }
 
 int main(int argc, char *argv[])
 {
     int opt;
-    char rcfile[FILENAME_MAX] = {0};
+    char datadir[FILENAME_MAX] = {0};
     struct passwd *pwd;
+    struct stat st;
 
-    while ((opt = getopt(argc, argv, "hp:f:v")) != -1) {
+    while ((opt = getopt(argc, argv, "hp:v")) != -1) {
 	switch (opt) {
-	    case 'f':
-		snprintf(rcfile, sizeof(rcfile), "%s", optarg);
-
-		if (access(rcfile, R_OK) == -1)
-		    err(EXIT_FAILURE, "%s", rcfile);
-
-		break;
 	    case 'v':
 		printf("%s\n%s\n", PACKAGE_STRING, COPYRIGHT);
 		exit(EXIT_SUCCESS);
@@ -885,23 +873,40 @@ int main(int argc, char *argv[])
 	}
     }
 
-    set_defaults();
+    if ((pwd = getpwuid(getuid())) == NULL)
+	err(EXIT_FAILURE, "getpwuid()");
 
-    if (!rcfile[0]) {
-	if ((pwd = getpwuid(getuid())) == NULL)
-	    err(EXIT_FAILURE, "getpwuid()");
+    snprintf(datadir, sizeof(datadir), "%s/.cboard", pwd->pw_dir);
+    snprintf(config.nagfile, sizeof(config.nagfile), "%s/nag.data", datadir);
+    snprintf(config.agonyfile, sizeof(config.agonyfile), "%s/agony.data",
+	    datadir);
+    snprintf(config.configfile, sizeof(config.configfile),  "%s/config",
+	    datadir);
+    snprintf(config.fifo, sizeof(config.fifo), "%s/fifo", datadir);
 
-	snprintf(rcfile, sizeof(rcfile), "%s/.cboardrc", pwd->pw_dir);
-
-	if (access(rcfile, R_OK) == -1) {
-	    if (errno != ENOENT)
-		err(EXIT_FAILURE, "%s", rcfile);
+    if (stat(datadir, &st) == -1) {
+	if (errno == ENOENT) {
+	    if (mkdir(datadir, 0755) == -1)
+		err(EXIT_FAILURE, "%s", datadir);
 	}
 	else
-	    parse_rcfile(rcfile);
+	    err(EXIT_FAILURE, "%s", datadir);
+
+	stat(datadir, &st);
     }
-    else
-	parse_rcfile(rcfile);
+
+    if (!S_ISDIR(st.st_mode))
+	errx(EXIT_FAILURE, "%s: not a directory", datadir);
+
+    if (access(config.fifo, R_OK) == -1) {
+	if (mkfifo(config.fifo, 0600) == -1)
+	    err(EXIT_FAILURE, "%s", config.fifo);
+    }
+
+    set_defaults();
+
+    if (access(config.configfile, R_OK) == 0)
+	parse_rcfile(config.configfile);
 
     signal(SIGPIPE, catch_signal);
     signal(SIGCONT, catch_signal);

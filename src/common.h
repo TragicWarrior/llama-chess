@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.20 2002-12-18 14:48:31 bjk Exp $ */
+/* $Id: common.h,v 1.21 2002-12-19 16:55:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -127,6 +127,12 @@ struct {
     int history_jump;
     int book_method;
     int engine_depth;
+    char nagfile[FILENAME_MAX];
+    char agonyfile[FILENAME_MAX];
+    char configfile[FILENAME_MAX];
+    char fifo[FILENAME_MAX];
+    struct pgndata *pgn;
+    int pindex;
 } config;
 
 /* Chess engine file descriptors. 0 = from, 1 = to. */

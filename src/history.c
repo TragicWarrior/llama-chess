@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.15 2002-12-18 14:48:00 bjk Exp $ */
+/* $Id: history.c,v 1.16 2002-12-19 16:55:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -67,19 +67,34 @@ void history_edit_nag()
 {
     WINDOW *win, *subw;
     PANEL *panel;
-    ITEM **mitems = NULL;
+    static ITEM **mitems = NULL;
     MENU *menu;
-    int i, n;
+    int i = 0, n;
     int itemcount = 0;
     int rows, cols;
     char *mbuf = NULL;
+    FILE *fp;
+    char line[LINE_MAX];
 
-    for (i = 0; i < NARRAY(nag); i++) {
+    if (!mitems) {
+	if ((fp = fopen(config.nagfile, "r")) == NULL) {
+	    message(ERROR, ANYKEY, "Could not open NAG file.");
+	    return;
+	}
+
 	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	mitems[i] = new_item((nag[i]) ? nag[i] : NONE, NULL);
+	mitems[i++] = new_item(NONE, NULL);
+
+	while (!feof(fp)) {
+	    if (fscanf(fp, " %[^\n] ", line) == 1) {
+		mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+		mitems[i++] = new_item(strdup(line), NULL);
+	    }
+
+	    mitems[i] = NULL;
+	}
     }
 
-    mitems[i] = NULL;
     menu = new_menu(mitems);
     scale_menu(menu, &rows, &cols);
 
@@ -267,8 +282,10 @@ done:
     unpost_menu(menu);
     free_menu(menu);
 
+    /*
     for (i = 0; mitems[i]; i++)
 	free_item(mitems[i]);
+	*/
 
     del_panel(panel);
     delwin(win);
@@ -293,7 +310,37 @@ void add_to_history(struct history **h, int *n, int *t, const char *str)
 
 static char *random_agony()
 {
-    return agony[random() % (NARRAY(agony) - 1)];
+    static int index;
+    FILE *fp;
+    char line[LINE_MAX];
+
+    if (index == -1)
+	return NULL;
+
+    if (!agony) {
+	if ((fp = fopen(config.agonyfile, "r")) == NULL) {
+	    index = -1;
+	    message(ERROR, ANYKEY, "Could not open agony file.");
+	    return NULL;
+	}
+
+	while (!feof(fp)) {
+	    if (fscanf(fp, " %[^\n] ", line) == 1) {
+		agony = Realloc(agony, (index + 2) * sizeof(char *));
+		agony[index++] = strdup(trim(line));
+	    }
+	}
+
+	agony[index] = NULL;
+	fclose(fp);
+    }
+
+    if (agony[0][0] == 0 || !index) {
+	index = -1;
+	return NULL;
+    }
+
+    return agony[random() % index];
 }
 
 void move_piece(char *move)
@@ -339,6 +386,7 @@ void move_piece(char *move)
 	status.notify = random_agony();
     }
     else {
+	/* FIXME */
 	/* En Passant. */
 	if (row == 2 && board[srow][scol].icon == 'P') {
 	    board[row + 1][col].icon = '.';

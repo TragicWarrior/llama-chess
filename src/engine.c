@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.18 2002-12-18 17:24:39 bjk Exp $ */
+/* $Id: engine.c,v 1.19 2002-12-19 16:55:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -321,11 +321,8 @@ engine_move:
     /* Miscellaneous one-liners. */
 
     /* The engine is now reading a FIFO. Dump what we need to it. */
-    if ((tmp = strstr(str, "pgnload")) != NULL) {
-	tmp += 8;
-	tmp = trim(tmp);
-
-	if (save_pgn(tmp, game[gindex].pgn, 1)) {
+    if (strstr(str, "pgnload") != NULL) {
+	if (save_pgn(config.fifo, game[gindex].pgn, 1)) {
 	    message(ERROR, ANYKEY, "%s", strerror(errno));
 	    game[gindex].htotal = oldhistorytotal;
 	    return;
