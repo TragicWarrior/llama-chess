@@ -1,3 +1,29 @@
+CBoard version 0.1.5
+--------------------
+The repeat count commands are now 0-9. The first non-integer is the command to
+repeat. So now you can have more than ten as a count. Pressing ESCAPE in the
+middle of the count will reset it (similar to VIM's repeat).
+
+The 'u'ndo command can take a repeat count.
+
+Replaced the black and white status windows with a Seven Tag Roster window
+(like before). The black and white info will be in the game status window.
+
+Check and checkmate recognition are working (not draw though).
+
+Added history move text searching commands. '/' will prompt for a new regular
+expression and jump to the next match, '{' and '}' will jump to the previous
+or next match prompting for an expression if one doesn't already exist. All of
+these commands can take a repeat count.
+
+Move numbers in the history window are full move numbers now. So by default,
+the cursor keys in history mode will jump 2 moves. Pressing SPACE in history
+mode will toggle half-move stepping.
+
+The "board_moves" color parameter has been replaced by "board_white_moves" and
+"board_black_moves" to specify the valid move color for those squares.
+
+
 CBoard version 0.1.4
 --------------------
 This release fixes a few bugs and plugs a couple memory leaks in the menu code.
