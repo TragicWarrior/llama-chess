@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.29 2003-01-25 15:54:06 bjk Exp $ */
+/* $Id: engine.c,v 1.30 2003-01-25 17:43:29 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -207,12 +207,11 @@ static char **parseargs(char *str)
 }
 
 /* Is this dangerous if pty permissions are wrong? */
-pid_t init_chess_engine()
+pid_t init_chess_engine(char **args)
 {
     pid_t pid;
     int from[2], to[2];
     char pty[FILENAME_MAX];
-    char **args;
 
     if ((to[1] = get_pty(pty)) == -1) {
 	errno = 0;
@@ -239,7 +238,6 @@ pid_t init_chess_engine()
 	    close(from[0]);
 	    close(from[1]);
 	    dup2(STDOUT_FILENO, STDERR_FILENO);
-	    args = parseargs(config.engine_cmd);
 	    execvp(args[0], args);
 	    _exit(EXIT_FAILURE);
 	default:
@@ -289,12 +287,15 @@ void stop_engine()
 
 int start_chess_engine()
 {
+    char **args;
+
     status.engine = ENGINE_INITIALIZING;
     update_status();
     update_panels();
     doupdate();
 
-    enginepid = init_chess_engine();
+    args = parseargs(config.engine_cmd);
+    enginepid = init_chess_engine(args);
 
     switch (enginepid) {
 	case -1:
@@ -305,7 +306,7 @@ int start_chess_engine()
 	case -2:
 	    /* Could not execute engine. */
 	    status.engine = ENGINE_OFFLINE;
-	    message(ERROR, ANYKEY, "gnuchess: %s", strerror(errno));
+	    message(ERROR, ANYKEY, "%s: %s", args[0], strerror(errno));
 	    break;
 	default:
 	    status.engine = ENGINE_READY;
