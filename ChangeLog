@@ -1,3 +1,298 @@
+2003-01-25 Saturday 11:41  Ben Kibbey <bjk@arbornet.org>
+
+	* NEWS (1.5), configure.ac (1.13):
+	
+	Release version 0.1.4.
+
+2003-01-25 Saturday 11:38  Ben Kibbey <bjk@arbornet.org>
+
+	* etc/Makefile.am (1.4):
+	
+	Install fixes.
+
+2003-01-25 Saturday 10:54  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.66), common.h (1.46), engine.c (1.29), rcfile.c
+	(1.24):
+	
+	Added "engine_cmd" configuration parameter.
+
+2003-01-25 Saturday 09:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.65), colors.c (1.9), colors.h (1.6), common.h
+	(1.45), rcfile.c (1.23):
+	
+	Added "board_window" color parameter.
+
+2003-01-25 Saturday 09:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/help.c (1.6):
+	
+	Fix for compile time warning.
+
+2003-01-24 Friday 16:27  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.64), cboard.h (1.47):
+	
+	Save game bugfix.
+
+2003-01-24 Friday 15:29  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: pgn.c (1.65), pgn.h (1.24), rcfile.c (1.22), strings.h
+	(1.11):
+	
+	Miscellaneous changes.
+
+2003-01-24 Friday 15:28  Ben Kibbey <bjk@arbornet.org>
+
+	* src/misc.c (1.10):
+	
+	Merge integer_len() from pgn.c.
+
+2003-01-24 Friday 15:27  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.34):
+	
+	Jump count fixes.
+
+2003-01-24 Friday 15:27  Ben Kibbey <bjk@arbornet.org>
+
+	* src/colors.c (1.8):
+	
+	New board_moves defaults.
+
+2003-01-24 Friday 15:23  Ben Kibbey <bjk@arbornet.org>
+
+	* src/input.c (1.18):
+	
+	Enable scrolling for one-line prompts.
+
+2003-01-24 Friday 15:22  Ben Kibbey <bjk@arbornet.org>
+
+	* src/common.h (1.44):
+	
+	Add config.deleteprompt.
+	
+	Rename config.historyjump to config.jumpcount.
+
+2003-01-24 Friday 15:21  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.63), cboard.h (1.46):
+	
+	Board color attributes bugfix.
+	
+	Keep selected piece selected on invalid move.
+	
+	Jump key fixes.
+	
+	Add command 'j' and 'J' for move number and game number jumping.
+	
+	Added configuration parameter "delete_prompt".
+	
+	Removed alpha cursor keys.
+	
+	Comment out move numbers for now.
+
+2003-01-23 Thursday 18:11  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.62), colors.c (1.7), colors.h (1.5), common.h
+	(1.43), move.c (1.14), rcfile.c (1.21):
+	
+	Added "board_count" color configuration parameter.
+
+2003-01-23 Thursday 16:48  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.61), cboard.h (1.45), common.h (1.42), move.c
+	(1.13), pgn.c (1.64):
+	
+	Added cycling of valid moves when a piece is selected. Still buggy.
+
+2003-01-22 Wednesday 15:04  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: Makefile.am (1.11), cboard.c (1.60), cboard.h (1.44),
+	colors.c (1.6), common.h (1.41), misc.c (1.9), pgn.c (1.63),
+	strings.h (1.10):
+	
+	Debugging code cleanups.
+	
+	Added function to copy data files from DATADIR/cboard if they dont
+	exist in ~/.cboard.
+	
+	Board graphics are disabled by default.
+
+2003-01-22 Wednesday 15:02  Ben Kibbey <bjk@arbornet.org>
+
+	* etc/Makefile.am (1.3):
+	
+	Datafiles are installed to DATADIR/cboard.
+
+2003-01-22 Wednesday 15:01  Ben Kibbey <bjk@arbornet.org>
+
+	* configure.ac (1.12):
+	
+	Added option --enable-debug.
+	
+	Added caching support.
+
+2003-01-22 Wednesday 09:52  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.62):
+	
+	Wrong order of arguments to get_input().
+
+2003-01-21 Tuesday 19:16  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.59), cboard.h (1.43), colors.c (1.5), colors.h
+	(1.4), common.h (1.40), engine.c (1.28), engine.h (1.13), history.c
+	(1.33), history.h (1.19), ics.c (1.3), input.c (1.17), input.h
+	(1.9), message.c (1.9), message.h (1.7), move.c (1.12), move.h
+	(1.8), pgn.c (1.61), pgn.h (1.23), rcfile.c (1.20), rcfile.h (1.7),
+	strings.h (1.9):
+	
+	Most functions are passed a BOARD data type.
+	
+	Added configuration parameter "valid_moves" to show valid squares a
+	piece can move to and color parameter "board_moves".
+	
+	Less confusing cursor code.
+	
+	All strings have moved to strings.h.
+	
+	Memory leaks plugged in the menu code.
+	
+	Memory is dynamically allocated for comments and tags.
+	
+	Added cursor repeat commands 1-7.
+	
+	Added command "d" to toggle a delete flag for the current game.
+	
+	Renamed functions and structure members to be less confusing.
+	
+	Tags are sorted on save and load.
+	
+	"Resumed" move numbers work now (eg: 1... e4)
+	
+	Annotations can span multiple lines in the parser.
+	
+	Lots of little cleanups and fixes.
+
+2003-01-14 Tuesday 19:20  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: move.c (1.11), move.h (1.7):
+	
+	Check is recognized (not checkmate though).
+	
+	Really fix promotion this time.
+
+2003-01-14 Tuesday 15:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.60):
+	
+	Country code fix.
+
+2003-01-14 Tuesday 15:44  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.58), cboard.h (1.42), common.h (1.39),
+	history.c (1.32), history.h (1.18), move.c (1.10), move.h (1.6),
+	pgn.c (1.59), pgn.h (1.22), strings.h (1.8):
+	
+	More PGN compliance.
+	
+	If a filename does not contain an extension, add ".pgn" to it.
+	
+	Added country code menu to the Site tag when editing. The country
+	codes are stored in ~/.cboard/cc.data.
+	
+	Some PGN parser fixes. Breaks move text though at the moment (check
+	and checkmate).
+	
+	Moved pawn verification to move_from().
+	
+	Promotion fix.
+
+2003-01-14 Tuesday 15:37  Ben Kibbey <bjk@arbornet.org>
+
+	* etc/: Makefile.am (1.2), cc.data (1.1), config.example (1.9):
+	
+	Added cc.data to the archive.
+
+2003-01-14 Tuesday 15:36  Ben Kibbey <bjk@arbornet.org>
+
+	* configure.ac (1.11):
+	
+	Default ICS user is "guest".
+
+2003-01-11 Saturday 09:11  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: network.c (1.2), network.h (1.2):
+	
+	Merged into ics.[ch].
+
+2003-01-11 Saturday 09:10  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: Makefile.am (1.10), ics.c (1.2):
+	
+	Remove network.[ch] from the archive and merge into ics.[ch].
+
+2003-01-10 Friday 16:56  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.57), cboard.h (1.41), common.h (1.38), engine.c
+	(1.27), history.c (1.31), move.c (1.9), pgn.c (1.58), rcfile.c
+	(1.19), strings.h (1.7):
+	
+	Fix for En Passant moves when browsing the history.
+	
+	Beginnings of network code.
+	
+	Fixes for the 'g' and 'w' commands.
+
+2003-01-10 Friday 16:54  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: ics.c (1.1), ics.h (1.1), network.c (1.1), network.h (1.1):
+	
+	Initial commit.
+
+2003-01-10 Friday 16:54  Ben Kibbey <bjk@arbornet.org>
+
+	* src/Makefile.am (1.9):
+	
+	Include ics.[ch] and network.[ch] in the archive.
+
+2003-01-10 Friday 16:53  Ben Kibbey <bjk@arbornet.org>
+
+	* configure.ac (1.10):
+	
+	Check for sys/param.h and added ICS defaults.
+
+2003-01-10 Friday 10:35  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: move.c (1.8), pgn.c (1.57), strings.h (1.6):
+	
+	a2a4tosan() knight parsing fix.
+	
+	Notify user of invalid moves and stop the current game parsing and
+	proceed to the next game.
+
+2003-01-10 Friday 09:16  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.56):
+	
+	Added bzip2 file support.
+
+2003-01-09 Thursday 17:43  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: pgn.c (1.55), strings.h (1.5):
+	
+	Refuse to append to compressed files.
+
+2003-01-09 Thursday 17:30  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.56), common.h (1.37), pgn.c (1.54), rcfile.c
+	(1.18):
+	
+	Support for .Z, .gz and .zip compressed PGN files (reading and
+	writing).
+
 2003-01-09 Thursday 13:58  Ben Kibbey <bjk@arbornet.org>
 
 	* configure.ac (1.9):
