@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.28 2002-12-17 14:09:14 bjk Exp $ */
+/* $Id: cboard.c,v 1.29 2002-12-17 14:16:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -920,8 +920,8 @@ int main(int argc, char *argv[])
 	    if (errno != ENOENT)
 		err(EXIT_FAILURE, "%s", rcfile);
 	}
-
-	parse_rcfile(rcfile);
+	else
+	    parse_rcfile(rcfile);
     }
     else
 	parse_rcfile(rcfile);
