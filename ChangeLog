@@ -1,3 +1,22 @@
+2003-01-08 Wednesday 16:54  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.51), cboard.h (1.37), common.h (1.35), engine.c
+	(1.25), engine.h (1.11), history.c (1.29), history.h (1.16), pgn.c
+	(1.45), pgn.h (1.20), strings.h (1.2):
+	
+	Multiple games fix.
+	
+	Can save multiple games.
+	
+	Added command 'n' to start a new game. The old new game command 'N'
+	starts a new game from scratch. When saving with multiple games,
+	prompt for what to save.
+	
+	Don't convert standard PGN tags values to fancy strings anymore
+	when editing.
+	
+	Added keys HOME and END to menu commands.
+
 2003-01-08 Wednesday 09:21  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: Makefile.am (1.8), cboard.c (1.50), cboard.h (1.36),
