@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.7 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: move.c,v 1.8 2003-01-10 15:35:42 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -529,7 +529,11 @@ char *a2a4tosan(struct board_matrix b[][8], char *move)
     rowc = piece_by_row(b, piecei, row, col, &trow, &tcol);
     n = colc + rowc;
 
-    if (n > 1 && piecei != PAWN) {
+    if (piecei == KNIGHT) {
+	if (move_from(b, KNIGHT, row, col, &trow, &tcol) == 1)
+	    *cp++ = INTTOCOL(scol);
+    }
+    else if (n > 1 && piecei != PAWN) {
 	if (colc > 1 && rowc > 1) {
 	    *cp++ = INTTOCOL(scol);
 	    *cp++ = INTTOROW(srow);
@@ -555,7 +559,6 @@ char *a2a4tosan(struct board_matrix b[][8], char *move)
 
     *cp = '\0';
 
-//    printf("'%s'\n", buf);
     return buf;
 }
 

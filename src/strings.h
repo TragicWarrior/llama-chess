@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.5 2003-01-09 22:43:03 bjk Exp $ */
+/* $Id: strings.h,v 1.6 2003-01-10 15:35:42 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -44,6 +44,7 @@
 #define E_SAVE_NOMOVES	"Refusing to save null move game"
 #define E_SAVE_NOGMOVES	"No games contain any moves. Aborting save."
 #define E_SAVE_COMPRESS	"Cannot append to compressed file."
+#define E_INVALID_MOVE	"Invalid move"
 
 #define NOTIFY_SAVED	"Game saved."
 

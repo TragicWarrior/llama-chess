@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.56 2003-01-10 14:16:11 bjk Exp $ */
+/* $Id: pgn.c,v 1.57 2003-01-10 15:35:42 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -270,6 +270,21 @@ static void skip_leading_space(FILE *fp)
     return;
 }
 
+static void invalid_move(const char *move)
+{
+    if (curses_initialized)
+	message(NULL, ANYKEY, "%s \"%s\" (game #%i)", E_INVALID_MOVE, move,
+		gindex + 1);
+    else {
+	warnx("%s: %s \"%s\" (game #%i)", pgnfile, E_INVALID_MOVE, move,
+		gindex + 1);
+	printf("%s\n", ANYKEY);
+	(void)fgetc(stdin);
+    }
+
+    return;
+}
+
 int move_text(FILE *fp)
 {
     char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
@@ -288,11 +303,15 @@ int move_text(FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", move, &count) != 1)
 	return 1;
 
-    if ((p = a2a4tosan(pgnboard, move)) == NULL)
+    if ((p = a2a4tosan(pgnboard, move)) == NULL) {
+	invalid_move(move);
 	return 1;
+    }
 
-    if (parse_move_text(pgnboard, p, 0))
+    if (parse_move_text(pgnboard, p, 0)) {
+	invalid_move(move);
 	return 1;
+    }
 
     add_to_history(&game[gindex].history, &game[gindex].hindex,
 	    &game[gindex].htotal, p);
@@ -575,6 +594,7 @@ int parse_pgn_file(const char *filename)
     int c;
     int tag_section = 0;
     int row, col;
+    int parse_error = 0;
 
     if (!*filename) {
 	reset_game_data();
@@ -628,6 +648,19 @@ int parse_pgn_file(const char *filename)
 	    }
 	}
 
+	nextchar = fgetc(fp);
+	ungetc(nextchar, fp);
+
+	/* If there was a move text parsing error, keep reading until the end
+	 * of the current game discarding the data.
+	 */
+	if (parse_error) {
+	    if (c == '\n' && nextchar == '\n')
+		parse_error = 0;
+	    else
+		continue;
+	}
+
 	if (c == '%') {
 	    while ((c = fgetc(fp)) != EOF && c != '\n');
 	    continue;
@@ -663,17 +696,12 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
 
-	nextchar = fgetc(fp);
-
 	/* EOG markers. */
 	if ((isdigit(c) && (nextchar == '-' || nextchar == '/')) || c == '*') {
-	    ungetc(nextchar, fp);
 	    ungetc(c, fp);
 	    eog_marker(fp);
 	    continue;
 	}
-
-	ungetc(nextchar, fp);
 
 	if (isdigit(c) || (c >= 'a' && c <= 'h') || c == 'N' || c == 'K'
 		|| c == 'Q' || c == 'B' || c == 'R' || c == 'P' || c == 'O') {
@@ -687,7 +715,7 @@ int parse_pgn_file(const char *filename)
 	    tag_section = 0;
 
 	    if (move_text(fp))
-		break;
+		parse_error = 1;
 
 	    continue;
 	}
