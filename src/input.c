@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.20 2003-01-30 16:53:23 bjk Exp $ */
+/* $Id: input.c,v 1.21 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -59,9 +59,9 @@ static bool validate_pgn_round(int c, const void *arg)
 
 /*
  * This function prompts for input. The init argument is the initial value.
- * The lines argument is how many lines the field is. If zero,
- * then it is dynamically determined based on the init argument or INPUT_WIDTH
- * if init is NULL.
+ * The lines argument is how many lines the field is. If zero, then it is
+ * dynamically determined based on the init argument or INPUT_WIDTH if init is
+ * NULL.
  *
  * The clear argument is whether pressing ESC returns the initial value or 
  * NULL. 
@@ -71,9 +71,9 @@ static bool validate_pgn_round(int c, const void *arg)
  * function of type void which takes one pointer-to-void argument. This
  * function is called when the ckey argument is pressed.
  *
- * The type argument is the type of validation for the input
- * defined in common.h. Remaining arguments are values for the type argument.
- * See field_type(3X) for validation types.
+ * The type argument is the type of validation for the input defined in
+ * common.h. Remaining arguments are values for the type argument. See
+ * field_type(3X) for validation types.
  *
  * FIXME form validation is buggy (integers).
  */

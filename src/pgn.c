@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.68 2003-01-30 16:53:23 bjk Exp $ */
+/* $Id: pgn.c,v 1.69 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -46,17 +46,17 @@
 
 static int tag_compare(const void *s1, const void *s2)
 {
-    const struct tags *ss1 = s1;
-    const struct tags *ss2 = s2;
+    const TAG *ss1 = s1;
+    const TAG *ss2 = s2;
 
     return strcmp(ss1->name, ss2->name);
 }
 
-static void sort_tags(struct games g)
+static void sort_tags(GAME g)
 {
-    struct tags *t = g.tag + 7;
+    TAG *t = g.tag + 7;
 
-    qsort(t, g.tindex - 7, sizeof(struct tags), tag_compare);
+    qsort(t, g.tindex - 7, sizeof(TAG), tag_compare);
     return;
 }
 
@@ -136,10 +136,10 @@ int end_of_game(const char *str)
 /* Returns 1 if a duplicate tag was found. 0 otherwise. The index argument is
  * a pointer to int, and incremented automatically.
  */
-int add_tag(struct tags **dst, int *n, char *name, char *value)
+int add_tag(TAG **dst, int *n, char *name, char *value)
 {
     int i, index = *n;
-    struct tags *tdata = *dst;
+    TAG *tdata = *dst;
     int len = 0;
 
     name = trim(name);
@@ -156,7 +156,7 @@ int add_tag(struct tags **dst, int *n, char *name, char *value)
 	}
     }
 
-    tdata = Realloc(tdata, (index + 2) * sizeof(struct tags));
+    tdata = Realloc(tdata, (index + 2) * sizeof(TAG));
 
     len = strlen(name) + 1;
     tdata[index].name = Malloc(len);
@@ -168,7 +168,7 @@ int add_tag(struct tags **dst, int *n, char *name, char *value)
 	strncpy(tdata[index].value, value, len);
     }
 
-    memset(&tdata[++index], '\0', sizeof(struct tags));
+    memset(&tdata[++index], '\0', sizeof(TAG));
     *n = index;
     *dst = tdata;
     return 0;
@@ -639,15 +639,15 @@ void new_game(BOARD b)
 	gindex = gtotal - 1;
 
     if (!firstrun) {
-	game = Realloc(game, (gindex + 2) * sizeof(struct games));
-	memset(&game[gindex + 1], '\0', sizeof(struct games));
-	memset(&game[gindex + 1].tag, '\0', sizeof(struct tags));
-	memset(&game[gindex + 1].history, '\0', sizeof(struct history));
+	game = Realloc(game, (gindex + 2) * sizeof(GAME));
+	memset(&game[gindex + 1], '\0', sizeof(GAME));
+	memset(&game[gindex + 1].tag, '\0', sizeof(TAG));
+	memset(&game[gindex + 1].history, '\0', sizeof(HISTORY));
 	sort_tags(game[gindex]);
 	gindex++;
     }
     else {
-	game = Calloc(1, sizeof(struct games));
+	game = Calloc(1, sizeof(GAME));
 	firstrun = 0;
     }
 
@@ -888,7 +888,7 @@ static char *add_tag_escapes(const char *str)
     return buf;
 }
 	
-static int dump_comments_and_nag(FILE *fp, int index, int *len)
+static int dump_comments_and_nag(FILE *fp, HISTORY h, int *len)
 {
     int i;
     int n;
@@ -896,39 +896,38 @@ static int dump_comments_and_nag(FILE *fp, int index, int *len)
     int annotated = 0;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (game[gindex].history[index].nag[i]) {
+	if (h.nag[i]) {
 	    annotated = 1;
 
-	    *len += integer_len(game[gindex].history[index].nag[i]) + 2;
+	    *len += integer_len(h.nag[i]) + 2;
 
 	    if (*len + 1 >= 80) {
 		fprintf(fp, "\n");
 		*len = 0;
 	    }
 
-	    fprintf(fp, "$%i ", game[gindex].history[index].nag[i]);
+	    fprintf(fp, "$%i ", h.nag[i]);
 	}
     }
 
-    if (game[gindex].history[index].comment &&
-	    game[gindex].history[index].comment[0]) {
+    if (h.comment && h.comment[0]) {
 	annotated = 1;
 
 	fprintf(fp, "\n{");
 
-	if ((n = strlen(game[gindex].history[index].comment) + 1) >= 80) {
+	if ((n = strlen(h.comment) + 1) >= 80) {
 	    for (i = 0, x = 0; i < (n - 1); i++, x++) {
 		if (x + 1 >= 80) {
 		    fprintf(fp, "\n");
 		    x = 0;
 		}
 
-		if (fputc(game[gindex].history[index].comment[i], fp) == EOF)
+		if (fputc(h.comment[i], fp) == EOF)
 		    warn("PGN Save");
 	    }
 	}
 	else
-	    fprintf(fp, "%s", game[gindex].history[index].comment);
+	    fprintf(fp, "%s", h.comment);
 
 	fprintf(fp, "}\n");
 	*len = 0;
@@ -937,12 +936,24 @@ static int dump_comments_and_nag(FILE *fp, int index, int *len)
     return annotated;
 }
 
-static void dumpgame(FILE *fp, struct games g, int isfifo)
+static void dumpgame(FILE *fp, GAME g, int index, int isfifo)
 {
     int i;
     int n, len = 0;
     int annotated = 0;
     int x = 0;
+    int oldtotal = g.htotal;
+    char buf[80];
+
+    if (!isfifo && g.hindex != g.htotal) {
+	snprintf(buf, sizeof(buf), "%s (#%i)", GAME_SAVE_FROM_HISTORY_TITLE,
+		index + 1);
+	i = message_uncentered(buf, GAME_SAVE_FROM_HISTORY_PROMPT, "%s", 
+			GAME_SAVE_FROM_HISTORY_TEXT);
+
+	if (i == 'c')
+	    g.htotal = g.hindex;
+    }
 
     sort_tags(g);
 
@@ -1059,7 +1070,7 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
 	fprintf(fp, "%s ", g.history[i].move);
 
 	if (!isfifo)
-	    annotated = dump_comments_and_nag(fp, i, &len);
+	    annotated = dump_comments_and_nag(fp, g.history[i], &len);
 
 	if (!(i % 2) && !annotated)
 	    n++;
@@ -1076,10 +1087,14 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
 	fprintf(fp, "\n");
 
     fprintf(fp, "%s\n\n", add_tag_escapes(g.tag[TAG_RESULT].value));
+    g.htotal = oldtotal;
     return;
 }
 
-int save_pgn(const char *filename, int isfifo)
+/* If the saveindex argument is -1, all games will be saved. Otherwise it's a
+ * game index number.
+ */
+int save_pgn(const char *filename, int isfifo, int saveindex)
 {
     FILE *fp;
     char *mode = NULL;
@@ -1087,19 +1102,8 @@ int save_pgn(const char *filename, int isfifo)
     char buf[FILENAME_MAX];
     struct stat st;
     int i;
-    int cgame = 0;
     char *command = NULL;
-
-    if (gtotal > 1 && !isfifo) {
-	c = message_uncentered(NULL, GAME_SAVE_MULTI_PROMPT, "%s", 
-		GAME_SAVE_MULTI_TEXT);
-
-	if (c == 'c')
-	    cgame = 1;
-	else if (c == 'a');
-	else
-	    return 1;
-    }
+    int saveindex_max = (saveindex == -1) ? gtotal : saveindex + 1;
 
     if (filename[0] != '/' && config.savedirectory && !isfifo) {
 	if (stat(config.savedirectory, &st) == -1) {
@@ -1128,7 +1132,7 @@ int save_pgn(const char *filename, int isfifo)
 	filename = buf;
     }
 
-    if (!isfifo && !cgame)
+    if (!isfifo && saveindex == -1)
 	strncpy(pgnfile, filename, sizeof(pgnfile));
 
     if (!isfifo)
@@ -1177,15 +1181,11 @@ int save_pgn(const char *filename, int isfifo)
 	}
     }
 
-    if (isfifo || cgame)
-	dumpgame(fp, game[gindex], isfifo);
+    if (isfifo)
+	dumpgame(fp, game[saveindex], saveindex, isfifo);
     else {
-	for (i = 0; i < gtotal; i++) {
-	    if (game[i].htotal)
-		dumpgame(fp, game[i], isfifo);
-	    else
-		message(NULL, ANYKEY, "%s #%i.", E_SAVE_NOMOVES, i + 1);
-	}
+	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
+	    dumpgame(fp, game[i], i, isfifo);
     }
 
     if (command)
@@ -1395,7 +1395,7 @@ done:
     return tmp;
 }
 
-void free_tag_data(struct tags *data, int index)
+void free_tag_data(TAG *data, int index)
 {
     int i;
 
@@ -1407,18 +1407,17 @@ void free_tag_data(struct tags *data, int index)
     return;
 }
 
-struct tags *edit_tags(int edit)
+TAG *edit_tags(TAG *old, int maxtags, int edit)
 {
-    struct tags *data = NULL;
+    TAG *data = NULL;
     struct tm tp;
     int data_index = 0;
     int i, lastindex = 0;
     int len;
 
     /* Edit the backup copy, not the original in case the save fails. */
-    for (i = 0; i < game[gindex].tindex; i++)
-	add_tag(&data, &data_index, game[gindex].tag[i].name,
-		game[gindex].tag[i].value);
+    for (i = 0; i < maxtags; i++)
+	add_tag(&data, &data_index, old[i].name, old[i].value);
 
     while (1) {
 	WINDOW *win, *subw;
@@ -1474,7 +1473,7 @@ struct tags *edit_tags(int edit)
 
 	while (1) {
 	    int c;
-	    struct tags *tmppgn = NULL;
+	    TAG *tmppgn = NULL;
 	    char *newtag = NULL;
 	    int tpgn_index = 0;
 	    char *tmp;

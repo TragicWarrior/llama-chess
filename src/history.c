@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.39 2003-01-30 16:53:23 bjk Exp $ */
+/* $Id: history.c,v 1.40 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -35,10 +35,10 @@
 #include "colors.h"
 #include "history.h"
 
-void free_historydata(struct history **history, int index, int total)
+void free_historydata(HISTORY **history, int index, int total)
 {
     int i;
-    struct history *h = *history;
+    HISTORY *h = *history;
 
     if (total) {
 	for (i = index; i < total; i++) {
@@ -48,7 +48,7 @@ void free_historydata(struct history **history, int index, int total)
     }
 
     if (index)
-	h = Realloc(h, (index) * sizeof(struct history));
+	h = Realloc(h, (index) * sizeof(HISTORY));
 
     *history = h;
     return;
@@ -140,7 +140,7 @@ void view_annotation(int index)
     return;
 }
 
-int get_history_by_index(int index, struct history *h)
+int get_history_by_index(int index, HISTORY *h)
 {
     if (index < 0 || index > game[gindex].htotal - 1)
 	return 1;
@@ -389,15 +389,15 @@ done:
     return NULL;
 }
 
-void add_to_history(struct history **h, int *n, int *t, const char *str)
+void add_to_history(HISTORY **h, int *n, int *t, const char *str)
 {
-    struct history *history = *h;
+    HISTORY *history = *h;
     int index = *n;
 
-    history = Realloc(history, (index + 2) * sizeof(struct history));
-    memset(&history[index], 0, sizeof(struct history));
+    history = Realloc(history, (index + 2) * sizeof(HISTORY));
+    memset(&history[index], 0, sizeof(HISTORY));
     strncpy(history[index].move, str, sizeof(history[index].move));
-    memset(&history[++index], 0, sizeof(struct history));
+    memset(&history[++index], 0, sizeof(HISTORY));
 
     *n = *t = index;
     *h = history;
@@ -413,7 +413,7 @@ void parse_history_move(BOARD b, int index)
     status.turn = game[gindex].openingside;
 
     for (i = 0; i < index; i++) {
-	struct history h;
+	HISTORY h;
 
 	if (get_history_by_index(i, &h))
 	    break;
@@ -465,6 +465,7 @@ void history_next(BOARD b, int n)
 void init_history(BOARD b)
 {
     browse_history = 1;
+    game[gindex].active = 0;
     parse_history_move(b, game[gindex].hindex);
     update_status_window();
     return;

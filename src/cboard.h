@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.54 2003-01-29 20:23:19 bjk Exp $ */
+/* $Id: cboard.h,v 1.55 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -53,7 +53,6 @@ PANEL *historyp;
 
 BOARD board;
 int quit;
-int gactive;
 char **agony;
 
 const char *mainhelp[] = {
@@ -71,7 +70,7 @@ const char *mainhelp[] = {
     "    > - next game or round*     j - jump to move number*",
     "    < - previous game or round*",
     "    J - jump to game or round*  / - find move text expression*",
-    "    d - toggle game delete flag } - find next move text expression*",
+    "    d - toggle delete flag*     } - find next move text expression*",
     "    D - delete flagged games    { - find previous move text expression*",
     " ",
     "    r - resume a saved game     q - quit",
@@ -84,18 +83,18 @@ pid_t init_chess_engine(void);
 int parse_pgn_file(BOARD, const char *);
 void update_history(void);
 void reset_history(void);
-struct tags *edit_tags(int);
+TAG *edit_tags(TAG *, int, int);
 void parse_engine_output(BOARD, char *);
 char *real_filename(char *);
 void send_to_engine(const char *, ...);
-int get_history_by_index(int, struct history *);
+int get_history_by_index(int, HISTORY *);
 void history_next(BOARD, int);
 void history_previous(BOARD, int);
 void init_history(BOARD);
 void parse_rcfile(const char *);
 char *history_edit_nag(void *);
 void view_annotation(int);
-int save_pgn(const char *, int);
+int save_pgn(const char *, int, int);
 void set_engine_defaults(void);
 int start_chess_engine(void);
 void stop_engine(void);
@@ -105,7 +104,7 @@ void set_default_colors(void);
 void init_color_pairs(void);
 char *browse_directory(void *);
 char *a2a4tosan(BOARD, char *);
-int add_tag(struct tags **, int *, const char *, const char *);
+int add_tag(TAG **, int *, const char *, const char *);
 void new_game(BOARD);
 void *Malloc(size_t);
 int isinteger(const char *);
@@ -113,8 +112,8 @@ int parse_ics_output(char *);
 char *compression_cmd(const char *, int);
 int piece_to_int(int);
 int int_to_piece(int);
-void free_tag_data(struct tags *, int);
-void free_historydata(struct history **, int, int);
+void free_tag_data(TAG *, int);
+void free_historydata(HISTORY **, int, int);
 void get_valid_moves(BOARD, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
 int parse_move_text(BOARD, char *, int);

@@ -1,4 +1,4 @@
-/* $Id: rcfile.h,v 1.7 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: rcfile.h,v 1.8 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,7 +20,7 @@
 #define RCFILE_H
 
 int isinteger(const char *);
-int add_tag(struct tags **, int *, const char *, const char *);
+int add_tag(TAG **, int *, const char *, const char *);
 char *tilde_expand(char *);
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.53 2003-01-30 18:36:40 bjk Exp $ */
+/* $Id: common.h,v 1.54 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -117,26 +117,27 @@ struct {
     int turn;
 } status;
 
-struct tags {
+typedef struct tags {
     char *name;
     char *value;
-};
+} TAG;
 
-struct history {
+typedef struct history {
     char move[MAX_PGN_MOVE_LEN + 1];
     char *comment;
     int nag[MAX_PGN_NAG];
-};
+} HISTORY;
 
 /* This is an array of 'games' structures. One for each game in a file, or
  * the current game.
  */
-struct games {
-    struct tags *tag;
+typedef struct games {
+    TAG *tag;
     int tindex;
-    struct history *history;
+    HISTORY *history;
     int hindex;
     int htotal;
+    int active;
     int sockfd;
     int openingside;
     int wcaptures;
@@ -146,7 +147,9 @@ struct games {
     int enpassant;
     int castle;
     int wk, bk, rqw, rkw, rqb, rkb;
-} *game;
+} GAME;
+
+GAME *game;
 
 /* This holds the selected piece info. */
 struct {
@@ -204,7 +207,7 @@ struct {
     char *savedirectory;
     char *engine_cmd;
     struct colors color[CONF_MAX_COLORS];
-    struct tags *tag;
+    TAG *tag;
     int tindex;
 } config;
 
@@ -221,9 +224,11 @@ int engine_initialized;
 int oldhistorytotal; /* This is a failsafe when resuming a game. */
 int movestep;
 
-enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
+enum {
+    FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
-    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND};
+    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND
+};
 
 char *get_input(const char *, const char *, int, int, const char *,
 	char *(*)(void *), void *, chtype, int, ...);

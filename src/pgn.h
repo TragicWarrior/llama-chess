@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.26 2003-01-30 17:52:41 bjk Exp $ */
+/* $Id: pgn.h,v 1.27 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -96,7 +96,7 @@ const char *file_browser_help[] = {
 BOARD pgnboard;
 
 void *Malloc(size_t);
-void add_to_history(struct history **, int *, int *, const char *);
+void add_to_history(HISTORY **, int *, int *, const char *);
 void reset_history(void);
 void free_game_data(void);
 void send_to_engine(const char *, ...);

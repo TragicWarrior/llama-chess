@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.15 2003-01-29 20:23:19 bjk Exp $ */
+/* $Id: engine.h,v 1.16 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -30,16 +30,16 @@ enum {
 
 pid_t enginepid;
 
-void add_to_history(struct history **, int *, int *, const char *);
+void add_to_history(HISTORY **, int *, int *, const char *);
 char *parse_piece(char *);
 void move_piece(char *);
-int save_pgn(const char *, int);
+int save_pgn(const char *, int, int);
 void update_status_window(void);
 char *book_method(int);
 int parse_move_text(BOARD, char *, int);
 char *a2a4tosan(BOARD, char *);
 void switch_turn(void);
 void init_history(BOARD);
-void free_historydata(struct history **, int, int);
+void free_historydata(HISTORY **, int, int);
 
 #endif

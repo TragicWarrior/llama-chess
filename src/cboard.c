@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.80 2003-01-30 19:24:09 bjk Exp $ */
+/* $Id: cboard.c,v 1.81 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -411,7 +411,7 @@ void update_status_window()
 void update_history_window()
 {
     char buf[HISTORY_WIDTH];
-    struct history h = {{0},NULL,{0}};
+    HISTORY h = {{0},NULL,{0}};
     int index, total;
 
     index = (game[gindex].hindex + 1) / 2;
@@ -537,20 +537,6 @@ void update_all()
     return;
 }
 
-static void init_active_game()
-{
-    init_history(board);
-
-    if (gindex == gactive) {
-	browse_history = 0;
-	status.engine = ENGINE_READY;
-    }
-
-    update_all();
-    update_tag_window();
-    return;
-}
-
 static void game_next_prev(int n, int count)
 {
     if (gtotal < 2)
@@ -577,7 +563,9 @@ static void game_next_prev(int n, int count)
 	    gindex -= count;
     }
 
-    init_active_game();
+    init_history(board);
+    update_all();
+    update_tag_window();
     return;
 }
 
@@ -598,9 +586,26 @@ void free_game_data()
     return;
 }
 
+static void set_active_game(int index)
+{
+    int i;
+
+    if (index >= gtotal)
+	return;
+
+    for (i = 0; i < gtotal; i++) {
+	if (game[i].active == index)
+	    game[i].active = 1;
+	else
+	    game[i].active = 0;
+    }
+
+    return;
+}
+
 static void delete_game(int which)
 {
-    struct games *g = NULL;
+    GAME *g = NULL;
     int gi = 0;
     int i;
     
@@ -613,9 +618,9 @@ static void delete_game(int which)
 	    continue;
 	}
 
-	g = Realloc(g, (gi + 2) * sizeof(struct games));
+	g = Realloc(g, (gi + 2) * sizeof(GAME));
 
-	memcpy(&g[gi], &game[i], sizeof(struct games));
+	memcpy(&g[gi], &game[i], sizeof(GAME));
 
 	g[gi].tag = game[i].tag;
 	g[gi].history = game[i].history;
@@ -634,7 +639,7 @@ static void delete_game(int which)
     else
 	gindex = gtotal - 1;
 
-    gactive = gindex;
+    set_active_game(gindex);
     return;
 }
 
@@ -818,6 +823,49 @@ static int find_move_exp(const char *str, int init, int which, int count)
     return -1;
 }
 
+static int toggle_delete_flag(int index)
+{
+    int i, n;
+
+    if (game[index].delete == 1)
+	game[index].delete = 0;
+    else
+	game[index].delete = 1;
+
+
+    for (i = n = 0; i < gtotal; i++) {
+	if (game[i].delete)
+	    n++;
+    }
+
+    if (n == gtotal) {
+	message(NULL, ANYKEY, "%s", E_DELETE_GAME);
+	game[index].delete = 0;
+	return 1;
+    }
+
+    return 0;
+}
+
+static void edit_save_tags(int index)
+{
+    int i;
+    TAG *t;
+
+    if ((t = edit_tags(game[index].tag, game[index].tindex, 1)) == NULL)
+	return;
+
+    game[index].tindex = 0;
+
+    for (i = 0; t[i].name; i++) {
+	add_tag(&game[index].tag, &game[index].tindex, t[i].name, t[i].value);
+    }
+
+    free_tag_data(t, i);
+    free(t);
+    return;
+}
+
 void game_loop()
 {  
     int error_recover = 0;
@@ -825,9 +873,13 @@ void game_loop()
     int count = 0;
     int crow = 8, ccol = 1;
     char regexp[255] = {0};
+    int delete_count = 0;
+    int markstart = -1, markend = -1;
 
-    gactive = gindex;
     gindex = gtotal - 1;
+    markstart = -1, markend = -1;
+
+    set_active_game(gtotal - 1);
 
     if (pgnfile[0])
 	init_history(board);
@@ -843,13 +895,12 @@ void game_loop()
     while (!quit) {
 	int c = 0;
 	fd_set fds;
-	int i, n = 0, len = 0;
+	int i, x = 0, n = 0, len = 0;
 	char fdbuf[8192] = {0};
 	struct timeval tv;
 	char *tmp = NULL;
 	char buf[78];
 	char tfile[FILENAME_MAX];
-	struct tags *tmptag = NULL;
 	int minr, maxr, minc, maxc;
 
 	if (engine_initialized) {
@@ -968,9 +1019,23 @@ void game_loop()
 		break;
 	    case '>':
 		game_next_prev(1, (count) ? count : 1);
+
+		if (delete_count) {
+		    markend = gindex;
+		    pushkey = 'd';
+		    delete_count = 0;
+		}
+
 		break;
 	    case '<':
 		game_next_prev(0, (count) ? count : 1);
+
+		if (delete_count) {
+		    markend = gindex;
+		    pushkey = 'd';
+		    delete_count = 0;
+		}
+
 		break;
 	    case 'j':
 		if (!browse_history || game[gindex].htotal < 2)
@@ -1036,25 +1101,35 @@ void game_loop()
 		update_tag_window();
 		break;
 	    case 'd':
+		pushkey = 0;
+
 		if (gtotal < 2)
 		    break;
 
-		if (game[gindex].delete == 1)
-		    game[gindex].delete = 0;
-		else
-		    game[gindex].delete = 1;
-
-		for (i = n = 0; i < gtotal; i++) {
-		    if (game[i].delete)
-			n++;
+		if (count && !delete_count) {
+		    markstart = gindex;
+		    delete_count = 1;
+		    continue;
 		}
 
-		if (n == gtotal) {
-		    message(NULL, ANYKEY, "%s", E_DELETE_GAME);
-		    game[gindex].delete = 0;
-		    break;
+		if (markstart >= 0 && markend >= 0) {
+		    if (markstart > markend) {
+			i = markstart;
+			markstart = markend;
+			markend = i;
+		    }
+
+		    for (i = markstart; i <= markend; i++) {
+			if (toggle_delete_flag(i))
+			    break;
+		    }
+		}
+		else {
+		    if (toggle_delete_flag(gindex))
+			break;
 		}
 
+		markstart = markend = -1;
 		update_status_window();
 		break;
 	    case 'D':
@@ -1116,8 +1191,12 @@ void game_loop()
 
 		update_history_window();
 		break;
+	    case 'e':
+		edit_save_tags(gindex);
+		update_tag_window();
+		break;
 	    case 'i':
-		edit_tags(0);
+		edit_tags(game[gindex].tag, game[gindex].tindex, 0);
 		break;
 	    case 'g':
 		if (browse_history || status.engine == ENGINE_THINKING)
@@ -1164,7 +1243,7 @@ void game_loop()
 		    pushkey = 0;
 		    oldhistorytotal = game[gindex].htotal;
 		    game[gindex].htotal = game[gindex].hindex;
-		    gactive = gindex;
+		    set_active_game(gindex);
 		    browse_history = 0;
 		    status.engine = ENGINE_READY;
 
@@ -1199,7 +1278,6 @@ void game_loop()
 		    break;
 
 		gindex = gtotal - 1;
-		gactive = gindex;
 		strncpy(pgnfile, tmp, sizeof(pgnfile));
 		init_history(board);
 		update_all();
@@ -1207,55 +1285,26 @@ void game_loop()
 		break;
 	    case 'S':
 	    case 's':
-		for (i = n = 0; i < gtotal; i++) {
-		    if (!game[i].htotal)
-			continue;
-
-		    n = 1;
-		}
-
-		if (!n) {
-		    message(NULL, ANYKEY, "%s", E_SAVE_NOGMOVES);
-		    break;
-		}
-
-		oldhistorytotal = game[gindex].htotal;
-
-		if (browse_history && game[gindex].hindex != 
-			game[gindex].htotal && (c == 'S' || config.saveprompt))
-		{
-		    n = message_uncentered(NULL, GAME_SAVE_HISTORY_PROMPT,
-			    "%s", GAME_SAVE_HISTORY_TEXT);
+		if (gtotal > 1) {
+		    n = message_uncentered(NULL, GAME_SAVE_MULTI_PROMPT, "%s", 
+			    GAME_SAVE_MULTI_TEXT);
 
 		    if (n == 'c')
-			game[gindex].htotal = game[gindex].hindex;
-		    else if (n == 'a');
-		    else
-			break;
-		}
-
-		if ((c == 'S' || config.saveprompt) && 
-			message(NULL, YESNO, "%s", GAME_EDIT_TAG_PROMPT) 
-			== 'y') {
-		    if ((tmptag = edit_tags(1)) == NULL) {
-			game[gindex].htotal = oldhistorytotal;
+			x = gindex;
+		    else if (n == 'a')
+			x = -1;
+		    else {
+			status.notify = NOTIFY_SAVE_ABORTED;
+			update_status_window();
 			break;
 		    }
-
-		    game[gindex].tindex = 0;
-
-		    for (i = 0; tmptag[i].name; i++)
-			add_tag(&game[gindex].tag, &game[gindex].tindex,
-				tmptag[i].name, tmptag[i].value);
-
-		    free_tag_data(tmptag, i);
-		    free(tmptag);
 		}
 
 		if ((tmp = get_input(GAME_SAVE_TITLE, pgnfile, 1, 1,
 				BROWSER_PROMPT, browse_directory, NULL, 
 				'\t', -1)) == NULL) {
-		    game[gindex].htotal = oldhistorytotal;
+		    status.notify = NOTIFY_SAVE_ABORTED;
+		    update_status_window();
 		    break;
 		}
 
@@ -1265,19 +1314,13 @@ void game_loop()
 		    tmp = tfile;
 		}
 
-		if (save_pgn(tmp, 0)) {
-		    game[gindex].htotal = oldhistorytotal;
+		if (save_pgn(tmp, 0, x)) {
+		    status.notify = NOTIFY_SAVE_FAILED;
 		    break;
 		}
 
-		game[gindex].htotal = oldhistorytotal;
-		parse_pgn_file(board, pgnfile);
-		gindex = gtotal - 1;
-		gactive = gindex;
 		status.notify = NOTIFY_SAVED;
-		switch_turn();
 		update_all();
-		update_tag_window();
 		break;
 	    case CTRL('G'):
 		help(GAME_HELP, mainhelp);
@@ -1294,7 +1337,6 @@ void game_loop()
 		if (c == 'n') {
 		    newgameinit = 1;
 		    new_game(board);
-		    gactive = gindex;
 		}
 		else {
 		    reset_history();
@@ -1339,6 +1381,7 @@ void game_loop()
 	    case KEY_ESCAPE:
 		sp.icon = sp.row = sp.col = 0;
 		count = 0;
+		markend = markstart = 0;
 
 		if (config.validmoves)
 		    reset_valid_moves(board);

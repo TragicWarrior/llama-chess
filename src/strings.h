@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.16 2003-01-30 16:53:23 bjk Exp $ */
+/* $Id: strings.h,v 1.17 2003-01-31 19:36:55 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -26,15 +26,15 @@
 #define GAME_HISTORY_JUMP_TITLE		"Jump to Move Number"
 #define GAME_NOTSAVED			"*delete*"
 #define GAME_SAVE_OVERWRITE_PROMPT	"'a' to append, 'o' to overwrite"
-#define GAME_EDIT_TAG_PROMPT		"Edit roster tags?"
-#define GAME_SAVE_MULTI_PROMPT		"Type 'c' or 'a' or ESCAPE to cancel"
+#define GAME_SAVE_MULTI_PROMPT		"Type 'c' or 'a'"
 #define GAME_SAVE_MULTI_TEXT		"There is more than one game " \
     "loaded. You can save only the current game by pressing 'c', or all " \
     "games by pressing 'a'."
-#define GAME_SAVE_HISTORY_PROMPT	"Type 'a' or 'c' or ESCAPE to cancel"
-#define GAME_SAVE_HISTORY_TEXT		"You are in history mode. You can " \
-    "save all moves up to and including the current move by pressing 'c', " \
-    "or the whole game history by pressing 'a'."
+#define GAME_SAVE_FROM_HISTORY_TITLE	"Save From History"
+#define GAME_SAVE_FROM_HISTORY_PROMPT	"Type 'c' or any other key"
+#define GAME_SAVE_FROM_HISTORY_TEXT	"This game number is in history mode. You can " \
+    "save all moves up to and including the current move by pressing 'c'. " \
+    "Any other key will save the entire move history."
 #define GAME_RESUME_HISTORY_TEXT	"Resuming a game from previous " \
     "history will remove all future moves. Do you really want to resume " \
     "from history?"
@@ -65,8 +65,6 @@
 #define E_NOTADIR	"Not a directory."
 #define E_NOTAREGFILE	"Not a regular file."
 #define E_INITCURSES	"Could not initialize curses."
-#define E_SAVE_NOMOVES	"Refusing to save null move game"
-#define E_SAVE_NOGMOVES	"No games contain any moves. Aborting save."
 #define E_SAVE_COMPRESS	"Cannot append to compressed file."
 #define E_INVALID_MOVE	"Invalid move"
 #define E_SELECT_TURN	"It is not your turn to move. You can switch sides " \
@@ -75,6 +73,8 @@
 
 /* The notification line in the status window. */
 #define NOTIFY_SAVED		"Game saved."
+#define NOTIFY_SAVE_ABORTED	"Save game aborted."
+#define NOTIFY_SAVE_FAILED	"Save game failed."
 #define NOTIFY_CHECK		"Check!"
 #define NOTIFY_CHECKMATE_WHITE_WINS	"Game over! White wins."
 #define NOTIFY_CHECKMATE_BLACK_WINS	"Game over! Black wins."
