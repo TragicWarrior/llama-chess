@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.3 2002-12-09 18:50:22 bjk Exp $
+dnl $Id: configure.ac,v 1.4 2002-12-16 17:48:23 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.1, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -40,6 +40,10 @@ AC_HEADER_TIME
 dnl Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([bzero strdup strerror strrchr vasprintf])
+
+AC_DEFINE([MAX_PGN_LINE_LEN], 255, [Maximum line length in a PGN file.])
+AC_DEFINE([MAX_PGN_MOVE_LEN], 7, [Maximum SAN move length without terminating NULL.])
+AC_DEFINE([MAX_PGN_NAG], 5, [Maximum number of NAG entries per move.])
 
 AM_WITH_DMALLOC
 
