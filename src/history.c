@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.11 2002-12-17 18:42:53 bjk Exp $ */
+/* $Id: history.c,v 1.12 2002-12-17 21:43:02 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -335,10 +335,18 @@ void move_piece(char *move)
     board[srow][scol].icon = '.';
 
     if (board[row][col].icon != '.') {
-	if (isupper(board[row][col].icon))
+	if (isupper(board[row][col].icon)) {
+	    if (row == 0 && board[row][col].icon == 'P')
+		board[row][col].icon = 'Q';
+
 	    status.turn = BLACK;
-	else
+	}
+	else {
+	    if (row == 7 && board[row][col].icon == 'p')
+		board[row][col].icon = 'q';
+
 	    status.turn = WHITE;
+	}
     }
     
     return;
