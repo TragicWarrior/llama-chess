@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.7 2002-12-07 14:51:12 bjk Exp $ */
+/* $Id: pgn.c,v 1.8 2002-12-09 14:13:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -43,11 +43,13 @@
 /* Returns 1 if a duplicate was found. 0 otherwise. The index argument is a
  * pointer to int, and incremented automatically.
  */
-int add_pgn_data(struct pgndata **dst, int *n, const char *token,
-	const char *value)
+int add_pgn_data(struct pgndata **dst, int *n, char *token, char *value)
 {
     int i, index = *n;
     struct pgndata *tdata = *dst;
+
+    token = trim(token);
+    value = trim(value);
 
     for (i = 0; i < index; i++) {
 	if (strcasecmp(tdata[i].token, token) == 0)
