@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.85 2003-02-04 22:01:16 bjk Exp $ */
+/* $Id: pgn.c,v 1.86 2003-02-05 00:58:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -761,6 +761,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 	    ungetc(c, fp);
 	    eog_marker(fp);
 	    nulltags = 1;
+	    tag_section = 0;
 	    continue;
 	}
 

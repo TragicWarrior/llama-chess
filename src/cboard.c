@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.93 2003-02-05 00:26:40 bjk Exp $ */
+/* $Id: cboard.c,v 1.94 2003-02-05 00:58:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1111,7 +1111,7 @@ void game_loop()
 		if (gtotal < 2)
 		    break;
 
-		if (!*gameexp || c == 'f') {
+		if (!*gameexp || c == '?') {
 		    if ((tmp = get_input(GAME_FIND_EXPRESSION_TITLE, gameexp, 
 				    1, 1, GAME_FIND_EXPRESSION_PROMPT, NULL, 
 				    NULL, 0, -1)) == NULL)
@@ -1120,7 +1120,7 @@ void game_loop()
 		    strncpy(gameexp, tmp, sizeof(gameexp));
 		}
 
-	        if ((n = find_game_exp(gameexp, (c == '_') ? 0 : 1,
+	        if ((n = find_game_exp(gameexp, (c == '{') ? 0 : 1,
 				(count) ? count : 1)) == -1)
 		    break;
 
@@ -1194,7 +1194,7 @@ void game_loop()
 		    n = 1;
 		}
 
-		if ((n = find_move_exp(moveexp, n, (c == '{') ? 0 : 1,
+		if ((n = find_move_exp(moveexp, n, (c == '[') ? 0 : 1,
 				(count) ? count : 1)) == -1)
 		    break;
 
