@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.39 2002-12-20 00:49:06 bjk Exp $ */
+/* $Id: cboard.c,v 1.40 2002-12-20 17:14:08 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -852,6 +852,32 @@ static void set_defaults()
     config.engine_depth = 0;
     config.historyagony = 0;
     config.agony = 1;
+    config.color[CONF_MESSAGE].fg = COLOR_WHITE;
+    config.color[CONF_MESSAGE].bg = COLOR_GREEN;
+    config.color[CONF_MESSAGE].nattrs = A_REVERSE;
+    config.color[CONF_BORDER].fg = COLOR_CYAN;
+    config.color[CONF_BORDER].bg = COLOR_BLACK;
+    config.color[CONF_BORDER].attrs = A_BOLD;
+    config.color[CONF_WHITE].fg = COLOR_WHITE;
+    config.color[CONF_WHITE].bg = COLOR_RED;
+    config.color[CONF_WHITE].nattrs = A_REVERSE;
+    config.color[CONF_BLACK].fg = COLOR_WHITE;
+    config.color[CONF_BLACK].bg = COLOR_BLACK;
+    config.color[CONF_SELECTED].fg = COLOR_WHITE;
+    config.color[CONF_SELECTED].bg = COLOR_YELLOW;
+    config.color[CONF_SELECTED].nattrs = A_BOLD | A_REVERSE;
+    config.color[CONF_CURSOR].fg = COLOR_WHITE;
+    config.color[CONF_CURSOR].bg = COLOR_GREEN;
+    config.color[CONF_CURSOR].nattrs = A_BOLD | A_REVERSE;
+    config.color[CONF_TITLE].fg = COLOR_WHITE;
+    config.color[CONF_TITLE].bg = COLOR_BLUE;
+    config.color[CONF_TITLE].nattrs = A_REVERSE;
+    config.color[CONF_ENGINE].fg = COLOR_YELLOW;
+    config.color[CONF_ENGINE].bg = COLOR_BLACK;
+    config.color[CONF_ENGINE].nattrs = A_BOLD;
+    config.color[CONF_NOTIFY].fg = COLOR_RED;
+    config.color[CONF_NOTIFY].bg = COLOR_BLACK;
+    config.color[CONF_NOTIFY].nattrs = A_BOLD;
 
     set_pgn_defaults();
     return;
@@ -934,15 +960,22 @@ int main(int argc, char *argv[])
     }
 
     if (has_colors() == TRUE && start_color() == OK) {
-	init_pair(1, COLOR_WHITE, COLOR_RED);
-	init_pair(2, COLOR_WHITE, COLOR_BLACK);
-	init_pair(3, COLOR_WHITE, COLOR_YELLOW);
-	init_pair(4, COLOR_WHITE, COLOR_GREEN);
-	init_pair(5, COLOR_WHITE, COLOR_BLUE);
-	init_pair(6, COLOR_YELLOW, COLOR_BLACK);
-	init_pair(7, COLOR_RED, COLOR_BLACK);
-	init_pair(8, COLOR_WHITE, COLOR_GREEN);
-	init_pair(9, COLOR_CYAN, COLOR_BLACK);
+	init_pair(1, config.color[CONF_WHITE].fg, config.color[CONF_WHITE].bg);
+	init_pair(2, config.color[CONF_BLACK].fg, config.color[CONF_BLACK].bg);
+	init_pair(3, config.color[CONF_SELECTED].fg,
+		config.color[CONF_SELECTED].bg);
+	init_pair(4, config.color[CONF_CURSOR].fg,
+		config.color[CONF_CURSOR].bg);
+	init_pair(5, config.color[CONF_TITLE].fg,
+		config.color[CONF_TITLE].bg);
+	init_pair(6, config.color[CONF_ENGINE].fg,
+		config.color[CONF_ENGINE].bg);
+	init_pair(7, config.color[CONF_NOTIFY].fg,
+		config.color[CONF_NOTIFY].bg);
+	init_pair(8, config.color[CONF_BORDER].fg, 
+		config.color[CONF_BORDER].bg);
+	init_pair(9, config.color[CONF_MESSAGE].fg,
+		config.color[CONF_MESSAGE].bg);
     }
 
     boardw = newwin(BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);

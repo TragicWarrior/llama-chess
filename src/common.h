@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.24 2002-12-20 00:49:06 bjk Exp $ */
+/* $Id: common.h,v 1.25 2002-12-20 17:14:08 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -123,6 +123,18 @@ struct {
     int destcol;
 } sp;
 
+enum { 
+    CONF_WHITE, CONF_BLACK, CONF_SELECTED, CONF_CURSOR, CONF_BORDER, 
+    CONF_TITLE, CONF_NOTIFY, CONF_ENGINE, CONF_MESSAGE, CONF_MAX_COLORS
+};
+
+struct colors {
+    short fg;
+    short bg;
+    int attrs; /* Attributes for a color terminal. */
+    int nattrs; /* Attributes for a non-color terminal. */
+};
+
 struct {
     int history_jump;
     int book_method;
@@ -134,6 +146,7 @@ struct {
     char configfile[FILENAME_MAX];
     char fifo[FILENAME_MAX];
     struct pgndata *pgn;
+    struct colors color[CONF_MAX_COLORS];
     int pindex;
 } config;
 

@@ -1,4 +1,4 @@
-/* $Id: message.h,v 1.3 2002-12-18 14:48:31 bjk Exp $ */
+/* $Id: message.h,v 1.4 2002-12-20 17:14:08 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,6 +20,8 @@
 #define MESSAGE_H
 
 #define MSG_WIDTH	60 /* For multiline messages. */
-#define MESSAGE_CP	((COLORS) ? COLOR_PAIR(8) : 0)
+#define MESSAGE_CP	((COLORS) ? \
+	COLOR_PAIR(9) | config.color[CONF_MESSAGE].attrs : \
+	config.color[CONF_MESSAGE].nattrs)
 
 #endif

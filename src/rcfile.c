@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.9 2002-12-20 00:53:45 bjk Exp $ */
+/* $Id: rcfile.c,v 1.10 2002-12-20 17:14:08 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -28,6 +28,85 @@
 
 #include "common.h"
 #include "rcfile.h"
+
+static int attributes(const char *filename, int line, char *str)
+{
+    char *tmp;
+    int attrs = 0;
+
+    while ((tmp = strsep(&str, ",")) != NULL) {
+	if (strcasecmp(tmp, "BOLD") == 0)
+	    attrs |= A_BOLD;
+	else if (strcasecmp(tmp, "REVERSE") == 0)
+	    attrs |= A_REVERSE;
+	else if (strcasecmp(tmp, "NONE") == 0)
+	    attrs |= A_NORMAL;
+	else if (strcasecmp(tmp, "DIM") == 0)
+	    attrs |= A_DIM;
+	else if (strcasecmp(tmp, "STANDOUT") == 0)
+	    attrs |= A_STANDOUT;
+	else if (strcasecmp(tmp, "UNDERLINE") == 0)
+	    attrs |= A_UNDERLINE;
+	else if (strcasecmp(tmp, "BLINK") == 0)
+	    attrs |= A_BLINK;
+	else if (strcasecmp(tmp, "INVISIBLE") == 0)
+	    attrs |= A_INVIS;
+	else
+	    errx(EXIT_FAILURE, "%s(%i): invalid attribute \"%s\"", filename, 
+		    line, tmp);
+    }
+
+    return attrs;
+}
+
+static short color_name(const char *filename, int line, const char *color)
+{
+    if (strcasecmp(color, "BLACK") == 0)
+	return COLOR_BLACK;
+    else if (strcasecmp(color, "WHITE") == 0)
+	return COLOR_WHITE;
+    else if (strcasecmp(color, "GREEN") == 0)
+	return COLOR_GREEN;
+    else if (strcasecmp(color, "YELLOW") == 0)
+	return COLOR_YELLOW;
+    else if (strcasecmp(color, "MAGENTA") == 0)
+	return COLOR_MAGENTA;
+    else if (strcasecmp(color, "BLUE") == 0)
+	return COLOR_BLUE;
+    else if (strcasecmp(color, "RED") == 0)
+	return COLOR_RED;
+    else if (strcasecmp(color, "CYAN") == 0)
+	return COLOR_CYAN;
+    else
+	errx(EXIT_FAILURE, "%s(%i): invalid color \"%s\"", filename, line, 
+		color);
+
+    return -1;
+}
+
+static void parse_color(const char *filename, int line, const char *str,
+	struct colors *c)
+{
+    char fg[16], bg[16], attr[64], nattr[64];
+    struct colors ctmp = *c;
+    int n;
+
+    if ((n = sscanf(str, "%[a-zA-Z] %[a-zA-Z] %[a-zA-Z,] %[a-zA-Z,]", fg, bg,
+		    attr, nattr)) < 2)
+	errx(EXIT_FAILURE, "%s(%i): parse error", filename, line);
+
+    ctmp.fg = color_name(filename, line, fg);
+    ctmp.bg = color_name(filename, line, bg);
+
+    if (n > 2)
+	ctmp.attrs = attributes(filename, line, attr);
+
+    if (n > 3)
+	ctmp.nattrs = attributes(filename, line, nattr);
+
+    *c = ctmp;
+    return;
+}
 
 void parse_rcfile(const char *filename)
 {
@@ -117,6 +196,24 @@ void parse_rcfile(const char *filename)
 	    token[0] = toupper(token[0]);
 	    add_pgn_data(&config.pgn, &config.pindex, trim(token), trim(value));
 	}
+	else if (strcmp(var, "window_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BORDER]);
+	else if (strcmp(var, "window_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_TITLE]);
+	else if (strcmp(var, "board_selected") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_SELECTED]);
+	else if (strcmp(var, "board_cursor") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_CURSOR]);
+	else if (strcmp(var, "board_black") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BLACK]);
+	else if (strcmp(var, "board_white") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_WHITE]);
+	else if (strcmp(var, "status_notify") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_NOTIFY]);
+	else if (strcmp(var, "status_engine") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_ENGINE]);
+	else if (strcmp(var, "message_box") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_MESSAGE]);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);
