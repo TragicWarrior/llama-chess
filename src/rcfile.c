@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.21 2003-01-23 23:11:02 bjk Exp $ */
+/* $Id: rcfile.c,v 1.22 2003-01-24 20:29:17 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -166,7 +166,7 @@ void parse_rcfile(const char *filename)
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
 			lines);
 
-	    config.history_jump = atoi(val);
+	    config.jumpcount = atoi(val);
 	}
 	else if (strcmp(var, "depth") == 0) {
 	    if (!isinteger(val))
@@ -264,6 +264,8 @@ void parse_rcfile(const char *filename)
 	    config.linegraphics = on_or_off(filename, lines, val);
 	else if (strcmp(var, "save_prompt") == 0)
 	    config.saveprompt = on_or_off(filename, lines, val);
+	else if (strcmp(var, "delete_prompt") == 0)
+	    config.deleteprompt = on_or_off(filename, lines, val);
 	else if (strcmp(var, "valid_moves") == 0)
 	    config.validmoves = on_or_off(filename, lines, val);
 	else if (strcmp(var, "clevel") == 0) {

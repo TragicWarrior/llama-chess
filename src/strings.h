@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.10 2003-01-22 20:04:49 bjk Exp $ */
+/* $Id: strings.h,v 1.11 2003-01-24 20:29:17 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,6 +22,8 @@
 #ifndef STRINGS_H
 #define STRINGS_H
 
+#define GAME_JUMP_TITLE			"Jump to Game Number"
+#define GAME_HISTORY_JUMP_TITLE		"Jump to Move Number"
 #define GAME_NOTSAVED			"*delete*"
 #define GAME_SAVE_OVERWRITE_PROMPT	"'a' to append, 'o' to overwrite"
 #define GAME_EDIT_TAG_PROMPT		"Edit roster tags?"

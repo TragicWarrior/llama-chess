@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.64 2003-01-23 21:48:12 bjk Exp $ */
+/* $Id: pgn.c,v 1.65 2003-01-24 20:29:17 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -856,24 +856,6 @@ static char *add_tag_escapes(const char *str)
     return buf;
 }
 	
-static int integer_len(int n)
-{
-    int len = 1;
-
-    if (n >= 10)
-	len++;
-    else if (n >= 100)
-	len++;
-    else if (n >= 1000)
-	len++;
-    else if (n >= 10000)
-	len++;
-    else if (n >= 100000)
-	len++;
-
-    return len;
-}
-
 static int dump_comments_and_nag(FILE *fp, int index, int *len)
 {
     int i;
@@ -1449,15 +1431,14 @@ struct tags *edit_tags(int edit)
 	menu_opts_off(menu, O_NONCYCLIC);
 	post_menu(menu);
 	panel = new_panel(win);
+	cbreak();
+	noecho();
+	nl();
+	keypad(win, TRUE);
+	set_menu_pattern(menu, mbuf);
 	wbkgd(win, CP_MESSAGE_WINDOW);
 	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
 		cols + 2, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-
-	cbreak();
-	noecho();
-	keypad(win, TRUE);
-	curs_set(0);
-	set_menu_pattern(menu, mbuf);
 
 	while (1) {
 	    int c;
@@ -1476,10 +1457,6 @@ struct tags *edit_tags(int edit)
 		    item_count(menu), HELP_PROMPT);
 	    draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
 
-	    /* This nl() statement needs to be here because NL is recognized
-	     * for some reason after the first selection.
-	     */
-	    nl();
 	    update_panels();
 	    doupdate();
 
