@@ -1,4 +1,4 @@
-/* $Id: help.c,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: help.c,v 1.2 2002-12-07 21:31:20 bjk Exp $ */
 /* 
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,7 +18,6 @@
 */
 #include <stdio.h>
 #include <panel.h>
-#include "help.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -26,28 +25,28 @@
 
 #include "common.h"
 
-void help(void)
+void help(const char *title, const char **text)
 {
     WINDOW *win;
     PANEL *panel;
     int y = 2, x = 0, n;
     int i;
 
-    for (i = 0; i < NARRAY(helptext); i++) {
-	if ((n = strlen(helptext[i])) > x)
+    for (i = 0; text[i]; i++) {
+	if ((n = strlen(text[i])) > x)
 	    x = n;
     }
 
     x += 4;
-    n = NARRAY(helptext) + 5;
+    n = i + 5;
 
     win = newwin(n, x, LINES / 2 - n / 2, CALCPOSX(x));
     panel = new_panel(win);
 
-    draw_window_title(win, help_title, x);
+    draw_window_title(win, title, x);
 
-    for (i = 0; i < NARRAY(helptext); i++)
-	mvwprintw(win, y++, 2, "%s", helptext[i]);
+    for (i = 0; text[i]; i++)
+	mvwprintw(win, y++, 2, "%s", text[i]);
 
     mvwprintw(win, ++y, CENTERX(x, ANYKEY), "%s", ANYKEY);
 
