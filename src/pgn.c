@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.51 2003-01-09 18:02:42 bjk Exp $ */
+/* $Id: pgn.c,v 1.52 2003-01-09 18:10:57 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -181,7 +181,7 @@ void set_pgn_defaults()
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Event", "");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Site", "");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Date", tbuf);
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Round", "?");
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Round", "-");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "White", 
 	    pwd->pw_gecos);
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Black", "");
