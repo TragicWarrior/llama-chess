@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.25 2003-02-03 18:23:47 bjk Exp $ */
+/* $Id: move.c,v 1.26 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1006,6 +1006,9 @@ static int drawtest(BOARD b)
     int row, col;
     int other = 0;
 
+    if (game[gindex].ply >= 50)
+	return 1;
+
     for (row = 1; VALIDFILE(row); row++) {
 	for (col = 1; VALIDFILE(col); col++) {
 	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
@@ -1039,6 +1042,7 @@ int parse_move_text(BOARD b, char *move)
     int dist = 0;
     int promo = -1;
     int kr, kc, okr, okc;
+    int plyincr = 0;
 
     if (strlen(move) < 2)
 	return 1;
@@ -1084,6 +1088,7 @@ int parse_move_text(BOARD b, char *move)
 	    else if (*p == 'x') {
 		col = COLTOINT(*++p);
 		row = ROWTOINT(*++p);
+		plyincr++;
 	    }
 	    else if (*p == '=') {
 		if (promo == -1 || promo == KING || promo == PAWN)
@@ -1183,6 +1188,9 @@ int parse_move_text(BOARD b, char *move)
 	    game[gindex].enpassant = 0;
     }
 
+    if (piece == PAWN)
+	plyincr++;
+
     if (game[gindex].castle) {
 	if (castle_move(b, game[gindex].castle))
 	    return 1;
@@ -1235,48 +1243,63 @@ done:
     game[gindex].gameover = 0;
     validate_move = 1;
 
-    if (drawtest(b))
-	return 1;
+    if (!plyincr)
+	game[gindex].ply++;
+    else
+	game[gindex].ply = 0;
 
-    switch (checktest(b, kr, kc, okr, okc, 0)) {
-	case 0:
-	    break;
-	case -1:
-	    validate_move = 0;
-	    switch_turn();
-	    return 1;
-	default:
-	    if (checkmatetest(b, kr, kc, okr, okc)) {
-		*p++ = '#';
+    if (drawtest(b)) {
+	game[gindex].tag[TAG_RESULT].value = 
+	    Realloc(game[gindex].tag[TAG_RESULT].value, 8);
+	strncpy(game[gindex].tag[TAG_RESULT].value, "1/2-1/2", 8);
+	status.notify = NOTIFY_GAMEOVER_DRAW;
 
-		if (result == WHITEWINS) {
-		    game[gindex].tag[TAG_RESULT].value = 
-			Realloc(game[gindex].tag[TAG_RESULT].value, 4);
-		    strncpy(game[gindex].tag[TAG_RESULT].value, "1-0", 4);
-		    status.notify = NOTIFY_CHECKMATE_WHITE_WINS;
+	if (curses_initialized)
+	    update_tag_window();
+
+	game[gindex].gameover = 1;
+    }
+    else {
+	switch (checktest(b, kr, kc, okr, okc, 0)) {
+	    case 0:
+		break;
+	    case -1:
+		validate_move = 0;
+		switch_turn();
+		return 1;
+	    default:
+		if (checkmatetest(b, kr, kc, okr, okc)) {
+		    *p++ = '#';
+
+		    if (result == WHITEWINS) {
+			game[gindex].tag[TAG_RESULT].value = 
+			    Realloc(game[gindex].tag[TAG_RESULT].value, 4);
+			strncpy(game[gindex].tag[TAG_RESULT].value, "1-0", 4);
+			status.notify = NOTIFY_GAMEOVER_WWINS;
+		    }
+		    else if (result == BLACKWINS) {
+			game[gindex].tag[TAG_RESULT].value = 
+			    Realloc(game[gindex].tag[TAG_RESULT].value, 4);
+			strncpy(game[gindex].tag[TAG_RESULT].value, "0-1", 4);
+			status.notify = NOTIFY_GAMEOVER_BWINS;
+		    }
+
+		    if (curses_initialized)
+			update_tag_window();
+
+		    game[gindex].gameover = 1;
 		}
-		else if (result == BLACKWINS) {
-		    game[gindex].tag[TAG_RESULT].value = 
-			Realloc(game[gindex].tag[TAG_RESULT].value, 4);
-		    strncpy(game[gindex].tag[TAG_RESULT].value, "0-1", 4);
-		    status.notify = NOTIFY_CHECKMATE_BLACK_WINS;
+		else {
+		    *p++ = '+';
+
+		    if ((status.turn == WHITE && status.side == WHITE) ||
+			    (status.turn == BLACK && status.side == BLACK))
+			status.notify = NOTIFY_CHECK;
 		}
 
-		if (curses_initialized)
-		    update_tag_window();
-
-		game[gindex].gameover = 1;
-	    }
-	    else {
-		*p++ = '+';
-
-		if ((status.turn == WHITE && status.side == WHITE) ||
-			(status.turn == BLACK && status.side == BLACK))
-		    status.notify = NOTIFY_CHECK;
-	    }
-
-	    *p = '\0';
-	    break;
+		*p = '\0';
+		break;
+	}
     }
 
     switch_turn();

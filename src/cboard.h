@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.60 2003-02-03 18:13:39 bjk Exp $ */
+/* $Id: cboard.h,v 1.61 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -56,9 +56,10 @@ int quit;
 char **agony;
 
 const char *cmdlinehelp[] = {
-    "Usage: cboard [-hv] [-p <pgnfile>] [-i hostname[:port]] "
+    "Usage: cboard [-hv] [-pf <file>] [-i hostname[:port]] "
 	"[-u username[:passwd]]\n",
     "  -p  Load PGN file.\n",
+    "  -f  Load FEN file.\n",
     "  -i  ICS hostname and optional port.\n",
     "  -u  ICS username and optional password.\n",
     "  -v  Version information.\n",
@@ -94,7 +95,7 @@ pid_t init_chess_engine(void);
 int parse_pgn_file(BOARD, const char *);
 void update_history(void);
 void reset_history(void);
-TAG *edit_tags(TAG *, int, int);
+TAG *edit_tags(BOARD, TAG *, int, int);
 void parse_engine_output(BOARD, char *);
 char *real_filename(char *);
 void send_to_engine(const char *, ...);
@@ -132,5 +133,6 @@ void parse_history_move(BOARD, int);
 void switch_turn(void);
 char *str_etc(const char *, int, int);
 char *tilde_expand(char *);
+int parse_fen_file(BOARD, const char *);
 
 #endif

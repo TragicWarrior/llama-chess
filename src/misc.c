@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.11 2003-01-31 20:47:38 bjk Exp $ */
+/* $Id: misc.c,v 1.12 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,6 +22,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -205,4 +206,109 @@ char *str_etc(const char *str, int maxlen, int rev)
     }
 
     return buf;
+}
+
+char *compression_cmd(const char *filename, int expand)
+{
+    static char command[FILENAME_MAX];
+    int len = strlen(filename);
+
+    if (filename[len - 4] == '.' && filename[len - 3] == 'z' &&
+	    filename[len - 2] == 'i' && filename[len - 1] == 'p' &&
+	    filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "unzip -p %s 2>/dev/null", 
+		    filename);
+	else
+	    snprintf(command, sizeof(command), "zip -%i >%s 2>/dev/null",
+		    config.clevel, filename);
+
+	return command;
+    }
+    else if (filename[len - 3] == '.' && filename[len - 2] == 'g' &&
+	    filename[len - 1] == 'z' && filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "gzip -dc %s", filename);
+	else
+	    snprintf(command, sizeof(command), "gzip -c%i 1>%s", config.clevel,
+		    filename);
+
+	return command;
+    }
+    else if (filename[len - 2] == '.' && filename[len - 1] == 'Z' &&
+	    filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "uncompress -c %s", filename);
+	else
+	    snprintf(command, sizeof(command), "compress -c 1>%s", filename);
+
+	return command;
+    }
+    else if ((filename[len - 4] == '.' && filename[len - 3] == 'b' &&
+	    filename[len - 2] == 'z' && filename[len - 1] == '2' &&
+	    filename[len] == '\0') || (filename[len - 3] == '.' && 
+		filename[len - 2] == 'b' && filename[len - 1] == 'z' &&
+		filename[len] == '\0')) {
+	if (expand)
+	    snprintf(command, sizeof(command), "bzip2 -dc %s", filename);
+	else
+	    snprintf(command, sizeof(command), "bzip2 -zc%i 1>%s", 
+		    config.clevel, filename);
+
+	return command;
+    }
+
+    return NULL;
+}
+
+FILE *open_file(const char *filename, int *compressed)
+{
+    FILE *fp, *ofp;
+    static char tfile[FILENAME_MAX];
+    char *command = NULL;
+    char *p;
+    char buf[LINE_MAX];
+
+    if ((command = compression_cmd(filename, 1)) != NULL) {
+	snprintf(tfile, sizeof(tfile), "%s", config.tmpfile);
+
+	if ((ofp = fopen(tfile, "w+")) == NULL) {
+	    if (curses_initialized)
+		cmessage(ERROR, ANYKEY, "%s: %s", tfile, strerror(errno));
+	    else
+		warn("%s", tfile);
+
+	    return NULL;
+	}
+
+	if ((fp = popen(command, "r")) == NULL) {
+	    if (curses_initialized)
+		cmessage(ERROR, ANYKEY, "%s: %s", command, strerror(errno));
+	    else
+		warn("%s", command);
+
+	    fclose(ofp);
+	    return NULL;
+	}
+
+	while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+	    fprintf(ofp, "%s", p);
+
+	pclose(fp);
+	fclose(ofp);
+
+	filename = (char *)tfile;
+	*compressed = 1;
+    }
+
+    if ((fp = fopen(filename, "r")) == NULL) {
+	if (curses_initialized)
+	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	else
+	    warn("%s", filename);
+
+	return NULL;
+    }
+
+    return fp;
 }

@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.43 2003-02-01 17:49:03 bjk Exp $ */
+/* $Id: history.c,v 1.44 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -406,9 +406,8 @@ void add_to_history(HISTORY **h, int *n, int *t, const char *str)
 
 void parse_history_move(BOARD b, int index)
 {
-    int i;
+    int i = 0;
 
-    init_board(b);
     game[gindex].bcaptures = game[gindex].wcaptures = 0;
     status.turn = game[gindex].openingside;
     game[gindex].enpassant = 0;
@@ -419,6 +418,12 @@ void parse_history_move(BOARD b, int index)
     game[gindex].bk = 0;
     game[gindex].rkb = 0;
     game[gindex].rqb = 0;
+    game[gindex].ply = 0;
+
+    if (game[gindex].fentag == 0)
+	init_board(b);
+    else
+	parse_fen_line(b, game[gindex].tag[game[gindex].fentag].value);
 
     for (i = 0; i < index; i++) {
 	HISTORY h;
@@ -427,7 +432,7 @@ void parse_history_move(BOARD b, int index)
 	    break;
 	
 	if (parse_move_text(b, h.move)) {
-	    cmessage(NULL, ANYKEY, "Invalid move \"%s\"", h.move);
+	    cmessage(NULL, ANYKEY, "%s \"%s\"", E_INVALID_MOVE, h.move);
 	    break;
 	}
 
@@ -473,7 +478,6 @@ void history_next(BOARD b, int n)
 void init_history(BOARD b)
 {
     browse_history = 1;
-    game[gindex].active = 0;
     parse_history_move(b, game[gindex].hindex);
     update_status_window();
     return;

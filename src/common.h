@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.58 2003-02-03 17:28:45 bjk Exp $ */
+/* $Id: common.h,v 1.59 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -134,12 +134,13 @@ typedef struct history {
 typedef struct games {
     TAG *tag;
     int tindex;
+    int fentag;
     HISTORY *history;
     int hindex;
     int htotal;
-    int active;
     int sockfd;
     int openingside;
+    int ply;
     int wcaptures;
     int bcaptures;
     int delete;
@@ -212,13 +213,18 @@ struct {
     int tindex;
 } config;
 
+enum {
+    PGN_FILE, FEN_FILE, EPD_FILE
+};
+
 /* Chess engine file descriptors. 0 = from, 1 = to. */
 int enginefd[2];
 
 int validate_move;
 int newgameinit;
 int curses_initialized;
-char pgnfile[FILENAME_MAX];
+char loadfile[FILENAME_MAX];
+int filetype;
 int gindex, gtotal; /* Current game and total number of games. */
 int browse_history; /* 1 if in history mode. */
 int engine_initialized;

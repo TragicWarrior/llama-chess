@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.30 2003-02-01 20:46:11 bjk Exp $ */
+/* $Id: pgn.h,v 1.31 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -50,6 +50,7 @@ const char *pgn_edit_help[] = {
     "  a-zA-Z0-9 - jump to entry",
     "      ENTER - edit selected entry",
     "     CTRL-a - add an entry",
+    "     CTRL-f - add FEN tag from current position",
     "     CTRL-r - remove selected entry",
     "     ESCAPE - quit",
     NULL
@@ -109,5 +110,10 @@ int parse_move_text(BOARD, char *);
 char *a2a4tosan(BOARD, char *);
 int integer_len(int);
 void switch_turn(void);
+FILE *open_file(const char *, int *);
+char *compression_cmd(const char *, int);
+int parse_fen_line(BOARD, char *);
+char *board_to_fen(BOARD, GAME);
+void copy_board(BOARD, BOARD);
 
 #endif

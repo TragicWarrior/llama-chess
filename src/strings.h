@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.22 2003-02-03 18:13:39 bjk Exp $ */
+/* $Id: strings.h,v 1.23 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -64,7 +64,8 @@
 #define E_DUPLICATE_TAG	"Could not add duplicate tag"
 #define E_DELETE_GAME	"Cannot delete last game."
 #define E_A2A4_PARSE	"Parse error. Probably a bug."
-#define E_PGN_PARSE	"Parse error."
+#define E_PGN_PARSE	"PGN parse error."
+#define E_FEN_PARSE	"FEN parse error."
 #define E_BROKEN_PIPE	"Broken pipe. Quitting."
 #define E_NOTADIR	"Not a directory."
 #define E_NOTAREGFILE	"Not a regular file."
@@ -80,8 +81,9 @@
 #define NOTIFY_SAVE_ABORTED	"Save game aborted."
 #define NOTIFY_SAVE_FAILED	"Save game failed."
 #define NOTIFY_CHECK		"Check!"
-#define NOTIFY_CHECKMATE_WHITE_WINS	"Game over! White wins."
-#define NOTIFY_CHECKMATE_BLACK_WINS	"Game over! Black wins."
+#define NOTIFY_GAMEOVER_WWINS	"Game over! White wins."
+#define NOTIFY_GAMEOVER_BWINS	"Game over! Black wins."
+#define NOTIFY_GAMEOVER_DRAW	"Game over! Draw."
 #define NOTIFY_ENPASSANT	"En Passant"
 #define NOTIFY_PROMOTION	"Promotion!"
 #define NOTIFY_BCASTLEQ		"Black castles queen side"

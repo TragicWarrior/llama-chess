@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.83 2003-02-03 18:13:39 bjk Exp $ */
+/* $Id: pgn.c,v 1.84 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -44,6 +44,18 @@
 #include "colors.h"
 #include "pgn.h"
 
+static int find_tag(GAME g, const char *name)
+{
+    int t;
+
+    for (t = 0; t < g.tindex; t++) {
+	if (strcasecmp(g.tag[t].name, name) == 0)
+	    return t;
+    }
+
+    return -1;
+}
+
 static int tag_compare(const void *s1, const void *s2)
 {
     const TAG *ss1 = s1;
@@ -58,59 +70,6 @@ static void sort_tags(GAME g)
 
     qsort(t, g.tindex - 7, sizeof(TAG), tag_compare);
     return;
-}
-
-char *compression_cmd(const char *filename, int expand)
-{
-    static char command[FILENAME_MAX];
-    int len = strlen(filename);
-
-    if (filename[len - 4] == '.' && filename[len - 3] == 'z' &&
-	    filename[len - 2] == 'i' && filename[len - 1] == 'p' &&
-	    filename[len] == '\0') {
-	if (expand)
-	    snprintf(command, sizeof(command), "unzip -p %s 2>/dev/null", 
-		    filename);
-	else
-	    snprintf(command, sizeof(command), "zip -%i >%s 2>/dev/null",
-		    config.clevel, filename);
-
-	return command;
-    }
-    else if (filename[len - 3] == '.' && filename[len - 2] == 'g' &&
-	    filename[len - 1] == 'z' && filename[len] == '\0') {
-	if (expand)
-	    snprintf(command, sizeof(command), "gzip -dc %s", filename);
-	else
-	    snprintf(command, sizeof(command), "gzip -c%i 1>%s", config.clevel,
-		    filename);
-
-	return command;
-    }
-    else if (filename[len - 2] == '.' && filename[len - 1] == 'Z' &&
-	    filename[len] == '\0') {
-	if (expand)
-	    snprintf(command, sizeof(command), "uncompress -c %s", filename);
-	else
-	    snprintf(command, sizeof(command), "compress -c 1>%s", filename);
-
-	return command;
-    }
-    else if ((filename[len - 4] == '.' && filename[len - 3] == 'b' &&
-	    filename[len - 2] == 'z' && filename[len - 1] == '2' &&
-	    filename[len] == '\0') || (filename[len - 3] == '.' && 
-		filename[len - 2] == 'b' && filename[len - 1] == 'z' &&
-		filename[len] == '\0')) {
-	if (expand)
-	    snprintf(command, sizeof(command), "bzip2 -dc %s", filename);
-	else
-	    snprintf(command, sizeof(command), "bzip2 -zc%i 1>%s", 
-		    config.clevel, filename);
-
-	return command;
-    }
-
-    return NULL;
 }
 
 int end_of_game(const char *str)
@@ -304,7 +263,7 @@ static void invalid_move(const char *move)
 	cmessage(NULL, ANYKEY, "%s \"%s\" (#%i)", E_INVALID_MOVE, move,
 		gindex + 1);
     else
-	warnx("%s: %s \"%s\" (#%i)", pgnfile, E_INVALID_MOVE, move,
+	warnx("%s: %s \"%s\" (#%i)", loadfile, E_INVALID_MOVE, move,
 		gindex + 1);
 
     return;
@@ -534,16 +493,11 @@ static void move_annotation(FILE *fp, int terminator)
 
 static void pgn_tag(FILE *fp)
 {
-    char *name, *n = name;
-    char *value, *v = value;
+    char name[LINE_MAX], *n = name;
+    char value[LINE_MAX], *v = value;
     int c, i = 0;
     int quoted_string = 0;
     int lastchar = 0;
-
-    name = Malloc(MAX_PGN_LINE_LEN);
-    n = name;
-    value = Malloc(MAX_PGN_LINE_LEN);
-    v = value;
 
     skip_leading_space(fp);
 
@@ -589,11 +543,8 @@ static void pgn_tag(FILE *fp)
 	value[1] = '\0';
     }
 
-    add_tag(&game[gindex].tag, &game[gindex].tindex, name, 
-	    remove_tag_escapes(value));
-
-    free(name);
-    free(value);
+    strncpy(value, remove_tag_escapes(value), sizeof(value));
+    add_tag(&game[gindex].tag, &game[gindex].tindex, name, value);
 
     skip_leading_space(fp);
     return;
@@ -695,15 +646,15 @@ static void rav_text(FILE *fp, int which)
 
 int parse_pgn_file(BOARD b, const char *filename)
 {
-    FILE *fp, *ofp;
+    FILE *fp;
     char buf[LINE_MAX] = {0}, *p = buf;
-    char tfile[FILENAME_MAX];
-    char *command = NULL;
+    int compressed = 0;
     int c;
     int tag_section = 0;
-    int row, col;
     int parse_error = 0;
     int nulltags = 1;
+    int n, i;
+    BOARD tmpboard;
 
     if (!*filename) {
 	reset_game_data();
@@ -721,45 +672,8 @@ int parse_pgn_file(BOARD b, const char *filename)
 	return 1;
     }
 
-    if ((command = compression_cmd(filename, 1)) != NULL) {
-	snprintf(tfile, sizeof(tfile), "%s", config.tmpfile);
-
-	if ((ofp = fopen(tfile, "w+")) == NULL) {
-	    if (curses_initialized)
-		cmessage(ERROR, ANYKEY, "%s: %s", tfile, strerror(errno));
-	    else
-		warn("%s", tfile);
-
-	    return 1;
-	}
-
-	if ((fp = popen(command, "r")) == NULL) {
-	    if (curses_initialized)
-		cmessage(ERROR, ANYKEY, "%s: %s", command, strerror(errno));
-	    else
-		warn("%s", command);
-
-	    fclose(ofp);
-	    return 1;
-	}
-
-	while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
-	    fprintf(ofp, "%s", p);
-
-	pclose(fp);
-	fclose(ofp);
-
-	filename = (char *)tfile;
-    }
-
-    if ((fp = fopen(filename, "r")) == NULL) {
-	if (curses_initialized)
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	else
-	    warn("%s", filename);
-
+    if ((fp = open_file(filename, &compressed)) == NULL)
 	return 1;
-    }
 
     reset_game_data();
 
@@ -889,14 +803,26 @@ int parse_pgn_file(BOARD b, const char *filename)
     sort_tags(game[gindex]);
     gtotal = gindex + 1;
 
-    for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++)
-	    bcopy(&b, &pgnboard, sizeof(BOARD));
+    n = find_tag(game[gindex], "Setup");
+    i = find_tag(game[gindex], "FEN");
+
+    if ((n > -1 && i > -1 && atoi(game[gindex].tag[n].value) == 1) 
+	    || (i != -1 && n == -1)) {
+	if ((n = parse_fen_line(tmpboard, game[gindex].tag[i].value)) == -1)
+	    cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
+	else {
+	    copy_board(tmpboard, pgnboard);
+	    game[gindex].fentag = i;
+	    game[gindex].hindex = (n * 2 > game[gindex].htotal - 1) ?
+		game[gindex].hindex : n * 2;
+	}
     }
 
+    copy_board(pgnboard, b);
+
 done:
-    if (command)
-	unlink(filename);
+    if (compressed)
+	unlink(config.tmpfile);
 
     //exit(0);
     return 0;
@@ -979,8 +905,8 @@ static void dumpgame(FILE *fp, GAME g, int index, int isfifo)
     int n, len = 0;
     int annotated = 0;
     int x = 0;
-    int oldtotal = g.htotal;
     char buf[80];
+    int oldtotal = g.htotal;
 
     if (!isfifo && g.hindex != g.htotal) {
 	snprintf(buf, sizeof(buf), "%s (#%i)", GAME_SAVE_FROM_HISTORY_TITLE,
@@ -1228,7 +1154,7 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	fclose(fp);
 
     if (!isfifo && saveindex == -1)
-	strncpy(pgnfile, filename, sizeof(pgnfile));
+	strncpy(loadfile, filename, sizeof(loadfile));
 
     return 0;
 }
@@ -1444,7 +1370,7 @@ void free_tag_data(TAG *data, int index)
     return;
 }
 
-TAG *edit_tags(TAG *old, int maxtags, int edit)
+TAG *edit_tags(BOARD b, TAG *old, int maxtags, int edit)
 {
     TAG *data = NULL;
     struct tm tp;
@@ -1607,6 +1533,16 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 		    break;
 		case KEY_END:
 		    menu_driver(menu, REQ_LAST_ITEM);
+		    break;
+		case CTRL('F'):
+		    if (!edit)
+			break;
+
+		    add_tag(&data, &data_index, "FEN",
+			    board_to_fen(b, game[gindex]));
+
+		    selected = data_index - 1;
+		    goto gotitem;
 		    break;
 		case KEY_NPAGE:
 		case CTRL('N'):

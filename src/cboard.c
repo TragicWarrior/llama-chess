@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.90 2003-02-03 18:13:38 bjk Exp $ */
+/* $Id: cboard.c,v 1.91 2003-02-04 18:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -241,8 +241,11 @@ void copy_board(BOARD s, BOARD d)
     int row, col;
 
     for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++)
+	for (col = 0; col < 8; col++) {
 	    d[row][col].icon = s[row][col].icon;
+	    d[row][col].valid = s[row][col].valid;
+	    d[row][col].movecount = s[row][col].movecount;
+	}
     }
 
     return;
@@ -341,7 +344,7 @@ void update_status_window()
     int w = STATUS_WIDTH - 10;
 
     mvwprintw(statusw, 2, 1, "  File: %-*s", w,
-	    (pgnfile[0]) ? str_etc(pgnfile, w, 1) : UNAVAILABLE);
+	    (loadfile[0]) ? str_etc(loadfile, w, 1) : UNAVAILABLE);
     snprintf(buf, sizeof(buf), "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
 	    (game[gindex].delete) ? GAME_NOTSAVED : "");
     mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
@@ -571,23 +574,6 @@ void free_game_data()
     return;
 }
 
-static void set_active_game(int index)
-{
-    int i;
-
-    if (index >= gtotal)
-	return;
-
-    for (i = 0; i < gtotal; i++) {
-	if (game[i].active == index)
-	    game[i].active = 1;
-	else
-	    game[i].active = 0;
-    }
-
-    return;
-}
-
 static void delete_game(int which)
 {
     GAME *g = NULL;
@@ -624,7 +610,6 @@ static void delete_game(int which)
     else
 	gindex = gtotal - 1;
 
-    set_active_game(gindex);
     return;
 }
 
@@ -837,7 +822,7 @@ static void edit_save_tags(int index)
     int i;
     TAG *t;
 
-    if ((t = edit_tags(game[index].tag, game[index].tindex, 1)) == NULL)
+    if ((t = edit_tags(board, game[index].tag, game[index].tindex, 1)) == NULL)
 	return;
 
     game[index].tindex = 0;
@@ -953,15 +938,24 @@ void game_loop()
     update_tag_window();
     update_all();
 
-    if (parse_pgn_file(board, pgnfile))
-	pgnfile[0] = '\0';
+    switch (filetype) {
+	case PGN_FILE:
+	    if (parse_pgn_file(board, loadfile))
+		loadfile[0] = '\0';
+	    break;
+	case FEN_FILE:
+	    if (parse_fen_file(board, loadfile))
+		loadfile[0] = '\0';
+	    break;
+	case EPD_FILE:
+	default:
+	    break;
+    }
 
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
 
-    set_active_game(gtotal - 1);
-
-    if (pgnfile[0])
+    if (loadfile[0])
 	init_history(board);
 
     status.notify = GAME_HELP_PROMPT;
@@ -1351,7 +1345,7 @@ void game_loop()
 		update_tag_window();
 		break;
 	    case 'i':
-		edit_tags(game[gindex].tag, game[gindex].tindex, 0);
+		edit_tags(board, game[gindex].tag, game[gindex].tindex, 0);
 		break;
 	    case 'g':
 		if (browse_history || status.engine == ENGINE_THINKING)
@@ -1403,7 +1397,6 @@ void game_loop()
 		    pushkey = 0;
 		    oldhistorytotal = game[gindex].htotal;
 		    game[gindex].htotal = game[gindex].hindex;
-		    set_active_game(gindex);
 		    browse_history = 0;
 		    status.engine = ENGINE_READY;
 
@@ -1438,7 +1431,7 @@ void game_loop()
 		    break;
 
 		gindex = gtotal - 1;
-		strncpy(pgnfile, tmp, sizeof(pgnfile));
+		strncpy(loadfile, tmp, sizeof(loadfile));
 		init_history(board);
 		update_all();
 		update_tag_window();
@@ -1462,7 +1455,7 @@ void game_loop()
 		    }
 		}
 
-		if ((tmp = get_input(GAME_SAVE_TITLE, pgnfile, 1, 1,
+		if ((tmp = get_input(GAME_SAVE_TITLE, loadfile, 1, 1,
 				BROWSER_PROMPT, browse_directory, NULL, 
 				'\t', -1)) == NULL) {
 		    status.notify = NOTIFY_SAVE_ABORTED;
@@ -1504,8 +1497,8 @@ void game_loop()
 		}
 		else {
 		    reset_history();
-		    pgnfile[0] = '\0';
-		    parse_pgn_file(board, pgnfile);
+		    loadfile[0] = '\0';
+		    parse_pgn_file(board, loadfile);
 		}
 
 		game[gindex].wcaptures = game[gindex].bcaptures = 0;
@@ -1846,6 +1839,8 @@ static void set_defaults()
 {
     struct stat st;
 
+    filetype = PGN_FILE;
+
     fancy_results[0].pgn = "1-0";
     fancy_results[1].pgn = "0-1";
     fancy_results[2].pgn = "1/2-1/2";
@@ -1905,7 +1900,45 @@ int main(int argc, char *argv[])
     char buf[FILENAME_MAX];
     char datadir[FILENAME_MAX];
 
-    while ((opt = getopt(argc, argv, "hp:vu:i:")) != -1) {
+    if ((config.pwd = getpwuid(getuid())) == NULL)
+	err(EXIT_FAILURE, "getpwuid()");
+
+    snprintf(datadir, sizeof(datadir), "%s/.cboard", config.pwd->pw_dir);
+    snprintf(buf, sizeof(buf), "%s/cc.data", datadir);
+    config.ccfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/nag.data", datadir);
+    config.nagfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/agony.data", datadir);
+    config.agonyfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/config", datadir);
+    config.configfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/fifo", datadir);
+    config.fifo = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/tmpfile", datadir);
+    config.tmpfile = strdup(buf);
+
+    if (stat(datadir, &st) == -1) {
+	if (errno == ENOENT) {
+	    if (mkdir(datadir, 0755) == -1)
+		err(EXIT_FAILURE, "%s", datadir);
+	}
+	else
+	    err(EXIT_FAILURE, "%s", datadir);
+
+	stat(datadir, &st);
+    }
+
+    if (!S_ISDIR(st.st_mode))
+	errx(EXIT_FAILURE, "%s: %s", datadir, E_NOTADIR);
+
+    if (access(config.fifo, R_OK) == -1 && errno == ENOENT) {
+	if (mkfifo(config.fifo, 0600) == -1)
+	    err(EXIT_FAILURE, "%s", config.fifo);
+    }
+
+    set_defaults();
+
+    while ((opt = getopt(argc, argv, "hp:vu:e:f:i:")) != -1) {
 	char *tmp;
 	int i;
 
@@ -1951,51 +1984,22 @@ int main(int argc, char *argv[])
 			COPYRIGHT);
 		exit(EXIT_SUCCESS);
 	    case 'p':
-		strncpy(pgnfile, optarg, sizeof(pgnfile));
+		filetype = PGN_FILE;
+		strncpy(loadfile, optarg, sizeof(loadfile));
+		break;
+	    case 'f':
+		filetype = FEN_FILE;
+		strncpy(loadfile, optarg, sizeof(loadfile));
+		break;
+	    case 'e':
+		filetype = EPD_FILE;
+		strncpy(loadfile, optarg, sizeof(loadfile));
 		break;
 	    case 'h':
 	    default:
 		usage(argv[0]);
 	}
     }
-
-    if ((config.pwd = getpwuid(getuid())) == NULL)
-	err(EXIT_FAILURE, "getpwuid()");
-
-    snprintf(datadir, sizeof(datadir), "%s/.cboard", config.pwd->pw_dir);
-    snprintf(buf, sizeof(buf), "%s/cc.data", datadir);
-    config.ccfile = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/nag.data", datadir);
-    config.nagfile = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/agony.data", datadir);
-    config.agonyfile = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/config", datadir);
-    config.configfile = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/fifo", datadir);
-    config.fifo = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/tmpfile", datadir);
-    config.tmpfile = strdup(buf);
-
-    if (stat(datadir, &st) == -1) {
-	if (errno == ENOENT) {
-	    if (mkdir(datadir, 0755) == -1)
-		err(EXIT_FAILURE, "%s", datadir);
-	}
-	else
-	    err(EXIT_FAILURE, "%s", datadir);
-
-	stat(datadir, &st);
-    }
-
-    if (!S_ISDIR(st.st_mode))
-	errx(EXIT_FAILURE, "%s: %s", datadir, E_NOTADIR);
-
-    if (access(config.fifo, R_OK) == -1 && errno == ENOENT) {
-	if (mkfifo(config.fifo, 0600) == -1)
-	    err(EXIT_FAILURE, "%s", config.fifo);
-    }
-
-    set_defaults();
 
     if (access(config.configfile, R_OK) == 0)
 	parse_rcfile(config.configfile);
