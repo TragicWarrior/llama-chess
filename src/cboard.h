@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.14 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: cboard.h,v 1.15 2002-12-12 19:16:51 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -41,7 +41,7 @@
 #define STATUS_TITLE	"Game Status"
 #define DATA_TITLE	"Game Information"
 #define MAIN_HELP	"Command Keys"
-#define MAIN_HELP_PROMPT	"Type '^G' for available command keys"
+#define MAIN_HELP_PROMPT	"Type CTRL-g for available command keys"
 #define ANNOTATE_HISTORY	"Editing Annotation for"
 
 /* The order must match the BOOK_... enumeration on common.h. */
@@ -56,20 +56,23 @@ struct {
 } selected_piece;
 
 const char *mainhelp[] = {
-    "   UP/j - cursor up              N - new game",
-    " DOWN/k - cursor down            R - refresh screen",
-    " LEFT/l - cursor left/reverse    c - send a command to the game engine",
-    " RIGHT/;- cursor right/forward   v - version information",
-    "                                 q - quit",
-    "  SPACE - select piece           w - switch sides",
-    "  ENTER - move selected piece    s - save game in PGN format",
-    "    ESC - cancel selected piece  r - resume a PGN game",
-    "                                 u - take back previous move",
-    "      > - next game              h - toggle viewing of movement history",
-    "      < - previous game          g - force engine to make next move",
-    "                                 b - cycle through book modes",
-    "                                 i - PGN information",
-    "                                 a - annotate the previous move",
+    "   UP/j - cursor up               R - refresh screen",
+    " DOWN/k - cursor down             b - cycle through book modes",
+    " LEFT/l - cursor left/reverse     c - send a command to the game engine",
+    "RIGHT/; - cursor right/forward    w - switch sides",
+    "                                  u - undo previous move",
+    "  SPACE - select piece            g - force engine to make next move",
+    "  ENTER - commit selected piece   h - toggle history mode",
+    "    ESC - cancel selected piece   a - annotate previous move",
+    " ",
+    "      N - new game",
+    "      r - resume a saved game",
+    "      i - show PGN game tags",
+    "      s - save game",
+    "      > - next game or round",
+    "      < - previous game or round",
+    " ",
+    "      q - quit",
     NULL
 };
 

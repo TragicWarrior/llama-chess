@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.20 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: cboard.c,v 1.21 2002-12-12 19:16:51 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -366,6 +366,8 @@ void game_loop()
     else
 	send_to_engine("show board\n");
 
+    flushinp();
+
     while (!quit) {
 	int c = 0;
 	fd_set fds;
@@ -448,12 +450,6 @@ void game_loop()
 		    break;
 
 		edit_pgn_data(0);
-		break;
-	    case 'v':
-		/* FIXME */
-		message(NULL, ANYKEY, "%s\n%s\n\nTerminal supports %i colors.\n"
-			"Using %s\n", PACKAGE_STRING, COPYRIGHT, COLORS,
-			curses_version());
 		break;
 	    case 'g':
 		if (browse_history || status.engine == ENGINE_THINKING)
@@ -560,7 +556,7 @@ void game_loop()
 		update_data();
 		update_status();
 		break;
-	    case '':
+	    case CTRL('G'):
 		help(MAIN_HELP, mainhelp);
 		break;
 	    case 'N':
@@ -588,7 +584,7 @@ void game_loop()
 		if (status.engine == ENGINE_THINKING)
 		    break;
 
-		if ((tmp = get_input_str(ENGINE_COMMAND_PROMPT, NULL)) 
+		if ((tmp = get_input_str_clear(ENGINE_COMMAND_PROMPT, NULL)) 
 			!= NULL) {
 		    send_to_engine("%s\n", tmp);
 		}
@@ -679,7 +675,7 @@ void game_loop()
 		selected_x = cursor_x;
 		selected_y = cursor_y;
 		break;
-	    case KEY_RETURN:
+	    case '\n':
 		if (browse_history)
 		    break;
 
@@ -744,6 +740,7 @@ void catch_signal(int which)
 int main(int argc, char *argv[])
 {
     int opt;
+    int i;
 
     /* FIX THIS STUPID THING */
     printf("GNUChess is modified in main() to setlinebuf(). This fixes the "
@@ -802,7 +799,6 @@ int main(int argc, char *argv[])
     curs_set(0);
     cbreak();
     noecho();
-    nonl();
 
     draw_window_title(dataw, DATA_TITLE, DATA_WIDTH);
     draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH);
@@ -811,11 +807,20 @@ int main(int argc, char *argv[])
     game_loop();
     send_to_engine("quit\n");
     endwin();
+    del_panel(datap);
     del_panel(boardp);
     del_panel(statusp);
+    del_panel(historyp);
+    delwin(dataw);
     delwin(boardw);
     delwin(statusw);
-    del_panel(historyp);
     delwin(historyw);
+
+    for (i = 0; i < gtotal; i++) {
+	free(game[i].pgn);
+	free(game[i].history);
+    }
+
+    free(game);
     exit(EXIT_SUCCESS);
 }

@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.10 2002-12-12 15:33:23 bjk Exp $ */
+/* $Id: input.c,v 1.11 2002-12-12 19:16:51 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -146,6 +146,7 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     field_opts_off(fields[0], O_BLANK|O_AUTOSKIP);
     fields[1] = NULL;
     form = new_form(fields);
+    form_opts_off(form, O_BS_OVERLOAD);
 
     scale_form(form, &y, &x);
 
@@ -171,28 +172,30 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 	doupdate();
 
 	c = wgetch(win);
-	c &= A_CHARTEXT;
 
 	switch (c) {
-	    case '':
+	    case CTRL('X'):
+		form_driver(form, REQ_DEL_WORD);
+		break;
+	    case CTRL('B'):
 		form_driver(form, REQ_PREV_WORD);
 		break;
-	    case '':
+	    case CTRL('W'):
 		form_driver(form, REQ_NEXT_WORD);
 		break;
-	    case '':
+	    case CTRL('A'):
 		form_driver(form, REQ_BEG_LINE);
 		break;
-	    case '':
+	    case CTRL('E'):
 		form_driver(form, REQ_END_LINE);
 		break;
-	    case '':
+	    case CTRL('K'):
 		form_driver(form, REQ_CLR_EOL);
 		break;
-	    case '':
+	    case CTRL('U'):
 		form_driver(form, REQ_CLR_FIELD);
 		break;
-	    case '':
+	    case CTRL('G'):
 		help(INPUT_HELP, inputhelp);
 		break;
 	    case KEY_LEFT:
@@ -213,11 +216,13 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 		break;
 	    case '\n':
 		goto done;
+		break;
 	    case KEY_ESCAPE:
 		quit = 1;
 		goto done;
+		break;
 	    default:
-		form_driver(form, c);
+		form_driver(form, (c & A_CHARTEXT));
 		form_driver(form, REQ_VALIDATION);
 		break;
 	}

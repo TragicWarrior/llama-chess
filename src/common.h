@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.12 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: common.h,v 1.13 2002-12-12 19:16:51 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -49,9 +49,8 @@ FILE *debugfp;
 #define MAX_PGN_LINE_LEN	255
 #define MAX_MOVE_LEN		7 /* As defined by SAN. */
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
-#define KEY_ESCAPE		'\033'
-#define KEY_RETURN		'\015'
-#define KEY_TAB			'\011'
+#define CTRL(x)			((x) & 0x1f)
+#define KEY_ESCAPE		CTRL('[')
 #define ANYKEY			"[ press any key to continue ]"
 #define YESNO			"[ Yes or No ]"
 #define ERROR			"[ ERROR ]"

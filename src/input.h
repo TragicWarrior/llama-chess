@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.4 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: input.h,v 1.5 2002-12-12 19:16:52 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -17,10 +17,20 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #define INPUT_WIDTH	((COLS > 60) ? 60 : COLS - 2)
-#define INPUT_HELP_PROMPT	"Type ^G for available line editing keys"
+#define INPUT_HELP_PROMPT	"Type CTRL-g for available line editing keys"
 #define INPUT_HELP	"Line Editing Keys"
 
 const char *inputhelp[] = {
-    "blah",
+    "UP/DOWN/LEFT/RIGHT - position cursor",
+    "            CTRL-A - move cursor to the beginning of line",
+    "            CTRL-E - move cursor to the end of line",
+    "            CTRL-B - move cursor to previous word",
+    "            CTRL-W - move cursor to next word",
+    "            CTRL-X - delete word under cursor",
+    "            CTRL-K - delete from cursor to end of line",
+    "            CTRL-U - clear entire input field",
+    "         BACKSPACE - delete previous character",
+    "            ESCAPE - quit without changes",
+    "             ENTER - quit with changes",
     NULL
 };
