@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.52 2003-01-29 00:53:26 bjk Exp $ */
+/* $Id: cboard.h,v 1.53 2003-01-29 17:47:15 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -70,7 +70,7 @@ const char *mainhelp[] = {
     "    N - new game from scratch   i - view PGN roster tags",
     "    > - next game or round*     j - jump to move number*",
     "    < - previous game or round*",
-    "    J - jump to game or round*  f - find move text expression*",
+    "    J - jump to game or round*  / - find move text expression*",
     "    d - toggle game delete flag } - find next move text expression*",
     "    D - delete flagged games    { - find previous move text expression*",
     " ",

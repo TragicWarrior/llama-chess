@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.73 2003-01-29 17:03:41 bjk Exp $ */
+/* $Id: cboard.c,v 1.74 2003-01-29 17:47:14 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -758,25 +758,33 @@ done:
 }
 */
 
-static int find_move_exp(const char *str, int which, int count)
+static int find_move_exp(const char *str, int init, int which, int count)
 {
     int i;
     int ret;
-    regex_t r;
+    static regex_t r;
+    static int firstrun = 1;
     char errbuf[255];
     int incr;
     int found;
 
-    if ((ret = regcomp(&r, str, REG_EXTENDED|REG_NOSUB)) != 0) {
-	regerror(ret, &r, errbuf, sizeof(errbuf));
-	message(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
-	return -1;
+    if (init) {
+	if (!firstrun)
+	    regfree(&r);
+
+	if ((ret = regcomp(&r, str, REG_EXTENDED|REG_NOSUB)) != 0) {
+	    regerror(ret, &r, errbuf, sizeof(errbuf));
+	    message(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	    return -1;
+	}
+
+	firstrun = 1;
     }
 
     incr = (which == 0) ? -(1) : 1;
 
-    for (i = game[gindex].hindex + incr, found = 0; ; i += incr) {
-	if (i == game[gindex].hindex)
+    for (i = game[gindex].hindex + incr - 1, found = 0; ; i += incr) {
+	if (i == game[gindex].hindex - 1)
 	    break;
 
 	if (i > game[gindex].htotal)
@@ -788,7 +796,6 @@ static int find_move_exp(const char *str, int which, int count)
 
 	if (ret == 0) {
 	    if (count == ++found) {
-		regfree(&r);
 		return i + 1;
 	    }
 	}
@@ -801,7 +808,6 @@ static int find_move_exp(const char *str, int which, int count)
 	}
     }
 
-    regfree(&r);
     return -1;
 }
 
@@ -928,17 +934,18 @@ void game_loop()
 	    case '{':
 	    case '}':
 	    case '/':
-		/* FIXME the result index should be in the previous move
-		 * position. */
+		n = 0;
+
 	        if (!*regexp || c == '/') {
 		    if ((tmp = get_input(FIND_REGEXP, regexp, 1, 1, NULL, 
 				    NULL, NULL, 0, -1)) == NULL)
 			break;
 
 		    strncpy(regexp, tmp, sizeof(regexp));
+		    n = 1;
 		}
 
-		if ((n = find_move_exp(regexp, (c == '{') ? 0 : 1,
+		if ((n = find_move_exp(regexp, n, (c == '{') ? 0 : 1,
 				(count) ? count : 1)) == -1)
 		    break;
 
