@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.4 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: strings.h,v 1.5 2003-01-09 22:43:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -43,6 +43,7 @@
 #define E_INITCURSES	"Could not initialize curses."
 #define E_SAVE_NOMOVES	"Refusing to save null move game"
 #define E_SAVE_NOGMOVES	"No games contain any moves. Aborting save."
+#define E_SAVE_COMPRESS	"Cannot append to compressed file."
 
 #define NOTIFY_SAVED	"Game saved."
 

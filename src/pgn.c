@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.54 2003-01-09 22:30:54 bjk Exp $ */
+/* $Id: pgn.c,v 1.55 2003-01-09 22:43:03 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -927,6 +927,9 @@ int save_pgn(const char *filename, int isfifo)
     if (!isfifo && !cgame)
 	strncpy(pgnfile, filename, sizeof(pgnfile));
 
+    if (!isfifo)
+	command = compression_cmd(filename, 0);
+
     /* This is a hack to resume an existing game when more than one game is
      * available. Also resuming a saved game and a game from history.
      */
@@ -939,6 +942,11 @@ int save_pgn(const char *filename, int isfifo)
 
 	    switch (c) {
 		case 'a':
+		    if (command) {
+			message(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
+			return 1;
+		    }
+
 		    mode = "a";
 		    break;
 		case 'o':
@@ -952,8 +960,7 @@ int save_pgn(const char *filename, int isfifo)
 	    mode = "a";
     }
 
-    /* FIXME append. */
-    if (!isfifo && (command = compression_cmd(filename, 0)) != NULL) {
+    if (command) {
 	if ((fp = popen(command, "w")) == NULL) {
 	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
 	    return 1;
