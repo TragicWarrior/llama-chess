@@ -1,3 +1,11 @@
+2002-12-05 Thursday 17:06  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.4), cboard.h (1.2):
+	
+	Coordinate fix.
+	
+	Added window border color.
+
 2002-12-05 Thursday 16:45  Ben Kibbey <bjk@arbornet.org>
 
 	* src/engine.c (1.3):
