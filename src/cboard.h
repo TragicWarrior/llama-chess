@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.63 2003-02-05 16:21:44 bjk Exp $ */
+/* $Id: cboard.h,v 1.64 2003-02-05 16:29:02 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -131,7 +131,8 @@ const char *playhelp[] = {
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
-    "                 + - set engine depth level *",
+    "                 + - increase engine depth level *",
+    "                 _ - decrease engine depth level *",
     "                 b - cycle through book modes",
     "                 w - switch playing side",
     "                 u - undo previous move *",
