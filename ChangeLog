@@ -1,3 +1,18 @@
+2002-12-13 Friday 16:55  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: Makefile.am (1.5), cboard.c (1.23), cboard.h (1.16),
+	common.h (1.14), engine.c (1.8), engine.h (1.5), history.c (1.5),
+	history.h (1.3), pgn.c (1.19), pgn.h (1.9), rcfile.c (1.1),
+	rcfile.h (1.1):
+	
+	Added a config structure. This will hold user configurable data to
+	be read from an rcfile.
+	
+	Dont depend on the output of 'show board' for board information.
+	Everything is based around the move history.
+	
+	No need for patched chess engine anymore. We now use PTY's.
+
 2002-12-12 Thursday 14:21  Ben Kibbey <bjk@arbornet.org>
 
 	* src/cboard.c (1.22):
