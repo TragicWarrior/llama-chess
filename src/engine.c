@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.12 2002-12-17 18:42:53 bjk Exp $ */
+/* $Id: engine.c,v 1.13 2002-12-17 19:09:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -273,7 +273,6 @@ void parse_engine_output(char *str)
 	/* This is needed when leaving history mode and the turn is now black
 	 * since we just went. This cancels 'manual'.
 	 */
-	/* FIXME this relies on the fifo stuff. */
 	if (cancel_manual_mode) {
 	    SEND_TO_ENGINE("go\n");
 	    cancel_manual_mode = 0;
