@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.4 2002-12-17 14:24:14 bjk Exp $ */
+/* $Id: rcfile.c,v 1.5 2002-12-17 15:33:44 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -41,8 +41,9 @@ void parse_rcfile(const char *filename)
 	char var[30], val[50];
 
 	lines++;
+	line = trim(line);
 
-	if (line[0] == '#')
+	if (!line[0] || line[0] == '#')
 	    continue;
 
 	if (sscanf(line, "%s %s", var, val) != 2)
