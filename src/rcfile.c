@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.2 2002-12-16 18:48:07 bjk Exp $ */
+/* $Id: rcfile.c,v 1.3 2002-12-17 14:10:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -36,7 +36,6 @@ void parse_rcfile(const char *filename)
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
 
-
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
 	char var[30], val[50];
 
@@ -72,6 +71,13 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.history_jump = atoi(val);
+	}
+	else if (strcmp(var, "depth") == 0) {
+	    if (!isinteger(val))
+		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
+			lines);
+
+	    config.engine_depth = atoi(val);
 	}
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
