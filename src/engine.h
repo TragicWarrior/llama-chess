@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.17 2003-02-01 17:49:03 bjk Exp $ */
+/* $Id: engine.h,v 1.18 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,8 +18,6 @@
 */
 #ifndef ENGINE_H
 #define ENGINE_H
-#define FIRST_PTY_LETTER	'p'
-#define LAST_PTY_LETTER		'z'
 
 #define RETURN		status.engine = ENGINE_READY; \
 			return

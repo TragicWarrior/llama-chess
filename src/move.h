@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.10 2003-01-29 17:06:28 bjk Exp $ */
+/* $Id: move.h,v 1.11 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -21,12 +21,11 @@
 
 #define VALIDROW(r)	((r >= '1' && r <= '8') ? 1 : 0)
 #define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
-#define ROWTOINT(r)	(r - '0')
-#define COLTOINT(c)	(c - ('a' - 1))
 #define INTTOROW(r)	(r + '0')
 #define INTTOCOL(c)	(c + ('a' - 1))
 
 int result;
+int capture;
 
 enum {
     WHITEWINS, BLACKWINS, DRAW

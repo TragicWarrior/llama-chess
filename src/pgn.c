@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.88 2003-02-05 20:16:57 bjk Exp $ */
+/* $Id: pgn.c,v 1.89 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -336,6 +336,7 @@ int move_text(FILE *fp)
 	    game[gindex].openingside = BLACK;
 	}
 	else {
+	    switch_turn();
 	    invalid_move(move);
 	    return 1;
 	}
@@ -575,29 +576,6 @@ static int eog_marker(FILE *fp)
     return 1;
 }
 
-#ifdef DEBUG
-void dump_board(BOARD b, int which)
-{
-    int row, col;
-
-    for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++) {
-	    if (b[row][col].icon == '.') {
-		DEBUG_BOARD(which, ". ");
-		continue;
-	    }
-
-	    DEBUG_BOARD(which, "%c ", (int)b[row][col].icon);
-	}
-
-	DEBUG_BOARD(which, "\n");
-    }
-
-    DEBUG_BOARD(which, "\n");
-    return;
-}
-#endif
-
 void new_game(BOARD b)
 {
     static int firstrun;
@@ -813,8 +791,10 @@ int parse_pgn_file(BOARD b, const char *filename)
 		nulltags = 0;
 	    }
 
-	    if (move_text(fp))
+	    if (move_text(fp)) {
+		SET_FLAG(game[gindex].flags, GF_PERROR);
 		parse_error = 1;
+	    }
 
 	    continue;
 	}
@@ -822,7 +802,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 #ifdef DEBUG
 	*p++ = c;
 
-	DUMP("unparsed: '%s'\n", buf);
+	DUMP(1, "unparsed: '%s'\n", buf);
 
 	if (strlen(buf) + 1 == sizeof(buf))
 	    bzero(buf, sizeof(buf));
@@ -848,6 +828,7 @@ done:
 	unlink(config.tmpfile);
 
     status.mode = MODE_HISTORY;
+    switch_turn();
     //exit(0);
     return 0;
 }
@@ -923,13 +904,14 @@ static int dump_comments_and_nag(FILE *fp, HISTORY h, int *len)
     return annotated;
 }
 
-static void dumpgame(FILE *fp, GAME g, int index, int isfifo)
+static void dumpgame(FILE *fp, GAME *gp, int index, int isfifo)
 {
     int i;
     int n, len = 0;
     int annotated = 0;
     int x = 0;
     char buf[80];
+    GAME g = *gp;
     int oldtotal = g.htotal;
 
     if (!isfifo && g.hindex != g.htotal) {
@@ -1075,6 +1057,13 @@ static void dumpgame(FILE *fp, GAME g, int index, int isfifo)
 
     fprintf(fp, "%s\n\n", add_tag_escapes(g.tag[TAG_RESULT].value));
     g.htotal = oldtotal;
+
+    if (!isfifo) {
+	CLEAR_FLAG(g.flags, GF_MODIFIED);
+	CLEAR_FLAG(g.flags, GF_PERROR);
+	*gp = g;
+    }
+
     return;
 }
 
@@ -1166,10 +1155,10 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
     }
 
     if (isfifo)
-	dumpgame(fp, game[saveindex], saveindex, isfifo);
+	dumpgame(fp, &game[saveindex], saveindex, isfifo);
     else {
 	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
-	    dumpgame(fp, game[i], i, isfifo);
+	    dumpgame(fp, &game[i], i, isfifo);
     }
 
     if (command)

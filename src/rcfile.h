@@ -1,4 +1,4 @@
-/* $Id: rcfile.h,v 1.8 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: rcfile.h,v 1.9 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,8 +19,16 @@
 #ifndef RCFILE_H
 #define RCFILE_H
 
+/* The order must match the enumeration in common.h. */
+char *enginecmd[] = {
+    "gnuchess xboard",
+    "crafty xboard",
+    NULL
+};
+
 int isinteger(const char *);
 int add_tag(TAG **, int *, const char *, const char *);
 char *tilde_expand(char *);
+void set_default_colors(void);
 
 #endif

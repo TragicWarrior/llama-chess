@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.34 2003-02-01 17:49:03 bjk Exp $ */
+/* $Id: engine.c,v 1.35 2003-02-07 19:44:29 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <paths.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -105,54 +106,30 @@ void send_to_engine(const char *format, ...)
     return;
 }
 
-/* This is ripped from XBoard. */
+/* From the Xboard and screen packages. */
 static int get_pty(char *pty_name)
 {
-  struct stat stb;
-  int c, i;
-  int fd;
+    int i;
+    int fd;
 
-  /* Some systems name their pseudoterminals so that there are gaps in
-     the usual sequence - for example, on HP9000/S700 systems, there
-     are no pseudoterminals with names ending in 'f'.  So we wait for
-     three failures in a row before deciding that we've reached the
-     end of the ptys.  */
-  int failed_count = 0;
+    for (i = 0; PTY_MAJOR[i]; i++) {
+	int n;
 
-  for (c = FIRST_PTY_LETTER; c <= LAST_PTY_LETTER; c++)
-    for (i = 0; i < 16; i++) {
-	sprintf (pty_name, "/dev/pty%c%x", c, i);
+	for (n = 0; PTY_MINOR[n]; n++) {
+	    sprintf(pty_name, "%spty%c%c", _PATH_DEV, PTY_MAJOR[i], 
+		    PTY_MINOR[n]);
 
-	if (stat (pty_name, &stb) < 0) {
-	    failed_count++;
+	    if ((fd = open(pty_name, O_RDWR | O_NOCTTY)) == -1)
+		continue;
 
-	    if (failed_count >= 3)
-	      return -1;
-	}
-	else
-	  failed_count = 0;
+	    sprintf(pty_name, "%stty%c%c", _PATH_DEV, PTY_MAJOR[i], 
+		    PTY_MINOR[n]);
 
-	fd = open(pty_name, O_RDWR, 0);
-
-	if (fd >= 0) {
-	    /* check to make certain that both sides are available
-	       this avoids a nasty yet stupid bug in rlogins */
-            sprintf (pty_name, "/dev/tty%c%x", c, i);
-
-	    if (access (pty_name, 6) != 0) {
-		close (fd);
+	    if (access(pty_name, R_OK | W_OK) == -1) {
+		close(fd);
 		continue;
 	    }
 
-#ifdef IBMRTAIX
-	      /* On AIX, the parent gets SIGHUP when a pty attached
-                 child dies.  So, we ignore SIGHUP once we've started
-                 a child on a pty.  Note that this may cause xboard
-                 not to die when it should, i.e., when its own
-                 controlling tty goes away.
-	      */
-	    signal(SIGHUP, SIG_IGN);
-#endif /* IBMRTAIX */
 	    return fd;
 	}
     }
@@ -221,7 +198,7 @@ pid_t init_chess_engine(char **args)
     from[0] = to[1];
     errno = 0;
 
-    if ((to[0] = open(pty, O_RDWR, 0)) == -1)
+    if ((to[0] = open(pty, O_RDWR | O_NOCTTY)) == -1)
 	return -1;
 
     from[1] = to[0];
@@ -255,8 +232,8 @@ pid_t init_chess_engine(char **args)
     enginefd[0] = from[0];
     enginefd[1] = to[1];
 
-    fcntl(enginefd[0], F_SETFL, O_NONBLOCK);
-    fcntl(enginefd[1], F_SETFL, O_NONBLOCK);
+    fcntl(enginefd[0], F_SETFL, O_NONBLOCK | O_DIRECT);
+    fcntl(enginefd[1], F_SETFL, O_NONBLOCK | O_DIRECT);
 
     engine_initialized = 1;
     return pid;
@@ -264,7 +241,9 @@ pid_t init_chess_engine(char **args)
 
 void set_engine_defaults()
 {
-    SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
+    if (status.engine == GNUCHESS)
+	SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
+
     SEND_TO_ENGINE("depth %i\n", config.engine_depth);
     return;
 }
@@ -326,18 +305,113 @@ int start_chess_engine()
     return enginepid;
 }
 
+static void parse_crafty_line(BOARD b, char *line)
+{
+    char *tmp;
+    int count;
+    char move[MAX_PGN_MOVE_LEN + 1];
+
+    if (strcmp(line, "go") == 0) {
+	status.engine = ENGINE_THINKING;
+	return;
+    }
+
+    /* Bad engine command or move. */
+    if (strncmp(line, "Illegal move: ", 14) == 0) {
+	status.notify = E_INVALID_COMMAND;
+	sp.icon = 0;
+	RETURN;
+    }
+
+    if (strncmp(line, "book ", 5) == 0) {
+	line += 5;
+	RETURN;
+    }
+
+    if (strncmp(line, "depth ", 6) == 0) {
+	line += 6;
+	config.engine_depth = atoi(line);
+	RETURN;
+    }
+
+    if (strncmp(line, "feature ", 8) == 0) {
+	line += 8;
+	RETURN;
+    }
+
+    if (strncmp(line, "read ", 5) == 0) {
+	if (save_pgn(config.fifo, 1, gindex)) {
+	    game[gindex].htotal = oldhistorytotal;
+	    oldhistorytotal = 0;
+	    return;
+	}
+	else
+	    free_historydata(&game[gindex].history, game[gindex].hindex + 1,
+		    oldhistorytotal);
+
+	set_engine_defaults();
+	RETURN;
+    }
+
+    /* Human move. */
+    if (sscanf(line, "%[a-hxPRNBKQ1-8O+=#-]%n", move, &count) == 1) {
+	if (parse_move_text(b, move)) {
+	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, move);
+	    return;
+	}
+
+	if (game[gindex].htotal == 0 && status.side == BLACK)                   
+	    game[gindex].openingside = BLACK;
+
+	add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		&game[gindex].htotal, move);
+
+	switch_turn();
+
+	sp.icon = 0;
+	line += count;
+	status.engine = ENGINE_THINKING;
+	RETURN;
+    }
+
+    /* Engine move. */
+    if (strncmp(line, "move ", 5) == 0) {
+	tmp = line + 5;
+
+	if (parse_move_text(b, tmp)) {
+	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, tmp);
+	    return;
+	}
+
+	if (game[gindex].htotal == 0 && status.side == BLACK)                   
+	    game[gindex].openingside = BLACK;
+
+	add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		&game[gindex].htotal, tmp);
+
+	switch_turn();
+
+	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
+	    init_history(b);
+	    RETURN;
+	}
+
+	RETURN;
+    }
+
+    return;
+}
+
 /* Once the PGN parser has been well tested, parse_move_text() from the human
  * move can disappear.
  */
-void parse_engine_output(BOARD b, char *str)
+void parse_gnuchess_line(BOARD b, char *str)
 {
-    char *tmp;
     char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p = move;
     int count;
 
     /* Human move. Add it to the move history. */
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count)
-	    == 1) {
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count) == 1) {
 	if (parse_move_text(b, move)) {
 	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, move);
 	    return;
@@ -349,20 +423,16 @@ void parse_engine_output(BOARD b, char *str)
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, p);
 
+	SET_FLAG(game[gindex].flags, GF_MODIFIED);
 	switch_turn();
 
 	sp.icon = 0;
 	str += count;
 	status.engine = ENGINE_THINKING;
-
-	/* This needs to be here in case the engine move text is bunched
-	 * up with the white move text.
-	 */
-	goto engine_move;
+	return;
     }
 
     /* Engine move. */
-engine_move:
     if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, 
 		&count) == 1) {
 	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
@@ -382,11 +452,12 @@ engine_move:
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, p);
 
+	SET_FLAG(game[gindex].flags, GF_MODIFIED);
 	switch_turn();
 
 	str += count;
 
-	if (game[gindex].gameover) {
+	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
 	    init_history(b);
 	    RETURN;
 	}
@@ -394,7 +465,7 @@ engine_move:
 	RETURN;
     }
 
-    if (game[gindex].gameover) {
+    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
 	init_history(b);
 	RETURN;
     }
@@ -402,61 +473,110 @@ engine_move:
     /* Miscellaneous one-liners. */
 
     /* The engine is now reading a FIFO. Dump what we need to it. */
-    if (strstr(str, "pgnload") != NULL) {
+    if (strncmp(str, "pgnload ", 8) == 0) {
 	if (save_pgn(config.fifo, 1, gindex)) {
 	    game[gindex].htotal = oldhistorytotal;
 	    oldhistorytotal = 0;
 	    return;
 	}
-	else
+	else {
 	    free_historydata(&game[gindex].history, game[gindex].hindex + 1,
 		    oldhistorytotal);
+
+	    CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
+	    SET_FLAG(game[gindex].flags, GF_MODIFIED);
+	}
 
 	set_engine_defaults();
 	return;
     }
 
     /* 'depth' command. */
-    if ((tmp = strstr(str, "Search to a depth of ")) != NULL) {
-	tmp += 21;
-	tmp = trim(tmp);
-	config.engine_depth = atoi(tmp);
+    if (strncmp(str, "Search to a depth of ", 21) == 0) {
+	str += 21;
+	str = trim(str);
+	config.engine_depth = atoi(str);
     }
 
     /* 'switch' command. */
-    if (strstr(str, "White to move") != NULL) {
+    if (strncmp(str, "White to move", 13) == 0) {
 	status.side = status.turn = WHITE;
 	RETURN;
     }
-    else if (strstr(str, "Black to move") != NULL) {
+    else if (strncmp(str, "Black to move", 13) == 0) {
 	status.side = status.turn = BLACK;
 	RETURN;
     }
 
     /* Bad engine command or move. */
-    if ((tmp = strstr(str, "Illegal move: ")) != NULL) {
-	status.notify = "Illegal move";
+    if (strncmp(str, "Illegal move: ", 14) == 0) {
+	status.notify = E_INVALID_COMMAND;
 	sp.icon = 0;
 	RETURN;
     }
 
-    if ((tmp = strstr(str, "Cannot open file ")) != NULL) {
-	status.notify = "Engine could not open file";
-	RETURN;
+    if (strcmp(str, "No book found.") == 0)
+	config.book_method = -1; 
+    else if (strcmp(str, "book now off.") == 0)
+	config.book_method = BOOK_OFF;
+    else if (strcmp(str, "book now on.") == 0)
+	config.book_method = BOOK_PREFER;
+    else if (strcmp(str, "book now best.") == 0)
+	config.book_method = BOOK_BEST;
+    else if (strcmp(str, "book now worst.") == 0)
+	config.book_method = BOOK_WORST;
+    else if (strcmp(str, "book now random.") == 0)
+	config.book_method = BOOK_RANDOM;
+
+    return;
+}
+
+static void parse_engine_line(BOARD b, char *line)
+{
+    line = trim(line);
+
+    if (!*line)
+	return;
+
+    switch (config.engine) {
+	case GNUCHESS:
+	    parse_gnuchess_line(b, line);
+	    break;
+	case CRAFTY:
+	    parse_crafty_line(b, line);
+	    break;
+	default:
+	    break;
     }
 
-    if ((tmp = strstr(str, " No book found.")) != NULL)
-	config.book_method = -1; 
-    else if ((tmp = strstr(str, "book now off.")) != NULL)
-	config.book_method = BOOK_OFF;
-    else if ((tmp = strstr(str, "book now on.")) != NULL)
-	config.book_method = BOOK_PREFER;
-    else if ((tmp = strstr(str, "book now best.")) != NULL)
-	config.book_method = BOOK_BEST;
-    else if ((tmp = strstr(str, "book now worst.")) != NULL)
-	config.book_method = BOOK_WORST;
-    else if ((tmp = strstr(str, "book now random.")) != NULL)
-	config.book_method = BOOK_RANDOM;
+    return;
+}
+
+void parse_engine_output(BOARD b, char *str)
+{
+    char buf[LINE_MAX], *p = buf;
+
+    while (*str) {
+	*p = '\0';
+
+	/* FIXME test this ("White ... : ", "Black ... : "). Needed for the
+	 * 'g'o command. */
+	if (status.engine == GNUCHESS && *str == ':') {
+	    p = buf;
+	    str++;
+	    continue;
+	}
+
+	if (*str == '\n') {
+	    *p = '\0';
+	    parse_engine_line(b, buf);
+	    str++;
+	    p = buf;
+	    continue;
+	}
+
+	*p++ = *str++;
+    }
 
     return;
 }

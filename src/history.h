@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.23 2003-02-05 16:21:44 bjk Exp $ */
+/* $Id: history.h,v 1.24 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -45,5 +45,6 @@ void help(const char *, const char *, const char **);
 int parse_move_text(BOARD, char *);
 void switch_turn(void);
 int parse_fen_line(BOARD, char *);
+void update_all(void);
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.64 2003-02-05 16:29:02 bjk Exp $ */
+/* $Id: cboard.h,v 1.65 2003-02-07 19:44:29 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -54,6 +54,7 @@ PANEL *historyp;
 BOARD board;
 int quit;
 char **agony;
+int paused;
 
 const char *cmdlinehelp[] = {
     "Usage: cboard [-hv] [-pf <file>] [-i hostname[:port]] "
@@ -150,8 +151,8 @@ void parse_engine_output(BOARD, char *);
 char *real_filename(char *);
 void send_to_engine(const char *, ...);
 int get_history_by_index(int, HISTORY *);
-void history_next(BOARD, int);
-void history_previous(BOARD, int);
+void history_next(BOARD, int, int *, int *);
+void history_previous(BOARD, int, int *, int *);
 void init_history(BOARD);
 void parse_rcfile(const char *);
 char *history_edit_nag(void *);
@@ -162,7 +163,6 @@ int start_chess_engine(void);
 void stop_engine(void);
 int help(const char *, const char *, const char **);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
-void set_default_colors(void);
 void init_color_pairs(void);
 char *browse_directory(void *);
 char *a2a4tosan(BOARD, char *);
@@ -185,5 +185,6 @@ char *str_etc(const char *, int, int);
 char *tilde_expand(char *);
 int parse_fen_file(BOARD, const char *);
 char *board_to_fen(BOARD, GAME);
+void set_defaults(void);
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: epd.c,v 1.2 2003-02-05 20:16:56 bjk Exp $ */
+/* $Id: epd.c,v 1.3 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -73,21 +73,21 @@ char *board_to_fen(BOARD b, GAME g)
     *p++ = (status.turn == WHITE) ? 'w' : 'b';
     *p++ = ' ';
 
-    if (!g.wk && !g.rkw)
+    if (!TEST_FLAG(g.flags, GF_WK) && !TEST_FLAG(g.flags, GF_WKR))
 	*p++ = 'K';
 
-    if (!g.wk && !g.rqw)
+    if (!TEST_FLAG(g.flags, GF_WK) && !TEST_FLAG(g.flags, GF_WQR))
 	*p++ = 'Q';
 
-    if (!g.bk && !g.rkb)
+    if (!TEST_FLAG(g.flags, GF_BK) && !TEST_FLAG(g.flags, GF_BKR))
 	*p++ = 'k';
 
-    if (!g.bk && !g.rqb)
+    if (!TEST_FLAG(g.flags, GF_BK) && !TEST_FLAG(g.flags, GF_BQR))
 	*p++ = 'q';
 
     *p++ = ' ';
 
-    if (g.enpassant) {
+    if (TEST_FLAG(g.flags, GF_ENPASSANT)) {
 	i = strlen(g.history[g.hindex - 1].move);
 
 	while (!isdigit(g.history[g.hindex - 1].move[i]))
@@ -191,16 +191,16 @@ other:
     while (*tmp && *tmp != ' ') {
 	switch (*tmp) {
 	    case 'K':
-		game[gindex].rkw = 0;
+		CLEAR_FLAG(game[gindex].flags, GF_WKR);
 		break;
 	    case 'Q':
-		game[gindex].rqw = 0;
+		CLEAR_FLAG(game[gindex].flags, GF_WQR);
 		break;
 	    case 'k':
-		game[gindex].rkb = 0;
+		CLEAR_FLAG(game[gindex].flags, GF_BKR);
 		break;
 	    case 'q':
-		game[gindex].rqb = 0;
+		CLEAR_FLAG(game[gindex].flags, GF_BQR);
 		break;
 	    default:
 		return -1;

@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.26 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: move.c,v 1.27 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -308,8 +308,10 @@ int castle_move(BOARD b, int which)
     n = COLTOINT('e');
 
     if (which == KINGSIDE) {
-	if ((status.turn == WHITE && (game[gindex].wk || game[gindex].rkw)) || 
-		(status.turn == BLACK && (game[gindex].bk || game[gindex].rkb)))
+	if ((status.turn == WHITE && (TEST_FLAG(game[gindex].flags, GF_WK) ||
+			TEST_FLAG(game[gindex].flags, GF_WKR))) || 
+		(status.turn == BLACK && (TEST_FLAG(game[gindex].flags, GF_BK) 
+		    || TEST_FLAG(game[gindex].flags, GF_BKR))))
 	    return 1;
 
 	p = b[ROWTOBOARD(row)][COLTOBOARD((n + 1))].icon;
@@ -327,19 +329,23 @@ int castle_move(BOARD b, int which)
 	    b[ROWTOBOARD(row)][COLTOBOARD(7)].icon = int_to_piece(KING);
 	    b[ROWTOBOARD(row)][COLTOBOARD(8)].icon = int_to_piece(OPEN_SQUARE);
 
-	    if (status.turn == WHITE && status.side != WHITE) {
-		game[gindex].wk = game[gindex].rkw = 1;
+	    if (status.turn == WHITE) {
+		SET_FLAG(game[gindex].flags, GF_WK);
+		SET_FLAG(game[gindex].flags, GF_WKR);
 		status.notify = NOTIFY_WCASTLEK;
 	    }
-	    else if (status.turn == BLACK && status.side != BLACK) {
-		game[gindex].bk = game[gindex].rkb = 1;
+	    else if (status.turn == BLACK) {
+		SET_FLAG(game[gindex].flags, GF_BK);
+		SET_FLAG(game[gindex].flags, GF_BKR);
 		status.notify = NOTIFY_BCASTLEK;
 	    }
 	}
     }
     else {
-	if ((status.turn == WHITE && (game[gindex].wk || game[gindex].rqw)) || 
-		(status.turn == BLACK && (game[gindex].bk || game[gindex].rqb)))
+	if ((status.turn == WHITE && (TEST_FLAG(game[gindex].flags, GF_WK) ||
+			TEST_FLAG(game[gindex].flags, GF_WQR))) || 
+		(status.turn == BLACK && (TEST_FLAG(game[gindex].flags, GF_BK) 
+		    || TEST_FLAG(game[gindex].flags, GF_BQR))))
 	    return 1;
 
 	p = b[ROWTOBOARD(row)][COLTOBOARD((n - 1))].icon;
@@ -359,12 +365,14 @@ int castle_move(BOARD b, int which)
 	    b[ROWTOBOARD(row)][COLTOBOARD(3)].icon = int_to_piece(KING);
 	    b[ROWTOBOARD(row)][COLTOBOARD(4)].icon = int_to_piece(ROOK);
 
-	    if (status.turn == WHITE && status.side != WHITE) {
-		game[gindex].wk = game[gindex].rqw = 1;
+	    if (status.turn == WHITE) {
+		SET_FLAG(game[gindex].flags, GF_WK);
+		SET_FLAG(game[gindex].flags, GF_WQR);
 		status.notify = NOTIFY_WCASTLEQ;
 	    }
-	    else if (status.turn == BLACK && status.side != BLACK) {
-		game[gindex].bk = game[gindex].rqb = 1;
+	    else if (status.turn == BLACK) {
+		SET_FLAG(game[gindex].flags, GF_BK);
+		SET_FLAG(game[gindex].flags, GF_BQR);
 		status.notify = NOTIFY_BCASTLEQ;
 	    }
 	}
@@ -433,7 +441,7 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		/* En Passant. */
 		if (piece == OPEN_SQUARE) {
 		    /* Previous move was not 2 squares and a pawn. */
-		    if (!validate_move && game[gindex].enpassant == 0)
+		    if (!TEST_FLAG(game[gindex].flags, GF_ENPASSANT))
 			return 1;
 
 		    r = (status.turn == WHITE) ? 6 : 3;
@@ -464,15 +472,15 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 
 	    if (!validate_move && *scol == 1) {
 		if (status.turn == WHITE)
-		    game[gindex].rqw = 1;
+		    SET_FLAG(game[gindex].flags, GF_WQR);
 		else
-		    game[gindex].rqb = 1;
+		    SET_FLAG(game[gindex].flags, GF_BQR);
 	    }
 	    else if (!validate_move && *scol == 8) {
 		if (status.turn == WHITE)
-		    game[gindex].rkw = 1;
+		    SET_FLAG(game[gindex].flags, GF_WKR);
 		else
-		    game[gindex].rkb = 1;
+		    SET_FLAG(game[gindex].flags, GF_BKR);
 	    }
 	    break;
 	case KNIGHT:
@@ -663,9 +671,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
     if (piece == KING) {
 	if (!validate_move) {
 	    if (status.turn == WHITE)
-		game[gindex].wk = 1;
+		SET_FLAG(game[gindex].flags, GF_WK);
 	    else
-		game[gindex].bk = 1;
+		SET_FLAG(game[gindex].flags, GF_BK);
 	}
     }
 
@@ -819,7 +827,7 @@ int checktest(BOARD b, int kr, int kc, int okr, int okc, int matetest)
 	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 	    int pi = piece_to_int(p);
 
-	    if (pi == OPEN_SQUARE || !val_piece_side(p))
+	    if (pi == OPEN_SQUARE)
 		continue;
 
 	    if (pi == PAWN)
@@ -1006,8 +1014,10 @@ static int drawtest(BOARD b)
     int row, col;
     int other = 0;
 
+    /*
     if (game[gindex].ply >= 50)
 	return 1;
+	*/
 
     for (row = 1; VALIDFILE(row); row++) {
 	for (col = 1; VALIDFILE(col); col++) {
@@ -1036,7 +1046,7 @@ static int drawtest(BOARD b)
 int parse_move_text(BOARD b, char *move)
 {
     char *p;
-    int piece;
+    int piece, dstpiece;
     int i = 0;
     int srow = 0, scol = 0, row, col;
     int dist = 0;
@@ -1047,6 +1057,7 @@ int parse_move_text(BOARD b, char *move)
     if (strlen(move) < 2)
 	return 1;
 
+    capture = 0;
     status.notify = NULL;
     srow = row = col = scol = promo = piece = 0;
     p = (move) + strlen(move);
@@ -1089,6 +1100,7 @@ int parse_move_text(BOARD b, char *move)
 		col = COLTOINT(*++p);
 		row = ROWTOINT(*++p);
 		plyincr++;
+		capture++;
 	    }
 	    else if (*p == '=') {
 		if (promo == -1 || promo == KING || promo == PAWN)
@@ -1101,7 +1113,7 @@ int parse_move_text(BOARD b, char *move)
 	    }
 	    else
 #ifdef DEBUG
-		DUMP("Pawn (move: '%s'): %c\n", move, *p++);
+		DUMP(1, "Pawn (move: '%s'): %c\n", move, *p++);
 #else
 	        p++;
 #endif
@@ -1128,8 +1140,10 @@ int parse_move_text(BOARD b, char *move)
 		else if (VALIDCOL(*p))
 		    scol = COLTOINT(*p++);
 
-		if (*p == 'x')
+		if (*p == 'x') {
+		    capture++;
 		    p++;
+		}
 	    }
 
 	    col = COLTOINT(*p++);
@@ -1183,22 +1197,24 @@ int parse_move_text(BOARD b, char *move)
 
     if (!validate_move) {
 	if (piece == PAWN && dist == 2)
-	    game[gindex].enpassant = 1;
+	    SET_FLAG(game[gindex].flags, GF_ENPASSANT);
 	else
-	    game[gindex].enpassant = 0;
+	    CLEAR_FLAG(game[gindex].flags, GF_ENPASSANT);
     }
 
     if (piece == PAWN)
 	plyincr++;
 
+    dstpiece = piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+
     if (game[gindex].castle) {
-	if (castle_move(b, game[gindex].castle))
+	if (castle_move(b, game[gindex].castle)) {
+	    game[gindex].castle = 0;
 	    return 1;
+	}
 
 	goto done;
     }
-
-    piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
     if (piece_to_int(piece) != OPEN_SQUARE) {
 	if (val_piece_side(piece))
@@ -1232,6 +1248,17 @@ int parse_move_text(BOARD b, char *move)
     b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
 
 done:
+    if (!validate_move && capture && piece_to_int(dstpiece) == ROOK) {
+	if (row == 1 && col == 1)
+	    SET_FLAG(game[gindex].flags, GF_WQR);
+	else if (row == 8 && col == 1)
+	    SET_FLAG(game[gindex].flags, GF_BQR);
+	else if (row == 1 && col == 8)
+	    SET_FLAG(game[gindex].flags, GF_WKR);
+	else if (row == 8 && col == 8)
+	    SET_FLAG(game[gindex].flags, GF_BKR);
+    }
+
     kingsquare(b, &kr, &kc, &okr, &okc);
     switch_turn();
 
@@ -1240,7 +1267,8 @@ done:
 	game[gindex].castle = 0;
     }
 
-    game[gindex].gameover = 0;
+    CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
+    i = validate_move;
     validate_move = 1;
 
     if (!plyincr)
@@ -1257,14 +1285,14 @@ done:
 	if (curses_initialized)
 	    update_tag_window();
 
-	game[gindex].gameover = 1;
+	SET_FLAG(game[gindex].flags, GF_GAMEOVER);
     }
     else {
 	switch (checktest(b, kr, kc, okr, okc, 0)) {
 	    case 0:
 		break;
 	    case -1:
-		validate_move = 0;
+		validate_move = i;
 		switch_turn();
 		return 1;
 	    default:
@@ -1287,7 +1315,7 @@ done:
 		    if (curses_initialized)
 			update_tag_window();
 
-		    game[gindex].gameover = 1;
+		    SET_FLAG(game[gindex].flags, GF_GAMEOVER);
 		}
 		else {
 		    *p++ = '+';
@@ -1303,6 +1331,6 @@ done:
     }
 
     switch_turn();
-    validate_move = 0;
+    validate_move = i;
     return 0;
 }

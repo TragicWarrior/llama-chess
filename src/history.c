@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.47 2003-02-05 20:16:56 bjk Exp $ */
+/* $Id: history.c,v 1.48 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -343,6 +343,8 @@ char *history_edit_nag(void *arg)
 		    set_item_value(current_item(menu), TRUE);
 		    itemcount++;
 		}
+
+		SET_FLAG(game[gindex].flags, GF_MODIFIED);
 		break;
 	    case '\n':
 		goto gotitem;
@@ -374,6 +376,8 @@ gotitem:
 	if (item_value(mitems[i]) == TRUE)
 	    game[gindex].history[index].nag[n++] = i;
     }
+
+    update_all();
 
 done:
     unpost_menu(menu);
@@ -407,17 +411,24 @@ void add_to_history(HISTORY **h, int *n, int *t, const char *str)
 void parse_history_move(BOARD b, int index)
 {
     int i = 0;
+    int flags = 0;
 
     game[gindex].bcaptures = game[gindex].wcaptures = 0;
     status.turn = game[gindex].openingside;
-    game[gindex].enpassant = 0;
-    game[gindex].castle = 0;
-    game[gindex].wk = 0;
-    game[gindex].rkw = 0;
-    game[gindex].rqw = 0;
-    game[gindex].bk = 0;
-    game[gindex].rkb = 0;
-    game[gindex].rqb = 0;
+
+    if (TEST_FLAG(game[gindex].flags, GF_PERROR))
+	SET_FLAG(flags, GF_PERROR);
+
+    if (TEST_FLAG(game[gindex].flags, GF_MODIFIED))
+	SET_FLAG(flags, GF_MODIFIED);
+
+    if (TEST_FLAG(game[gindex].flags, GF_DELETE))
+	SET_FLAG(flags, GF_DELETE);
+
+    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
+	SET_FLAG(flags, GF_GAMEOVER);
+    
+    game[gindex].flags = flags;
     game[gindex].ply = 0;
 
     init_board(b);
@@ -446,7 +457,35 @@ void parse_history_move(BOARD b, int index)
     return;
 }
 
-void history_previous(BOARD b, int n)
+/* FIXME castling */
+static void cursor_from_history(int index, int *r, int *c)
+{
+    char *p;
+    int len;
+
+    p = game[gindex].history[index].move;
+    len = strlen(p);
+
+    if (*p == 'O') {
+	if (len <= 4)
+	    *c = 7;
+	else
+	    *c = 3;
+
+	*r = (status.turn == WHITE) ? 8 : 1;
+	return;
+    }
+
+    while (!isdigit(*p))
+	p--;
+
+    *r = ROWTOINT(*p--);
+    *c = COLTOINT(*p);
+
+    return;
+}
+
+void history_previous(BOARD b, int n, int *r, int *c)
 {
     if (game[gindex].hindex - n < 0) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
@@ -457,11 +496,12 @@ void history_previous(BOARD b, int n)
     else
 	game[gindex].hindex -= n;
 
+    cursor_from_history(game[gindex].hindex, r, c);
     parse_history_move(b, game[gindex].hindex);
     return;
 }
 
-void history_next(BOARD b, int n)
+void history_next(BOARD b, int n, int *r, int *c)
 {
     if (game[gindex].hindex + n > game[gindex].htotal) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
@@ -472,6 +512,7 @@ void history_next(BOARD b, int n)
     else
 	game[gindex].hindex += n;
 
+    cursor_from_history(game[gindex].hindex, r, c);
     parse_history_move(b, game[gindex].hindex);
     return;
 }

@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.28 2003-01-30 18:36:40 bjk Exp $ */
+/* $Id: rcfile.c,v 1.29 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -21,6 +21,9 @@
 #include <string.h>
 #include <err.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -120,11 +123,100 @@ static int on_or_off(const char *filename, int lines, const char *str)
     errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, lines, str);
 }
 
+void copydatafile(const char *dst, const char *src)
+{
+    FILE *fp, *ofp;
+    char buf[LINE_MAX], *s;
+
+    snprintf(buf, sizeof(buf), "%s/%s", DATA_PATH, src);
+
+    fprintf(stderr, "%s %s...\n", COPY_DATAFILE, buf);
+
+    if ((fp = fopen(buf, "r")) == NULL) {
+	warn("%s", buf);
+	return;
+    }
+
+    if ((ofp = fopen(dst, "w+")) == NULL) {
+	fclose(fp);
+	warn("%s", dst);
+	return;
+    }
+
+    while ((s = fgets(buf, sizeof(buf), fp)) != NULL)
+	fprintf(ofp, "%s", s);
+
+    fclose(fp);
+    fclose(ofp);
+    return;
+}
+
+void set_defaults()
+{
+    struct stat st;
+
+    status.mode = MODE_PLAY;
+    filetype = PGN_FILE;
+
+    fancy_results[0].pgn = "1-0";
+    fancy_results[1].pgn = "0-1";
+    fancy_results[2].pgn = "1/2-1/2";
+    fancy_results[3].pgn = "*";
+    fancy_results[0].fancy = TAG_RESULT_FANCY_WHITE;
+    fancy_results[1].fancy = TAG_RESULT_FANCY_BLACK;
+    fancy_results[2].fancy = TAG_RESULT_FANCY_DRAW;
+    fancy_results[3].fancy = TAG_RESULT_FANCY_NA;
+
+    status.engine = ENGINE_OFFLINE;
+
+    config.engine = (DEFAULT_ENGINE >= MAX_ENGINES) ? GNUCHESS : DEFAULT_ENGINE;
+    config.engine_cmd = enginecmd[config.engine];
+    config.jumpcount = 5;
+    config.clevel = 6;
+    config.book_method = (config.engine == GNUCHESS) ? BOOK_RANDOM : BOOK_OFF;
+    config.engine_depth = 0;
+    config.historyagony = 0;
+    config.agony = 1;
+    config.linegraphics = 0;
+    config.saveprompt = 1;
+    config.deleteprompt = 1;
+    config.validmoves = 1;
+    strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
+    config.ics_port = DEFAULT_ICS_PORT;
+    config.ics_user = DEFAULT_ICS_USER;
+
+    set_default_colors();
+
+    if (stat(config.nagfile, &st) == -1) {
+	if (errno == ENOENT)
+	    copydatafile(config.nagfile, "nag.data");
+	else
+	    warn("%s", config.nagfile);
+    }
+
+    if (stat(config.agonyfile, &st) == -1) {
+	if (errno == ENOENT)
+	    copydatafile(config.agonyfile, "agony.data");
+	else
+	    warn("%s", config.agonyfile);
+    }
+
+    if (stat(config.ccfile, &st) == -1) {
+	if (errno == ENOENT)
+	    copydatafile(config.nagfile, "cc.data");
+	else
+	    warn("%s", config.ccfile);
+    }
+
+    return;
+}
+
 void parse_rcfile(const char *filename)
 {
     FILE *fp;
     char *line, buf[LINE_MAX];
     int lines = 0;
+    char *altengine = NULL;
 
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
@@ -289,12 +381,32 @@ void parse_rcfile(const char *filename)
 	else if (strcmp(var, "ics_passwd") == 0)
 	    config.ics_passwd = strdup(val);
 	else if (strcmp(var, "engine_cmd") == 0)
-	    config.engine_cmd = strdup(val);
+	    altengine = strdup(val);
+	else if (strcmp(var, "engine") == 0) {
+	    switch (atoi(val)) {
+		case 0:
+		    config.engine_cmd = enginecmd[GNUCHESS];
+		    config.engine = GNUCHESS;
+		    break;
+		case 1:
+		    config.engine_cmd = enginecmd[CRAFTY];
+		    config.engine = CRAFTY;
+		    break;
+		default:
+		    errx(EXIT_FAILURE, 
+			    "%s(%i): engine must be 0 through %i", filename, 
+			    lines, MAX_ENGINES - 1);
+	    }
+	}
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);
     }
 
     fclose(fp);
+
+    if (altengine)
+	config.engine_cmd = altengine;
+
     return;
 }

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.60 2003-02-04 22:01:16 bjk Exp $ */
+/* $Id: common.h,v 1.61 2003-02-07 19:44:29 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -67,15 +67,41 @@ extern int vasprintf(char **, const char *, va_list);
 #define VALIDFILE(f)	((f >= 1 && f <= 8) ? 1 : 0)
 #define ROWTOBOARD(r)	(8 - r)
 #define COLTOBOARD(c)	(c - 1)
+#define ROWTOINT(r)	(r - '0')
+#define COLTOINT(c)	(c - ('a' - 1))
+
+#define SET_FLAG(var, f)	(var |= f)
+#define CLEAR_FLAG(var, f)	(var &= ~(f))
+#define TOGGLE_FLAG(var, f)	(var ^= (f))
+#define TEST_FLAG(var, f)	(var & f)
+
+/* Game flags. */
+#define GF_PERROR	0x0001 /* Parse error for this game. */
+#define GF_DELETE	0x0002 /* Flagged for deletion ('x' command). */
+#define GF_MODIFIED	0x0004 /* Modified tags or history. */
+#define GF_ENPASSANT	0x0008 /* For En Passant validation. */
+#define GF_GAMEOVER	0x0010 /* End of game. */
+#define GF_WK		0x0020 /* For castling validation ... */
+#define GF_BK		0x0040
+#define GF_WKR		0x0080
+#define GF_WQR		0x0100
+#define GF_BKR		0x0200
+#define GF_BQR		0x0400
 
 enum {
     OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING, MAX_PIECES
 };
 
-enum {WHITE, BLACK};
+enum {
+    WHITE, BLACK
+};
 
 enum {
     TAG_EVENT, TAG_SITE, TAG_DATE, TAG_ROUND, TAG_WHITE, TAG_BLACK, TAG_RESULT
+};
+
+enum {
+    GNUCHESS, CRAFTY, MAX_ENGINES
 };
 
 typedef struct board_matrix {
@@ -144,15 +170,13 @@ typedef struct games {
     int hindex;
     int htotal;
     int sockfd;
-    int openingside;
     int ply;
     int wcaptures;
     int bcaptures;
-    int delete;
-    int gameover;
-    int enpassant;
+    double moveclock;
+    int flags;
+    int openingside;
     int castle;
-    int wk, bk, rqw, rkw, rqb, rkb;
 } GAME;
 
 GAME *game;
@@ -213,6 +237,7 @@ struct {
     char *tmpfile;
     char *savedirectory;
     char *engine_cmd;
+    int engine;
     struct colors color[CONF_MAX_COLORS];
     TAG *tag;
     int tindex;
@@ -250,12 +275,9 @@ int dump_message(const char *, const char *, int, const char *,
 char *trim(char *);
 
 #ifdef DEBUG
-void DUMP(const char *, ...);
+void DUMP(int, const char *, ...);
 void dump_board(BOARD, int);
-
-#define DEBUG_BOARD(n, fmt, args...) \
-    ((n) ? DUMP(fmt, ##args) : printf(fmt, ##args))
-
+void dump_flags(int);
 #endif
 
 #ifdef WITH_DMALLOC

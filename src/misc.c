@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.12 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: misc.c,v 1.13 2003-02-07 19:44:30 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -156,26 +156,6 @@ char *tilde_expand(char *str)
 
     return buf;
 }
-
-#ifdef DEBUG
-void DUMP(const char *fmt, ...)
-{
-    FILE *fp;
-    va_list ap;
-    char line[LINE_MAX];
-
-    if ((fp = fopen("debug", "a")) == NULL)
-	return;
-
-    va_start(ap, fmt);
-    vsnprintf(line, sizeof(line), fmt, ap);
-    va_end(ap);
-
-    fprintf(fp, "%s", line);
-    fclose(fp);
-    return;
-}
-#endif
 
 char *str_etc(const char *str, int maxlen, int rev)
 {
