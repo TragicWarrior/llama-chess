@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.2 2002-12-06 17:27:46 bjk Exp $ */
+/* $Id: input.c,v 1.3 2002-12-07 15:54:52 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -25,83 +25,95 @@
 #endif
 
 #include "common.h"
+#include "input.h"
 
-#define MAXINPUTSIZE	32
-
-static void updateinput(WINDOW *win, const char str[], size_t size, unsigned y, int x)
+static void cleanup(WINDOW *win, PANEL *panel)
 {
-    int n = 0;
-
-    wmove(win, y, x);
-
-    while (n != size - 1)
-	mvwaddch(win, y, x + n++, ' ');
-
-    mvwaddstr(win, y, x, str);
+    del_panel(panel);
+    delwin(win);
     return;
 }
 
-/* FIXME cbreak() */
 char *get_input(const char *prompt, char *init)
 {
-    WINDOW *win;
-    PANEL *p;
-    int x = strlen(prompt) + 1 + MAXINPUTSIZE+ 4;
+    int y, x, width;
     static char dst[MAXINPUTSIZE];
-    int c, i = 0;
-    int y = 2;
+    int i = 0, pos = 0, len;
 
     bzero(dst, sizeof(dst));
-    win = newwin(4, x, CALCPOSY(3), CALCPOSX(x));
-    p = new_panel(win);
-
-    draw_window_title(win, prompt, x);
 
     nl();
     echo();
     curs_set(1);
 
-    x = 1;
+    len = strlen(prompt);
+    width = (len + 4 > INPUT_WIDTH && len + 4 < COLS - 2) ?
+	len + 4 : INPUT_WIDTH;
 
-    wmove(win, y, x);
+    x = 1;
+    y = 2;
 
     if (init) {
+	len = strlen(init);
+
+	if (len + 4 > width && len + 4 < COLS - 2)
+	    width = strlen(init) + 4;
+
 	strncpy(dst, init, sizeof(dst));
-	i = strlen(dst);
-	mvwaddstr(win, y, x, init);
+	i = pos = strlen(dst);
     }
 
-    update_panels();
-    doupdate();
+    while (1) {
+	WINDOW *win;
+	PANEL *panel;
+	int c, n;
 
-    while ((c = wgetch(win)) != '\n' && c != ERR) {
-	if (c == KEY_ESCAPE) {
-	    dst[0] = 0;
-	    break;
-	}
+	win = newwin(INPUT_HEIGHT, width, CALCPOSY(INPUT_HEIGHT), 
+		CALCPOSX(width));
+	panel = new_panel(win);
+	draw_window_title(win, prompt, width);
 
-	updateinput(win, dst, sizeof(dst), y, x);
+	for (n = 0; dst[pos + n]; n++)
+	    mvwaddch(win, y, x + n, dst[pos + n]);
 
-	if (c == '\010') {
-	    if (!i)
+	update_panels();
+	doupdate();
+
+	c = wgetch(win);
+
+	switch (c) {
+	    case KEY_ESCAPE:
+		if (init)
+		    strncpy(dst, init, sizeof(dst));
+		else
+		    dst[0] = 0;
+	    case '\n':
+		cleanup(win, panel);
+		goto done;
+	    case '\010':
+		if (i)
+		    dst[--i] = 0;
+
+		if (pos)
+		    pos--;
+
+		cleanup(win, panel);
 		continue;
-
-	    dst[--i] = 0;
-	    updateinput(win, dst, sizeof(dst), y, x);
-	    continue;
+	    default:
+		break;
 	}
 
-
-	if (i < sizeof(dst))
+	if (i < sizeof(dst) - 1) {
 	    dst[i++] = c;
-	else
-	    beep();
 
-	updateinput(win, dst, sizeof(dst), y, x);
+	    if (i >= width - 2)
+		pos++;
+	}
+
+	cleanup(win, panel);
     }
 
-    del_panel(p);
-    delwin(win);
+done:
     noecho();
     nonl();
     curs_set(0);
