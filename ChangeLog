@@ -1,3 +1,10 @@
+2003-01-07 Tuesday 16:35  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.48), cboard.h (1.34), engine.c (1.24), move.c
+	(1.6):
+	
+	Oops. Convert to SAN format before sending to engine.
+
 2003-01-07 Tuesday 15:35  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: engine.c (1.23), engine.h (1.10), move.c (1.5), move.h
