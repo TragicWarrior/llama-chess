@@ -34,10 +34,12 @@ historyagony	0
 # terminals support all attributes.
 window_border	cyan	black	bold
 window_title	white	blue	none	reverse
+board_graphics	white	black
 board_selected	white	yellow	none	bold,reverse
 board_cursor	white	green	none	bold,reverse
 board_black	white	black
 board_white	white	red	none	reverse
+board_coords	white	black
 status_notify	red	black	none	bold
 status_engine	yellow	black	none	bold
 message_box	white	green

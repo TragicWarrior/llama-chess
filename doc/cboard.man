@@ -27,7 +27,6 @@
 .
 .Nm cboard
 .Op Fl hv
-.Op Fl f Ar rcfile
 .Op Fl p Ar pgnfile
 .
 .Sh DESCRIPTION
@@ -40,8 +39,6 @@ is a ncurses frontend to
 The following command line options are available:
 .
 .Bl -tag -width
-.It Fl f Ar rcfile
-Alternate configuration file to load. The default is ~/.cboardrc.
 .It Fl p Ar pgnfile
 Load a PGN formatted file.
 .It Fl v
@@ -74,12 +71,80 @@ jump.
 .Pp
 .It Cm depth Ar integer
 The search depth level of the engine when it's it's turn to move.
+.Pp
+.It Cm agony Ar integer
+Enable agony strings in the status window when a caputre is made by setting
+this to
+.Ar 1 .
+Set to
+.Ar 0
+to disable all agony.
+.Pp
+.It Cm historyagony Ar integer
+Set to 
+.Ar 0
+to disable agony strings when browsing move history.
+.Pp
+.It Cm pgntag Ar name Op Ar value
+Custom PGN tags to add to new games. This can also be used to overwrite
+default tag values.
 .El
 .
+.Sh COLORS
+.Bl -tag -compact
+.It Cm window_border Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm window_title Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_selected Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_cursor Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_coords Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_graphics Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_white Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_black Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm status_engine Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm status_notify Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm message_box Ar foreground Ar background Op Ar cattr Op Ar attr
+.El
+.Pp
+Color and attributes can be modified from the configuration file. There are up
+to four values for each parameter. The first two are the foreground and
+background colors which must be one of:
+.Ar black ,
+.Ar white ,
+.Ar blue ,
+.Ar green ,
+.Ar yellow ,
+.Ar cyan ,
+.Ar magenta
+or
+.Ar red .
+.Pp
+The third and fourth values are optional and set terminal attributes. The
+third sets attributes for color terminals and the fourth for non-color
+terminals. Multiple attributes may be assigned by separating them with a
+comma. Note that not all terminals support all attributes. The following
+attributes are recognized:
+.Ar bold ,
+.Ar reverse ,
+.Ar dim ,
+.Ar standout ,
+.Ar underline ,
+.Ar blink ,
+.Ar invisible 
+and
+.Ar none .
+.
 .Sh FILES
-.Bl -tag -compact -width ~/.cboardrc
-.It Pa ~/.cboardrc
-Default configuration file.
+.Bl -tag -compact -width ~/.cboardrc/agony.data
+.It Pa ~/.cboard/config
+Configuration file.
+.It Pa ~/.cboard/agony.data
+A list of agony strings, one per line, which is displayed randomly when a
+capature has been made.
+.It Pa ~/.cboard/nag.data
+Appending to this file is fine for custom NAG types, but lines before 140 are
+reserved by the PGN standard.
+.It Pa ~/.cboard/fifo
+A FIFO for resuming games.
 .El
 .
 .Sh AUTHORS
