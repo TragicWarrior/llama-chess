@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.68 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: cboard.c,v 1.69 2003-01-27 18:09:42 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -748,6 +748,8 @@ void game_loop()
     if (pgnfile[0])
 	init_history(board);
 
+    status.notify = GAME_HELP_PROMPT;
+
     flushinp();
     update_all();
     wtimeout(boardw, 70);
@@ -1227,9 +1229,11 @@ void game_loop()
 		break;
 	    case KEY_ESCAPE:
 		sp.icon = sp.row = sp.col = 0;
+		count = 0;
 
 		if (config.validmoves)
 		    reset_valid_moves(board);
+
 		break;
 	    case '0' ... '9':
 		n = c - '0';

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.49 2003-01-27 16:55:16 bjk Exp $ */
+/* $Id: cboard.h,v 1.50 2003-01-27 18:09:43 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -25,11 +25,11 @@
 #define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)
 #define BOARD_HEIGHT	18
 #define BOARD_WIDTH	34
-#define STATUS_HEIGHT	(LINES - TAG_HEIGHT)
+#define STATUS_HEIGHT	(BOARD_HEIGHT + HISTORY_HEIGHT - TAG_HEIGHT)
 #define STATUS_WIDTH	(COLS - BOARD_WIDTH)
 #define TAG_HEIGHT	10
 #define TAG_WIDTH	(COLS - BOARD_WIDTH)
-#define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
+#define HISTORY_HEIGHT	6
 #define HISTORY_WIDTH	(COLS - STATUS_WIDTH)
 
 enum {
