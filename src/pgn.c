@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.46 2003-01-09 17:13:28 bjk Exp $ */
+/* $Id: pgn.c,v 1.47 2003-01-09 17:20:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -826,7 +826,7 @@ int save_pgn(const char *filename, int isfifo)
 	    cgame = 1;
 	else if (c == 'a');
 	else
-	    return 0;
+	    return 1;
     }
 
     if (filename[0] != '/' && config.savedirectory[0] && !isfifo) {
