@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.37 2002-12-27 00:23:54 bjk Exp $ */
+/* $Id: pgn.c,v 1.38 2002-12-30 14:25:44 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -64,40 +64,6 @@ int end_of_game(const char *str)
     }
 
     return 0;
-}
-
-char *parse_piece(char *str)
-{
-    int len, i;
-    char *tmp, *tmp2;
-
-    if ((tmp = strsep(&str, "\n")) == NULL)
-	tmp = trim(str);
-
-    len = strlen(tmp);
-
-    if (tmp[len - 1] == '#') {
-	status.notify = "Game Over!";
-
-	if ((tmp2 = strsep(&str, " ")) != NULL) {
-	    for (i = 0; i < NARRAY(fancy_results); i++) {
-		if (strcmp(tmp2, fancy_results[i].pgn) == 0) {
-		    strncpy(game[gindex].pgn[PGN_RESULT].value, 
-			    fancy_results[i].fancy,
-			    sizeof(game[gindex].pgn[PGN_RESULT].value));
-		    break;
-		}
-	    }
-	}
-    }
-    else if (tmp[len - 1] == '+')
-	status.notify = "Check!";
-    else if (tmp[len - 2] == '=')
-	status.notify = "Promotion!";
-    else
-	status.notify = NULL;
-
-    return tmp;
 }
 
 /* Returns 1 if a duplicate tag was found. 0 otherwise. The index argument is
@@ -252,84 +218,226 @@ static void init_data()
     return;
 }
 
-static void add_nag(FILE *fp, int index)
-{
-    int i, n = 0, count;
-    int nag;
-    char buf[2];
-
-    while (fscanf(fp, " %1[$]%i %n", buf, &nag, &count) == 2) {
-	/* Standard. */
-	if (!nag || nag < 0 || nag > 255)
-	    continue;
-
-	for (i = 0; i < MAX_PGN_NAG; i++) {
-	    if (game[gindex].history[index].nag[i])
-		continue;
-
-	    game[gindex].history[index].nag[i] = nag;
-	    n++;
-	    break;
-	}
-
-	if (n == MAX_PGN_NAG)
-	    break;
-    }
-
-    return;
-}
-
-static void add_comment(FILE *fp, int index, int terminator)
-{
-    int i = 0;
-
-    while (1) {
-	int c;
-
-	if ((c = fgetc(fp)) == terminator)
-	    break;
-
-	if (i + 1 > sizeof(game[gindex].history[index].comment) - 1)
-	    continue;
-
-	game[gindex].history[index].comment[i++] = c;
-    }
-
-    strncpy(game[gindex].history[index].comment,
-	    trim(game[gindex].history[index].comment),
-	    sizeof(game[gindex].history[index].comment));
-
-    return;
-}
-
-static void add_move(FILE *fp, const char *move)
-{
-    int c;
-
-    add_to_history(&game[gindex].history, &game[gindex].hindex,
-	    &game[gindex].htotal, move);
-
-    add_nag(fp, game[gindex].hindex - 1);
-
-    c = fgetc(fp);
-
-    while (isspace(c))
-	c = fgetc(fp);
-
-    if (c == '{' || c == ';') 
-	add_comment(fp, game[gindex].hindex - 1, (c == '{') ? '}' : '\n');
-    else
-	ungetc(c, fp);
-
-    return;
-}
-
 static void reset_game_data()
 {
     if (gtotal)
 	free_game_data();
 
     gtotal = gindex = 0;
+    init_board();
+
+    return;
+}
+
+static void skip_leading_space(FILE *fp)
+{
+    int c;
+
+    while ((c = fgetc(fp)) != EOF && !feof(fp)) {
+	if (!isspace(c))
+	    break;
+    }
+
+    ungetc(c, fp);
+    return;
+}
+
+static int move_text(FILE *fp)
+{
+    int c;
+    char move[MAX_PGN_MOVE_LEN + 1], *p;
+    int count;
+
+    while ((c = fgetc(fp)) == '.' || isdigit(c));
+    ungetc(c, fp);
+
+    if (fscanf(fp, " %[OA-Ha-hNQKRBP1-8#=x+-]%n", move, &count) != 1)
+	return 1;
+
+    p = (move) + count;
+
+    /* Remove trailing things from the move like check etc... */
+    while (*--p != 'O' && !isdigit(*p))
+	*p = 0;
+
+    add_to_history(&game[gindex].history, &game[gindex].hindex,
+	    &game[gindex].htotal, move);
+
+    return 0;
+}
+
+static void nag_text(FILE *fp)
+{
+    int c, i, t;
+    char nags[5], *n = nags;
+    int nag = 0;
+
+    while ((c = fgetc(fp)) != EOF && !isspace(c)) {
+	if (c == '$') {
+	    while ((c = fgetc(fp)) != EOF && isdigit(c))
+		*n++ = c;
+
+	    break;
+	}
+
+	if (c == '!') {
+	    if ((c = fgetc(fp)) == '!')
+		nag = 3;
+	    else if (c == '?')
+		nag = 5;
+	    else {
+		ungetc(c, fp);
+		nag = 1;
+	    }
+
+	    break;
+	}
+	else if (c == '?') {
+	    if ((c = fgetc(fp)) == '?')
+		nag = 4;
+	    else if (c == '!')
+		nag = 6;
+	    else {
+		ungetc(c, fp);
+		nag = 2;
+	    }
+
+	    break;
+	}
+	else if (c == '~')
+	    nag = 13;
+	else if (c == '=') {
+	    if ((c = fgetc(fp)) == '+')
+		nag = 15;
+	    else {
+		ungetc(c, fp);
+		nag = 10;
+	    }
+
+	    break;
+	}
+	else if (c == '+') {
+	    if ((t = fgetc(fp)) == '=')
+		nag = 14;
+	    else if (t == '-')
+		nag = 18;
+	    else if (t == '/') {
+		if ((i = fgetc(fp)) == '-')
+		    nag = 16;
+		else
+		    ungetc(i, fp);
+
+		break;
+	    }
+	    else
+		ungetc(t, fp);
+
+	    break;
+	}
+	else if (c == '-') {
+	    if ((t = fgetc(fp)) == '+')
+		nag = 18;
+	    else if (t == '/') {
+		if ((i = fgetc(fp)) == '+')
+		    nag = 17;
+		else
+		    ungetc(i, fp);
+
+		break;
+	    }
+	    else
+		ungetc(t, fp);
+
+	    break;
+	}
+    }
+
+    *n = 0;
+
+    if (!nag)
+	nag = (nags[0]) ? atoi(nags) : 0;
+
+    if (!nag || nag < 0 || nag > 255)
+	return;
+
+    for (i = 0; i < MAX_PGN_NAG; i++) {
+	if (game[gindex].history[game[gindex].hindex - 1].nag[i])
+	    continue;
+
+	game[gindex].history[game[gindex].hindex - 1].nag[i] = nag;
+	break;
+    }
+
+    return;
+}
+
+static void move_annotation(FILE *fp)
+{
+    char *a = game[gindex].history[game[gindex].hindex - 1].comment;
+    int c, lastchar = 0;
+
+    skip_leading_space(fp);
+
+    while ((c = fgetc(fp)) != EOF && c != '}') {
+	if (c == '\n')
+	    c = ' ';
+
+	if (isspace(c) && isspace(lastchar))
+	    continue;
+
+	*a++ = lastchar = c;
+    }
+
+    *a = 0;
+
+    strncpy(game[gindex].history[game[gindex].hindex - 1].comment, 
+	    trim(game[gindex].history[game[gindex].hindex - 1].comment),
+	    sizeof(game[gindex].history[game[gindex].hindex - 1].comment));
+
+    return;
+}
+
+static void pgn_tag(FILE *fp)
+{
+    char name[255], *n = name;
+    char value[255], *v = value;
+    int c, i = 0;
+    int quoted_string = 0;
+
+    skip_leading_space(fp);
+
+    /* The tag name is up until the first whitespace. */
+    while ((c = fgetc(fp)) != EOF && !isspace(c))
+	*n++ = c;
+
+    *n = 0;
+    *name = toupper(*name);
+	
+    skip_leading_space(fp);
+
+    /* The value is until the first closing bracket. */
+    while ((c = fgetc(fp)) != EOF && c != ']') {
+	if (i++ == 0 && c == '\"') {
+	    quoted_string = 1;
+	    continue;
+	}
+
+	*v++ = c;
+    }
+
+    *v = 0;
+
+    while (isspace(*--v))
+	*v = 0;
+
+    if (*v == '\"')
+	*v = 0;
+
+    while (isspace(*--v))
+	*v = 0;
+
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, name, 
+	    remove_pgn_tag_escapes(value));
 
     return;
 }
@@ -337,10 +445,12 @@ static void reset_game_data()
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
-    char buf[LINE_MAX], *tmp;
+    char buf[LINE_MAX] = {0}, *p = buf;
+    int c;
     int tag_section = 0;
+    int firstrun = 1;
 
-   if (!*filename) {
+    if (!*filename) {
 	reset_game_data();
 	init_data();
 	return 0;
@@ -352,139 +462,102 @@ int parse_pgn_file(const char *filename)
     reset_game_data();
     game = Calloc(1, sizeof(struct games));
 
-    while ((tmp = fgets(buf, sizeof(buf), fp)) != NULL) {
-	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
-	int i;
-	char tbuf[MAX_TIME_LEN + 1] = {0};
-	int offset;
-	struct tm tp;
+    while (1) {
+	if ((c = fgetc(fp)) == EOF) {
+	    if (feof(fp))
+		break;
 
-	/* Standard file comment. This has nothing to do with annotations. */
-	if (*tmp == '%')
-	    continue;
+	    if (ferror(fp)) {
+		message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+		clearerr(fp);
+		continue;
+	    }
+	}
 
-	if (tag_section && *tmp == '\n') {
-	    tag_section = 0;
+	if (c == '%' || c == ';') {
+	    while ((c = fgetc(fp)) != EOF && c != '\n');
 	    continue;
 	}
 
-	offset = strlen(tmp);
-	tmp = trim(tmp);
+	if (isspace(c))
+	    continue;
 
-	/* Must be a roster tag... */
-	if (*tmp == '[') {
+	if (c == '$' || c == '!' || c == '?' || c == '+' || c == '-' || 
+		c == '~' || c == '=') {
+	    ungetc(c, fp);
+	    nag_text(fp);
+	    continue;
+	}
+
+	if (c == '{') {
+	    move_annotation(fp);
+	    continue;
+	}
+
+	if (c == '[') {
 	    if (!tag_section) {
 		tag_section = 1;
+
 		game = Realloc(game, (gindex + 2) * sizeof(struct games));
 		game[gindex + 1].pindex = game[gindex + 1].hindex = 0;
 		memset(&game[gindex + 1].pgn, 0, sizeof(struct pgndata));
 		memset(&game[gindex + 1].history, 0, sizeof(struct history));
+
+		if (firstrun)
+		    firstrun = 0;
+		else
+		    gindex++;
 	    }
 
-	    tmp++;
-
-	    if (sscanf(tmp, "%s %[^]]", token, value) == 2) {
-		tmp = value;
-
-		if (*tmp == '\"')
-		    tmp++;
-
-		if (tmp[strlen(tmp) - 1] == '\"')
-		    tmp[strlen(tmp) - 1] = 0;
-
-		strncpy(value, tmp, sizeof(value));
-
-		if (strcasecmp(token, "Date") == 0) {
-		    if (strptime(value, PGN_TIME_FORMAT, &tp) != NULL) {
-			strftime(tbuf, sizeof(tbuf), TIME_FORMAT, &tp);
-			strncpy(value, (char *)tbuf, sizeof(value));
-		    }
-		}
-		else if (strcasecmp(token, "Result") == 0) {
-		    for (i = 0; i < NARRAY(fancy_results); i++) {
-			if (strcmp(value, fancy_results[i].pgn) == 0)
-			    strncpy(value, fancy_results[i].fancy, 
-				    sizeof(value));
-		    }
-		}
-		else if (strcasecmp(token, "Round") == 0) {
-		    if (*value == '-' || *value == '?')
-			*value = 0;
-		}
-
-		if (!*value)
-		    strncpy(value, UNKNOWN, sizeof(value));
-
-		add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, 
-			token, remove_pgn_tag_escapes(value));
-	    }
-
+	    pgn_tag(fp);
 	    continue;
 	}
-    
-	if (!*tmp)
-	    continue;
 
-	/* Must be move text... */
-	fseek(fp, -(offset), SEEK_CUR);
-	game[gindex].hindex = game[gindex].htotal = 0;
-
-	while (!feof(fp)) {
-	    char move[MAX_PGN_MOVE_LEN + 1];
-	    int moven, count;
-	    int c = 0;
-
-	    if (fscanf(fp, "%d. %7[a-zA-Z0-9+=#-] %n", &moven, move, &count)
-		    == 2) {
-		add_move(fp, move);
-
-		/* Black. */
-		if (fscanf(fp, " %7[a-zA-Z0-9+=#-] %n", move, &offset) == 1)
-		    add_move(fp, move);
-
-		continue;
-	    }
-
-	    /* No move text, NAG or comments. Must be a game terminating
-	     * marker...
-	     */
-	    offset += count;
-	    fseek(fp, -(offset), SEEK_CUR);
-	    fread(buf, sizeof(char), offset, fp); 
-
-	    while (!feof(fp)) {
-		if ((c = fgetc(fp)) == '\n')
-		    break;
-
-		buf[offset++] = c;
-	    }
-
+	/* FIXME EOG markers. */
+	if (isdigit(c) || (c >= 'a' && c <= 'h') || c == 'N' || c == 'K'
+		|| c == 'Q' || c == 'B' || c == 'R' || c == 'P' || c == 'O') {
 	    ungetc(c, fp);
-	    buf[offset] = 0;
 
-	    /* Normally this would match the "Result" tag, but not always.
-	     * So just leave it be (it's already defined from the tag parsing
-	     * section above).
-	     */
-	    for (i = 0; i < NARRAY(fancy_results); i++) {
-		if (strstr(buf, fancy_results[i].pgn) == 0)
-		    goto done;
-	    }
+	    tag_section = 0;
 
-	    fseek(fp, offset, SEEK_CUR);
-	    /*
-	       printf("parse error?\n");
-	       */
-done:
-	    break;
+	    if (move_text(fp) == 0)
+		continue;
 	}
 
-	gindex++;
+	if (strcmp(buf, "*") == 0) {
+	    goto special;
+	}
+	/*
+	else if (strcmp(buf, "1-0") == 0) {
+	    printf("white wins\n");
+	    bzero(buf, sizeof(buf));
+	    p = buf;
+	    continue;
+	}
+	else if (strcmp(buf, "0-1") == 0) {
+	    printf("black wins\n");
+	    bzero(buf, sizeof(buf));
+	    p = buf;
+	    continue;
+	}
+	else if (strcmp(buf, "1/2-1/2") == 0) {
+	    printf("draw\n");
+	    bzero(buf, sizeof(buf));
+	    p = buf;
+	    continue;
+	}
+	*/
+
+	*p++ = c;
+	DEBUG("unparsed: '%s'\n", buf);
+
+special:
+	bzero(buf, sizeof(buf));
+	p = buf;
     }
 
-    gtotal = gindex;
-
     fclose(fp);
+    gtotal = gindex + 1;
     return 0;
 }
 

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.29 2002-12-27 14:36:01 bjk Exp $ */
+/* $Id: common.h,v 1.30 2002-12-30 14:25:44 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -71,7 +71,7 @@ enum {
     PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK, PGN_RESULT
 };
 
-struct {
+struct board_matrix {
     chtype icon;
 } board[8][8];
 
