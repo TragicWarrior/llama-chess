@@ -1,3 +1,9 @@
+2002-12-21 Saturday 16:51  Ben Kibbey <bjk@arbornet.org>
+
+	* configure.ac (1.8):
+	
+	Release version 0.1.2.
+
 2002-12-21 Saturday 16:32  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: Makefile.am (1.6), cboard.c (1.42), cboard.h (1.29),
