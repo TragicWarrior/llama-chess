@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.51 2003-01-08 21:54:06 bjk Exp $ */
+/* $Id: cboard.c,v 1.52 2003-01-08 21:59:42 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -463,7 +463,7 @@ void game_loop()
     while (!quit) {
 	int c = 0;
 	fd_set fds;
-	int n, len;
+	int i, n, len;
 	char enginebuf[8192] = {0};
 	struct timeval tv;
 	char *tmp;
@@ -649,8 +649,8 @@ blah:
 		break;
 	    case 'S':
 	    case 's':
-		for (c = n = 0; c < gtotal; c++) {
-		    if (!game[c].htotal)
+		for (i = n = 0; i < gtotal; i++) {
+		    if (!game[i].htotal)
 			continue;
 
 		    n = 1;
@@ -684,9 +684,9 @@ blah:
 
 		    game[gindex].pindex = 0;
 
-		    for (c = 0; tmppgn[c].token[0]; c++)
+		    for (i = 0; tmppgn[i].token[0]; i++)
 			add_pgn_data(&game[gindex].pgn, &game[gindex].pindex,
-				tmppgn[c].token, tmppgn[c].value);
+				tmppgn[i].token, tmppgn[i].value);
 		}
 
 		if ((tmp = get_input(SAVE_PGN, pgnfile, 1, 1, EXTRA_BROWSE,
