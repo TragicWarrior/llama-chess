@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.61 2003-02-07 19:44:29 bjk Exp $ */
+/* $Id: common.h,v 1.62 2003-09-23 14:30:08 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -275,8 +275,10 @@ int dump_message(const char *, const char *, int, const char *,
 char *trim(char *);
 
 #ifdef DEBUG
-void DUMP(int, const char *, ...);
-void dump_board(BOARD, int);
+#define DUMP(fmt, args...)	(write_debug_output(0, fmt, ## args))
+#define DUMP_F(fmt, args...)	(write_debug_output(1, fmt, ## args))
+void write_debug_output(int, const char *, ...);
+void dump_board(int, BOARD);
 void dump_flags(int);
 #endif
 

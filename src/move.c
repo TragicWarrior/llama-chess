@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.27 2003-02-07 19:44:30 bjk Exp $ */
+/* $Id: move.c,v 1.28 2003-09-23 14:30:08 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1113,7 +1113,7 @@ int parse_move_text(BOARD b, char *move)
 	    }
 	    else
 #ifdef DEBUG
-		DUMP(1, "Pawn (move: '%s'): %c\n", move, *p++);
+		DUMP_F("Pawn (move: '%s'): %c\n", move, *p++);
 #else
 	        p++;
 #endif

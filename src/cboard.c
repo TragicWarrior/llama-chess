@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.97 2003-02-07 19:44:29 bjk Exp $ */
+/* $Id: cboard.c,v 1.98 2003-09-23 14:30:08 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -2148,7 +2148,7 @@ int main(int argc, char *argv[])
 
     srandom(getpid());
 
-/*
+    /*
 #ifdef DEBUG
     switch (filetype) {
 	case PGN_FILE:
@@ -2164,7 +2164,7 @@ int main(int argc, char *argv[])
 	    break;
     }
 #endif
-*/
+    */
 
     if (initscr() == NULL)
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);

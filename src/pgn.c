@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.89 2003-02-07 19:44:30 bjk Exp $ */
+/* $Id: pgn.c,v 1.90 2003-09-23 14:30:09 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -346,8 +346,8 @@ int move_text(FILE *fp)
 	    &game[gindex].htotal, p);
 
     /*
-    printf("%s\n", p);
-    dump_board(pgnboard, 0);
+    DUMP_F("%s\n", p);
+    dump_board(1, pgnboard);
     */
 
     return 0;
@@ -802,7 +802,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 #ifdef DEBUG
 	*p++ = c;
 
-	DUMP(1, "unparsed: '%s'\n", buf);
+	DUMP_F("unparsed: '%s'\n", buf);
 
 	if (strlen(buf) + 1 == sizeof(buf))
 	    bzero(buf, sizeof(buf));
@@ -829,7 +829,7 @@ done:
 
     status.mode = MODE_HISTORY;
     switch_turn();
-    //exit(0);
+//    exit(0);
     return 0;
 }
 
