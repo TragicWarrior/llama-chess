@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.2 2002-12-05 20:49:27 bjk Exp $ */
+/* $Id: engine.c,v 1.3 2002-12-05 21:45:27 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -48,7 +48,7 @@ static void parse_piece(char *str)
 	status.notify = "Game Over!";
     else if (tmp[len - 1] == '+')
 	status.notify = "Check!";
-    else if (tmp[len - 2] == '=') //umm
+    else if (tmp[len - 2] == '=') /* FIXME */
 	status.notify = "Promotion!";
     else
 	status.notify = NULL;
@@ -76,18 +76,50 @@ void parse_engine_output(char *str)
     int i = 0;
     char move[MAX_MOVE_LEN + 1];
 
+
+    if (strstr(str, "Thinking...") != NULL)
+	status.engine = ENGINE_THINKING;
+
+    /* This loads a PGN game into the history array. */
+    if ((buf = strstr(str, "      White   Black")) != NULL) {
+	if ((tmp = strsep(&buf, "\n")) != NULL) {
+	    while ((tmp = strsep(&buf, "\n")) != NULL) {
+		char black[MAX_MOVE_LEN + 1], white[MAX_MOVE_LEN + 1];
+
+		if (!tmp[0])
+		    break;
+
+		if (sscanf(tmp, "%*u%*c%s%s", white, black) != 2) {
+		    message(NULL, ANYKEY, "parse error while getting history");
+		    return;
+		}
+
+		add_to_history(i++, white);
+		add_to_history(i++, black);
+	    }
+
+	    history_index = i;
+	    browse_history = 1;
+	    status.engine = HISTORY_MODE;
+	}
+    }
+
     /* 'switch' command. */
     if (strstr(str, "White to move\n") != NULL) {
 	status.bw = WHITE;
 
 	if (status.turn == BLACK)
 	    status.turn = WHITE;
+
+	return;
     }
     else if (strstr(str, "Black to move\n") != NULL) {
 	status.bw = BLACK;
 
 	if (status.turn == WHITE)
 	    status.turn = BLACK;
+
+	return;
     }
 
     /* Bad engine command or move. */
@@ -106,9 +138,6 @@ void parse_engine_output(char *str)
     /* This is output whenever a move is made/undone (and 'show board'). */
     if ((buf = strstr(str, "white  ")) != NULL || 
 	    (buf = strstr(str, "black  ")) != NULL) {
-
-	if (strstr(buf, "Thinking...") != NULL)
-	    status.engine = ENGINE_THINKING;
 
 	/* Engine finished move, add it to the move history. */
 	if ((tmp = strstr(buf, "My move is : ")) != NULL) {
@@ -154,75 +183,31 @@ void parse_engine_output(char *str)
 	return;
     }
 
-    /* FIXME */
-    /*
-    if (!browse_history) {
-	if ((tmp = strsep(&str, "\n")) != NULL) {
-	    if (isdigit(tmp[0])) {
-		if (sscanf(tmp, "%*u%*c%s", move) != 1)
-		    message(NULL, ANYKEY, "Could not add move to history.");
-		else {
-		    add_to_history(history_index++, move);
-		}
-	    }
-	}
-    }
-    */
-
-    /* This is 'show game' and used when loading a PGN file for use with the
-     * move history.
-     */
-    if ((buf = strstr(str, "      White   Black")) != NULL) {
-	if ((tmp = strsep(&buf, "\n")) != NULL) {
-	    while ((tmp = strsep(&buf, "\n")) != NULL) {
-		char black[MAX_MOVE_LEN + 1], white[MAX_MOVE_LEN + 1];
-
-		if (!tmp[0])
-		    break;
-
-		if (sscanf(tmp, "%*u%*c%s%s", white, black) != 2) {
-		    message(NULL, ANYKEY, "parse error while getting history");
-		    return;
-		}
-
-		add_to_history(i++, white);
-		add_to_history(i++, black);
-	    }
-
-	    history_index = i - 1;
-	    browse_history = 1;
-	    status.engine = HISTORY_MODE;
-	}
-    }
-
     /* Miscellaneous one-liners. */
-    if ((tmp = strstr(str, " No book found.")) != NULL)
-	status.book_method = -1;
-
-    if ((tmp = strstr(str, "book now off")) != NULL)
-	status.book_method = BOOK_OFF;
-
-    if ((tmp = strstr(str, "book now on")) != NULL)
-	status.book_method = BOOK_PREFER;
-
-    if ((tmp = strstr(str, "book now best")) != NULL)
-	status.book_method = BOOK_BEST;
-
-    if ((tmp = strstr(str, "book now worst")) != NULL)
-	status.book_method = BOOK_WORST;
-
-    if ((tmp = strstr(str, "book now random")) != NULL)
-	status.book_method = BOOK_RANDOM;
-
     if ((tmp = strstr(str, "Cannot open file ")) != NULL) {
 	str[strlen(str) - 1] = 0;
 	message(NULL, ANYKEY, "%s", str);
+	return;
     }
 
     if ((tmp = strstr(str, "Cannot write to file ")) != NULL) {
 	str[strlen(str) - 1] = 0;
 	message(NULL, ANYKEY, "%s", str);
+	return;
     }
+
+    if ((tmp = strstr(str, " No book found.")) != NULL)
+	status.book_method = -1; 
+    else if ((tmp = strstr(str, "book now off")) != NULL)
+	status.book_method = BOOK_OFF;
+    else if ((tmp = strstr(str, "book now on")) != NULL)
+	status.book_method = BOOK_PREFER;
+    else if ((tmp = strstr(str, "book now best")) != NULL)
+	status.book_method = BOOK_BEST;
+    else if ((tmp = strstr(str, "book now worst")) != NULL)
+	status.book_method = BOOK_WORST;
+    else if ((tmp = strstr(str, "book now random")) != NULL)
+	status.book_method = BOOK_RANDOM;
 
     return;
 }
