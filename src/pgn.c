@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.13 2002-12-10 23:02:52 bjk Exp $ */
+/* $Id: pgn.c,v 1.14 2002-12-10 23:40:35 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -139,7 +139,7 @@ int parse_pgn_file(const char *filename)
     if ((fp = fopen(filename, "r")) == NULL)
 	return 1;
 
-    pgn_index = status.rounds = 0;
+    pgn_index = status.games = 0;
 
     while ((tmp = fgets(buf, sizeof(buf), fp)) != NULL) {
 	char *token, *value;
@@ -154,7 +154,7 @@ int parse_pgn_file(const char *filename)
 
 	if (tag_section && tmp[0] == '\n') {
 	    tag_section = 0;
-	    status.rounds++;
+	    status.games++;
 	    continue;
 	}
 
@@ -474,8 +474,7 @@ gotitem:
 		goto cleanup;
 	}
 	else if (strcmp(data[selected].token, "Round") == 0)
-	    tmp = get_input(buf, itoa(status.rounds), 1, 1, 
-			FIELD_TYPE_PGN_ROUND);
+	    tmp = get_input(buf, NULL, 1, 1, FIELD_TYPE_PGN_ROUND);
 	else
 	    tmp = get_input(buf, data[selected].value, 0, 0, -1);
 

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.9 2002-12-10 22:18:10 bjk Exp $ */
+/* $Id: common.h,v 1.10 2002-12-10 23:40:35 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -49,8 +49,10 @@
 #define HISTORY_TITLE	"Move History"
 
 FILE *debugfp;
-#define DEBUG(fmt, args...)	(debugfp = fopen("debug", "a"), \
-	fprintf(debugfp, fmt, ##args), fclose(debugfp))
+
+#define DEBUG(fmt, args...)	debugfp = fopen("debug", "a"); \
+	fprintf(debugfp, fmt, ##args); \
+        fclose(debugfp)
 
 #define ACK			message("ack", "ack", "ack")
 #define MAX_PGN_LINE_LEN	255
@@ -97,7 +99,7 @@ struct {
     int book_method;
     char *notify;
     int turn;
-    int rounds;
+    int games;
 } status;
 
 struct pgndata {

@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.4 2002-12-06 21:41:20 bjk Exp $ */
+/* $Id: engine.c,v 1.5 2002-12-10 23:40:35 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -57,9 +57,6 @@ static void parse_piece(char *str)
     return;
 }
 
-#define HUMAN 0
-#define ENGINE 1
-
 void parse_engine_output(char *str)
 {
     char *buf = str, *tmp;
@@ -68,6 +65,18 @@ void parse_engine_output(char *str)
     char move[MAX_MOVE_LEN + 1];
 
 
+    if (strstr(str, "1-0 {") != NULL || strstr(str, "0-1 {") != NULL ||
+	    strstr(str, "1/2-1/2 {") != NULL) {
+	tmp = strsep(&str, " ");
+
+	/*
+	for (i = 0; i < NARRAY(fancy_results); i++) {
+	    if (strcmp(tmp, fancy_results[i].pgn) == 0)
+		strncpy(data.result, fancy_results[i].fancy,
+			sizeof(data.result));
+	}
+	*/
+    }
     if (strstr(str, "Thinking...") != NULL)
 	status.engine = ENGINE_THINKING;
 

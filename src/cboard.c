@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.17 2002-12-10 22:31:13 bjk Exp $ */
+/* $Id: cboard.c,v 1.18 2002-12-10 23:40:34 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -217,7 +217,7 @@ void update_status()
     mvwprintw(statusw, 4, 1, "  Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
-    mvwprintw(statusw, 5, 1, " Round: %i", status.rounds);
+    mvwprintw(statusw, 5, 1, "Game #: %i", status.games);
 
     if (status.notify) {
 	wattron(statusw, NOTIFY_STATUS);
@@ -510,7 +510,7 @@ void game_loop()
 		    parse_pgn_file(data.pgnfile);
 		}
 
-		status.rounds = 0;
+		status.games = 0;
 		refresh_all();
 
 		/* FIXME should be done in engine.c*/
