@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.2 2003-01-06 19:59:15 bjk Exp $ */
+/* $Id: move.h,v 1.3 2003-01-06 20:16:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,5 +38,7 @@ enum {
 /* These are used to determine whether a castle is legal.
  */
 int wk, bk, rqw, rkw, rqb, rkb;
+
+char *random_agony(void);
 
 #endif

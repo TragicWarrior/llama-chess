@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.13 2003-01-06 19:59:15 bjk Exp $ */
+/* $Id: history.h,v 1.14 2003-01-06 20:16:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -23,8 +23,6 @@
 #define NAG_PROMPT	"Type CTRL-g for help"
 #define NAG_HELP	"NAG Menu Keys"
 #define VIEW_ANNOTATION	"Viewing Annotation for"
-
-char **agony;
 
 struct nags {
     char line[80];

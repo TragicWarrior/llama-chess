@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.46 2002-12-30 19:00:55 bjk Exp $ */
+/* $Id: cboard.c,v 1.47 2003-01-06 20:16:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -37,6 +37,42 @@
 #include "common.h"
 #include "colors.h"
 #include "cboard.h"
+
+char *random_agony()
+{
+    static int index;
+    FILE *fp;
+    char line[LINE_MAX];
+
+    if (index == -1 || !config.agony || 
+	    (browse_history && !config.historyagony))
+	return NULL;
+
+    if (!agony) {
+	if ((fp = fopen(config.agonyfile, "r")) == NULL) {
+	    index = -1;
+	    message(ERROR, ANYKEY, "Could not open agony file.");
+	    return NULL;
+	}
+
+	while (!feof(fp)) {
+	    if (fscanf(fp, " %[^\n] ", line) == 1) {
+		agony = Realloc(agony, (index + 2) * sizeof(char *));
+		agony[index++] = strdup(trim(line));
+	    }
+	}
+
+	agony[index] = NULL;
+	fclose(fp);
+
+	if (agony[0] == NULL || !index) {
+	    index = -1;
+	    return NULL;
+	}
+    }
+
+    return agony[random() % index];
+}
 
 static chtype board_graphics(chtype c)
 {

@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.2 2003-01-06 19:59:15 bjk Exp $ */
+/* $Id: move.c,v 1.3 2003-01-06 20:16:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -424,10 +424,14 @@ int castle_move(struct board_matrix b[][8], int which)
 	b[ROWTOBOARD(row)][COLTOBOARD(7)].icon = int_to_piece(KING);
 	b[ROWTOBOARD(row)][COLTOBOARD(8)].icon = int_to_piece(OPEN_SQUARE);
 
-	if (status.turn == WHITE)
+	if (status.turn == WHITE) {
 	    wk = rkw = 1;
-	else
+	    status.notify = "White castles king side";
+	}
+	else {
 	    bk = rkb = 1;
+	    status.notify = "Black castles king side";
+	}
     }
     else {
 	if ((status.turn == WHITE && (wk || rqw)) || (status.turn == BLACK && (bk || rqb)))
@@ -449,10 +453,14 @@ int castle_move(struct board_matrix b[][8], int which)
 	b[ROWTOBOARD(row)][COLTOBOARD(2)].icon = int_to_piece(KING);
 	b[ROWTOBOARD(row)][COLTOBOARD(3)].icon = int_to_piece(ROOK);
 
-	if (status.turn == WHITE)
+	if (status.turn == WHITE) {
 	    wk = rqw = 1;
-	else
+	    status.notify = "White castles queen side";
+	}
+	else {
 	    bk = rqb = 1;
+	    status.notify = "Black castles queen side";
+	}
     }
 
     return 0;
@@ -592,6 +600,8 @@ int parse_move_text(struct board_matrix b[][8], char *move)
 
 		b[ROWTOBOARD(trow)][COLTOBOARD(col)].icon =
 		    int_to_piece(OPEN_SQUARE);
+
+		status.notify = "En Passant";
 	    }
 	}
     }
@@ -683,10 +693,19 @@ int parse_move_text(struct board_matrix b[][8], char *move)
     if (piece_to_int(piece) != OPEN_SQUARE) {
 	if (val_piece_side(piece))
 	    return 2;
+
+	if (piece_side(piece) == WHITE)
+	    game[gindex].bcaptures++;
+	else
+	    game[gindex].wcaptures++;
+
+	status.notify = random_agony();
     }
 
-    if (promo)
+    if (promo) {
 	piece = int_to_piece(promo);
+	status.notify = "Promotion!";
+    }
     else
 	piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
 

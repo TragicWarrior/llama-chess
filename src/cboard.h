@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.32 2002-12-27 14:36:01 bjk Exp $ */
+/* $Id: cboard.h,v 1.33 2003-01-06 20:16:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -75,6 +75,7 @@ PANEL *statusp;
 int selected_y, selected_x;
 int quit;
 int gactive;
+char **agony;
 
 pid_t init_chess_engine(void);
 int parse_pgn_file(const char *);
