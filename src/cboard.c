@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.7 2002-12-06 17:27:46 bjk Exp $ */
+/* $Id: cboard.c,v 1.8 2002-12-06 19:11:13 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -142,76 +142,25 @@ void draw_board()
     return;
 }
 
-void select_piece(int prow, int pcol)
-{
-    int row, col;
-
-    for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++) {
-	    if (board[row][col].icon == 0);
-	}
-    }
-
-
-    return;
-}
-
-unsigned char int_to_char(int n)
-{
-    int c = 0;
-
-    switch (n) {
-	case 0:
-	    c = '\060';
-	    break;
-	case 1:
-	    c = '\061';
-	    break;
-	case 2:
-	    c = '\062';
-	    break;
-	case 3:
-	    c = '\063';
-	    break;
-	case 4:
-	    c = '\064';
-	    break;
-	case 5:
-	    c = '\065';
-	    break;
-	case 6:
-	    c = '\066';
-	    break;
-	case 7:
-	    c = '\067';
-	    break;
-	default:
-	    c = '\0';
-	    break;
-    }
-	    
-    return c;
-}
-
 void parse_piece_command(int dest_y, int dest_x)
 {
-    char str[5] = {0};
-    int n = 0;
+    char str[MAX_MOVE_LEN] = {0};
+    char buf[MAX_MOVE_LEN] = {0};
 
+    /* FIXME something for ambiguous pawn moves. */
     switch (selected_piece.icon) {
 	case 'p':
 	case 'P':
 	    break;
 	default:
-	    str[n++] = toupper(selected_piece.icon);
+	    snprintf(str, sizeof(str), "%c%i", selected_piece.icon,
+		    selected_piece.row);
 	    break;
     }
 
-    str[n++] = x_grid_chars[dest_x];
-    str[n++] = int_to_char(7 - dest_y + 1);
-    str[n] = '\n';
-
-    send_to_engine(str);
+    snprintf(buf, sizeof(buf), "%c%i", x_grid_chars[dest_x - 1], dest_y);
+    strncat(str, buf, sizeof(str));
+    send_to_engine("%s\n", str);
     selected_piece.icon = selected_x = selected_y = 0;
     return;
 }
@@ -434,8 +383,7 @@ void edit_pgn_data()
 	int i;
 	unsigned selected = 0;
 	int cy = 2;
-	chtype buf[3] = {0};
-	char buf2[sizeof(buf)] = {0};
+	char buf[3] = {0};
 	char editprompt[76] = {0};
 	char *tmp = NULL;
 
@@ -510,14 +458,9 @@ void edit_pgn_data()
 		    break;
 		case KEY_RETURN:
 		    /* Get pgn_index number. */
-		    mvwinchnstr(win, cy, 1, buf, sizeof(buf) - 1);
+		    mvwinnstr(win, cy, 1, buf, sizeof(buf) - 1);
 
-		    for (i = 0; i < sizeof(buf); i++)
-			buf2[i] = buf[i] & A_CHARTEXT;
-
-		    buf2[i] = 0;
-
-		    if(sscanf(buf2, "%u", &selected) != 1) {
+		    if(sscanf(buf, "%u", &selected) != 1) {
 			message(ERROR, ANYKEY, "Could not get index number");
 			continue;
 		    }
@@ -625,7 +568,7 @@ void pgn_info()
 
 void game_loop()
 {
-    int rrow = 0, rcol = 0;
+    int rrow = 8, rcol = 1;
 
     cursor_x = 2, cursor_y = 1;
 
@@ -826,9 +769,9 @@ void game_loop()
 		    break;
 
 		if (cursor_y - 2 < 1)
-		    cursor_y = BOARD_HEIGHT - 3, rrow = 7;
+		    cursor_y = BOARD_HEIGHT - 3, rrow = 1;
 		else
-		    cursor_y -= 2, rrow--;
+		    cursor_y -= 2, rrow++;
 		break;
 	    case 'k':
 	    case KEY_DOWN:
@@ -836,9 +779,9 @@ void game_loop()
 		    break;
 
 		if (cursor_y + 2 > BOARD_HEIGHT - 2)
-		    cursor_y = 1, rrow = 0;
+		    cursor_y = 1, rrow = 8;
 		else
-		    cursor_y += 2, rrow++;
+		    cursor_y += 2, rrow--;
 		break;
 	    case 'l':
 	    case KEY_LEFT:
@@ -852,7 +795,7 @@ void game_loop()
 		}
 
 		if (cursor_x - 4 < 2)
-		    cursor_x = BOARD_WIDTH - 4, rcol = 7;
+		    cursor_x = BOARD_WIDTH - 4, rcol = 8;
 		else
 		    cursor_x -= 4, rcol--;
 		break;
@@ -867,7 +810,7 @@ void game_loop()
 		}
 
 		if (cursor_x + 4 > BOARD_WIDTH - 4)
-		    cursor_x = 2, rcol = 0;
+		    cursor_x = 2, rcol = 1;
 		else
 		    cursor_x += 4, rcol++;
 		break;

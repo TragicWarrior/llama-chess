@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.3 2002-12-06 17:27:46 bjk Exp $ */
+/* $Id: cboard.h,v 1.4 2002-12-06 19:11:13 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -45,6 +45,12 @@ const char *book_methods[] = {
     "off", "prefer", "best", "worst", "random"
 };
 
+struct {
+    int icon;
+    int row;
+    int col;
+} selected_piece;
+
 WINDOW *boardw;
 PANEL *boardp;
 WINDOW *statusw;
@@ -53,12 +59,6 @@ WINDOW *dataw;
 PANEL *datap;
 WINDOW *historyw;
 PANEL *historyp;
-
-struct {
-    int icon;
-    int row;
-    int col;
-} selected_piece;
 
 const char *x_grid_chars = "abcdefgh";
 int piece_selected;
