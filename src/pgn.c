@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.20 2002-12-14 21:00:53 bjk Exp $ */
+/* $Id: pgn.c,v 1.21 2002-12-16 17:54:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <err.h>
 #include <string.h>
 #include <time.h>
@@ -312,7 +313,7 @@ int parse_pgn_file(const char *filename)
 	ungetc(i, fp);
 
 	while (!feof(fp)) {
-	    char white[MAX_MOVE_LEN], black[MAX_MOVE_LEN];
+	    char white[MAX_PGN_MOVE_LEN], black[MAX_PGN_MOVE_LEN];
 	    int count, moven;
 	    char *tmp2;
 
@@ -447,8 +448,6 @@ static void dump_save_data(FILE *fp, struct pgndata *data)
 int save_pgn(char *filename, struct pgndata *data, int isfifo)
 {
     FILE *fp;
-    pid_t pid;
-    int status;
     int fd;
     char *tmp;
 
@@ -481,27 +480,7 @@ int save_pgn(char *filename, struct pgndata *data, int isfifo)
 	if ((fp = fopen(filename, "a")) == NULL)
 	    return 1;
 
-    /*
-    if (isfifo) {
-	switch ((pid = fork())) {
-	    case -1:
-		message(ERROR, ANYKEY, "fork(): %s", strerror(errno));
-		goto cleanup;
-	    case 0:
-		dump_save_data(fp, data);
-		fclose(fp);
-		unlink(filename);
-		_exit(EXIT_SUCCESS);
-	    default:
-		waitpid(pid, &status, 0);
-		return 0;
-	}
-    }
-    */
-
     dump_save_data(fp, data);
-
-cleanup:
     fclose(fp);
 
     if (isfifo)

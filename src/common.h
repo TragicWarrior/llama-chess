@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.15 2002-12-14 21:00:53 bjk Exp $ */
+/* $Id: common.h,v 1.16 2002-12-16 17:54:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -48,8 +48,6 @@ FILE *debugfp;
 
 #define NONE			"none"
 #define x_grid_chars		"abcdefgh"
-#define MAX_PGN_LINE_LEN	255
-#define MAX_MOVE_LEN		7 /* As defined by SAN. */
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
 #define CTRL(x)			((x) & 0x1f)
 #define KEY_ESCAPE		CTRL('[')
@@ -95,9 +93,9 @@ struct pgndata {
 };
 
 struct history {
-    char move[MAX_MOVE_LEN];
+    char move[MAX_PGN_MOVE_LEN];
     char comment[MAX_PGN_LINE_LEN];
-    int nag;
+    int nag[MAX_PGN_NAG];
 };
 
 /* This is an array of 'games' structures. One for each game in a file, or
@@ -124,6 +122,7 @@ struct {
 
 struct {
     int history_jump;
+    int book_method;
 } config;
 
 /* Chess engine file descriptors. 0 = from, 1 = to. */

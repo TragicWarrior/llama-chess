@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.9 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: pgn.h,v 1.10 2002-12-16 17:54:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -65,3 +65,4 @@ const char *pgn_info_help[] = {
 void add_to_history(struct history **, int *, int *, const char *);
 void reset_history(void);
 void free_game_data(void);
+void send_to_engine(const char *, ...);
