@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.16 2003-01-28 17:37:21 bjk Exp $ */
+/* $Id: move.c,v 1.17 2003-01-29 00:51:18 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -473,6 +473,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -481,10 +484,14 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 	    p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side(p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -497,6 +504,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -509,6 +519,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -521,6 +534,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -533,6 +549,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -545,6 +564,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -557,6 +579,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    *srow = r;
 		    *scol = c;
 		    count++;
+
+		    if ((*srow && *srow == row) || (*scol && *scol == col))
+			break;
 		}
 	    }
 
@@ -849,17 +874,26 @@ void get_valid_moves(BOARD b, int p, int srow, int scol, int *minr, int *maxr,
 	for (col = 1; VALIDFILE(col); col++) {
 	    int sr = 0, sc = 0;
 
-	    if (p == PAWN)
-		sc = scol;
+	    if (get_source_yx(b, p, row, col, &sr, &sc)) {
+		sc = 0;
+		sr = srow;
 
-	    if (get_source_yx(b, p, row, col, &sr, &sc))
-		continue;
+		if (get_source_yx(b, p, row, col, &sr, &sc)) {
+		    sr = 0;
+		    sc = scol;
+
+		    if (get_source_yx(b, p, row, col, &sr, &sc)) {
+			continue;
+		    }
+		}
+	    }
 
 	    if (sr != srow || sc != scol)
 		continue;
 
 	    b[ROWTOBOARD(row)][COLTOBOARD(col)].valid = 1;
 
+	    /*
 	    if (row < *minr)
 		*minr = row;
 
@@ -871,6 +905,7 @@ void get_valid_moves(BOARD b, int p, int srow, int scol, int *minr, int *maxr,
 
 	    if (col > *maxc)
 		*maxc = col;
+	    */
 	}
     }
 
