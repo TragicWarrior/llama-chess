@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.57 2003-02-01 15:57:44 bjk Exp $ */
+/* $Id: common.h,v 1.58 2003-02-03 17:28:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -196,6 +196,7 @@ struct {
     int validmoves;
     char ics_server[MAXHOSTNAMELEN];
     int ics_port;
+    struct passwd *pwd;
     char *ics_user;
     char *ics_passwd;
     char *nagfile;

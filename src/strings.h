@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.20 2003-02-01 19:39:21 bjk Exp $ */
+/* $Id: strings.h,v 1.21 2003-02-03 17:28:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,6 +22,8 @@
 #ifndef STRINGS_H
 #define STRINGS_H
 
+#define GAME_FIND_EXPRESSION_TITLE	"Find Game by Tag Expression"
+#define GAME_FIND_EXPRESSION_PROMPT	"[name expression:]value expression"
 #define GAME_JUMP_TITLE			"Jump to Game Number"
 #define GAME_HISTORY_JUMP_TITLE		"Jump to Move Number"
 #define GAME_NOTSAVED			"*delete*"

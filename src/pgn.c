@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.81 2003-02-01 21:17:59 bjk Exp $ */
+/* $Id: pgn.c,v 1.82 2003-02-03 17:28:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -23,10 +23,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <pwd.h>
 #include <err.h>
 #include <string.h>
 #include <time.h>
-#include <pwd.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -245,12 +245,8 @@ void set_default_tags()
 {
     time_t now;
     char tbuf[MAX_TIME_LEN + 1] = {0};
-    struct passwd *pwd;
     struct tm *tp;
     int n;
-
-    if ((pwd = getpwuid(getuid())) == NULL)
-	err(EXIT_FAILURE, "getpwuid()");
 
     time(&now);
     tp = localtime(&now);
@@ -261,7 +257,8 @@ void set_default_tags()
     add_tag(&game[gindex].tag, &game[gindex].tindex, "Site", "?");
     add_tag(&game[gindex].tag, &game[gindex].tindex, "Date", tbuf);
     add_tag(&game[gindex].tag, &game[gindex].tindex, "Round", "-");
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "White", pwd->pw_gecos);
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "White", 
+	    config.pwd->pw_gecos);
     add_tag(&game[gindex].tag, &game[gindex].tindex, "Black", "?");
     add_tag(&game[gindex].tag, &game[gindex].tindex, "Result", "*");
 
@@ -790,6 +787,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 	    if ((c == '\n' && nextchar == '\n')) {
 		parse_error = 0;
 		nulltags = 1;
+		tag_section = 0;
 	    }
 	    else
 		continue;
@@ -797,6 +795,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
 	if ((c == '\n' && nextchar == '\n')) {
 	    nulltags = 1;
+	    tag_section = 0;
 	    continue;
 	}
 

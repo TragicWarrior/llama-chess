@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.58 2003-02-01 17:49:03 bjk Exp $ */
+/* $Id: cboard.h,v 1.59 2003-02-03 17:28:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -79,12 +79,12 @@ const char *mainhelp[] = {
     "     n - new game or round        [ - view the previous moves annotation",
     "     N - new game from scratch    i - view PGN roster tags",
     "     > - next game or round*      j - jump to move number*",
-    "     < - previous game or round*",
-    "     J - jump to game or round*   / - find move text expression*",
-    "     x - toggle delete flag*      } - find next move text expression*",
-    "     X - delete flagged games     { - find previous move text expression*",
-    "     r - resume a saved game",
-    "     s - save game",
+    "     < - previous game or round*  / - find move text by expression*",
+    "     J - jump to game or round*   } - find next move text expression*",
+    "     x - toggle delete flag*      { - find previous move text expression*",
+    "     X - delete flagged games     f - find game by tag expression*",
+    "     r - resume a saved game      + - find next game by expression*",
+    "     s - save game                _ - find previous game by expression*",
     "     S - save game with prompt",
     "     q - quit                     * = can take a repeat count",
     NULL

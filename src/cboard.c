@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.87 2003-02-01 17:49:03 bjk Exp $ */
+/* $Id: cboard.c,v 1.88 2003-02-03 17:28:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -850,15 +850,110 @@ static void edit_save_tags(int index)
     return;
 }
 
+static int find_game_exp(char *str, int which, int count)
+{
+    char *nstr = NULL, *exp = NULL;
+    regex_t nexp, vexp;
+    int ret = -1;
+    int g;
+    char buf[255], *tmp;
+    char errbuf[255];
+    int found = 0;
+    int incr = (which == 0) ? -(1) : 1;
+
+    strncpy(buf, str, sizeof(buf));
+    tmp = buf;
+
+    if (strstr(tmp, ":") != NULL) {
+	nstr = strsep(&tmp, ":");
+
+	if ((ret = regcomp(&nexp, nstr,
+			REG_ICASE|REG_EXTENDED|REG_NOSUB)) != 0) {
+	    regerror(ret, &nexp, errbuf, sizeof(errbuf));
+	    cmessage(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	    ret = g = -1;
+	    goto cleanup;
+	}
+    }
+
+    exp = tmp;
+
+    if (exp == NULL)
+	goto cleanup;
+
+    if ((ret = regcomp(&vexp, exp, REG_EXTENDED|REG_NOSUB)) != 0) {
+	regerror(ret, &vexp, errbuf, sizeof(errbuf));
+	cmessage(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	ret = -1;
+	goto cleanup;
+    }
+
+    ret = -1;
+
+    for (g = gindex + incr, found = 0; ; g += incr) {
+	int t;
+
+	if (g == gindex)
+	    break;
+
+	if (g == gtotal)
+	    g = 0;
+	else if (g < 0)
+	    g = gtotal - 1;
+
+	for (t = 0; t < game[g].tindex; t++) {
+	    if (nstr) {
+		if (regexec(&nexp, game[g].tag[t].name, 0, 0, 0) == 0) {
+		    if (regexec(&vexp, game[g].tag[t].value, 0, 0, 0) == 0) {
+			if (count == ++found) {
+			    ret = g;
+			    goto cleanup;
+			}
+		    }
+		}
+	    }
+	    else {
+		if (regexec(&vexp, game[g].tag[t].value, 0, 0, 0) == 0) {
+		    if (count == ++found) {
+			ret = g;
+			goto cleanup;
+		    }
+		}
+	    }
+	}
+
+	ret = -1;
+    }
+
+cleanup:
+    if (nstr)
+	regfree(&nexp);
+
+    if (g != -1)
+	regfree(&vexp);
+
+    return ret;
+}
+
 void game_loop()
 {  
     int error_recover = 0;
     int pushkey = 0;
     int count = 0;
-    int crow = 8, ccol = 1;
-    char regexp[255] = {0};
+    int crow = 2, ccol = 5;
+    char moveexp[255] = {0};
+    char gameexp[255] = {0};
     int delete_count = 0;
     int markstart = -1, markend = -1;
+
+    /* This is to just initialize the default tags etc. */
+    parse_pgn_file(board, moveexp);
+    draw_board(board, crow, ccol);
+    update_tag_window();
+    update_all();
+
+    if (parse_pgn_file(board, pgnfile))
+	pgnfile[0] = '\0';
 
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
@@ -973,6 +1068,30 @@ void game_loop()
 	switch (c) {
 	    int annotate;
 
+	    case '_':
+	    case '+':
+	    case 'f':
+		if (gtotal < 2)
+		    break;
+
+		if (!*gameexp || c == 'f') {
+		    if ((tmp = get_input(GAME_FIND_EXPRESSION_TITLE, gameexp, 
+				    1, 1, GAME_FIND_EXPRESSION_PROMPT, NULL, 
+				    NULL, 0, -1)) == NULL)
+			break;
+
+		    strncpy(gameexp, tmp, sizeof(gameexp));
+		}
+
+	        if ((n = find_game_exp(gameexp, (c == '_') ? 0 : 1,
+				(count) ? count : 1)) == -1)
+		    break;
+
+		gindex = n;
+		init_history(board);
+		update_all();
+		update_tag_window();
+		break;
 	    case '!':
 	        crow = 1;
 		break;
@@ -1024,18 +1143,21 @@ void game_loop()
 	    case '{':
 	    case '}':
 	    case '/':
+		if (game[gindex].htotal < 2)
+		    break;
+
 		n = 0;
 
-	        if (!*regexp || c == '/') {
-		    if ((tmp = get_input(FIND_REGEXP, regexp, 1, 1, NULL, 
+	        if (!*moveexp || c == '/') {
+		    if ((tmp = get_input(FIND_REGEXP, moveexp, 1, 1, NULL, 
 				    NULL, NULL, 0, -1)) == NULL)
 			break;
 
-		    strncpy(regexp, tmp, sizeof(regexp));
+		    strncpy(moveexp, tmp, sizeof(moveexp));
 		    n = 1;
 		}
 
-		if ((n = find_move_exp(regexp, n, (c == '{') ? 0 : 1,
+		if ((n = find_move_exp(moveexp, n, (c == '{') ? 0 : 1,
 				(count) ? count : 1)) == -1)
 		    break;
 
@@ -1778,7 +1900,6 @@ static void set_defaults()
 int main(int argc, char *argv[])
 {
     int opt;
-    struct passwd *pwd;
     struct stat st;
     char buf[FILENAME_MAX];
     char datadir[FILENAME_MAX];
@@ -1837,10 +1958,10 @@ int main(int argc, char *argv[])
 	}
     }
 
-    if ((pwd = getpwuid(getuid())) == NULL)
+    if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
 
-    snprintf(datadir, sizeof(datadir), "%s/.cboard", pwd->pw_dir);
+    snprintf(datadir, sizeof(datadir), "%s/.cboard", config.pwd->pw_dir);
     snprintf(buf, sizeof(buf), "%s/cc.data", datadir);
     config.ccfile = strdup(buf);
     snprintf(buf, sizeof(buf), "%s/nag.data", datadir);
@@ -1882,9 +2003,6 @@ int main(int argc, char *argv[])
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
     signal(SIGINT, catch_signal);
-
-    if (parse_pgn_file(board, pgnfile))
-	exit(EXIT_FAILURE);
 
     srandom(getpid());
 
