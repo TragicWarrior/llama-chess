@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.25 2002-12-20 17:14:08 bjk Exp $ */
+/* $Id: common.h,v 1.26 2002-12-20 21:46:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -125,7 +125,8 @@ struct {
 
 enum { 
     CONF_WHITE, CONF_BLACK, CONF_SELECTED, CONF_CURSOR, CONF_BORDER, 
-    CONF_TITLE, CONF_NOTIFY, CONF_ENGINE, CONF_MESSAGE, CONF_MAX_COLORS
+    CONF_TITLE, CONF_NOTIFY, CONF_ENGINE, CONF_MESSAGE, CONF_GRAPHICS,
+    CONF_COORDS, CONF_MAX_COLORS
 };
 
 struct colors {
@@ -175,6 +176,7 @@ void draw_window_title(WINDOW *, const char *, int);
 void *Calloc(size_t, size_t);
 void *Realloc(void *, size_t);
 int message(const char *, const char *, const char *, ...);
+int message_uncentered(const char *, const char *, const char *, ...);
 void draw_window_title(WINDOW *, const char *, int);
 void help(const char *, const char **);
 char *trim(char *);

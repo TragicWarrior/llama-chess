@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.20 2002-12-20 00:49:06 bjk Exp $ */
+/* $Id: history.c,v 1.21 2002-12-20 21:46:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -77,10 +77,11 @@ static void view_nag(void *arg)
 
 	strncat(line, nag[game[gindex].history[index].nag[i] - 1].line,
 		sizeof(line));
-	strncat(line, ". ", sizeof(line));
+	strncat(line, "\n", sizeof(line));
     }
 
-    message(buf, ANYKEY, "%s", line);
+    line[strlen(line) - 1] = 0;
+    message_uncentered(buf, ANYKEY, "%s", line);
     return;
 }
 
@@ -88,6 +89,9 @@ void view_annotation(int index)
 {
     char buf[MAX_PGN_MOVE_LEN + strlen(VIEW_ANNOTATION) + 4];
     int nag = 0, comment = 0;
+
+    if (index < 0 || index > game[gindex].htotal)
+	return;
 
     if (game[gindex].history[index].comment[0])
         comment++;

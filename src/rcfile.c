@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.10 2002-12-20 17:14:08 bjk Exp $ */
+/* $Id: rcfile.c,v 1.11 2002-12-20 21:46:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -214,6 +214,10 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_ENGINE]);
 	else if (strcmp(var, "message_box") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_MESSAGE]);
+	else if (strcmp(var, "board_graphics") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_GRAPHICS]);
+	else if (strcmp(var, "board_coords") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_COORDS]);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.27 2002-12-20 17:14:08 bjk Exp $ */
+/* $Id: cboard.h,v 1.28 2002-12-20 21:46:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -29,6 +29,14 @@
 #define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
 #define HISTORY_WIDTH	(COLS - DATA_WIDTH)
 #define HISTORY_TITLE	"Move History"
+
+#define BOARD_COORDS	((COLORS) ? \
+	COLOR_PAIR(11) | config.color[CONF_COORDS].attrs : \
+	config.color[CONF_COORDS].nattrs)
+
+#define BOARD_GRAPHICS	((COLORS) ? \
+	COLOR_PAIR(10) | config.color[CONF_GRAPHICS].attrs : \
+	config.color[CONF_GRAPHICS].nattrs)
 
 #define BOARD_WHITE	((COLORS) ? \
 	COLOR_PAIR(1) | config.color[CONF_WHITE].attrs : \
@@ -84,10 +92,10 @@ const char *mainhelp[] = {
     "  SPACE - select piece            g - force engine to make next move",
     "  ENTER - commit selected piece   h - toggle history mode",
     "    ESC - cancel selected piece   a - annotate previous move",
-    "                                v/V - view history annotations",
-    "      N - new game",
+    "                                  v - view the next moves annotation",
+    "      N - new game                V - view the previous moves annotation",
     "      r - resume a saved game",
-    "      i - show PGN game tags",
+    "      i - show PGN roster tags",
     "      s - save game",
     "      > - next game or round",
     "      < - previous game or round",

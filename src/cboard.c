@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.40 2002-12-20 17:14:08 bjk Exp $ */
+/* $Id: cboard.c,v 1.41 2002-12-20 21:46:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -55,43 +55,49 @@ void draw_board()
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
 		    mvwaddch(boardw, row, col, 
-			    (row) ? ACS_LLCORNER : ACS_ULCORNER);
+			    (row) ? ACS_LLCORNER | BOARD_GRAPHICS :
+			    ACS_ULCORNER | BOARD_GRAPHICS);
 		else if (col == maxx - 2)
 		    mvwaddch(boardw, row, col,
-			    (row) ? ACS_LRCORNER : ACS_URCORNER);
+			    (row) ? ACS_LRCORNER | BOARD_GRAPHICS : 
+			    ACS_URCORNER | BOARD_GRAPHICS);
 		else if (!(col % 4))
 		    mvwaddch(boardw, row, col, 
-			    (row) ? ACS_BTEE : ACS_TTEE);
+			    (row) ? ACS_BTEE | BOARD_GRAPHICS : 
+			    ACS_TTEE | BOARD_GRAPHICS);
 		else {
 		    if (col != maxx - 1)
-			mvwaddch(boardw, row, col, ACS_HLINE);
+			mvwaddch(boardw, row, col, ACS_HLINE | BOARD_GRAPHICS);
 		}
 
 		continue;
 	    }
 
 	    if ((row % 2) && col == maxx - 1 && coords_y) {
+		wattron(boardw, BOARD_COORDS);
 		mvwprintw(boardw, row, col, "%d", coords_y--);
+		wattroff(boardw, BOARD_COORDS);
 		continue;
 	    }
 
 	    if ((col == 0 || col == maxx - 2) && row != maxy - 1) {
 		if (!(row % 2))
 		    mvwaddch(boardw, row, col,
-			    (col) ? ACS_RTEE : ACS_LTEE);
+			    (col) ? ACS_RTEE | BOARD_GRAPHICS : 
+			    ACS_LTEE | BOARD_GRAPHICS);
 		else
-		    mvwaddch(boardw, row, col, ACS_VLINE);
+		    mvwaddch(boardw, row, col, ACS_VLINE | BOARD_GRAPHICS);
 
 		continue;
 	    }
 
 	    if ((row % 2) && !(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col, ACS_VLINE);
+		mvwaddch(boardw, row, col, ACS_VLINE | BOARD_GRAPHICS);
 		continue;
 	    }
 
 	    if (!(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col, ACS_PLUS);
+		mvwaddch(boardw, row, col, ACS_PLUS | BOARD_GRAPHICS);
 		continue;
 	    }
 
@@ -121,7 +127,7 @@ void draw_board()
 		    mvwaddch(boardw, row, col, ' ');
 
 		    if (row == maxy - 1)
-			waddch(boardw, x_grid_chars[rcol] | attrs);
+			waddch(boardw, x_grid_chars[rcol] | BOARD_COORDS);
 		    else {
 			piece = board[row / 2][rcol].icon;
 
@@ -142,7 +148,7 @@ void draw_board()
 	    }
 	    else {
 		if (col != maxx - 1)
-		    mvwaddch(boardw, row, col, ACS_HLINE);
+		    mvwaddch(boardw, row, col, ACS_HLINE | BOARD_GRAPHICS);
 	    }
 	}
     }
@@ -326,15 +332,16 @@ void draw_window_title(WINDOW *win, const char *title, int width)
 {
     int i;
 
-    wattron(win, WINDOW_TITLE);
+    if (title) {
+	wattron(win, WINDOW_TITLE);
 
-    for (i = 1; i < width - 1; i++)
-	mvwprintw(win, 1, i, "%c", ' ');
+	for (i = 1; i < width - 1; i++)
+	    mvwprintw(win, 1, i, "%c", ' ');
 
-    if (title)
 	mvwprintw(win, 1, CENTERX(width, title), "%s", title);
+	wattroff(win, WINDOW_TITLE);
+    }
 
-    wattroff(win, WINDOW_TITLE);
     wattron(win, WINDOW_BORDER);
     box(win, ACS_VLINE, ACS_HLINE);
     wattroff(win, WINDOW_BORDER);
@@ -624,10 +631,7 @@ blah:
 		    break;
 
 		reset_history();
-		browse_history = 0;
-
-		if (pgnfile[0])
-		    pgnfile[0] = 0;
+		browse_history = pgnfile[0] = sp.icon = 0;
 
 		parse_pgn_file(pgnfile);
 		status.bw = WHITE;
@@ -852,9 +856,12 @@ static void set_defaults()
     config.engine_depth = 0;
     config.historyagony = 0;
     config.agony = 1;
+    config.color[CONF_COORDS].fg = COLOR_WHITE;
+    config.color[CONF_COORDS].bg = COLOR_BLACK;
+    config.color[CONF_GRAPHICS].fg = COLOR_WHITE;
+    config.color[CONF_GRAPHICS].bg = COLOR_BLACK;
     config.color[CONF_MESSAGE].fg = COLOR_WHITE;
     config.color[CONF_MESSAGE].bg = COLOR_GREEN;
-    config.color[CONF_MESSAGE].nattrs = A_REVERSE;
     config.color[CONF_BORDER].fg = COLOR_CYAN;
     config.color[CONF_BORDER].bg = COLOR_BLACK;
     config.color[CONF_BORDER].attrs = A_BOLD;
@@ -976,6 +983,10 @@ int main(int argc, char *argv[])
 		config.color[CONF_BORDER].bg);
 	init_pair(9, config.color[CONF_MESSAGE].fg,
 		config.color[CONF_MESSAGE].bg);
+	init_pair(10, config.color[CONF_GRAPHICS].fg,
+		config.color[CONF_GRAPHICS].bg);
+	init_pair(11, config.color[CONF_COORDS].fg,
+		config.color[CONF_COORDS].bg);
     }
 
     boardw = newwin(BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);
