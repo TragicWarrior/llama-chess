@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.42 2003-01-07 14:14:17 bjk Exp $ */
+/* $Id: pgn.c,v 1.43 2003-01-07 20:35:21 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -242,7 +242,7 @@ static void skip_leading_space(FILE *fp)
 
 int move_text(FILE *fp)
 {
-    char move[MAX_PGN_MOVE_LEN + 1] = {0};
+    char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
 
@@ -258,12 +258,19 @@ int move_text(FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", move, &count) != 1)
 	return 1;
 
-    if (parse_move_text(pgnboard, move, 0))
+    if ((p = a2a4tosan(pgnboard, move)) == NULL)
+	return 1;
+
+    if (parse_move_text(pgnboard, p, 0))
 	return 1;
 
     add_to_history(&game[gindex].history, &game[gindex].hindex,
-	    &game[gindex].htotal, move);
+	    &game[gindex].htotal, p);
 
+    /*
+    printf("%s %s\n", move, p);
+    dump_board(pgnboard);
+    */
     return 0;
 }
 
@@ -458,6 +465,7 @@ static int eog_marker(FILE *fp)
     return 1;
 }
 
+#ifdef DEBUG
 void dump_board(struct board_matrix b[][8])
 {
     int row, col;
@@ -465,19 +473,20 @@ void dump_board(struct board_matrix b[][8])
     for (row = 0; row < 8; row++) {
 	for (col = 0; col < 8; col++) {
 	    if (b[row][col].icon == '.') {
-		DEBUG(". ");
+		printf(". ");
 		continue;
 	    }
 
-	    DEBUG("%c ", b[row][col].icon);
+	    printf("%c ", b[row][col].icon);
 	}
 
-	DEBUG("\n");
+	printf("\n");
     }
 
-    DEBUG("\n");
+    printf("\n");
     return;
 }
+#endif
 
 int parse_pgn_file(const char *filename)
 {
@@ -608,10 +617,7 @@ int parse_pgn_file(const char *filename)
 	    board[row][col].icon = pgnboard[row][col].icon;
     }
 
-    /*
-    dump_board(board);
-    exit(0);
-    */
+//    exit(0);
     return 0;
 }
 
@@ -773,7 +779,7 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     /* Move text section. If it's dumping to the FIFO, dont dump comments and
      * NAG data.
      */
-    for (i = 0, n = 1; i < game[gindex].hindex; i += 2, n++) {
+    for (i = 0, n = 1; i < game[gindex].htotal; i += 2, n++) {
 	int wlen = strlen(game[gindex].history[i].move);
 	int blen = strlen(game[gindex].history[i + 1].move);
 

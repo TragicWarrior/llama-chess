@@ -1,4 +1,4 @@
-/* $Id: move.h,v 1.3 2003-01-06 20:16:15 bjk Exp $ */
+/* $Id: move.h,v 1.4 2003-01-07 20:35:21 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,8 +22,10 @@
 #define VALIDFILE(f)	((f >= 1 && f <= 8) ? 1 : 0)
 #define VALIDROW(r)	((r >= '1' && r <= '8') ? 1 : 0)
 #define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
-#define ROWTOINT(r)	(r - 48)
-#define COLTOINT(c)	(c - 96)
+#define ROWTOINT(r)	(r - '0')
+#define COLTOINT(c)	(c - ('a' - 1))
+#define INTTOROW(r)	(r + '0')
+#define INTTOCOL(c)	(c + ('a' - 1))
 #define ROWTOBOARD(r)	(8 - r)
 #define COLTOBOARD(c)	(c - 1)
 

@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.18 2003-01-07 14:14:17 bjk Exp $ */
+/* $Id: pgn.h,v 1.19 2003-01-07 20:35:21 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -97,5 +97,6 @@ void help(const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
 int parse_move_text(struct board_matrix[][], char *, int);
+char *a2a4tosan(struct board_matrix [][], char *);
 
 #endif

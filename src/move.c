@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.4 2003-01-07 14:14:17 bjk Exp $ */
+/* $Id: move.c,v 1.5 2003-01-07 20:35:21 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -451,8 +451,8 @@ int castle_move(struct board_matrix b[][8], int which)
 	b[ROWTOBOARD(row)][COLTOBOARD(1)].icon = int_to_piece(OPEN_SQUARE);
 	b[ROWTOBOARD(row)][COLTOBOARD(COLTOINT('e'))].icon =
 	    int_to_piece(OPEN_SQUARE);
-	b[ROWTOBOARD(row)][COLTOBOARD(2)].icon = int_to_piece(KING);
-	b[ROWTOBOARD(row)][COLTOBOARD(3)].icon = int_to_piece(ROOK);
+	b[ROWTOBOARD(row)][COLTOBOARD(3)].icon = int_to_piece(KING);
+	b[ROWTOBOARD(row)][COLTOBOARD(4)].icon = int_to_piece(ROOK);
 
 	if (status.turn == WHITE) {
 	    wk = rqw = 1;
@@ -465,6 +465,98 @@ int castle_move(struct board_matrix b[][8], int which)
     }
 
     return 0;
+}
+
+/* This function converts a2a4 formatted moves to SAN format. Minimal checks
+ * are performed here. The real checks are in parse_move_text() after the
+ * conversion.
+ */
+char *a2a4tosan(struct board_matrix b[][8], char *move)
+{
+    static char buf[MAX_PGN_MOVE_LEN + 1] = {0}, *cp = buf;
+    char *p = move;
+    int scol, srow, col, row;
+    int piece, piecei;
+    int trow, tcol;
+    int rowc, colc;
+    int promo = 0;
+    int enpassant = 0;
+    int n;
+
+    if (!VALIDCOL(*p) || !VALIDROW(*(p + 1)) || !VALIDCOL(*(p + 2))
+	    || !VALIDROW(*(p + 3)))
+	return move;
+
+    scol = COLTOINT(*p);
+    srow = ROWTOINT(*(p + 1));
+    col = COLTOINT(*(p + 2));
+    row = ROWTOINT(*(p + 3));
+
+    if (p[4]) {
+	if ((promo = piece_to_int(p[4])) == -1)
+	    return NULL;
+    }
+
+    piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
+
+    if ((piecei = piece_to_int(piece)) == -1 || piecei == OPEN_SQUARE)
+	return NULL;
+
+    cp = buf;
+    colc = abs(scol - col);
+
+    if (srow == row && (row == 1 || row == 8) && scol == COLTOINT('e')
+	    && colc > 1 && piecei == KING) {
+	if (scol - col < 0)
+	    return "O-O";
+	else if (scol - col > 0)
+	    return "O-O-O";
+
+	return NULL;
+    }
+
+    if (piecei != PAWN)
+	*cp++ = toupper(piece);
+    else {
+	/* En Passant. */
+	if (scol != col && piece_to_int(b[row][col].icon) == OPEN_SQUARE) {
+	    enpassant = 1;
+	    *cp++ = INTTOCOL(scol);
+	}
+    }
+
+    colc = piece_by_col(b, piecei, row, col, &trow, &tcol);
+    rowc = piece_by_row(b, piecei, row, col, &trow, &tcol);
+    n = colc + rowc;
+
+    if (n > 1 && piecei != PAWN) {
+	if (colc > 1 && rowc > 1) {
+	    *cp++ = INTTOCOL(scol);
+	    *cp++ = INTTOROW(srow);
+	}
+	else if (colc >= 1)
+	    *cp++ = INTTOCOL(scol);
+	else if (rowc >= 1)
+	    *cp++ = INTTOROW(srow);
+    }
+
+    piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+
+    if ((piecei = piece_to_int(piece)) != OPEN_SQUARE || enpassant)
+	*cp++ = 'x';
+
+    *cp++ = INTTOCOL(col);
+    *cp++ = INTTOROW(row);
+
+    if (promo) {
+	*cp++ = '=';
+	*cp++ = int_to_piece(promo);
+    }
+
+    *cp = '\0';
+
+//    printf("'%s'\n", buf);
+    return buf;
 }
 
 int parse_move_text(struct board_matrix b[][8], char *move, int reset)
@@ -493,27 +585,13 @@ int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 	}
     }
 
-    *++p = '\0';
     p = move;
 
     if (strlen(move) < 2)
 	return 1;
 
-    /* a2a4 format. */
-    if (VALIDCOL(*p) && VALIDROW(*(p + 1)) && VALIDCOL(*(p + 2))
-	    && VALIDROW(*(p + 3))) {
-	scol = COLTOINT(*p);
-	srow = ROWTOINT(*(p + 1));
-	col = COLTOINT(*(p + 2));
-	row = ROWTOINT(*(p + 3));
-
-	if (p[4]) {
-	    if ((promo = piece_to_int(p[4])) == -1)
-		return 1;
-	}
-    }
     /* Pawn. */
-    else if (VALIDCOL(*p)) {
+    if (VALIDCOL(*p)) {
 	i = 0;
 
 	while (*p) {

@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.22 2003-01-07 14:14:17 bjk Exp $ */
+/* $Id: engine.c,v 1.23 2003-01-07 20:35:21 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -267,17 +267,20 @@ int start_chess_engine()
 void parse_engine_output(char *str)
 {
     char *tmp;
-    char move[MAX_PGN_MOVE_LEN + 1];
+    char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p = move;
     int count;
 
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count)
 	    == 1) {
+	if ((p = a2a4tosan(board, move)) == NULL)
+	    return;
+
 	if (parse_move_text(board, move, 0))
 	    return;
 
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, move);
+		&game[gindex].htotal, p);
 
 	if (status.turn == WHITE)
 	    status.turn = BLACK;
@@ -308,11 +311,14 @@ void parse_engine_output(char *str)
 engine_move:
     if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, 
 		&count) == 1) {
-	if (parse_move_text(board, move, 0))
+	if ((p = a2a4tosan(board, move)) == NULL)
+	    return;
+
+	if (parse_move_text(board, p, 0))
 	    return;
 
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, move);
+		&game[gindex].htotal, p);
 
 	if (status.turn == WHITE)
 	    status.turn = BLACK;
