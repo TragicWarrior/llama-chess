@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.34 2002-12-23 19:56:24 bjk Exp $ */
+/* $Id: pgn.c,v 1.35 2002-12-26 17:40:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -535,6 +535,15 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     struct pgndata *data = NULL;
     char *mode = NULL;
     int c;
+    char buf[FILENAME_MAX];
+
+    if (filename[0] != '/' && config.savedirectory[0] && !isfifo) {
+	snprintf(buf, sizeof(buf), "%s/%s", config.savedirectory, filename);
+	filename = buf;
+    }
+
+    if (!isfifo)
+	strncpy(pgnfile, filename, sizeof(pgnfile));
 
     /* This is a hack to resume an existing game when more than one game is
      * available. Also resuming a saved game and a game from history.
@@ -655,8 +664,10 @@ static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items,
 	free_item(items[i]);
 
     if (entries) {
-	for (i = 0; entries[i].name; i++)
+	for (i = 0; entries[i].name; i++) {
 	    free(entries[i].name);
+	    free(entries[i].fancy);
+	}
 
 	free(entries);
     }
@@ -677,7 +688,7 @@ struct pgndata *edit_pgn_data(int edit)
 		game[gindex].pgn[i].value);
 
     while (1) {
-	WINDOW *win;
+	WINDOW *win, *subw;
 	PANEL *panel;
 	ITEM **mitems = NULL;
 	MENU *menu;
@@ -701,15 +712,14 @@ struct pgndata *edit_pgn_data(int edit)
 	menu = new_menu(mitems);
 	scale_menu(menu, &rows, &cols);
 
-	if (cols < strlen(HELP_PROMPT))
-	    cols = strlen(HELP_PROMPT);
+	/* +14 for the extra prompt info. */
+	if (cols < strlen(HELP_PROMPT) + 14)
+	    cols = strlen(HELP_PROMPT) + 14;
 
-	cols += 2;
-
-	win = newwin(rows + 5, cols, CALCPOSY(rows + 5), CALCPOSX(cols));
-	set_menu_format(menu, 12, 0);
+	win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
 	set_menu_win(menu, win);
-	set_menu_sub(menu, derwin(win, rows, cols - 2, 2, 1));
+	subw = derwin(win, rows, cols, 2, 1);
+	set_menu_sub(menu, subw);
 	set_menu_fore(menu, A_REVERSE);
 	set_menu_grey(menu, A_NORMAL);
 	set_menu_mark(menu, NULL);
@@ -719,13 +729,12 @@ struct pgndata *edit_pgn_data(int edit)
 	panel = new_panel(win);
 	wbkgd(win, CP_MESSAGE_WINDOW);
 	draw_window_title(win, (edit) ? PGN_EDIT_TITLE : PGN_INFO_TITLE, 
-		cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-
-	draw_prompt(win, rows + 3, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
+		cols + 2, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
 	cbreak();
 	noecho();
 	keypad(win, TRUE);
+	curs_set(0);
 	set_menu_pattern(menu, mbuf);
 
 	while (1) {
@@ -739,6 +748,11 @@ struct pgndata *edit_pgn_data(int edit)
 		lastindex = item_count(menu) - 1;
 		continue;
 	    }
+
+	    snprintf(buf, sizeof(buf), "Tag %i of %i  %s",
+		    item_index(current_item(menu)) + 1, item_count(menu), 
+		    HELP_PROMPT);
+	    draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
 
 	    /* This nl() statement needs to be here because NL is recognized
 	     * for some reason after the first selection.
@@ -908,7 +922,6 @@ static struct d_entries *get_directory_entries(const char *path)
     DIR *dp;
     struct dirent *entry;
     struct d_entries *entries = NULL;
-    struct tm *tp;
     int index = 0;
 
     if ((dp = opendir(path)) == NULL)
@@ -917,27 +930,36 @@ static struct d_entries *get_directory_entries(const char *path)
     while ((entry = readdir(dp)) != NULL) {
 	struct stat st;
 	int len;
-	char tbuf[MAX_TIME_LEN + 1];
+	char tbuf[MAX_TIME_LEN + 1] = {0};
+	struct tm *tp;
+	char buf[FILENAME_MAX];
+	char *tmp;
+	size_t n;
 
 	if (entry->d_name[0] == '.' && entry->d_name[1] == 0)
 	    continue;
 
-	if (stat(entry->d_name, &st) == -1)
+	snprintf(buf, sizeof(buf), "%s/%s", path, entry->d_name);
+
+	if (stat(buf, &st) == -1)
 	    continue;
 
+	n = st.st_size ;
 	entries = Realloc(entries, (index + 2) * sizeof(struct d_entries));
-	len = strlen(entry->d_name) + 2;
-	entries[index].name = (char *)Malloc(len);
-	strncpy(entries[index].name, entry->d_name, len);
+	entries[index].name = strdup(buf);
+	tmp = real_filename(buf);
+	len = strlen(tmp) + 2;
+	entries[index].fancy = (char *)Malloc(len);
+	strncpy(entries[index].fancy, tmp, len);
 
 	if (S_ISDIR(st.st_mode))
-	    entries[index].name[len - 2] = '/';
+	    entries[index].fancy[len - 2] = '/';
 
 	tp = localtime(&st.st_mtime);
 	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
 
-	snprintf(entries[index].desc, sizeof(entries[index].desc), "%s %-i", 
-		tbuf, st.st_size / 1024);
+	snprintf(entries[index].desc, sizeof(entries[index].desc), "%-7i %s", 
+		n, tbuf);
 
 	memset(&entries[++index], 0, sizeof(struct d_entries));
     }
@@ -972,15 +994,35 @@ again:
 	struct d_entries *entries = NULL;
 	struct stat st;
 	int index = 0;
+	int len = strlen(path);
+
+	/* /some/path/blah/../ */
+	if (path[len - 1] == '.' && path[len - 2] == '.' &&
+		path[len - 3] == '/') {
+	    tmp = path;
+	    tmp += strlen(path) - 5;
+
+	    /* /some/path/ */
+	    while (*--tmp != '/')
+		*tmp = 0;
+
+	    if (!*path) {
+		path[0] = '/';
+		path[1] = 0;
+	    }
+	}
+
+	if (path[1] && path[strlen(path) - 1] == '/')
+	    path[strlen(path) - 1] = 0;
 
 	if ((entries = get_directory_entries(path)) == NULL) {
-	    message(ERROR, ANYKEY, "%s", strerror(errno));
+	    message(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
 	    return NULL;
 	}
 
 	for (i = 0; entries[i].name; i++) {
 	    mitems = Realloc(mitems, (index + 2) * sizeof(ITEM));
-	    mitems[index++] = new_item(entries[i].name, entries[i].desc);
+	    mitems[index++] = new_item(entries[i].fancy, entries[i].desc);
 	}
 
 	mitems[index] = NULL;
@@ -1057,13 +1099,14 @@ again:
 		    help(BROWSER_HELP, file_browser_help);
 		    break;
 		case '~':
-		    if (chdir(getenv("HOME")) == -1) {
-			message(ERROR, ANYKEY, "%s", strerror(errno));
+		    if ((tmp = getenv("HOME")) == NULL) {
+			message(ERROR, ANYKEY, 
+				"HOME environment variable unset");
 			break;
 		    }
 
+		    strncpy(path, tmp, sizeof(path));
 		    cleanup(win, panel, menu, mitems, entries);
-		    getcwd(path, sizeof(path));
 		    goto again;
 		    break;
 		case CTRL('X'):
@@ -1072,14 +1115,8 @@ again:
 			break;
 
 		    tmp = tilde_expand(tmp);
-
-		    if (chdir(tmp) == -1) {
-			message(ERROR, ANYKEY, "%s", strerror(errno));
-			break;
-		    }
-
+		    strncpy(path, tmp, sizeof(path));
 		    cleanup(win, panel, menu, mitems, entries);
-		    getcwd(path, sizeof(path));
 		    goto again;
 		    break;
 		default:
@@ -1099,7 +1136,7 @@ again:
 	}
 
 gotitem:
-	snprintf(file, sizeof(file), "%s/%s", path, item_name(mitems[selected]));
+	snprintf(file, sizeof(file), "%s", entries[selected].name);
 
 	if (stat(file, &st) == -1) {
 	    message(ERROR, ANYKEY, "%s", strerror(errno));
@@ -1111,11 +1148,7 @@ cleanup:
 	cleanup(win, panel, menu, mitems, entries);
 
 	if (S_ISDIR(st.st_mode)) {
-	    if (chdir(file) == -1)
-		message(ERROR, ANYKEY, "%s", strerror(errno));
-	    else
-		getcwd(path, sizeof(path));
-
+	    strncpy(path, file, sizeof(path));
 	    continue;
 	}
 

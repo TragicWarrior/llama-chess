@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.6 2002-12-23 19:56:24 bjk Exp $ */
+/* $Id: misc.c,v 1.7 2002-12-26 17:40:37 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -56,12 +56,25 @@ void *Calloc(size_t n, size_t size)
 char *real_filename(char *path)
 {
     char *tmp;
+    static char buf[FILENAME_MAX];
+    int slash = 0;
 
     if (!path[0])
 	return NULL;
 
-    if ((tmp = strrchr(path, '/')) == NULL)
+    strncpy(buf, path, sizeof(buf));
+    tmp = buf;
+
+    if (tmp[strlen(tmp) - 1] == '/') {
+	tmp[strlen(tmp) - 1] = 0;
+	slash = 1;
+    }
+
+    if ((tmp = strrchr(tmp, '/')) == NULL)
 	return path;
+
+    if (slash)
+	buf[strlen(tmp)] = '/';
 
     return ++tmp;
 }

@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.13 2002-12-23 19:56:24 bjk Exp $ */
+/* $Id: pgn.h,v 1.14 2002-12-26 17:40:38 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -53,6 +53,7 @@ const struct {
 
 struct d_entries {
     char *name;
+    char *fancy;
     char desc[25];
 };
 
@@ -94,5 +95,6 @@ void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
 char *tilde_expand(char *);
+char *real_filename(char *);
 
 #endif
