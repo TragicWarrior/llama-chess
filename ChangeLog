@@ -1,3 +1,19 @@
+2002-12-05 Thursday 16:45  Ben Kibbey <bjk@arbornet.org>
+
+	* src/engine.c (1.3):
+	
+	Fix for PNG history browsing.
+	
+	Removed commented code.
+	
+	Fix for updating the engine status after 'go'.
+
+2002-12-05 Thursday 16:43  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.3):
+	
+	Fix for selecting a piece after 'switch'.
+
 2002-12-05 Thursday 15:49  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.2), common.h (1.2), engine.c (1.2):
