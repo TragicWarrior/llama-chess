@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.2 2002-12-07 21:30:06 bjk Exp $ */
+/* $Id: misc.c,v 1.3 2002-12-09 18:48:48 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -58,7 +58,7 @@ char *trim(char *str)
 {
     int i = 0;
 
-    if (!str[0])
+    if (!str)
 	return NULL;
 
     while (isspace(*str))
