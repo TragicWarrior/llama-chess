@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.73 2003-02-01 15:54:08 bjk Exp $ */
+/* $Id: pgn.c,v 1.74 2003-02-01 15:57:44 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -607,9 +607,6 @@ static int eog_marker(FILE *fp)
 }
 
 #ifdef DEBUG
-#define DEBUG_BOARD(n, fmt, args...) \
-    ((n) ? DUMP(fmt, ##args) : printf(fmt, ##args))
-
 void dump_board(BOARD b, int which)
 {
     int row, col;
