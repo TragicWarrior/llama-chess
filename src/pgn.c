@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.55 2003-01-09 22:43:03 bjk Exp $ */
+/* $Id: pgn.c,v 1.56 2003-01-10 14:16:11 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -77,6 +77,19 @@ static char *compression_cmd(const char *filename, int expand)
 	    snprintf(command, sizeof(command), "uncompress -c %s", filename);
 	else
 	    snprintf(command, sizeof(command), "compress -c 1>%s", filename);
+
+	return command;
+    }
+    else if ((filename[len - 4] == '.' && filename[len - 3] == 'b' &&
+	    filename[len - 2] == 'z' && filename[len - 1] == '2' &&
+	    filename[len] == '\0') || (filename[len - 3] == '.' && 
+		filename[len - 2] == 'b' && filename[len - 1] == 'z' &&
+		filename[len] == '\0')) {
+	if (expand)
+	    snprintf(command, sizeof(command), "bzip2 -dc %s", filename);
+	else
+	    snprintf(command, sizeof(command), "bzip2 -zc%i 1>%s", 
+		    config.clevel, filename);
 
 	return command;
     }
