@@ -1,14 +1,32 @@
-ICS network game support.
+These are a list of things that I'd like included before 1.0.0 (in no real
+order):
 
-A clock.
+- = not started
++ = started
+? = not sure to included it
 
-RAV move text support. CBoard should read a file which has this with no
-problems, but it currently doesn't parse it.
+- A clock.
 
-FEN move parsing.
+- ICS network game support.
 
-When saving multiple games, sort them by tag values specified by the standard.
+- RAV move text support. CBoard should read a file which has this with no
+  problems, but it currently doesn't parse it.
 
-A command to show pinned pieces.
+- FEN move parsing.
 
-Show cursor direction keys on the board next to the move numbers. (?)
+- When saving multiple games, sort them by tag values specified by the
+  standard.
+
+- A command to show pinned pieces.
+
++ Show move numbers for the selected piece.
+
+? Show cursor direction keys on the board next to the move numbers.
+
+? A menu to select a game from a file.
+
+? Search for a game by regular expressions in tags.
+
+- Support chess engines other than GNU Chess. This should be a configuration
+  parameter to specify a path to the executable. Also, I'm not sure if parsing
+  the engine output would change or not (standard?).

@@ -120,6 +120,10 @@ When saving a game, prompt to edit PGN tag data. Or when saving in history
 mode, prompt for additional save commands. The default is
 .Ar on .
 .Pp
+.It Cm delete_prompt Ar on|off
+Prompt before deleting games with the \&"D\&" command. The default is
+.Ar on .
+.Pp
 .It Cm clevel Ar 1-9
 Compression level of compressed saved files compressed with
 .Xr zip 1 ,

@@ -31,11 +31,15 @@ historyagony	off
 # command.
 save_prompt	on
 
+# When deleting games with the 'D' command and this is on, prompt before
+# deleting.
+delete_prompt	on
+
 # Compression level of gzip'd and .zip'd files.
 clevel		6
 
-# If "off", the chess board line graphics will not be drawn.
-line_graphics	on
+# If "on", chess board line graphics will be drawn.
+line_graphics	off
 
 # If on, show valid moves for the selected piece.
 valid_moves	on
@@ -71,7 +75,8 @@ board_cursor	white	green	none	bold,reverse
 board_black	white	black
 board_white	white	red	none	reverse
 board_coords	yellow	black	bold
-board_moves	white	magenta	none	reverse
+board_moves	blue	cyan	none	reverse
+board_count	magenta	cyan	bold	bold,reverse
 
 status_window	white	black
 status_title	white	blue	none	reverse
