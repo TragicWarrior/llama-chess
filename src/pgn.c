@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.62 2003-01-22 14:52:22 bjk Exp $ */
+/* $Id: pgn.c,v 1.63 2003-01-22 20:04:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -598,6 +598,7 @@ static int eog_marker(FILE *fp)
     return 1;
 }
 
+#ifdef DEBUG
 void dump_board(BOARD b)
 {
     int row, col;
@@ -618,6 +619,7 @@ void dump_board(BOARD b)
     printf("\n");
     return;
 }
+#endif
 
 void new_game(BOARD b)
 {

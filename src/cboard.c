@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.59 2003-01-22 00:16:23 bjk Exp $ */
+/* $Id: cboard.c,v 1.60 2003-01-22 20:04:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -75,14 +75,6 @@ char *random_agony()
     return agony[random() % index];
 }
 
-static chtype board_graphics(chtype c)
-{
-    if (!config.linegraphics)
-	return ' ';
-
-    return c;
-}
-
 void draw_board(BOARD b)
 {
     int row, col;
@@ -101,23 +93,23 @@ void draw_board(BOARD b)
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
 		    mvwaddch(boardw, row, col, 
-			    board_graphics((row) ? 
+			    LINE_GRAPHIC((row) ? 
 				ACS_LLCORNER | CP_BOARD_GRAPHICS : 
 				ACS_ULCORNER | CP_BOARD_GRAPHICS));
 		else if (col == maxx - 2)
 		    mvwaddch(boardw, row, col,
-			    board_graphics((row) ?
+			    LINE_GRAPHIC((row) ?
 				ACS_LRCORNER | CP_BOARD_GRAPHICS : 
 				ACS_URCORNER | CP_BOARD_GRAPHICS));
 		else if (!(col % 4))
 		    mvwaddch(boardw, row, col, 
-			    board_graphics((row) ? 
+			    LINE_GRAPHIC((row) ? 
 				ACS_BTEE | CP_BOARD_GRAPHICS : 
 				ACS_TTEE | CP_BOARD_GRAPHICS));
 		else {
 		    if (col != maxx - 1)
 			mvwaddch(boardw, row, col,
-				board_graphics(ACS_HLINE | CP_BOARD_GRAPHICS));
+				LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
 		}
 
 		continue;
@@ -133,25 +125,25 @@ void draw_board(BOARD b)
 	    if ((col == 0 || col == maxx - 2) && row != maxy - 1) {
 		if (!(row % 2))
 		    mvwaddch(boardw, row, col,
-			    board_graphics((col) ?
+			    LINE_GRAPHIC((col) ?
 				ACS_RTEE | CP_BOARD_GRAPHICS : 
 				ACS_LTEE | CP_BOARD_GRAPHICS));
 		else
 		    mvwaddch(boardw, row, col,
-			    board_graphics(ACS_VLINE | CP_BOARD_GRAPHICS));
+			    LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
 
 		continue;
 	    }
 
 	    if ((row % 2) && !(col % 4) && row != maxy - 1) {
 		mvwaddch(boardw, row, col,
-			board_graphics(ACS_VLINE | CP_BOARD_GRAPHICS));
+			LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
 		continue;
 	    }
 
 	    if (!(col % 4) && row != maxy - 1) {
 		mvwaddch(boardw, row, col,
-			board_graphics(ACS_PLUS | CP_BOARD_GRAPHICS));
+			LINE_GRAPHIC(ACS_PLUS | CP_BOARD_GRAPHICS));
 		continue;
 	    }
 
@@ -209,7 +201,7 @@ void draw_board(BOARD b)
 	    else {
 		if (col != maxx - 1)
 		    mvwaddch(boardw, row, col,
-			    board_graphics(ACS_HLINE | CP_BOARD_GRAPHICS));
+			    LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
 	    }
 	}
 
@@ -1212,8 +1204,38 @@ void catch_signal(int which)
     return;
 }
 
+static void copydatafile(const char *dst, const char *src)
+{
+    FILE *fp, *ofp;
+    char buf[LINE_MAX], *s;
+
+    snprintf(buf, sizeof(buf), "%s/%s", DATA_PATH, src);
+
+    fprintf(stderr, "%s %s...\n", COPY_DATAFILE, buf);
+
+    if ((fp = fopen(buf, "r")) == NULL) {
+	warn("%s", buf);
+	return;
+    }
+
+    if ((ofp = fopen(dst, "w+")) == NULL) {
+	fclose(fp);
+	warn("%s", dst);
+	return;
+    }
+
+    while ((s = fgets(buf, sizeof(buf), fp)) != NULL)
+	fprintf(ofp, "%s", s);
+
+    fclose(fp);
+    fclose(ofp);
+    return;
+}
+
 static void set_defaults()
 {
+    struct stat st;
+
     status.engine = ENGINE_OFFLINE;
 
     config.history_jump = 5;
@@ -1222,7 +1244,7 @@ static void set_defaults()
     config.engine_depth = 0;
     config.historyagony = 0;
     config.agony = 1;
-    config.linegraphics = 1;
+    config.linegraphics = 0;
     config.saveprompt = 1;
     config.validmoves = 1;
     strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
@@ -1230,6 +1252,16 @@ static void set_defaults()
     config.ics_user = strdup(DEFAULT_ICS_USER);
 
     set_default_colors();
+
+    if (stat(config.nagfile, &st) == -1 && errno == ENOENT)
+	copydatafile(config.nagfile, "nag.data");
+
+    if (stat(config.agonyfile, &st) == -1 && errno == ENOENT)
+	copydatafile(config.agonyfile, "agony.data");
+
+    if (stat(config.ccfile, &st) == -1 && errno == ENOENT)
+	copydatafile(config.ccfile, "cc.data");
+
     return;
 }
 

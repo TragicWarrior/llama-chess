@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.8 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: misc.c,v 1.9 2003-01-22 20:04:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -22,6 +22,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <string.h>
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include "common.h"
 
 void *Malloc(size_t size)
 {
@@ -131,3 +137,23 @@ char *tilde_expand(char *str)
 
     return buf;
 }
+
+#ifdef DEBUG
+void DUMP(const char *fmt, ...)
+{
+    FILE *fp;
+    va_list ap;
+    char line[LINE_MAX];
+
+    if ((fp = fopen("debug", "a")) == NULL)
+	return;
+
+    va_start(ap, fmt);
+    vsnprintf(line, sizeof(line), fmt, ap);
+    va_end(ap);
+
+    fprintf(fp, "%s", line);
+    fclose(fp);
+    return;
+}
+#endif

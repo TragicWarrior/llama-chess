@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.9 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: strings.h,v 1.10 2003-01-22 20:04:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -133,6 +133,7 @@
 #define BROWSER_PROMPT		"Type TAB for file browser"
 
 /* Miscellaneous strings. */
+#define COPY_DATAFILE		"Copying"
 #define NONE			"none"
 #define x_grid_chars		"abcdefgh"
 #define ANYKEY			"[ press any key to continue ]"

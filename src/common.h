@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.40 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: common.h,v 1.41 2003-01-22 20:04:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -47,14 +47,10 @@
 #endif
 #endif
 
-FILE *debugfp;
-
-#define DUMP(fmt, args...)	debugfp = fopen("debug", "a"); \
-	fprintf(debugfp, fmt, ##args); \
-        fclose(debugfp)
-
+#ifdef DEBUG
 #define ACK			(curses_initialized && message("ack", "ack", "ack"))
 #define ACK2			message("ack2", "ack2", "ack2")
+#endif
 
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
 #define CTRL(x)			((x) & 0x1f)
@@ -223,6 +219,10 @@ void *Realloc(void *, size_t);
 int dump_message(const char *, const char *, int, const char *, 
 	void (*)(void *), void *, int, const char *, ...);
 char *trim(char *);
+
+#ifdef DEBUG
+void DUMP(const char *, ...);
+#endif
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>

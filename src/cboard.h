@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.43 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: cboard.h,v 1.44 2003-01-22 20:04:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,6 +20,7 @@
 #define CBOARD_H
 
 #define COPYRIGHT	"Copyright (C) 2002-2003 " PACKAGE_BUGREPORT
+#define LINE_GRAPHIC(c)	((!config.linegraphics) ? ' ' : c)
 #define ROWTOMATRIX(r)	((8 - r) * 2 + 2 - 1)
 #define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)
 #define BOARD_HEIGHT	18
