@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.53 2003-01-09 17:13:57 bjk Exp $ */
+/* $Id: cboard.c,v 1.54 2003-01-09 17:52:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -318,20 +318,20 @@ void update_history()
 	snprintf(buf, sizeof(buf), "%u of %u", game[gindex].hindex,
 		game[gindex].htotal);
     else
-	strncpy(buf, UNKNOWN, sizeof(buf));
+	strncpy(buf, UNAVAILABLE, sizeof(buf));
 
     mvwprintw(historyw, 2, 1, "     Move: %-*s", HISTORY_WIDTH - 13, buf);
 
     get_history_by_index(game[gindex].hindex, &h);
 
-    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : NONE,
+    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
 	    (h.comment[0] || h.nag[0]) ? "(press ']')" : "");
     mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, buf);
 
     if (get_history_by_index(game[gindex].hindex - 1, &h))
 	h.move[0] = 0;
 
-    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : NONE,
+    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
 	    (h.comment[0] || h.nag[0]) ? "(press '[')" : "");
     mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13, buf);
     return;
@@ -341,10 +341,10 @@ void update_white_black()
 {
     mvwprintw(whitew, 2, 1, "Name: %-*s", BW_WIDTH - 8,
 	    (game[gindex].pgn[PGN_WHITE].value[0]) ?
-	    game[gindex].pgn[PGN_WHITE].value : NONE);
+	    game[gindex].pgn[PGN_WHITE].value : UNAVAILABLE);
     mvwprintw(blackw, 2, 1, "Name: %-*s", BW_WIDTH - 8,
 	    (game[gindex].pgn[PGN_BLACK].value[0]) ?
-	    game[gindex].pgn[PGN_BLACK].value : NONE);
+	    game[gindex].pgn[PGN_BLACK].value : UNAVAILABLE);
 
     mvwprintw(whitew, 3, 1, "Captures: %-2i", game[gindex].wcaptures);
     mvwprintw(blackw, 3, 1, "Captures: %-2i", game[gindex].bcaptures);

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.48 2003-01-09 17:30:13 bjk Exp $ */
+/* $Id: pgn.c,v 1.49 2003-01-09 17:52:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -175,19 +175,16 @@ void set_pgn_defaults()
 
     time(&now);
     tp = localtime(&now);
-    strftime(tbuf, sizeof(tbuf), TIME_FORMAT, tp);
+    strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Event",
-	    UNKNOWN);
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Site",
-	    UNKNOWN);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Event", "");
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Site", "");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Date", tbuf);
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Round", "?");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "White", 
 	    pwd->pw_gecos);
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Black",
-	    UNKNOWN);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Black", "");
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Result", "*");
 
     /* Add custom tags from the configuration file. */
@@ -423,9 +420,6 @@ static void pgn_tag(FILE *fp)
 
     while (isspace(*--v))
 	*v = '\0';
-
-    if (*value == '\0')
-	strncpy(value, UNKNOWN, sizeof(value));
 
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, name, 
 	    remove_pgn_tag_escapes(value));
@@ -740,13 +734,13 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
 			    PGN_TIME_FORMAT, &tp);
 	    }
 	    else if (strcmp(g.pgn[i].token, "Round") == 0) {
-		if (strcmp(g.pgn[i].value, UNKNOWN) == 0) {
+		if (g.pgn[i].value[0] == '\0') {
 		    g.pgn[i].value[0] = '?';
 		    g.pgn[i].value[1] = '\0';
 		}
 	    }
 	    else if (strcmp(g.pgn[i].token, "Result") == 0) {
-		if (strcmp(g.pgn[i].value, UNKNOWN) == 0) {
+		if (g.pgn[i].value[0] == '\0') {
 		    g.pgn[i].value[0] = '*';
 		    g.pgn[i].value[1] = '\0';
 		}
@@ -959,9 +953,13 @@ struct pgndata *edit_pgn_data(int edit)
 
 	for (i = 0; i < data_index; i++) {
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	    mitems[i] = new_item(data[i].token,
-		    (strlen(data[i].value) > MAX_VALUE_WIDTH)
-		     ? "Press ENTER..." : data[i].value);
+
+	    if (data[i].value[0])
+		mitems[i] = new_item(data[i].token,
+			(strlen(data[i].value) > MAX_VALUE_WIDTH)
+			? "Press ENTER..." : data[i].value);
+	    else
+		mitems[i] = new_item(data[i].token, UNKNOWN);
 	}
 
 	mitems[i] = NULL;
@@ -1128,7 +1126,7 @@ gotitem:
 	lastindex = selected;
 
 	if (!edit) {
-	    if (strcmp(data[selected].value, UNKNOWN) == 0)
+	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
 		goto cleanup;
 
 	    snprintf(buf, sizeof(buf), "Tag Information for \"%s\"", 
@@ -1175,7 +1173,7 @@ gotitem:
 		tmp = "*";
 	}
 	else {
-	    if (strcmp(data[selected].value, UNKNOWN) == 0)
+	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
 		tmp = NULL;
 	    else
 		tmp = data[selected].value;
@@ -1183,7 +1181,7 @@ gotitem:
 	    tmp = get_input(buf, tmp, 0, 0, NULL, NULL, NULL, 0, -1);
 	}
 
-	strncpy(data[selected].value, (tmp) ? tmp : UNKNOWN,
+	strncpy(data[selected].value, (tmp) ? tmp : "",
 		sizeof(data[selected].value));
 
 cleanup:

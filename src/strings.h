@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.2 2003-01-08 21:54:07 bjk Exp $ */
+/* $Id: strings.h,v 1.3 2003-01-09 17:52:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -45,5 +45,7 @@
 #define E_SAVE_NOGMOVES	"No games contain any moves. Aborting save."
 
 #define NOTIFY_SAVED	"Game saved."
+
+#define UNAVAILABLE	"not available"
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.38 2003-01-09 17:13:57 bjk Exp $ */
+/* $Id: cboard.h,v 1.39 2003-01-09 17:52:33 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -54,14 +54,14 @@ const char *mainhelp[] = {
     "  ENTER - commit selected piece   h - toggle history mode",
     "    ESC - cancel selected piece   a - annotate previous move",
     "                                  ] - view the next moves annotation",
-    "      n - new game                [ - view the previous moves annotation",
+    "      n - new game or round       [ - view the previous moves annotation",
     "      N - new game from scratch   i - show PGN roster tags",
-    "      D - delete current game",
     "      r - resume a saved game",
     "      s - save game",
     "      S - save game with prompt",
     "      > - next game or round",
     "      < - previous game or round",
+    "      D - delete current game",
     NULL
 };
 
