@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: pgn.h,v 1.2 2002-12-07 14:51:13 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,6 +19,15 @@
 #define MAX_TIME_LEN	18
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
+#define PGN_EDIT_TITLE	"Editing PGN Save Data"
+#define PGN_EDIT_PROMPT	"UP/DOWN/ENTER selects, 'a' adds, 'r' removes, " \
+			"and 'q' quits"
+#define PGN_EDIT_TAG	"Editing PGN Roster Tag"
+#define PGN_BAD_INDEX	"Could not get window index number"
+#define PGN_REMOVE_STR	"Cannot remove the Seven Tag Roster"
+#define PGN_NEW_TAG	"New Roster Tag Name"
+#define PGN_DUPLICATE	"Could not add duplicate tag"
+#define PGN_EDIT_REFUSE	"Refusing to edit"
 
 struct {
     char *pgn;

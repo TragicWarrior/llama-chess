@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.6 2002-12-07 14:29:30 bjk Exp $ */
+/* $Id: pgn.c,v 1.7 2002-12-07 14:51:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -278,10 +278,8 @@ static int get_index_number(WINDOW *win, int y, int x)
 
     mvwinnstr(win, y, x, buf, sizeof(buf) - 1);
 
-    if(sscanf(buf, "%u", &selected) != 1) {
-	message(ERROR, ANYKEY, "Could not get index number");
+    if(sscanf(buf, "%u", &selected) != 1)
 	return -1;
-    }
 
     return selected;
 }
@@ -289,8 +287,6 @@ static int get_index_number(WINDOW *win, int y, int x)
 /* FIXME segfault after 'q' (sometimes), scrolling */
 void edit_pgn_data()
 {
-    const char *prompt = "UP/DOWN/ENTER selects, 'a' adds, 'r' removes, and 'q' quits";
-
 again:
     while (1) {
 	WINDOW *win;
@@ -319,12 +315,12 @@ again:
 
 	x += 4;
 
-	if (x < strlen(prompt) + 4)
-	    x = strlen(prompt) + 4;
+	if (x < strlen(PGN_EDIT_PROMPT) + 4)
+	    x = strlen(PGN_EDIT_PROMPT) + 4;
 
 	win = newwin(y, x, LINES / 2 - y / 2, CALCPOSX(x));
 	panel = new_panel(win);
-	draw_window_title(win, "Editing PGN Save Data", x);
+	draw_window_title(win, PGN_EDIT_TITLE, x);
 	curs_set(1);
 	cbreak();
 	noecho();
@@ -336,7 +332,8 @@ again:
 		    pgn[i].token, (x - tlen - (sizeof(buf) - 1 + 4)),
 		    pgn[i].value);
 
-	mvwprintw(win, y - 2, CENTERX(x, prompt), "%s", prompt);
+	mvwprintw(win, y - 2, CENTERX(x, PGN_EDIT_PROMPT), "%s",
+		PGN_EDIT_PROMPT);
 
 	while (1) {
 	    int c;
@@ -352,15 +349,14 @@ again:
 	    switch (c) {
 		case 'r':
 		    if ((selected = get_index_number(win, cy, 1)) == -1) {
-			message(ERROR, ANYKEY, "Could not get index number");
+			message(ERROR, ANYKEY, PGN_BAD_INDEX);
 			continue;
 		    }
 
 		    selected--;
 
 		    if (selected <= 6) {
-			message(NULL, ANYKEY, 
-				"Cannot remove the Standard Seven");
+			message(NULL, ANYKEY, PGN_REMOVE_STR);
 			continue;
 		    }
 
@@ -383,12 +379,11 @@ again:
 		    goto again;
 		    break;
 		case 'a':
-		    if ((newtoken = get_input("New tag name", NULL)) == NULL)
+		    if ((newtoken = get_input(PGN_NEW_TAG, NULL)) == NULL)
 			break;
 
 		    if (add_pgn_data(&pgn, &pgn_index, newtoken, NULL)) {
-			message(ERROR, ANYKEY, 
-				"Could not add duplicate tag \"%s\"",
+			message(ERROR, ANYKEY, "%s \"%s\"", PGN_DUPLICATE,
 				newtoken);
 			    continue;
 		    }
@@ -411,7 +406,7 @@ again:
 		    break;
 		case KEY_RETURN:
 		    if ((selected = get_index_number(win, cy, 1)) == -1) {
-			message(ERROR, ANYKEY, "Could not get index number");
+			message(ERROR, ANYKEY, PGN_BAD_INDEX);
 			continue;
 		    }
 
@@ -429,12 +424,12 @@ again:
 
 gotkey:
 	if (strcmp(pgn[selected].token, "Date") == 0) {
-	    message(NULL, ANYKEY, "Can't edit the \"Date\" tag.");
+	    message(NULL, ANYKEY, "%s \"Date\"", PGN_EDIT_REFUSE);
 	    continue;
 	}
 
 	snprintf(editprompt, sizeof(editprompt),
-		"Editing roster tag \"%s\"", pgn[selected].token);
+		"%s \"%s\"", PGN_EDIT_TAG, pgn[selected].token);
 
 	tmp = get_input(editprompt, pgn[selected].value);
 
