@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.7 2002-12-16 17:54:18 bjk Exp $ */
+/* $Id: history.c,v 1.8 2002-12-16 18:12:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -282,8 +282,8 @@ void add_to_history(struct history **h, int *n, int *t, const char *str)
     int index = *n;
 
     history = Realloc(history, (index + 2) * sizeof(struct history));
+    memset(&history[index], 0, sizeof(struct history));
     strncpy(history[index].move, str, sizeof(history[index].move));
-
     memset(&history[++index], 0, sizeof(struct history));
 
     *n = *t = index;
