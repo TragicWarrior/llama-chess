@@ -1,3 +1,9 @@
+2002-12-12 Thursday 14:21  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.22):
+	
+	Add -v usage() text.
+
 2002-12-12 Thursday 14:16  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.21), cboard.h (1.15), common.h (1.13), input.c
