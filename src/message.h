@@ -1,4 +1,4 @@
-/* $Id: message.h,v 1.6 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: message.h,v 1.7 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -23,4 +23,5 @@
 
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
+
 #endif

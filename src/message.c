@@ -1,4 +1,4 @@
-/* $Id: message.c,v 1.8 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: message.c,v 1.9 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -93,7 +93,7 @@ int dump_message(const char *title, const char *prompt, int center,
 
     free(line);
 
-    buf[n] = 0;
+    buf[n] = '\0';
     p = buf;
 
     while ((tmp = strsep(&p, "\n")) != NULL) {

@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.19 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: rcfile.c,v 1.20 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -196,10 +196,12 @@ void parse_rcfile(const char *filename)
 	    }
 
 	    token[0] = toupper(token[0]);
-	    add_pgn_data(&config.pgn, &config.pindex, trim(token), trim(value));
+	    add_tag(&config.tag, &config.tindex, token, value);
 	}
 	else if (strcmp(var, "board_selected") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BSELECTED]);
+	else if (strcmp(var, "board_moves") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BMOVES]);
 	else if (strcmp(var, "board_cursor") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BCURSOR]);
 	else if (strcmp(var, "board_black") == 0)
@@ -255,12 +257,13 @@ void parse_rcfile(const char *filename)
 	else if (strcmp(var, "input_prompt") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_IPROMPT]);
 	else if (strcmp(var, "save_directory") == 0)
-	    strncpy(config.savedirectory, tilde_expand(val),
-		    sizeof(config.savedirectory));
+	    config.savedirectory = strdup(tilde_expand(val));
 	else if (strcmp(var, "line_graphics") == 0)
 	    config.linegraphics = on_or_off(filename, lines, val);
 	else if (strcmp(var, "save_prompt") == 0)
 	    config.saveprompt = on_or_off(filename, lines, val);
+	else if (strcmp(var, "valid_moves") == 0)
+	    config.validmoves = on_or_off(filename, lines, val);
 	else if (strcmp(var, "clevel") == 0) {
 	    if (!isinteger(val))
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
@@ -280,9 +283,9 @@ void parse_rcfile(const char *filename)
 	    config.ics_port = atoi(val);
 	}
 	else if (strcmp(var, "ics_user") == 0)
-	    strncpy(config.ics_user, val, sizeof(config.ics_user));
+	    config.ics_user = strdup(val);
 	else if (strcmp(var, "ics_passwd") == 0)
-	    strncpy(config.ics_passwd, val, sizeof(config.ics_passwd));
+	    config.ics_passwd = strdup(val);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.8 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: input.h,v 1.9 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,8 +20,6 @@
 #define INPUT_H
 
 #define INPUT_WIDTH	((COLS > 60) ? 60 : COLS - 2)
-#define INPUT_HELP_PROMPT	"Type CTRL-g for available line editing keys"
-#define INPUT_HELP	"Line Editing Keys"
 
 const char *inputhelp[] = {
     "UP/DOWN/LEFT/RIGHT - position cursor",

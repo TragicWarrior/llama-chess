@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.58 2003-01-14 20:44:13 bjk Exp $ */
+/* $Id: cboard.c,v 1.59 2003-01-22 00:16:23 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -83,16 +83,16 @@ static chtype board_graphics(chtype c)
     return c;
 }
 
-void draw_board()
+void draw_board(BOARD b)
 {
     int row, col;
-    int rcol = 0;
+    int bcol = 0, brow = 0;
     int maxy = BOARD_HEIGHT, maxx = BOARD_WIDTH;
     int ncols = 0, offset = 1;
     unsigned coords_y = 8;
 
     for (row = 0; row < maxy; row++) {
-	rcol = 0;
+	bcol = 0;
 
 	for (col = 0; col < maxx; col++) {
 	    int attrs = CP_BOARD_WHITE;
@@ -166,11 +166,16 @@ void draw_board()
 				&& (offset % 2)))
 			attrs = CP_BOARD_BLACK;
 
-		    if (row == cursor_y && col == (cursor_x - 1)) {
+		    if (config.validmoves && b[brow][bcol].valid) {
+			attrs = CP_BOARD_MOVES;
+		    }
+
+		    if (row == ROWTOMATRIX(crow) && col == COLTOMATRIX(ccol)) {
 			attrs = CP_BOARD_CURSOR;
 		    }
 
-		    if (row == selected_y && col == (selected_x - 1)) {
+		    if (row == ROWTOMATRIX(sp.row) && 
+			    col == COLTOMATRIX(sp.col)) {
 			attrs = CP_BOARD_SELECTED;
 		    }
 
@@ -181,23 +186,24 @@ void draw_board()
 		    mvwaddch(boardw, row, col, ' ');
 
 		    if (row == maxy - 1)
-			waddch(boardw, x_grid_chars[rcol] | CP_BOARD_COORDS);
+			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			piece = board[row / 2][rcol].icon;
+			piece = b[row / 2][bcol].icon;
 
 			if (status.side == WHITE && isupper(piece))
 			    attrs |= A_BOLD;
 			else if (status.side == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
-			waddch(boardw, (piece && piece !=  '.') ?
+			waddch(boardw,
+				(piece && piece != int_to_piece(OPEN_SQUARE)) ?
 				piece | attrs : ' ' | attrs);
 		    }
 
 		    waddch(boardw, ' ');
 		    wattroff(boardw, attrs);
 		    col += 2;
-		    rcol++;
+		    bcol++;
 		}
 	    }
 	    else {
@@ -206,25 +212,79 @@ void draw_board()
 			    board_graphics(ACS_HLINE | CP_BOARD_GRAPHICS));
 	    }
 	}
+
+	brow = row / 2;
     }
 
     return;
 }
 
-void parse_piece_command()
+void copy_board(BOARD s, BOARD d)
 {
-    char str[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
+    int row, col;
+
+    for (row = 0; row < 8; row++) {
+	for (col = 0; col < 8; col++)
+	    d[row][col].icon = s[row][col].icon;
+    }
+
+    return;
+}
+
+/* Convert the selected piece to SAN format and validate it. */
+static char *board_to_san(BOARD b)
+{
+    static char str[MAX_PGN_MOVE_LEN + 1], *p;
+    int piece;
+    int promo;
+    BOARD t;
 
     snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[sp.col - 1], sp.row,
 	    x_grid_chars[sp.destcol - 1], sp.destrow);
 
-    if ((p = a2a4tosan(board, str)) == NULL) {
-	message(p, ANYKEY, "%s", E_A2A4_PARSE);
-	return;
+    p = str;
+    piece = piece_to_int(b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon);
+
+    if (piece == PAWN && ((sp.destrow == 8 && status.turn == WHITE) ||
+		    (sp.destrow == 1 && status.turn == BLACK))) {
+	promo = message(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
+	
+	if (piece_to_int(promo) == -1)
+	    return NULL;
+
+	p = str + strlen(str);
+	*p++ = toupper(promo);
+	*p = '\0';
     }
 
+    copy_board(b, t);
+
+    if ((p = a2a4tosan(t, str)) == NULL) {
+	message(p, ANYKEY, "%s", E_A2A4_PARSE);
+	return NULL;
+    }
+
+    validate_move = 1;
+
+    if (parse_move_text(t, p, 0)) {
+	message(ERROR, ANYKEY, "%s: %s", E_INVALID_MOVE, p);
+	validate_move = 0;
+	return NULL;
+    }
+
+    validate_move = 0;
+    return p;
+}
+
+static void move_to_engine(BOARD b)
+{
+    char *p;
+
+    if ((p = board_to_san(b)) == NULL)
+	return;
+
     SEND_TO_ENGINE("%s\n", p);
-    selected_x = selected_y = 0;
+    sp.row = sp.col = 0;
     return;
 }
 
@@ -233,23 +293,23 @@ char *book_method(int method)
     char *book;
 
     switch (method) {
-	case -1:
-	    book = UNKNOWN;
-	    break;
 	case BOOK_BEST:
-	    book = "best";
+	    book = BOOK_BEST_STR;
 	    break;
 	case BOOK_WORST:
-	    book = "worst";
+	    book = BOOK_WORST_STR;
 	    break;
 	case BOOK_PREFER:
-	    book = "prefer";
+	    book = BOOK_PREFER_STR;
 	    break;
 	case BOOK_RANDOM:
-	    book = "random";
+	    book = BOOK_RANDOM_STR;
+	    break;
+	case BOOK_OFF:
+	    book = BOOK_OFF_STR;
 	    break;
 	default:
-	    book = "disabled";
+	    book = UNKNOWN;
 	    break;
     }
 
@@ -259,46 +319,52 @@ char *book_method(int method)
 void update_status()
 {
     int i;
-    char *engine;
     char buf[STATUS_WIDTH - 7];
 
-    snprintf(buf, sizeof(buf), "%i of %i", gindex + 1, gtotal);
-    mvwprintw(statusw, 2, 1, "Game: %-*s", STATUS_WIDTH - 8, buf);
-
-    if (browse_history)
-	status.engine = HISTORY_MODE;
+    snprintf(buf, sizeof(buf), "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
+	    (game[gindex].delete) ? GAME_NOTSAVED : "");
+    mvwprintw(statusw, 2, 1, "%s %-*s", STATUS_GAME_STR, STATUS_WIDTH - 8, buf);
 
     switch (status.engine) {
 	case ENGINE_THINKING:
-	    engine = "thinking ...";
+	    strcpy(buf, ENGINE_THINKING_STR);
 	    break;
 	case ENGINE_READY:
-	    engine = "ready";
-	    break;
-	case HISTORY_MODE:
-	    engine = "ready (move history)";
+	    strcpy(buf, ENGINE_READY_STR);
+
+	    if (browse_history)
+		strcat(buf, ENGINE_MOVE_HISTORY_STR);
+
 	    break;
 	case ENGINE_INITIALIZING:
-	    engine = "initializing ...";
+	    strcpy(buf, ENGINE_INITIALIZING_STR);
+	    break;
+	case ENGINE_OFFLINE:
+	    strcpy(buf, ENGINE_OFFLINE_STR);
+
+	    if (browse_history)
+		strcat(buf, ENGINE_MOVE_HISTORY_STR);
+
 	    break;
 	default:
-	    engine = UNKNOWN;
+	    strcpy(buf, UNKNOWN);
 	    break;
     }
 
-    mvwprintw(statusw, 3, 1, "Engine: %-*s", STATUS_WIDTH - 10, " ");
+    mvwprintw(statusw, 3, 1, "%s %-*s", STATUS_ENGINE_STR, STATUS_WIDTH - 10, 
+	    " ");
     wattron(statusw, CP_STATUS_ENGINE);
-    mvwaddstr(statusw, 3, 9, engine);
+    mvwaddstr(statusw, 3, 9, buf);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, 4, 1, "Depth: %-*i", STATUS_WIDTH - 9,
+    mvwprintw(statusw, 4, 1, "%s %-*i", STATUS_DEPTH_STR, STATUS_WIDTH - 9,
 	    config.engine_depth);
 
-    mvwprintw(statusw, 5, 1, "Book: %-*s", STATUS_WIDTH - 8,
+    mvwprintw(statusw, 5, 1, "%s %-*s", STATUS_BOOK_STR, STATUS_WIDTH - 8,
 	    book_method(config.book_method));
 
-    mvwprintw(statusw, 6, 1, "Turn: %-*s", STATUS_WIDTH - 8,
-	    (status.turn == WHITE) ? "white" : "black");
+    mvwprintw(statusw, 6, 1, "%s %-*s", STATUS_TURN_STR, STATUS_WIDTH - 8,
+	    (status.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -316,28 +382,31 @@ void update_status()
 void update_history()
 {
     char buf[HISTORY_WIDTH];
-    struct history h = {{0},{0}};
+    struct history h = {{0},NULL,{0}};
 
     if (game[gindex].htotal)
-	snprintf(buf, sizeof(buf), "%u of %u", game[gindex].hindex,
+	snprintf(buf, sizeof(buf), "%u %s %u", game[gindex].hindex, N_OF_N_STR,
 		game[gindex].htotal);
     else
 	strncpy(buf, UNAVAILABLE, sizeof(buf));
 
-    mvwprintw(historyw, 2, 1, "     Move: %-*s", HISTORY_WIDTH - 13, buf);
+    mvwprintw(historyw, 2, 1, "%s %-*s", HISTORY_MOVE_STR, HISTORY_WIDTH - 13,
+	    buf);
 
     get_history_by_index(game[gindex].hindex, &h);
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
-	    (h.comment[0] || h.nag[0]) ? "(press ']')" : "");
-    mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, buf);
+	    ((h.comment && h.comment[0]) || h.nag[0]) ? HISTORY_ANNO_NEXT : "");
+    mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
+	    HISTORY_WIDTH - 13, buf);
 
     if (get_history_by_index(game[gindex].hindex - 1, &h))
 	h.move[0] = 0;
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
-	    (h.comment[0] || h.nag[0]) ? "(press '[')" : "");
-    mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13, buf);
+	    ((h.comment && h.comment[0]) || h.nag[0]) ? HISTORY_ANNO_PREV : "");
+    mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
+	    HISTORY_WIDTH - 13, buf);
     return;
 }
 
@@ -345,23 +414,23 @@ void update_white_black()
 {
     char *white, *black;
 
-    if (game[gindex].pgn[PGN_WHITE].value[0] == '?' || 
-	    game[gindex].pgn[PGN_WHITE].value[0] == '\0')
+    if (game[gindex].tag[TAG_WHITE].value[0] == '?' || 
+	    game[gindex].tag[TAG_WHITE].value[0] == '\0')
 	white = UNAVAILABLE;
     else 
-	white = game[gindex].pgn[PGN_WHITE].value;
+	white = game[gindex].tag[TAG_WHITE].value;
 
-    if (game[gindex].pgn[PGN_BLACK].value[0] == '?' || 
-	    game[gindex].pgn[PGN_BLACK].value[0] == '\0')
+    if (game[gindex].tag[TAG_BLACK].value[0] == '?' || 
+	    game[gindex].tag[TAG_BLACK].value[0] == '\0')
 	black = UNAVAILABLE;
     else 
-	black = game[gindex].pgn[PGN_BLACK].value;
+	black = game[gindex].tag[TAG_BLACK].value;
 
-    mvwprintw(whitew, 2, 1, "Name: %-*s", BW_WIDTH - 8, white);
-    mvwprintw(blackw, 2, 1, "Name: %-*s", BW_WIDTH - 8, black);
+    mvwprintw(whitew, 2, 1, "%s %-*s", BW_NAME_STR, BW_WIDTH - 8, white);
+    mvwprintw(blackw, 2, 1, "%s %-*s", BW_NAME_STR, BW_WIDTH - 8, black);
 
-    mvwprintw(whitew, 3, 1, "Captures: %-2i", game[gindex].wcaptures);
-    mvwprintw(blackw, 3, 1, "Captures: %-2i", game[gindex].bcaptures);
+    mvwprintw(whitew, 3, 1, "%s %-2i", BW_CAPTURE_STR, game[gindex].wcaptures);
+    mvwprintw(blackw, 3, 1, "%s %-2i", BW_CAPTURE_STR, game[gindex].bcaptures);
     return;
 }
 
@@ -428,7 +497,7 @@ static void game_next_prev(int n)
 	    gindex--;
     }
 
-    init_history();
+    init_history(board);
 
     if (gindex == gactive) {
 	browse_history = 0;
@@ -447,13 +516,12 @@ void free_game_data()
 	return;
 
     for (i = 0; i < gtotal; i++) {
-	free(game[i].pgn);
+	free_historydata(game[i].history, game[i].htotal);
 	free(game[i].history);
+	free_tag_data(game[i].tag, game[i].tindex);
+	free(game[i].tag);
     }
 
-    /*
-    free(game);
-    */
     return;
 }
 
@@ -464,9 +532,11 @@ static void delete_game(int which)
     int i;
     
     for (i = 0; i < gtotal; i++) {
-	if (i == which) {
+	if (i == which || game[i].delete) {
+	    free_historydata(game[i].history, game[i].htotal);
 	    free(game[i].history);
-	    free(game[i].pgn);
+	    free_tag_data(game[i].tag, game[i].tindex);
+	    free(game[i].tag);
 	    continue;
 	}
 
@@ -474,7 +544,7 @@ static void delete_game(int which)
 
 	memcpy(&g[gi], &game[i], sizeof(struct games));
 
-	g[gi].pgn = game[i].pgn;
+	g[gi].tag = game[i].tag;
 	g[gi].history = game[i].history;
 	gi++;
     }
@@ -482,10 +552,14 @@ static void delete_game(int which)
     game = g;
     gtotal = gi;
 
-    if (which + 1 >= gtotal)
-	gindex = gtotal - 1;
+    if (which != -1) {
+	if (which + 1 >= gtotal)
+	    gindex = gtotal - 1;
+	else
+	    gindex = which;
+    }
     else
-	gindex = which;
+	gindex = gtotal - 1;
 
     gactive = gindex;
     return;
@@ -493,42 +567,50 @@ static void delete_game(int which)
 
 void game_loop()
 {
-    int rrow = 8, rcol = 1;
     int error_recover = 0;
+    int pushkey = 0;
+    int count = 0;
 
     gactive = gindex;
-    cursor_x = 2, cursor_y = 1;
     gindex = gtotal - 1;
+    crow = 8;
+    ccol = 1;
 
     if (pgnfile[0])
-	init_history();
+	init_history(board);
 
     flushinp();
-    wtimeout(boardw, 70);
     update_all();
+    wtimeout(boardw, 70);
 
     while (!quit) {
 	int c = 0;
 	fd_set fds;
-	int i, n, len;
+	int i, n = 0, len = 0;
 	char fdbuf[8192] = {0};
 	struct timeval tv;
 	char *tmp;
 	char buf[78];
 	char tfile[FILENAME_MAX];
-	struct pgndata *tmppgn = NULL;
+	struct tags *tmptag = NULL;
 
-	if (status.engine != ENGINE_OFFLINE) {
+	if (engine_initialized) {
 	    tv.tv_sec = 0;
 	    tv.tv_usec = 0;
 
 	    FD_ZERO(&fds);
 	    FD_SET(enginefd[0], &fds);
 
-	    if (sockfd > 0)
-		FD_SET(sockfd, &fds);
+	    for (i = 0; i < gtotal; i++) {
+		if (game[i].sockfd > 0) {
+		    if (game[i].sockfd > n)
+			n = game[i].sockfd;
 
-	    n = (sockfd > enginefd[0]) ? sockfd : enginefd[0];
+		    FD_SET(game[i].sockfd, &fds);
+		}
+	    }
+
+	    n = (n > enginefd[0]) ? n : enginefd[0];
 
 	    if ((n = select(n + 1, &fds, NULL, NULL, &tv)) > 0) {
 		if (FD_ISSET(enginefd[0], &fds)) {
@@ -543,47 +625,57 @@ void game_loop()
 		    }
 		    else {
 			if (len)
-			    parse_engine_output(fdbuf);
+			    parse_engine_output(board, fdbuf);
 
 			update_all();
 		    }
 		}
 
-		if (sockfd <= 0)
-		    goto blah;
+		for (i = 0; i < gtotal; i++) {
+		    if (game[i].sockfd <= 0)
+			continue;
 
-		if (FD_ISSET(sockfd, &fds)) {
-		    len = recv(sockfd, fdbuf, sizeof(fdbuf), 0);
+		    if (FD_ISSET(game[i].sockfd, &fds)) {
+			len = recv(game[i].sockfd, fdbuf, sizeof(fdbuf), 0);
 
-		    if (len == -1) {
-			if (errno != EAGAIN) {
-			    message(ERROR, ANYKEY, "Attempt #%i. recv(): %s",
-				    ++error_recover, strerror(errno));
-			    continue;
+			if (len == -1) {
+			    if (errno != EAGAIN) {
+				message(ERROR, ANYKEY, 
+					"Attempt #%i. recv(): %s", 
+					++error_recover, strerror(errno));
+				continue;
+			    }
 			}
-		    }
-		    else {
-			if (len)
-			    parse_ics_output(fdbuf);
+			else {
+			    if (len)
+				parse_ics_output(fdbuf);
 
-			update_all();
+			    update_all();
+			}
 		    }
 		}
 	    }
 	    else {
-		/* timeout */
+		if (n == -1)
+		    message(ERROR, ANYKEY, "select(): %s", strerror(errno));
+		else {
+		    /* timeout */
+		}
 	    }
 	}
 
-blah:
 	error_recover = 0;
-	draw_board();
-	wmove(boardw, cursor_y, cursor_x);
+	draw_board(board);
+	wmove(boardw, ROWTOMATRIX(crow), COLTOMATRIX(ccol));
 	update_panels();
 	doupdate();
 
-	if ((c = wgetch(boardw)) == ERR)
-	    continue;
+	if (pushkey)
+	    c = pushkey;
+	else {
+	    if ((c = wgetch(boardw)) == ERR)
+		continue;
+	}
 
 	switch (c) {
 	    int annotate;
@@ -600,18 +692,57 @@ blah:
 	    case '<':
 		game_next_prev(0);
 		break;
+	    case 'd':
+		if (gtotal < 2)
+		    break;
+
+		if (game[gindex].delete == 1)
+		    game[gindex].delete = 0;
+		else
+		    game[gindex].delete = 1;
+
+		for (i = n = 0; i < gtotal; i++) {
+		    if (game[i].delete)
+			n++;
+		}
+
+		if (n == gtotal) {
+		    message(NULL, ANYKEY, "%s", E_DELETE_GAME);
+		    game[gindex].delete = 0;
+		    break;
+		}
+
+		update_status();
+		break;
 	    case 'D':
 		if (gtotal < 2) {
 		    message(NULL, ANYKEY, "%s", E_DELETE_GAME);
 		    break;
 		}
 
-		if ((c = message(NULL, YESNO, "%s #%i?", DELETE_GAME,
-				gindex + 1)) != 'y')
+		tmp = NULL;
+
+		for (i = n = 0; i < gtotal; i++) {
+		    if (game[i].delete)
+			n++;
+		}
+
+		if (!n)
+		    tmp = GAME_DELETE_GAME_TEXT;
+		else {
+		    if (n == gtotal) {
+			message(NULL, ANYKEY, "%s", E_DELETE_GAME);
+			break;
+		    }
+
+		    tmp = GAME_DELETE_ALL_TEXT;
+		}
+
+		if ((c = message(NULL, YESNO, "%s", tmp)) != 'y')
 		    break;
 
-		delete_game(gindex);
-		init_history();
+		delete_game((!n) ? gindex : -1);
+		init_history(board);
 		update_all();
 		break;
 	    case 'a':
@@ -622,23 +753,25 @@ blah:
 		else
 		    break;
 
-		snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATE_HISTORY,
+		snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_EDIT_TITLE,
 			game[gindex].history[annotate].move);
 
 		tmp = get_input(buf, game[gindex].history[annotate].comment, 
 			0, 0, NAG_PROMPT, history_edit_nag, (void *)annotate,
 			CTRL('T'), -1);
 
-		if (tmp)
-		    strncpy(game[gindex].history[annotate].comment, tmp,
-			sizeof(game[gindex].history[annotate].comment));
-		else
-		    game[gindex].history[annotate].comment[0] = 0;
+		len = (tmp) ? strlen(tmp) + 1 : 1;
+
+		game[gindex].history[annotate].comment = 
+		    Realloc(game[gindex].history[annotate].comment, len);
+
+		strncpy(game[gindex].history[annotate].comment,
+			(tmp) ? tmp : "", len);
 
 		update_history();
 		break;
 	    case 'i':
-		edit_pgn_data(0);
+		edit_tags(0);
 		break;
 	    case 'g':
 		if (browse_history || status.engine == ENGINE_THINKING)
@@ -660,17 +793,27 @@ blah:
 		break;
 	    case 'h':
 		if (browse_history) {
-		    if (game[gindex].hindex != game[gindex].htotal) {
+		    if (game[gindex].openingside == BLACK) {
+			message(NULL, ANYKEY, "%s", E_RESUME_BLACK);
+			break;
+		    }
+
+		    if (!pushkey && 
+			    game[gindex].hindex != game[gindex].htotal) {
 			if ((c = message_uncentered(NULL, YESNO, "%s",
-					RESUME_HISTORY)) != 'y')
+					GAME_RESUME_HISTORY_TEXT)) != 'y')
 			    break;
 		    }
 
 		    if (!engine_initialized) {
 			if (start_chess_engine() < 0)
 			    break;
+
+			pushkey = 'h';
+			break;
 		    }
 
+		    pushkey = 0;
 		    oldhistorytotal = game[gindex].htotal;
 		    game[gindex].htotal = game[gindex].hindex;
 		    gactive = gindex;
@@ -685,24 +828,25 @@ blah:
 		if (!game[gindex].htotal)
 		    break;
 
-		init_history();
+		init_history(board);
 		break;
 	    case 'u':
 		if (browse_history || !game[gindex].htotal)
 		    break;
 
-		history_previous(2);
+		history_previous(board, 2);
 		game[gindex].htotal = game[gindex].hindex;
 
 		SEND_TO_ENGINE("remove\n");
 		update_history();
 		break;
 	    case 'r':
-		if ((tmp = get_input(LOAD_PGN, NULL, 1, 1, EXTRA_BROWSE,
-				browse_directory, NULL, '\t', -1)) == NULL)
+		if ((tmp = get_input(GAME_LOAD_TITLE, NULL, 1, 1,
+				BROWSER_PROMPT, browse_directory, NULL, 
+				'\t', -1)) == NULL)
 		    break;
 
-		if ((c = parse_pgn_file(tmp)) != 0) {
+		if ((c = parse_pgn_file(board, tmp)) != 0) {
 		    if (c > 0)
 			message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
 		    else
@@ -714,7 +858,7 @@ blah:
 		gindex = gtotal - 1;
 		gactive = gindex;
 		strncpy(pgnfile, tmp, sizeof(pgnfile));
-		init_history();
+		init_history(board);
 		update_all();
 		break;
 	    case 'S':
@@ -736,7 +880,8 @@ blah:
 		if (browse_history && game[gindex].hindex != 
 			game[gindex].htotal && (c == 'S' || config.saveprompt))
 		{
-		    c = message_uncentered(NULL, SAVE_HISTORY_P, SAVE_HISTORY); 
+		    c = message_uncentered(NULL, GAME_SAVE_HISTORY_PROMPT,
+			    "%s", GAME_SAVE_HISTORY_TEXT);
 
 		    if (c == 'c')
 			game[gindex].htotal = game[gindex].hindex;
@@ -746,21 +891,26 @@ blah:
 		}
 
 		if ((c == 'S' || config.saveprompt) && 
-			message(NULL, YESNO, "%s", SAVE_PGN_P) == 'y') {
-		    if ((tmppgn = edit_pgn_data(1)) == NULL) {
+			message(NULL, YESNO, "%s", GAME_EDIT_TAG_PROMPT) 
+			== 'y') {
+		    if ((tmptag = edit_tags(1)) == NULL) {
 			game[gindex].htotal = oldhistorytotal;
 			break;
 		    }
 
-		    game[gindex].pindex = 0;
+		    game[gindex].tindex = 0;
 
-		    for (i = 0; tmppgn[i].token[0]; i++)
-			add_pgn_data(&game[gindex].pgn, &game[gindex].pindex,
-				tmppgn[i].token, tmppgn[i].value);
+		    for (i = 0; tmptag[i].name; i++)
+			add_tag(&game[gindex].tag, &game[gindex].tindex,
+				tmptag[i].name, tmptag[i].value);
+
+		    free_tag_data(tmptag, i);
+		    free(tmptag);
 		}
 
-		if ((tmp = get_input(SAVE_PGN, pgnfile, 1, 1, EXTRA_BROWSE,
-				browse_directory, NULL, '\t', -1)) == NULL) {
+		if ((tmp = get_input(GAME_SAVE_TITLE, pgnfile, 1, 1,
+				BROWSER_PROMPT, browse_directory, NULL, 
+				'\t', -1)) == NULL) {
 		    game[gindex].htotal = oldhistorytotal;
 		    break;
 		}
@@ -777,37 +927,39 @@ blah:
 		}
 
 		game[gindex].htotal = oldhistorytotal;
-		parse_pgn_file(pgnfile);
+		parse_pgn_file(board, pgnfile);
 		gindex = gtotal - 1;
 		gactive = gindex;
 		status.notify = NOTIFY_SAVED;
 		update_all();
 		break;
 	    case CTRL('G'):
-		help(MAIN_HELP, mainhelp);
+		help(GAME_HELP, mainhelp);
 		break;
 	    case 'n':
 	    case 'N':
 		if (c == 'N') {
-		    if (message(NULL, YESNO, "%s", NEWGAME_P) != 'y')
+		    if (message(NULL, YESNO, "%s", GAME_NEW_PROMPT) != 'y')
 			break;
 		}
 
 		browse_history = sp.icon = 0;
 
 		if (c == 'n') {
+		    newgameinit = 1;
 		    new_game(board);
 		    gactive = gindex;
 		}
 		else {
 		    reset_history();
 		    pgnfile[0] = '\0';
-		    parse_pgn_file(pgnfile);
+		    parse_pgn_file(board, pgnfile);
 		}
 
 		game[gindex].wcaptures = game[gindex].bcaptures = 0;
 
-		if (status.engine == ENGINE_OFFLINE) {
+		if (status.engine == ENGINE_OFFLINE ||
+			engine_initialized == 0) {
 		    if (start_chess_engine() < 0)
 			break;
 		}
@@ -818,6 +970,7 @@ blah:
 		status.notify = NULL;
 		update_all();
 		break;
+	    case CTRL('L'):
 	    case 'R':
 		endwin();
 		keypad(boardw, TRUE);
@@ -831,65 +984,97 @@ blah:
 		if (status.engine == ENGINE_OFFLINE)
 		    break;
 
-		if ((tmp = get_input_str_clear(ENGINE_COMMAND_PROMPT, NULL)) 
+		if ((tmp = get_input_str_clear(ENGINE_CMD_TITLE, NULL)) 
 			!= NULL) {
 		    SEND_TO_ENGINE("%s\n", tmp);
 		}
 		break;
 	    case KEY_ESCAPE:
-		sp.icon = selected_y = selected_x = 0;
+		sp.icon = sp.row = sp.col = 0;
+
+		if (config.validmoves)
+		    reset_valid_moves(board);
 		break;
+	    case '1' ... '7':
+		count = c - '0';
+		continue;
 	    case 'j':
 	    case KEY_UP:
 		if (browse_history) {
-		    history_next(config.history_jump);
+		    history_next(board, (count) ?
+			    config.history_jump * count : config.history_jump);
 		    update_all();
 		    break;
 		}
 
-		if (cursor_y - 2 < 1)
-		    cursor_y = BOARD_HEIGHT - 3, rrow = 1;
+		if (count) {
+		    crow += count;
+		    pushkey = '\n';
+		}
 		else
-		    cursor_y -= 2, rrow++;
+		    crow++;
+
+		if (crow > 8)
+		    crow = 1;
+
 		break;
 	    case 'k':
 	    case KEY_DOWN:
 		if (browse_history) {
-		    history_previous(config.history_jump);
+		    history_previous(board, (count) ?
+			    config.history_jump * count : config.history_jump);
 		    update_all();
 		    break;
 		}
 
-		if (cursor_y + 2 > BOARD_HEIGHT - 2)
-		    cursor_y = 1, rrow = 8;
+		if (count) {
+		    crow -= count;
+		    pushkey = '\n';
+		}
 		else
-		    cursor_y += 2, rrow--;
+		    crow--;
+
+		if (crow < 1)
+		    crow = 8;
+
 		break;
 	    case 'l':
 	    case KEY_LEFT:
 		if (browse_history) {
-		    history_previous(1);
+		    history_previous(board, (count) ? count : 1);
 		    update_all();
 		    break;
 		}
 
-		if (cursor_x - 4 < 2)
-		    cursor_x = BOARD_WIDTH - 4, rcol = 8;
+		if (count) {
+		    ccol -= count;
+		    pushkey = '\n';
+		}
 		else
-		    cursor_x -= 4, rcol--;
+		    ccol--;
+
+		if (ccol < 1)
+		    ccol = 8;
+
 		break;
 	    case ';':
 	    case KEY_RIGHT:
 		if (browse_history) {
-		    history_next(1);
+		    history_next(board, (count) ? count : 1);
 		    update_all();
 		    break;
 		}
 
-		if (cursor_x + 4 > BOARD_WIDTH - 4)
-		    cursor_x = 2, rcol = 1;
+		if (count) {
+		    ccol += count;
+		    pushkey = '\n';
+		}
 		else
-		    cursor_x += 4, rcol++;
+		    ccol++;
+
+		if (ccol > 8)
+		    ccol = 1;
+
 		break;
 	    case 'w':
 		if (browse_history)
@@ -907,9 +1092,14 @@ blah:
 		SEND_TO_ENGINE("\nswitch\n");
 		break;
 	    case ' ':
-		if (status.engine != ENGINE_READY) {
-		    message(NULL, ANYKEY, "%s", NEWGAME);
+		if (browse_history)
 		    break;
+
+		if (status.engine != ENGINE_READY || !engine_initialized) {
+		    if (start_chess_engine() < 0) {
+			sp.icon = 0;
+			break;
+		    }
 		}
 
 		if (sp.icon || status.engine == ENGINE_THINKING) {
@@ -917,10 +1107,10 @@ blah:
 		    break;
 		}
 
-		if (browse_history)
-		    break;
+		sp.icon = mvwinch(boardw, ROWTOMATRIX(crow), 
+			COLTOMATRIX(ccol)+1) & A_CHARTEXT;
 
-		if ((sp.icon = winch(boardw) & A_CHARTEXT) == ' ') {
+		if (sp.icon == ' ') {
 		    sp.icon = 0;
 		    break;
 		}
@@ -932,13 +1122,18 @@ blah:
 		    break;
 		}
 
-		sp.row = rrow;
-		sp.col = rcol;
-		selected_x = cursor_x;
-		selected_y = cursor_y;
+		sp.row = crow;
+		sp.col = ccol;
+
+		if (config.validmoves)
+		    get_valid_moves(board, piece_to_int(sp.icon), sp.row, 
+			    sp.col);
+
 		break;
 	    case '\015':
 	    case '\n':
+		pushkey = 0;
+
 		if (browse_history)
 		    break;
 
@@ -950,9 +1145,13 @@ blah:
 		if (!sp.icon)
 		    break;
 
-		sp.destrow = rrow;
-		sp.destcol = rcol;
-		parse_piece_command();
+		sp.destrow = crow;
+		sp.destcol = ccol;
+
+		if (config.validmoves)
+		    reset_valid_moves(board);
+
+		move_to_engine(board);
 		break;
 	    case 'q':
 		quit = 1;
@@ -963,6 +1162,8 @@ blah:
 		beep();
 		break;
 	}
+
+	count = 0;
     }
 
     return;
@@ -971,10 +1172,10 @@ blah:
 void usage(const char *pn)
 {
     printf("Usage: %s [-hv] [-p <pgnfile>] [-i hostname[:port]] "
-	    "[-u username:passwd]\n", pn);
+	    "[-u username[:passwd]]\n", pn);
     printf("  -p  Load PGN file.\n");
     printf("  -i  ICS hostname and optional port.\n");
-    printf("  -u  ICS username and password.\n");
+    printf("  -u  ICS username and optional password.\n");
     printf("  -v  Version information.\n");
     printf("  -h  This help text.\n");
 
@@ -1023,9 +1224,10 @@ static void set_defaults()
     config.agony = 1;
     config.linegraphics = 1;
     config.saveprompt = 1;
+    config.validmoves = 1;
     strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
     config.ics_port = DEFAULT_ICS_PORT;
-    strncpy(config.ics_user, DEFAULT_ICS_USER, sizeof(config.ics_user));
+    config.ics_user = strdup(DEFAULT_ICS_USER);
 
     set_default_colors();
     return;
@@ -1036,6 +1238,8 @@ int main(int argc, char *argv[])
     int opt;
     struct passwd *pwd;
     struct stat st;
+    char buf[FILENAME_MAX];
+    char datadir[FILENAME_MAX];
 
     while ((opt = getopt(argc, argv, "hp:vu:i:")) != -1) {
 	char *tmp;
@@ -1048,12 +1252,10 @@ int main(int argc, char *argv[])
 		while ((tmp = strsep(&optarg, ":")) != NULL) {
 		    switch (i++) {
 			case 0:
-			    strncpy(config.ics_user, tmp,
-				    sizeof(config.ics_user));
+			    config.ics_user = optarg;
 			    break;
 			case 1:
-			    strncpy(config.ics_passwd, tmp,
-				    sizeof(config.ics_passwd));
+			    config.ics_passwd = optarg;
 			    break;
 			default:
 			    usage(argv[0]);
@@ -1096,13 +1298,18 @@ int main(int argc, char *argv[])
 	err(EXIT_FAILURE, "getpwuid()");
 
     snprintf(datadir, sizeof(datadir), "%s/.cboard", pwd->pw_dir);
-    snprintf(config.ccfile, sizeof(config.ccfile), "%s/cc.data", datadir);
-    snprintf(config.nagfile, sizeof(config.nagfile), "%s/nag.data", datadir);
-    snprintf(config.agonyfile, sizeof(config.agonyfile), "%s/agony.data",
-	    datadir);
-    snprintf(config.configfile, sizeof(config.configfile),  "%s/config",
-	    datadir);
-    snprintf(config.fifo, sizeof(config.fifo), "%s/fifo", datadir);
+    snprintf(buf, sizeof(buf), "%s/cc.data", datadir);
+    config.ccfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/nag.data", datadir);
+    config.nagfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/agony.data", datadir);
+    config.agonyfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/config", datadir);
+    config.configfile = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/fifo", datadir);
+    config.fifo = strdup(buf);
+    snprintf(buf, sizeof(buf), "%s/tmpfile", datadir);
+    config.tmpfile = strdup(buf);
 
     if (stat(datadir, &st) == -1) {
 	if (errno == ENOENT) {
@@ -1133,7 +1340,7 @@ int main(int argc, char *argv[])
     signal(SIGSTOP, catch_signal);
     signal(SIGINT, catch_signal);
 
-    if ((opt = parse_pgn_file(pgnfile)) != 0) {
+    if ((opt = parse_pgn_file(board, pgnfile)) != 0) {
 	if (opt > 0)
 	    err(EXIT_FAILURE, "%s", pgnfile);
 	else
@@ -1146,11 +1353,6 @@ int main(int argc, char *argv[])
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);
     else
 	curses_initialized = 1;
-
-    if (start_chess_engine()) {
-	endwin();
-	exit(EXIT_FAILURE);
-    }
 
     if (has_colors() == TRUE && start_color() == OK)
 	init_color_pairs();
@@ -1167,28 +1369,34 @@ int main(int argc, char *argv[])
     blackw = newwin(BW_HEIGHT, BW_WIDTH, BW_HEIGHT, 0);
     blackp = new_panel(blackw);
     keypad(boardw, TRUE);
+    leaveok(boardw, TRUE);
+    leaveok(whitew, TRUE);
+    leaveok(blackw, TRUE);
+    leaveok(statusw, TRUE);
+    leaveok(historyw, TRUE);
     curs_set(0);
     cbreak();
     noecho();
 
     wbkgd(statusw, CP_STATUS_WINDOW);
-    draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
-	    CP_STATUS_BORDER);
+    draw_window_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
+	    CP_STATUS_TITLE, CP_STATUS_BORDER);
     wbkgd(whitew, CP_WHITE_WINDOW);
-    draw_window_title(whitew, "White", BW_WIDTH, CP_WHITE_TITLE, 
+    draw_window_title(whitew, WHITE_WINDOW_TITLE, BW_WIDTH, CP_WHITE_TITLE, 
 	    CP_WHITE_BORDER);
     wbkgd(blackw, CP_BLACK_WINDOW);
-    draw_window_title(blackw, "Black", BW_WIDTH, CP_BLACK_TITLE, 
+    draw_window_title(blackw, BLACK_WINDOW_TITLE, BW_WIDTH, CP_BLACK_TITLE, 
 	    CP_BLACK_BORDER);
     wbkgd(historyw, CP_HISTORY_WINDOW);
-    draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
-	    CP_HISTORY_BORDER);
+    draw_window_title(historyw, HISTORY_WINDOW_TITLE, HISTORY_WIDTH,
+	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
 
     game_loop();
     stop_engine();
 
     endwin();
     free_game_data();
+    free(game);
     del_panel(boardp);
     del_panel(historyp);
     del_panel(statusp);

@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.22 2003-01-14 20:44:15 bjk Exp $ */
+/* $Id: pgn.h,v 1.23 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -24,23 +24,7 @@
 #define MAX_TIME_LEN	18
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
-#define PGN_EDIT_TITLE	"Editing PGN Save Data"
-#define HELP_PROMPT	"Type CTRL-g for help"
-#define CC_PROMPT	"Type CTRL-t for country codes"
-#define CC_TITLE	"Country Codes"
-#define CC_KEY_HELP	"Country Code Keys"
-#define PGN_INFO_HELP	"PGN Information Keys"
-#define PGN_EDIT_HELP	"PGN Edit Keys"
-#define PGN_EDIT_TAG	"Editing PGN Roster Tag"
-#define PGN_BAD_INDEX	"Could not get window index number"
-#define PGN_REMOVE_STR	"Cannot remove the Seven Tag Roster"
-#define PGN_NEW_TAG	"New Roster Tag Name"
-#define PGN_DUPLICATE	"Could not add duplicate tag"
-#define PGN_INFO_TITLE	"PGN Information"
-#define OVERWRITE_PROMPT	"'a' to append, 'o' to overwrite"
 #define MAX_VALUE_WIDTH	30
-#define BROWSER_HELP	"File Browser Keys"
-#define CHANGE_DIRECTORY	"Change Directory"
 
 const struct {
     char *pgn;
@@ -115,7 +99,7 @@ const char *file_browser_help[] = {
     NULL
 };
 
-struct board_matrix pgnboard[8][8];
+BOARD pgnboard;
 
 void *Malloc(size_t);
 void add_to_history(struct history **, int *, int *, const char *);
@@ -127,7 +111,7 @@ void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
-int parse_move_text(struct board_matrix[][], char *, int);
-char *a2a4tosan(struct board_matrix [][], char *);
+int parse_move_text(BOARD, char *, int);
+char *a2a4tosan(BOARD, char *);
 
 #endif

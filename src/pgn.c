@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.60 2003-01-14 20:57:01 bjk Exp $ */
+/* $Id: pgn.c,v 1.61 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -43,6 +43,22 @@
 #include "common.h"
 #include "colors.h"
 #include "pgn.h"
+
+static int tag_compare(const void *s1, const void *s2)
+{
+    const struct tags *ss1 = s1;
+    const struct tags *ss2 = s2;
+
+    return strcmp(ss1->name, ss2->name);
+}
+
+static void sort_tags(struct games g)
+{
+    struct tags *t = g.tag + 7;
+
+    qsort(t, g.tindex - 7, sizeof(struct tags), tag_compare);
+    return;
+}
 
 char *compression_cmd(const char *filename, int expand)
 {
@@ -100,11 +116,16 @@ char *compression_cmd(const char *filename, int expand)
 int end_of_game(const char *str)
 {
     int i;
+    int len;
 
     for (i = 0; i < NARRAY(fancy_results); i++) {
 	if (strstr(str, fancy_results[i].pgn) != NULL) {
-	    strncpy(game[gindex].pgn[PGN_RESULT].value, fancy_results[i].fancy,
-		    sizeof(game[gindex].pgn[PGN_RESULT].value));
+	    len = strlen(fancy_results[i].pgn) + 1;
+	    game[gindex].tag[TAG_RESULT].value = 
+		Realloc(game[gindex].tag[TAG_RESULT].value, len);
+
+	    strncpy(game[gindex].tag[TAG_RESULT].value, fancy_results[i].pgn,
+		    len);
 	    return 1;
 	}
     }
@@ -115,41 +136,45 @@ int end_of_game(const char *str)
 /* Returns 1 if a duplicate tag was found. 0 otherwise. The index argument is
  * a pointer to int, and incremented automatically.
  */
-int add_pgn_data(struct pgndata **dst, int *n, char *token, char *value)
+int add_tag(struct tags **dst, int *n, char *name, char *value)
 {
     int i, index = *n;
-    struct pgndata *tdata = *dst;
+    struct tags *tdata = *dst;
+    int len = 0;
 
-    token = trim(token);
+    name = trim(name);
     value = trim(value);
 
     /* If a duplicate was found, update the existing one to the new value. */
     for (i = 0; i < index; i++) {
-	if (strcasecmp(tdata[i].token, token) == 0) {
-	    if (value)
-		strncpy(tdata[i].value, value, sizeof(tdata[i].value));
-	    else
-		tdata[i].value[0] = '\0';
-
+	if (strcasecmp(tdata[i].name, name) == 0) {
+	    len = (value) ? strlen(value) + 1 : 1;
+	    tdata[i].value = Realloc(tdata[i].value, len);
+	    strncpy(tdata[i].value, (value) ? value : "", len);
 	    *dst = tdata;
 	    return 1;
 	}
     }
 
-    tdata = Realloc(tdata, (index + 2) * sizeof(struct pgndata));
+    tdata = Realloc(tdata, (index + 2) * sizeof(struct tags));
 
-    strncpy(tdata[index].token, token, sizeof(tdata[index].token));
+    len = strlen(name) + 1;
+    tdata[index].name = Malloc(len);
+    strncpy(tdata[index].name, name, len);
 
-    if (value)
-	strncpy(tdata[index].value, value, sizeof(tdata[index].value));
+    if (value) {
+	len = strlen(value) + 1;
+	tdata[index].value = Malloc(len);
+	strncpy(tdata[index].value, value, len);
+    }
 
-    memset(&tdata[++index], 0, sizeof(struct pgndata));
+    memset(&tdata[++index], '\0', sizeof(struct tags));
     *n = index;
     *dst = tdata;
     return 0;
 }
 
-static char *remove_pgn_tag_escapes(const char *str)
+static char *remove_tag_escapes(const char *str)
 {
     int i, n;
     int len = strlen(str);
@@ -170,7 +195,7 @@ static char *remove_pgn_tag_escapes(const char *str)
     return buf;
 }
 
-void init_board(struct board_matrix matrix[8][8])
+void init_board(BOARD b)
 {
     int row, col;
 
@@ -208,14 +233,15 @@ void init_board(struct board_matrix matrix[8][8])
 		    break;
 	    }
 
-	    matrix[row][col].icon = (row < 2) ? c : toupper(c);
+	    b[row][col].icon = (row < 2) ? c : toupper(c);
+	    b[row][col].valid = 0;
 	}
     }
 
     return;
 }
 
-void set_pgn_defaults()
+void set_default_tags()
 {
     time_t now;
     char tbuf[MAX_TIME_LEN + 1] = {0};
@@ -231,19 +257,23 @@ void set_pgn_defaults()
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Event", "?");
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Site", "?");
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Date", tbuf);
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Round", "-");
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "White", 
-	    pwd->pw_gecos);
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Black", "?");
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Result", "*");
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "Event", "?");
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "Site", "?");
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "Date", tbuf);
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "Round", "-");
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "White", pwd->pw_gecos);
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "Black", "?");
+    add_tag(&game[gindex].tag, &game[gindex].tindex, "Result", "*");
 
     /* Add custom tags from the configuration file. */
-    for (n = 0; n < config.pindex; n++)
-	add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, 
-		config.pgn[n].token, config.pgn[n].value);
+    if (newgameinit) {
+	for (n = 0; n < config.tindex; n++)
+	    add_tag(&game[gindex].tag, &game[gindex].tindex, 
+		    config.tag[n].name, config.tag[n].value);
+
+	sort_tags(game[gindex]);
+	newgameinit = 0;
+    }
 
     return;
 }
@@ -274,10 +304,10 @@ static void skip_leading_space(FILE *fp)
 static void invalid_move(const char *move)
 {
     if (curses_initialized)
-	message(NULL, ANYKEY, "%s \"%s\" (game #%i)", E_INVALID_MOVE, move,
+	message(NULL, ANYKEY, "%s \"%s\" (#%i)", E_INVALID_MOVE, move,
 		gindex + 1);
     else
-	warnx("%s: %s \"%s\" (game #%i)", pgnfile, E_INVALID_MOVE, move,
+	warnx("%s: %s \"%s\" (#%i)", pgnfile, E_INVALID_MOVE, move,
 		gindex + 1);
 
     return;
@@ -309,10 +339,18 @@ int move_text(FILE *fp)
     }
 
     if (digit) {
-	if (dots > 1)
+	if (dots > 1) {
 	    status.turn = BLACK;
-	else
+
+	    if (game[gindex].hindex == 0)
+		game[gindex].openingside = BLACK;
+	}
+	else {
 	    status.turn = WHITE;
+
+	    if (game[gindex].hindex == 0)
+		game[gindex].openingside = WHITE;
+	}
     }
     else
 	status.turn = BLACK;
@@ -449,37 +487,49 @@ static void nag_text(FILE *fp)
 
 static void move_annotation(FILE *fp, int terminator)
 {
-    char *a = game[gindex].history[game[gindex].hindex - 1].comment;
     int c, lastchar = 0;
+    int len = 0;
+    int hindex = game[gindex].hindex - 1;
+    char buf[MAX_PGN_LINE_LEN], *a = buf;
 
     skip_leading_space(fp);
 
     while ((c = fgetc(fp)) != EOF && c != terminator) {
 	if (c == '\n')
-	    continue;
+	    c = ' ';
 
 	if (isspace(c) && isspace(lastchar))
 	    continue;
 
+	if (len + 1 == sizeof(buf))
+	    continue;
+
 	*a++ = lastchar = c;
+	len++;
     }
 
     *a = '\0';
 
-    strncpy(game[gindex].history[game[gindex].hindex - 1].comment, 
-	    trim(game[gindex].history[game[gindex].hindex - 1].comment),
-	    sizeof(game[gindex].history[game[gindex].hindex - 1].comment));
+    game[gindex].history[hindex].comment = 
+	Realloc(game[gindex].history[hindex].comment, ++len);
+
+    strncpy(game[gindex].history[hindex].comment, buf, len);
 
     return;
 }
 
 static void pgn_tag(FILE *fp)
 {
-    char name[255], *n = name;
-    char value[255], *v = value;
+    char *name, *n = name;
+    char *value, *v = value;
     int c, i = 0;
     int quoted_string = 0;
     int lastchar = 0;
+
+    name = Malloc(MAX_PGN_LINE_LEN);
+    n = name;
+    value = Malloc(MAX_PGN_LINE_LEN);
+    v = value;
 
     skip_leading_space(fp);
 
@@ -516,12 +566,11 @@ static void pgn_tag(FILE *fp)
     if (*v == '\"')
 	*v = '\0';
 
-    while (isspace(*--v))
-	*v = '\0';
+    add_tag(&game[gindex].tag, &game[gindex].tindex, name, 
+	    remove_tag_escapes(value));
 
-    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, name, 
-	    remove_pgn_tag_escapes(value));
-
+    free(name);
+    free(value);
     return;
 }
 
@@ -534,9 +583,14 @@ static int eog_marker(FILE *fp)
 	*p++ = c;
 
     for (i = 0; i < NARRAY(fancy_results); i++) {
+	int len;
+
 	if (strcmp(buf, fancy_results[i].pgn) == 0) {
-	    strncpy(game[gindex].pgn[PGN_RESULT].value, fancy_results[i].pgn,
-		    sizeof(game[gindex].pgn[PGN_RESULT].value));
+	    len = strlen(fancy_results[i].pgn) + 1;
+	    game[gindex].tag[TAG_RESULT].value = 
+		Realloc(game[gindex].tag[TAG_RESULT].value, len);
+	    strncpy(game[gindex].tag[TAG_RESULT].value, fancy_results[i].pgn,
+		    len);
 	    break;
 	}
     }
@@ -544,8 +598,7 @@ static int eog_marker(FILE *fp)
     return 1;
 }
 
-#ifdef DEBUG
-void dump_board(struct board_matrix b[][8])
+void dump_board(BOARD b)
 {
     int row, col;
 
@@ -556,7 +609,7 @@ void dump_board(struct board_matrix b[][8])
 		continue;
 	    }
 
-	    printf("%c ", b[row][col].icon);
+	    printf("%c ", (int)b[row][col].icon);
 	}
 
 	printf("\n");
@@ -565,9 +618,8 @@ void dump_board(struct board_matrix b[][8])
     printf("\n");
     return;
 }
-#endif
 
-void new_game(struct board_matrix b[][8])
+void new_game(BOARD b)
 {
     static int firstrun;
 
@@ -578,10 +630,10 @@ void new_game(struct board_matrix b[][8])
 
     if (!firstrun) {
 	game = Realloc(game, (gindex + 2) * sizeof(struct games));
-	game[gindex + 1].pindex = game[gindex + 1].hindex = 0;
-
-	memset(&game[gindex + 1].pgn, 0, sizeof(struct pgndata));
-	memset(&game[gindex + 1].history, 0, sizeof(struct history));
+	memset(&game[gindex + 1], '\0', sizeof(struct games));
+	memset(&game[gindex + 1].tag, '\0', sizeof(struct tags));
+	memset(&game[gindex + 1].history, '\0', sizeof(struct history));
+	sort_tags(game[gindex]);
 	gindex++;
     }
     else {
@@ -590,7 +642,7 @@ void new_game(struct board_matrix b[][8])
     }
 
     gtotal = gindex + 1;
-    set_pgn_defaults();
+    set_default_tags();
     init_board(b);
 
     return;
@@ -611,7 +663,7 @@ static void rav_text(FILE *fp, int which)
     return;
 }
 
-int parse_pgn_file(const char *filename)
+int parse_pgn_file(BOARD b, const char *filename)
 {
     FILE *fp, *ofp;
     char buf[LINE_MAX] = {0}, *p = buf;
@@ -624,7 +676,8 @@ int parse_pgn_file(const char *filename)
 
     if (!*filename) {
 	reset_game_data();
-	new_game(board);
+	newgameinit = 1;
+	new_game(b);
 	return 0;
     }
 
@@ -632,7 +685,7 @@ int parse_pgn_file(const char *filename)
 	return 1;
 
     if ((command = compression_cmd(filename, 1)) != NULL) {
-	snprintf(tfile, sizeof(tfile), "%s/tmpfile", datadir);
+	snprintf(tfile, sizeof(tfile), "%s", config.tmpfile);
 
 	if ((ofp = fopen(tfile, "w+")) == NULL)
 	    return 1;
@@ -746,7 +799,9 @@ int parse_pgn_file(const char *filename)
 
 	*p++ = c;
 
-	DEBUG("unparsed: '%s'\n", buf);
+#ifdef DEBUG
+	DUMP("unparsed: '%s'\n", buf);
+#endif
 
 	if (strlen(buf) + 1 == sizeof(buf))
 	    bzero(buf, sizeof(buf));
@@ -757,26 +812,26 @@ int parse_pgn_file(const char *filename)
     fclose(fp);
 
     if (gtotal < 1) {
-	new_game(board);
+	new_game(b);
 	goto done;
     }
 
+    sort_tags(game[gindex]);
     gtotal = gindex + 1;
 
     for (row = 0; row < 8; row++) {
 	for (col = 0; col < 8; col++)
-	    board[row][col].icon = pgnboard[row][col].icon;
+	    bcopy(&b, &pgnboard, sizeof(BOARD));
     }
 
 done:
     if (command)
 	unlink(filename);
 
-    //exit(0);
     return 0;
 }
 
-static char *pgn_escapes(const char *str)
+static char *add_tag_escapes(const char *str)
 {
     int i, n;
     int len = strlen(str);
@@ -839,7 +894,8 @@ static int dump_comments_and_nag(FILE *fp, int index, int *len)
 	}
     }
 
-    if (game[gindex].history[index].comment[0]) {
+    if (game[gindex].history[index].comment &&
+	    game[gindex].history[index].comment[0]) {
 	annotated = 1;
 
 	fprintf(fp, "\n{");
@@ -870,80 +926,88 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
     int i;
     int n, len = 0;
     int annotated = 0;
+    int x = 0;
 
-    for (i = 0; g.pgn[i].token[0]; i++) {
+    sort_tags(g);
+
+    for (i = 0; g.tag[i].name; i++) {
 	struct tm tp;
+	char buf[MAX_TIME_LEN + 1];
 
 	if (isfifo && i == 7)
 	    break;
 
-	if (strcmp(g.pgn[i].token, "Date") == 0) {
-	    if (strptime(g.pgn[i].value, TIME_FORMAT, &tp) != NULL)
-		strftime(g.pgn[i].value, sizeof(g.pgn[i].value),
-			PGN_TIME_FORMAT, &tp);
-	}
-	else if (strcmp(g.pgn[i].token, "Event") == 0) {
-	    if (g.pgn[i].value[0] == '\0') {
-		g.pgn[i].value[0] = '?';
-		g.pgn[i].value[1] = '\0';
+	if (strcmp(g.tag[i].name, "Date") == 0) {
+	    if (strptime(g.tag[i].value, TIME_FORMAT, &tp) != NULL) {
+		len = strftime(buf, sizeof(buf), PGN_TIME_FORMAT, &tp) + 1;
+		g.tag[i].value = Realloc(g.tag[i].value, len);
+		strncpy(g.tag[i].value, buf, len);
 	    }
 	}
-	else if (strcmp(g.pgn[i].token, "Site") == 0) {
-	    if (g.pgn[i].value[0] == '\0') {
-		g.pgn[i].value[0] = '?';
-		g.pgn[i].value[1] = '\0';
+	else if (strcmp(g.tag[i].name, "Event") == 0) {
+	    if (g.tag[i].value[0] == '\0') {
+		g.tag[i].value = Realloc(g.tag[i].value, 2);
+		g.tag[i].value[0] = '?';
+		g.tag[i].value[1] = '\0';
 	    }
 	}
-	else if (strcmp(g.pgn[i].token, "Round") == 0) {
-	    if (g.pgn[i].value[0] == '\0') {
-		g.pgn[i].value[0] = '?';
-		g.pgn[i].value[1] = '\0';
+	else if (strcmp(g.tag[i].name, "Site") == 0) {
+	    if (g.tag[i].value[0] == '\0') {
+		g.tag[i].value = Realloc(g.tag[i].value, 2);
+		g.tag[i].value[0] = '?';
+		g.tag[i].value[1] = '\0';
 	    }
 	}
-	else if (strcmp(g.pgn[i].token, "Result") == 0) {
-	    if (g.pgn[i].value[0] == '\0') {
-		g.pgn[i].value[0] = '*';
-		g.pgn[i].value[1] = '\0';
+	else if (strcmp(g.tag[i].name, "Round") == 0) {
+	    if (g.tag[i].value[0] == '\0') {
+		g.tag[i].value = Realloc(g.tag[i].value, 2);
+		g.tag[i].value[0] = '?';
+		g.tag[i].value[1] = '\0';
+	    }
+	}
+	else if (strcmp(g.tag[i].name, "Result") == 0) {
+	    if (g.tag[i].value[0] == '\0') {
+		g.tag[i].value = Realloc(g.tag[i].value, 2);
+		g.tag[i].value[0] = '*';
+		g.tag[i].value[1] = '\0';
 	    }
 	    else {
 		for (n = 0; n < NARRAY(fancy_results); n++) {
-		    if (strcmp(g.pgn[i].value, fancy_results[n].fancy)
-			    == 0) {
-			strncpy(g.pgn[i].value, fancy_results[n].pgn, 
-				sizeof(g.pgn[i].value));
-			n = -1;
-			break;
-		    }
-		    else if (strcmp(g.pgn[i].value, fancy_results[n].pgn)
-			    == 0) {
+		    if (strcmp(g.tag[i].value, fancy_results[n].pgn) == 0) {
 			n = -1;
 			break;
 		    }
 		}
 
 		if (n != -1) {
-		    g.pgn[i].value[0] = '*';
-		    g.pgn[i].value[1] = '\0';
+		    g.tag[i].value = Realloc(g.tag[i].value, 2);
+		    g.tag[i].value[0] = '*';
+		    g.tag[i].value[1] = '\0';
 		}
 	    }
 	}
-	else if (strcmp(g.pgn[i].token, "Black") == 0) {
-	    if (g.pgn[i].value[0] == '\0') {
-		g.pgn[i].value[0] = '?';
-		g.pgn[i].value[1] = '\0';
+	else if (strcmp(g.tag[i].name, "Black") == 0) {
+	    if (g.tag[i].value[0] == '\0') {
+		g.tag[i].value = Realloc(g.tag[i].value, 2);
+		g.tag[i].value[0] = '?';
+		g.tag[i].value[1] = '\0';
 	    }
 	}
-	else if (strcmp(g.pgn[i].token, "White") == 0) {
-	    if (g.pgn[i].value[0] == '\0') {
-		g.pgn[i].value[0] = '?';
-		g.pgn[i].value[1] = '\0';
+	else if (strcmp(g.tag[i].name, "White") == 0) {
+	    if (g.tag[i].value[0] == '\0') {
+		g.tag[i].value = Realloc(g.tag[i].value, 2);
+		g.tag[i].value[0] = '?';
+		g.tag[i].value[1] = '\0';
 	    }
 	}
-	else if (strcmp(g.pgn[i].value, UNKNOWN) == 0)
-	    g.pgn[i].value[0] = '\0';
+	else if (strcmp(g.tag[i].value, UNKNOWN) == 0) {
+	    g.tag[i].value = Realloc(g.tag[i].value, 1);
+	    g.tag[i].value[0] = '\0';
+	}
 
-	fprintf(fp, "[%s \"%s\"]\n", g.pgn[i].token, 
-		(g.pgn[i].value[0]) ? pgn_escapes(g.pgn[i].value) : "");
+	fprintf(fp, "[%s \"%s\"]\n", g.tag[i].name, 
+		(g.tag[i].value && g.tag[i].value[0]) ? 
+		add_tag_escapes(g.tag[i].value) : "");
     }
 
     fprintf(fp, "\n");
@@ -954,9 +1018,20 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
     for (i = len = 0, n = 1; i < g.htotal; i++) {
 	int mlen = strlen(g.history[i].move);
 
-	if (!(i % 2)) {
+	if ((i % 2) == x) {
 	    len += 2;
-	    fprintf(fp, "%u. ", n);
+
+	    if (i == 0 && g.openingside == BLACK) {
+		len += 3;
+		x = 1;
+		fprintf(fp, "%u... ", n++);
+	    }
+	    else {
+		if (i == 1 && x)
+		    --n;
+
+		fprintf(fp, "%u. ", n);
+	    }
 	}
 	else {
 	    if (annotated) {
@@ -981,10 +1056,10 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
 	}
     }
 
-    if (strlen(g.pgn[PGN_RESULT].value) + len + 1 >= 80)
+    if (strlen(g.tag[TAG_RESULT].value) + len + 1 >= 80)
 	fprintf(fp, "\n");
 
-    fprintf(fp, "%s\n\n", pgn_escapes(g.pgn[PGN_RESULT].value));
+    fprintf(fp, "%s\n\n", add_tag_escapes(g.tag[TAG_RESULT].value));
     return;
 }
 
@@ -1000,7 +1075,8 @@ int save_pgn(const char *filename, int isfifo)
     char *command = NULL;
 
     if (gtotal > 1 && !isfifo) {
-	c = message_uncentered(NULL, SAVE_MULTIGAME_P, "%s", SAVE_MULTIGAME);
+	c = message_uncentered(NULL, GAME_SAVE_MULTI_PROMPT, "%s", 
+		GAME_SAVE_MULTI_TEXT);
 
 	if (c == 'c')
 	    cgame = 1;
@@ -1009,7 +1085,7 @@ int save_pgn(const char *filename, int isfifo)
 	    return 1;
     }
 
-    if (filename[0] != '/' && config.savedirectory[0] && !isfifo) {
+    if (filename[0] != '/' && config.savedirectory && !isfifo) {
 	if (stat(config.savedirectory, &st) == -1) {
 	    if (errno == ENOENT) {
 		if (mkdir(config.savedirectory, 0755) == -1) {
@@ -1028,8 +1104,7 @@ int save_pgn(const char *filename, int isfifo)
 	stat(config.savedirectory, &st);
 
 	if (!S_ISDIR(st.st_mode)) {
-	    message(ERROR, ANYKEY, "%s: not a directory", 
-		    config.savedirectory);
+	    message(ERROR, ANYKEY, "%s: %s", config.savedirectory, E_NOTADIR);
 	    return 1;
 	}
 
@@ -1050,8 +1125,8 @@ int save_pgn(const char *filename, int isfifo)
 	mode = "w";
     else {
 	if (access(filename, W_OK) == 0) {
-	    c = message(NULL, OVERWRITE_PROMPT,
-		    "File \"%s\" exists.", filename);
+	    c = message(NULL, GAME_SAVE_OVERWRITE_PROMPT,
+		    "%s \"%s\"", E_FILEEXISTS, filename);
 
 	    switch (c) {
 		case 'a':
@@ -1105,8 +1180,8 @@ int save_pgn(const char *filename, int isfifo)
     return 0;
 }
 
-static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items,
-	struct d_entries *entries)
+static void cleanup(WINDOW *win, WINDOW *subw, PANEL *panel, MENU *menu, 
+	ITEM **items, struct d_entries *entries)
 {
     int i;
 
@@ -1115,6 +1190,8 @@ static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items,
 
     for (i = 0; items[i]; i++)
 	free_item(items[i]);
+
+    free(items);
 
     if (entries) {
 	for (i = 0; entries[i].name; i++) {
@@ -1126,6 +1203,7 @@ static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items,
     }
 
     del_panel(panel);
+    delwin(subw);
     delwin(win);
 }
 
@@ -1136,7 +1214,7 @@ static int init_country_codes()
     int cindex = 0;
 
     if ((fp = fopen(config.ccfile, "r")) == NULL) {
-	message(ERROR, ANYKEY, "Could not open country code data file.");
+	message(ERROR, ANYKEY, "%s", E_CCODE_FILE);
 	return 1;
     }
 
@@ -1194,7 +1272,6 @@ char *country_codes(void *arg)
 
     win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
     set_menu_win(menu, win);
-    /* FIXME test. may not need to free subw. */
     subw = derwin(win, rows, cols, 2, 1);
     set_menu_sub(menu, subw);
     set_menu_fore(menu, A_REVERSE);
@@ -1223,8 +1300,8 @@ char *country_codes(void *arg)
 
 	c = item_index(current_item(menu)) + 1;
 
-	snprintf(buf, sizeof(buf), "Item %i of %i %s", c, 
-		item_count(menu), HELP_PROMPT);
+	snprintf(buf, sizeof(buf), "%s %i %s %i %s", MENU_ITEM_STR, c, 
+		N_OF_N_STR, item_count(menu), HELP_PROMPT);
 	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
 
 	wattroff(win, A_REVERSE);
@@ -1297,22 +1374,35 @@ done:
 	free_item(mitems[i]);
 
     del_panel(panel);
-    delwin(win);
     delwin(subw);
+    delwin(win);
     return tmp;
 }
 
-struct pgndata *edit_pgn_data(int edit)
+void free_tag_data(struct tags *data, int index)
 {
-    struct pgndata *data = NULL;
+    int i;
+
+    for (i = 0; i < index; i++) {
+	free(data[i].name);
+	free(data[i].value);
+    }
+
+    return;
+}
+
+struct tags *edit_tags(int edit)
+{
+    struct tags *data = NULL;
     struct tm tp;
     int data_index = 0;
     int i, lastindex = 0;
+    int len;
 
     /* Edit the backup copy, not the original in case the save fails. */
-    for (i = 0; i < game[gindex].pindex; i++)
-	add_pgn_data(&data, &data_index, game[gindex].pgn[i].token,
-		game[gindex].pgn[i].value);
+    for (i = 0; i < game[gindex].tindex; i++)
+	add_tag(&data, &data_index, game[gindex].tag[i].name,
+		game[gindex].tag[i].value);
 
     while (1) {
 	WINDOW *win, *subw;
@@ -1330,11 +1420,11 @@ struct pgndata *edit_pgn_data(int edit)
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
 
 	    if (data[i].value[0])
-		mitems[i] = new_item(data[i].token,
+		mitems[i] = new_item(data[i].name,
 			(strlen(data[i].value) > MAX_VALUE_WIDTH - 1)
 			? "Press ENTER..." : data[i].value);
 	    else
-		mitems[i] = new_item(data[i].token, UNKNOWN);
+		mitems[i] = new_item(data[i].name, UNKNOWN);
 	}
 
 	mitems[i] = NULL;
@@ -1358,7 +1448,7 @@ struct pgndata *edit_pgn_data(int edit)
 	post_menu(menu);
 	panel = new_panel(win);
 	wbkgd(win, CP_MESSAGE_WINDOW);
-	draw_window_title(win, (edit) ? PGN_EDIT_TITLE : PGN_INFO_TITLE, 
+	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
 		cols + 2, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
 	cbreak();
@@ -1369,7 +1459,7 @@ struct pgndata *edit_pgn_data(int edit)
 
 	while (1) {
 	    int c;
-	    struct pgndata *tmppgn = NULL;
+	    struct tags *tmppgn = NULL;
 	    char *newtag = NULL;
 	    int tpgn_index = 0;
 	    char *tmp;
@@ -1379,9 +1469,9 @@ struct pgndata *edit_pgn_data(int edit)
 		continue;
 	    }
 
-	    snprintf(buf, sizeof(buf), "Tag %i of %i  %s",
-		    item_index(current_item(menu)) + 1, item_count(menu), 
-		    HELP_PROMPT);
+	    snprintf(buf, sizeof(buf), "%s %i %s %i  %s", MENU_TAG_STR,
+		    item_index(current_item(menu)) + 1, N_OF_N_STR,
+		    item_count(menu), HELP_PROMPT);
 	    draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
 
 	    /* This nl() statement needs to be here because NL is recognized
@@ -1396,9 +1486,9 @@ struct pgndata *edit_pgn_data(int edit)
 	    switch (c) {
 		case CTRL('G'):
 		    if (edit)
-			help(PGN_EDIT_HELP, pgn_edit_help);
+			help(TAG_EDIT_HELP, pgn_edit_help);
 		    else
-			help(PGN_INFO_HELP, pgn_info_help);
+			help(TAG_VIEW_HELP, pgn_info_help);
 		    break;
 		case CTRL('R'):
 		    if (!edit)
@@ -1407,7 +1497,7 @@ struct pgndata *edit_pgn_data(int edit)
 		    selected = item_index(current_item(menu));
 
 		    if (selected <= 6) {
-			message(NULL, ANYKEY, PGN_REMOVE_STR);
+			message(NULL, ANYKEY, "%s", E_REMOVE_STR);
 			goto cleanup;
 		    }
 
@@ -1415,15 +1505,18 @@ struct pgndata *edit_pgn_data(int edit)
 			if (i == selected)
 			    continue;
 
-			add_pgn_data(&tmppgn, &tpgn_index, data[i].token,
+			add_tag(&tmppgn, &tpgn_index, data[i].name,
 				data[i].value);
 		    }
 
+		    free_tag_data(data, data_index);
+
 		    for (i = data_index = 0; i < tpgn_index; i++) {
-			add_pgn_data(&data, &data_index, tmppgn[i].token,
+			add_tag(&data, &data_index, tmppgn[i].name,
 				tmppgn[i].value);
 		    }
 
+		    free_tag_data(tmppgn, tpgn_index);
 		    free(tmppgn);
 		    goto cleanup;
 		    break;
@@ -1431,20 +1524,21 @@ struct pgndata *edit_pgn_data(int edit)
 		    if (!edit)
 			break;
 
-		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 1, 0, NULL, NULL,
-				    NULL, 0, FIELD_TYPE_PGN_TAG_NAME)) == NULL)
+		    if ((newtag = get_input(TAG_NEW_TITLE, NULL, 1, 0, NULL,
+				    NULL, NULL, 0, FIELD_TYPE_PGN_TAG_NAME))
+			    == NULL)
 			break;
 
 		    newtag[0] = toupper(newtag[0]);
 
 		    for (i = 0; i < data_index; i++) {
-			if (strcasecmp(data[i].token, newtag) == 0) {
+			if (strcasecmp(data[i].name, newtag) == 0) {
 			    selected = i;
 			    goto gotitem;
 			}
 		    }
 
-		    add_pgn_data(&data, &data_index, newtag, NULL);
+		    add_tag(&data, &data_index, newtag, NULL);
 
 		    selected = data_index - 1;
 		    goto gotitem;
@@ -1476,7 +1570,7 @@ struct pgndata *edit_pgn_data(int edit)
 		    goto gotitem;
 		    break;
 		case KEY_ESCAPE:
-		    cleanup(win, panel, menu, mitems, NULL);
+		    cleanup(win, subw, panel, menu, mitems, NULL);
 		    goto done;
 		    break;
 		default:
@@ -1504,37 +1598,36 @@ gotitem:
 	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
 		goto cleanup;
 
-	    snprintf(buf, sizeof(buf), "Tag Information for \"%s\"", 
-		    data[selected].token);
+	    snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_VIEW_TAG_TITLE,
+		    data[selected].name);
 	    message(buf, ANYKEY, "%s", data[selected].value);
 	    goto cleanup;
 	}
 
-	snprintf(buf, sizeof(buf), "%s \"%s\"", PGN_EDIT_TAG,
-		data[selected].token);
+	snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_EDIT_TAG_TITLE,
+		data[selected].name);
 
-	if (strcmp(data[selected].token, "Date") == 0) {
+	if (strcmp(data[selected].name, "Date") == 0) {
 	    tmp = get_input(buf, data[selected].value, 0, 0, 0, NULL, NULL,
 		    NULL, FIELD_TYPE_PGN_DATE);
 
 	    if (tmp) {
 		if (strptime(tmp, PGN_TIME_FORMAT, &tp) == NULL) {
-		    message(ERROR, ANYKEY, "The \"Date\" tag must be in "
-			    "YYYY.MM.DD format");
+		    message(ERROR, ANYKEY, "%s", E_TAG_DATE_FMT);
 		    goto cleanup;
 		}
 	    }
 	    else
 		goto cleanup;
 	}
-	else if (strcmp(data[selected].token, "Site") == 0) {
+	else if (strcmp(data[selected].name, "Site") == 0) {
 	    tmp = get_input(buf, data[selected].value, 1, 1, CC_PROMPT,
 		    country_codes, NULL, CTRL('t'), -1);
 
 	    if (!tmp)
 		tmp = "?";
 	}
-	else if (strcmp(data[selected].token, "Round") == 0) {
+	else if (strcmp(data[selected].name, "Round") == 0) {
 	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL, 0,
 		    FIELD_TYPE_PGN_ROUND);
 
@@ -1545,7 +1638,7 @@ gotitem:
 		    tmp = "-";
 	    }
 	}
-	else if (strcmp(data[selected].token, "Result") == 0) {
+	else if (strcmp(data[selected].name, "Result") == 0) {
 	    tmp = get_input(buf, data[selected].value, 1, 1, NULL, NULL, NULL, 
 		    0, -1);
 
@@ -1572,15 +1665,17 @@ gotitem:
 	    tmp = get_input(buf, tmp, 0, 0, NULL, NULL, NULL, 0, -1);
 	}
 
-	strncpy(data[selected].value, (tmp) ? tmp : "",
-		sizeof(data[selected].value));
+	len = (tmp) ? strlen(tmp) + 1 : 1;
+	data[selected].value = Realloc(data[selected].value, len);
+	strncpy(data[selected].value, (tmp) ? tmp : "", len);
 
 cleanup:
-	cleanup(win, panel, menu, mitems, NULL);
+	cleanup(win, subw, panel, menu, mitems, NULL);
     }
 
 done:
     if (!edit) {
+	free_tag_data(data, data_index);
 	free(data);
 	return NULL;
     }
@@ -1628,7 +1723,7 @@ static struct d_entries *get_directory_entries(const char *path)
 	entries[index].name = strdup(buf);
 	tmp = real_filename(buf);
 	len = strlen(tmp) + 2;
-	entries[index].fancy = (char *)Malloc(len);
+	entries[index].fancy = Malloc(len);
 	strncpy(entries[index].fancy, tmp, len);
 
 	if (S_ISDIR(st.st_mode))
@@ -1640,7 +1735,7 @@ static struct d_entries *get_directory_entries(const char *path)
 	snprintf(entries[index].desc, sizeof(entries[index].desc), "%-7i %s", 
 		n, tbuf);
 
-	memset(&entries[++index], 0, sizeof(struct d_entries));
+	memset(&entries[++index], '\0', sizeof(struct d_entries));
     }
 
     closedir(dp);
@@ -1656,7 +1751,7 @@ char *browse_directory(void *arg)
     char *oldwd = getcwd(NULL, 0);
     DIR *dp;
 
-    if (config.savedirectory[0]) {
+    if (config.savedirectory) {
 	if ((dp = opendir(config.savedirectory)) == NULL) {
 	    message(ERROR, ANYKEY, "%s: %s", config.savedirectory,
 		    strerror(errno));
@@ -1765,6 +1860,7 @@ again:
 		case KEY_PPAGE:
 		    menu_driver(menu, REQ_SCR_UPAGE);
 		    break;
+		case ' ':
 		case CTRL('N'):
 		case KEY_NPAGE:
 		    menu_driver(menu, REQ_SCR_DPAGE);
@@ -1780,7 +1876,7 @@ again:
 		    goto gotitem;
 		    break;
 		case KEY_ESCAPE:
-		    cleanup(win, panel, menu, mitems, entries);
+		    cleanup(win, subw, panel, menu, mitems, entries);
 		    file[0] = '\0';
 		    goto done;
 		    break;
@@ -1789,23 +1885,22 @@ again:
 		    break;
 		case '~':
 		    if ((tmp = getenv("HOME")) == NULL) {
-			message(ERROR, ANYKEY, 
-				"HOME environment variable unset");
+			message(ERROR, ANYKEY, "%s", E_HOME_ENV);
 			break;
 		    }
 
 		    strncpy(path, tmp, sizeof(path));
-		    cleanup(win, panel, menu, mitems, entries);
+		    cleanup(win, subw, panel, menu, mitems, entries);
 		    goto again;
 		    break;
 		case CTRL('X'):
-		    if ((tmp = get_input_str_clear(CHANGE_DIRECTORY, NULL)) 
+		    if ((tmp = get_input_str_clear(BROWSER_CHDIR_TITLE, NULL)) 
 			    == NULL)
 			break;
 
 		    tmp = tilde_expand(tmp);
 		    strncpy(path, tmp, sizeof(path));
-		    cleanup(win, panel, menu, mitems, entries);
+		    cleanup(win, subw, panel, menu, mitems, entries);
 		    goto again;
 		    break;
 		default:
@@ -1829,11 +1924,11 @@ gotitem:
 
 	if (stat(file, &st) == -1) {
 	    message(ERROR, ANYKEY, "%s", strerror(errno));
-	    cleanup(win, panel, menu, mitems, entries);
+	    cleanup(win, subw, panel, menu, mitems, entries);
 	    continue;
 	}
 
-	cleanup(win, panel, menu, mitems, entries);
+	cleanup(win, subw, panel, menu, mitems, entries);
 
 	if (S_ISDIR(st.st_mode)) {
 	    strncpy(path, file, sizeof(path));
@@ -1843,7 +1938,7 @@ gotitem:
 	if (S_ISREG(st.st_mode))
 	    break;
 
-	message(ERROR, ANYKEY, "Not a regular file.");
+	message(ERROR, ANYKEY, "%s", E_NOTAREGFILE);
     }
 
 done:

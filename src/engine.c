@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.27 2003-01-10 21:56:59 bjk Exp $ */
+/* $Id: engine.c,v 1.28 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -77,6 +77,8 @@ void send_to_engine(const char *format, ...)
 			message(ERROR, ANYKEY, "Could not write to engine. "
 				"Process no longer exists.");
 			engine_initialized = 0;
+			status.engine = ENGINE_OFFLINE;
+			update_status();
 			return;
 		    }
 
@@ -104,7 +106,7 @@ void send_to_engine(const char *format, ...)
 }
 
 /* This is ripped from XBoard. */
-static int get_pty(char pty_name[])
+static int get_pty(char *pty_name)
 {
   struct stat stb;
   int c, i;
@@ -177,10 +179,11 @@ pid_t init_chess_engine()
 	return -1;
 
     from[1] = to[0];
+    errno = 0;
 
     switch ((pid = fork())) {
 	case -1:
-	    err(EXIT_FAILURE, "fork()");
+	    return -2;
 	case 0:
 	    dup2(to[0], STDIN_FILENO);
 	    dup2(from[1], STDOUT_FILENO);
@@ -190,10 +193,12 @@ pid_t init_chess_engine()
 	    close(from[1]);
 	    dup2(STDOUT_FILENO, STDERR_FILENO);
 	    execlp("gnuchess", "gnuchess", "xboard", NULL);
-	    err(EXIT_FAILURE, "execlp()");
+	    _exit(EXIT_FAILURE);
 	default:
 	    break;
     }
+
+    sleep(1);
 
     if (kill(pid, 0) == -1)
 	return -2;
@@ -220,6 +225,9 @@ void set_engine_defaults()
 
 void stop_engine()
 {
+    if (!engine_initialized)
+	return;
+
     SEND_TO_ENGINE("quit\n");
 
     if (kill(enginepid, 0) != -1)
@@ -241,30 +249,32 @@ int start_chess_engine()
     enginepid = init_chess_engine();
 
     switch (enginepid) {
-	/* Pty allocation. */
 	case -1:
-	/* Could not execute engine. */
-	case -2:
+	    /* Pty allocation. */
 	    status.engine = ENGINE_OFFLINE;
-
-	    if (errno) {
-		message(ERROR, ANYKEY, "gnuchess: %s",
-			strerror(errno));
-		break;
-	    }
-
 	    message(ERROR, ANYKEY, "Could not allocate PTY");
+	    break;
+	case -2:
+	    /* Could not execute engine. */
+	    status.engine = ENGINE_OFFLINE;
+	    message(ERROR, ANYKEY, "gnuchess: %s", strerror(errno));
 	    break;
 	default:
 	    status.engine = ENGINE_READY;
 	    break;
     }
 
-    set_engine_defaults();
-    return 0;
+    if (enginepid > 0)
+	set_engine_defaults();
+
+    update_status();
+    return enginepid;
 }
 
-void parse_engine_output(char *str)
+/* Once the PGN parser has been well tested, parse_move_text() from the human
+ * move can disappear.
+ */
+void parse_engine_output(BOARD b, char *str)
 {
     char *tmp;
     char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p = move;
@@ -273,19 +283,20 @@ void parse_engine_output(char *str)
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count)
 	    == 1) {
-	if (parse_move_text(board, move, 0))
+	if (parse_move_text(b, move, 0)) {
+	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, move);
 	    return;
+	}
+
+        if (game[gindex].htotal == 0 && status.side == BLACK)                   
+	    game[gindex].openingside = BLACK;
 
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, p);
 
+	switch_turn();
+
 	status.engine = ENGINE_THINKING;
-
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-	else
-	    status.turn = WHITE;
-
 	sp.icon = 0;
 	str += count;
 
@@ -302,19 +313,21 @@ engine_move:
 	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
 	 * need to convert them.
 	 */
-	if ((p = a2a4tosan(board, move)) == NULL)
+	if ((p = a2a4tosan(b, move)) == NULL)
 	    return;
 
-	if (parse_move_text(board, p, 0))
+	if (parse_move_text(b, p, 0)) {
+	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, p);
 	    return;
+	}
+
+        if (game[gindex].htotal == 0 && status.side == BLACK)                   
+	    game[gindex].openingside = BLACK;
 
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
 		&game[gindex].htotal, p);
 
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-	else
-	    status.turn = WHITE;
+	switch_turn();
 
 	str += count;
 	RETURN;

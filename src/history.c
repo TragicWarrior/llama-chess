@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.32 2003-01-14 20:44:14 bjk Exp $ */
+/* $Id: history.c,v 1.33 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -33,6 +33,20 @@
 #include "common.h"
 #include "colors.h"
 #include "history.h"
+
+void free_historydata(struct history *h, int total)
+{
+    int i;
+
+    if (total) {
+	for (i = 0; i < total; i++) {
+	    if (h[i].comment)
+		free(h[i].comment);
+	}
+    }
+
+    return;
+}
 
 static int init_nag()
 {
@@ -88,13 +102,14 @@ static void view_nag(void *arg)
 
 void view_annotation(int index)
 {
-    char buf[MAX_PGN_MOVE_LEN + strlen(VIEW_ANNOTATION) + 4];
+    char buf[MAX_PGN_MOVE_LEN + strlen(ANNOTATION_VIEW_TITLE) + 4];
     int nag = 0, comment = 0;
 
     if (index < 0 || index > game[gindex].htotal)
 	return;
 
-    if (game[gindex].history[index].comment[0])
+    if (game[gindex].history[index].comment &&
+	    game[gindex].history[index].comment[0])
         comment++;
  
     if (game[gindex].history[index].nag[0])
@@ -103,7 +118,7 @@ void view_annotation(int index)
     if (!nag && !comment)
 	return;
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", VIEW_ANNOTATION,
+    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_VIEW_TITLE,
 	    game[gindex].history[index].move);
 
     if (comment)
@@ -166,7 +181,6 @@ char *history_edit_nag(void *arg)
 
     win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
     set_menu_win(menu, win);
-    /* FIXME test. may not need to free subw. */
     subw = derwin(win, rows, cols, 2, 1);
     set_menu_sub(menu, subw);
     set_menu_fore(menu, A_REVERSE);
@@ -181,7 +195,7 @@ char *history_edit_nag(void *arg)
     keypad(win, TRUE);
     set_menu_pattern(menu, mbuf);
     wbkgd(win, CP_MESSAGE_WINDOW);
-    draw_window_title(win, NAG_TITLE, cols + 2, CP_HISTORY_TITLE,
+    draw_window_title(win, NAG_EDIT_TITLE, cols + 2, CP_HISTORY_TITLE,
 	    CP_HISTORY_BORDER);
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
@@ -206,7 +220,7 @@ char *history_edit_nag(void *arg)
 	c = item_index(current_item(menu)) + 1;
 
 	snprintf(buf, sizeof(buf), "Item %i of %i (%i of %i selected) %s", c, 
-		item_count(menu), itemcount, MAX_PGN_NAG, NAG_PROMPT);
+		item_count(menu), itemcount, MAX_PGN_NAG, NAG_EDIT_PROMPT);
 	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
 
 	wattroff(win, A_REVERSE);
@@ -233,7 +247,7 @@ char *history_edit_nag(void *arg)
 	    int found;
 
 	    case CTRL('G'):
-		help(NAG_HELP, naghelp);
+		help(NAG_EDIT_HELP, naghelp);
 		break;
 	    case KEY_RIGHT:
 		if (!itemcount)
@@ -362,9 +376,10 @@ done:
     for (i = 0; mitems[i]; i++)
 	free_item(mitems[i]);
 
+    free(mitems);
     del_panel(panel);
-    delwin(win);
     delwin(subw);
+    delwin(win);
     return NULL;
 }
 
@@ -383,22 +398,21 @@ void add_to_history(struct history **h, int *n, int *t, const char *str)
     return;
 }
 
-static void parse_history_move(int index)
+static void parse_history_move(BOARD b, int index)
 {
     int i;
 
-    init_board(board);
+    init_board(b);
     game[gindex].bcaptures = game[gindex].wcaptures = 0;
-    status.turn = WHITE;
+    status.turn = game[gindex].openingside;
 
     for (i = 0; i < index; i++) {
 	struct history h;
 
 	if (get_history_by_index(i, &h))
 	    break;
-
 	
-	if (parse_move_text(board, h.move, 1)) {
+	if (parse_move_text(b, h.move, 1)) {
 	    message(NULL, ANYKEY, "Invalid move \"%s\"", h.move);
 	    break;
 	}
@@ -409,7 +423,7 @@ static void parse_history_move(int index)
     return;
 }
 
-void history_previous(int n)
+void history_previous(BOARD b, int n)
 {
     if (game[gindex].hindex - n < 0) {
 	if (n == config.history_jump) {
@@ -424,11 +438,11 @@ void history_previous(int n)
     else
 	game[gindex].hindex -= n;
 
-    parse_history_move(game[gindex].hindex);
+    parse_history_move(b, game[gindex].hindex);
     return;
 }
 
-void history_next(int n)
+void history_next(BOARD b, int n)
 {
     if (game[gindex].hindex + n > game[gindex].htotal) {
 	if (n == config.history_jump) {
@@ -443,14 +457,14 @@ void history_next(int n)
     else
 	game[gindex].hindex += n;
 
-    parse_history_move(game[gindex].hindex);
+    parse_history_move(b, game[gindex].hindex);
     return;
 }
 
-void init_history()
+void init_history(BOARD b)
 {
-    parse_history_move(game[gindex].hindex);
     browse_history = 1;
+    parse_history_move(b, game[gindex].hindex);
     update_status();
     return;
 }

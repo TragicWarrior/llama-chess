@@ -1,4 +1,4 @@
-/* $Id: ics.c,v 1.2 2003-01-11 14:10:27 bjk Exp $ */
+/* $Id: ics.c,v 1.3 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -42,7 +42,7 @@ int parse_ics_output(char *str)
     return 0;
 }
 
-int send_to_ics(const char *format, ...)
+int send_to_ics(int sockfd, const char *format, ...)
 {
     va_list ap;
     int len;
@@ -100,7 +100,7 @@ int send_to_ics(const char *format, ...)
     return 0;
 }
 
-int ics_connect()
+int ics_connect(int *sockfd)
 {
     struct sockaddr_in sa;
     struct hostent *h;
@@ -121,21 +121,21 @@ int ics_connect()
     sa.sin_family = AF_INET;
     sa.sin_port = htons(config.ics_port);
 
-    if ((sockfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
+    if ((*sockfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
 	message(ERROR, ANYKEY, "socket(): %s", strerror(errno));
 	return 1;
     }
 
-    fcntl(sockfd, F_SETFL, O_NONBLOCK);
+    fcntl(*sockfd, F_SETFL, O_NONBLOCK);
 
     /*
-    if (bind(sockfd, (struct sockaddr *)&sa, sizeof(struct sockaddr)) == -1) {
+    if (bind(*sockfd, (struct sockaddr *)&sa, sizeof(struct sockaddr)) == -1) {
 	message(ERROR, ANYKEY, "bind(): %s", strerror(errno));
 	return 1;
     }
     */
 
-    if (connect(sockfd, (struct sockaddr *)&sa, sizeof(struct sockaddr)) 
+    if (connect(*sockfd, (struct sockaddr *)&sa, sizeof(struct sockaddr)) 
 	    == -1) { 
 	message(ERROR, ANYKEY, "connect(): %s", strerror(errno));
 	return 1;

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.42 2003-01-14 20:44:14 bjk Exp $ */
+/* $Id: cboard.h,v 1.43 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,6 +20,8 @@
 #define CBOARD_H
 
 #define COPYRIGHT	"Copyright (C) 2002-2003 " PACKAGE_BUGREPORT
+#define ROWTOMATRIX(r)	((8 - r) * 2 + 2 - 1)
+#define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)
 #define BOARD_HEIGHT	18
 #define BOARD_WIDTH	34
 #define STATUS_HEIGHT	(10)
@@ -28,28 +30,34 @@
 #define BW_WIDTH	(COLS - BOARD_WIDTH)
 #define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
 #define HISTORY_WIDTH	(COLS - BW_WIDTH)
-#define HISTORY_TITLE	"Move History"
-#define ENGINE_COMMAND_PROMPT	"Engine Command"
-#define STATUS_TITLE	"Game Status"
-#define MAIN_HELP	"Command Keys"
-#define MAIN_HELP_PROMPT	"Type CTRL-g for available command keys"
-#define ANNOTATE_HISTORY	"Editing Annotation for"
-#define NAG_PROMPT	"Type CTRL-t to edit NAG"
-#define EXTRA_BROWSE	"Type TAB for file browser"
-#define LOAD_PGN	"Load PGN filename"
-#define SAVE_PGN	"Save to PGN filename"
 
 /* The order must match the BOOK_... enumeration on common.h. */
 const char *book_methods[] = {
-    "off", "prefer", "best", "worst", "random"
+    BOOK_OFF_STR, BOOK_PREFER_STR, BOOK_BEST_STR, BOOK_WORST_STR,
+    BOOK_RANDOM_STR
 };
+
+WINDOW *boardw;
+PANEL *boardp;
+WINDOW *whitew, *blackw;
+PANEL *whitep, *blackp;
+WINDOW *statusw;
+PANEL *statusp;
+WINDOW *historyw;
+PANEL *historyp;
+
+BOARD board;
+int crow, ccol; /* Cursor position. */
+int quit;
+int gactive;
+char **agony;
 
 const char *mainhelp[] = {
     "   UP/j - cursor up/hist jump     R - refresh screen",
     " DOWN/k - cursor down/hist jump   b - cycle through book modes",
     " LEFT/l - cursor left/hist rev    c - send a command to the game engine",
     "RIGHT/; - cursor right/hist fwd   w - switch playing sides",
-    "                                  u - undo previous move",
+    "    1-7 - cursor repeat count     u - undo previous move",
     "  SPACE - select piece            g - force engine to make next move",
     "  ENTER - commit selected piece   h - toggle history mode",
     "    ESC - cancel selected piece   a - annotate previous move",
@@ -61,34 +69,23 @@ const char *mainhelp[] = {
     "      S - save game with prompt",
     "      > - next game or round",
     "      < - previous game or round",
-    "      D - delete current game",
+    "      d - toggle game for deletion",
+    "      D - delete game(s)",
     NULL
 };
 
-WINDOW *boardw;
-PANEL *boardp;
-WINDOW *whitew, *blackw;
-PANEL *whitep, *blackp;
-WINDOW *statusw;
-PANEL *statusp;
-
-int selected_y, selected_x;
-int quit;
-int gactive;
-char **agony;
-
 pid_t init_chess_engine(void);
-int parse_pgn_file(const char *);
+int parse_pgn_file(BOARD, const char *);
 void update_history(void);
 void reset_history(void);
-struct pgndata *edit_pgn_data(int);
-void parse_engine_output(char *);
+struct tags *edit_tags(int);
+void parse_engine_output(BOARD, char *);
 char *real_filename(char *);
 void send_to_engine(const char *, ...);
 int get_history_by_index(int, struct history *);
-void history_next(int);
-void history_previous(int);
-void init_history(void);
+void history_next(BOARD, int);
+void history_previous(BOARD, int);
+void init_history(BOARD);
 void parse_rcfile(const char *);
 char *history_edit_nag(void *);
 void view_annotation(int);
@@ -96,18 +93,24 @@ int save_pgn(const char *, int);
 void set_engine_defaults(void);
 int start_chess_engine(void);
 void stop_engine(void);
-void set_pgn_defaults(void);
 void help(const char *, const char **);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void set_default_colors(void);
 void init_color_pairs(void);
 char *browse_directory(void *);
-char *a2a4tosan(struct board_matrix [][], char *);
-int add_pgn_data(struct pgndata **, int *, const char *, const char *);
-void new_game(struct board_matrix [][]);
+char *a2a4tosan(BOARD, char *);
+int add_tag(struct tags **, int *, const char *, const char *);
+void new_game(BOARD);
 void *Malloc(size_t);
 int isinteger(const char *);
 int parse_ics_output(char *);
 char *compression_cmd(const char *, int);
+int piece_to_int(int);
+int int_to_piece(int);
+void free_tag_data(struct tags *, int);
+void free_historydata(struct history *, int);
+void get_valid_moves(BOARD, int, int, int);
+void reset_valid_moves(BOARD);
+int parse_move_text(BOARD, char *, int);
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.39 2003-01-14 20:44:14 bjk Exp $ */
+/* $Id: common.h,v 1.40 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -49,47 +49,46 @@
 
 FILE *debugfp;
 
-#define DEBUG(fmt, args...)	debugfp = fopen("debug", "a"); \
+#define DUMP(fmt, args...)	debugfp = fopen("debug", "a"); \
 	fprintf(debugfp, fmt, ##args); \
         fclose(debugfp)
 
 #define ACK			(curses_initialized && message("ack", "ack", "ack"))
 #define ACK2			message("ack2", "ack2", "ack2")
 
-#define NONE			"none"
-#define x_grid_chars		"abcdefgh"
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
 #define CTRL(x)			((x) & 0x1f)
 #define KEY_ESCAPE		CTRL('[')
-#define ANYKEY			"[ press any key to continue ]"
-#define YESNO			"[ Yes or No ]"
-#define ERROR			"[ ERROR ]"
-#define CONFIRM			"[ CONFIRM ]"
-#define UNKNOWN			"(empty value)"
 
 #define CALCPOSY(y)		((y > LINES - 1) ? 0 : LINES / 2 - y / 2)
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
 #define CENTERX(x, str)		(x / 2 - strlen(str) / 2)
 
+#define VALIDFILE(f)	((f >= 1 && f <= 8) ? 1 : 0)
+#define ROWTOBOARD(r)	(8 - r)
+#define COLTOBOARD(c)	(c - 1)
+
+enum {
+    OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING, MAX_PIECES
+};
+
 enum {WHITE, BLACK};
 
 enum {
-    PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK, PGN_RESULT
+    TAG_EVENT, TAG_SITE, TAG_DATE, TAG_ROUND, TAG_WHITE, TAG_BLACK, TAG_RESULT
 };
 
-struct board_matrix {
+typedef struct board_matrix {
     chtype icon;
-};
-
-struct board_matrix board[8][8];
+    short valid;
+} BOARD[8][8];
 
 enum { 
     BOOK_OFF, BOOK_PREFER, BOOK_BEST, BOOK_WORST, BOOK_RANDOM, BOOK_MAX
 };
 
 enum {
-    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, HISTORY_MODE, 
-    ENGINE_INITIALIZING
+    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
 };
 
 #define message(title, prompt, args...)	\
@@ -117,14 +116,14 @@ struct {
     int turn;
 } status;
 
-struct pgndata {
-    char token[MAX_PGN_LINE_LEN];
-    char value[MAX_PGN_LINE_LEN];
+struct tags {
+    char *name;
+    char *value;
 };
 
 struct history {
-    char move[MAX_PGN_MOVE_LEN];
-    char comment[MAX_PGN_LINE_LEN];
+    char move[MAX_PGN_MOVE_LEN + 1];
+    char *comment;
     int nag[MAX_PGN_NAG];
 };
 
@@ -132,18 +131,24 @@ struct history {
  * the current game.
  */
 struct games {
-    struct pgndata *pgn;
-    int pindex;
+    struct tags *tag;
+    int tindex;
     struct history *history;
+    int sockfd;
     int hindex;
     int htotal;
+    int openingside;
     int wcaptures;
     int bcaptures;
+    int delete;
+    int enpassant;
+    int castle;
+    int wk, bk, rqw, rkw, rqb, rkb;
 } *game;
 
 /* This holds the selected piece info. */
 struct {
-    int icon;
+    chtype icon;
     int row;
     int col;
     int destrow;
@@ -152,7 +157,7 @@ struct {
 
 enum { 
     CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,
-    CONF_BCOORDS,
+    CONF_BCOORDS, CONF_BMOVES,
     CONF_WWINDOW, CONF_WTITLE, CONF_WBORDER,
     CONF_BWINDOW, CONF_BTITLE, CONF_BBORDER,
     CONF_SWINDOW, CONF_STITLE, CONF_SBORDER, CONF_SNOTIFY, CONF_SENGINE,
@@ -178,37 +183,34 @@ struct {
     int linegraphics;
     int saveprompt;
     int clevel;
+    int validmoves;
     char ics_server[MAXHOSTNAMELEN];
     int ics_port;
-    char ics_user[16];
-    char ics_passwd[32];
-    char nagfile[FILENAME_MAX];
-    char agonyfile[FILENAME_MAX];
-    char configfile[FILENAME_MAX];
-    char ccfile[FILENAME_MAX];
-    char fifo[FILENAME_MAX];
-    char savedirectory[FILENAME_MAX];
-    struct pgndata *pgn;
+    char *ics_user;
+    char *ics_passwd;
+    char *nagfile;
+    char *agonyfile;
+    char *configfile;
+    char *ccfile;
+    char *fifo;
+    char *tmpfile;
+    char *savedirectory;
     struct colors color[CONF_MAX_COLORS];
-    int pindex;
+    struct tags *tag;
+    int tindex;
 } config;
 
 /* Chess engine file descriptors. 0 = from, 1 = to. */
 int enginefd[2];
 
-/* Network socket descriptor. */
-int sockfd;
-
-char datadir[FILENAME_MAX];
+int validate_move;
+int newgameinit;
 int curses_initialized;
 char pgnfile[FILENAME_MAX];
 int gindex, gtotal; /* Current game and total number of games. */
-int cursor_y, cursor_x; /* Current cursor position. */
 int browse_history; /* 1 if in history mode. */
 int engine_initialized;
 int oldhistorytotal; /* This is a failsafe when resuming a game. */
-WINDOW *historyw;
-PANEL *historyp;
 
 enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
@@ -225,4 +227,5 @@ char *trim(char *);
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
+
 #endif

@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.16 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: input.c,v 1.17 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -63,12 +63,13 @@ static bool validate_pgn_round(int c, const void *arg)
  * then it is dynamically determined based on the init argument or INPUT_WIDTH
  * if init is NULL.
  *
- * The clear argument is whether pressing ESC returns init or NULL. 
+ * The clear argument is whether pressing ESC returns the initial value or 
+ * NULL. 
  *
  * The extra_help argument is an extra line of help prompt normally used with 
  * the custom_func argument. The custom_func argument is a pointer to a 
  * function of type void which takes one pointer-to-void argument. This
- * function is called when CTRL-t is pressed in the input window.
+ * function is called when the ckey argument is pressed.
  *
  * The type argument is the type of validation for the input
  * defined in common.h. Remaining arguments are values for the type argument.
@@ -82,7 +83,7 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 	const char *extra_help, char *(*custom_func)(void *), void *arg, 
 	chtype ckey, int type, ...)
 {
-    WINDOW *win;
+    WINDOW *win, *swin;
     PANEL *panel;
     FIELD *fields[2];
     FORM *form;
@@ -165,7 +166,8 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     win = newwin((extra_help) ? y + 6 : y + 5, x + 2, 
 	    CALCPOSY(((extra_help) ? y + 6 : y + 5)), CALCPOSX(x));
     set_form_win(form, win);
-    set_form_sub(form, derwin(win, y, x, 2, 1));
+    swin = derwin(win, y, x, 2, 1);
+    set_form_sub(form, swin);
     post_form(form);
     nl();
     noecho();
@@ -224,7 +226,7 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 		form_driver(form, REQ_CLR_FIELD);
 		break;
 	    case CTRL('G'):
-		help(INPUT_HELP, inputhelp);
+		help(INPUT_HELP_TITLE, inputhelp);
 		break;
 	    case KEY_LEFT:
 		form_driver(form, REQ_LEFT_CHAR);
@@ -293,6 +295,7 @@ cleanup:
 	free_field(fields[i]);
 
     del_panel(panel);
+    delwin(swin);
     delwin(win);
     free_fieldtype(TYPE_PGN_TAG_NAME);
     free_fieldtype(TYPE_PGN_DATE);

@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.18 2003-01-14 20:44:14 bjk Exp $ */
+/* $Id: history.h,v 1.19 2003-01-22 00:16:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,11 +19,6 @@
 #ifndef HISTORY_H
 #define HISTORY_H
 
-#define NAG_TITLE	"Editing NAG Information"
-#define NAG_PROMPT	"Type CTRL-g for help"
-#define NAG_HELP	"NAG Menu Keys"
-#define VIEW_ANNOTATION	"Viewing Annotation for"
-
 struct nags {
     char line[80];
 } *nag;
@@ -42,12 +37,12 @@ const char *naghelp[] = {
     NULL
 };
 
-void init_board(struct board_matrix[][]);
+void init_board(BOARD);
 void update_status(void);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
-int parse_move_text(struct board_matrix [][], char *, int);
+int parse_move_text(BOARD, char *, int);
 void switch_turn(void);
 
 #endif
