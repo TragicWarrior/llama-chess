@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.88 2003-02-03 17:28:45 bjk Exp $ */
+/* $Id: cboard.c,v 1.89 2003-02-03 17:41:36 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -855,7 +855,7 @@ static int find_game_exp(char *str, int which, int count)
     char *nstr = NULL, *exp = NULL;
     regex_t nexp, vexp;
     int ret = -1;
-    int g;
+    int g = 0;
     char buf[255], *tmp;
     char errbuf[255];
     int found = 0;
@@ -1176,7 +1176,7 @@ void game_loop()
 
 		if (delete_count) {
 		    markend = gindex;
-		    pushkey = 'd';
+		    pushkey = 'x';
 		    delete_count = 0;
 		}
 
