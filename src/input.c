@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.12 2002-12-14 20:59:46 bjk Exp $ */
+/* $Id: input.c,v 1.13 2002-12-20 00:29:35 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -66,8 +66,8 @@ static bool validate_pgn_round(int c, const void *arg)
  *
  * The extra_help argument is an extra line of help prompt normally used with 
  * the custom_func argument. The custom_func argument is a pointer to a 
- * function of type void which takes no arguments. This function is called
- * when CTRL-t is pressed in the input window.
+ * function of type void which takes one pointer-to-void argument. This
+ * function is called when CTRL-t is pressed in the input window.
  *
  * The type argument is the type of validation for the input
  * defined in common.h. Remaining arguments are values for the type argument.
@@ -78,7 +78,8 @@ static bool validate_pgn_round(int c, const void *arg)
  * just use -1 as the type with no arguments.
  */
 char *get_input(const char *title, const char *init, int lines, int clear,
-	const char *extra_help, void (*custom_func)(void), int type, ...)
+	const char *extra_help, void (*custom_func)(void *), void *arg, 
+	int type, ...)
 {
     WINDOW *win;
     PANEL *panel;
@@ -191,7 +192,7 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 	switch (c) {
 	    case CTRL('T'):
 		if (custom_func)
-		    custom_func();
+		    custom_func(arg);
 		break;
 	    case CTRL('X'):
 		form_driver(form, REQ_DEL_WORD);
@@ -296,10 +297,10 @@ cleanup:
 
 char *get_input_str(const char *title, const char *init)
 {
-    return get_input(title, init, 1, 0, NULL, NULL, -1, 20);
+    return get_input(title, init, 1, 0, NULL, NULL, NULL, -1, 20);
 }
 
 char *get_input_str_clear(const char *title, const char *init)
 {
-    return get_input(title, init, 1, 1, NULL, NULL, -1, 20);
+    return get_input(title, init, 1, 1, NULL, NULL, NULL, -1, 20);
 }
