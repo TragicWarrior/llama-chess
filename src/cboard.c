@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.8 2002-12-06 19:11:13 bjk Exp $ */
+/* $Id: cboard.c,v 1.9 2002-12-06 20:07:23 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -147,10 +147,11 @@ void parse_piece_command(int dest_y, int dest_x)
     char str[MAX_MOVE_LEN] = {0};
     char buf[MAX_MOVE_LEN] = {0};
 
-    /* FIXME something for ambiguous pawn moves. */
     switch (selected_piece.icon) {
 	case 'p':
 	case 'P':
+	    snprintf(str, sizeof(str), "%c%i",
+		    x_grid_chars[selected_piece.col - 1], selected_piece.row);
 	    break;
 	default:
 	    snprintf(str, sizeof(str), "%c%i", selected_piece.icon,
@@ -350,6 +351,7 @@ char *pgn_escapes(const char *str)
 int save_pgn(const char *filename)
 {
     int i, n;
+    int len = 0;
     FILE *fp;
 
     if ((fp = fopen(filename, "a")) == NULL)
@@ -360,10 +362,24 @@ int save_pgn(const char *filename)
 
     fprintf(fp, "\n");
 
-    for (i = 0, n = 1; i < history_index; i += 2, n++)
-	fprintf(fp, "%u. %s %s ", n, history[i].move, history[i + 1].move);
+    for (i = 0, n = 1; i < history_index; i += 2, n++) {
+	int wlen = strlen(history[i].move);
+	int blen = strlen(history[i + 1].move);
 
-    fprintf(fp, "\n");
+	if (wlen + blen + 6 + len > 80) {
+	    fprintf(fp, "\n");
+	    len = 0;
+	}
+
+	fprintf(fp, "%u. %s %s", n, history[i].move, history[i + 1].move);
+
+	if (i + 2 < history_index)
+	    fprintf(fp, " ");
+
+	len += wlen + blen + 6;
+    }
+
+    fprintf(fp, "\n\n");
     fclose(fp);
 
     return 0;
