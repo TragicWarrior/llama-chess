@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.7 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: pgn.h,v 1.8 2002-12-12 19:16:12 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,7 +20,7 @@
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 #define PGN_EDIT_TITLE	"Editing PGN Save Data"
-#define PGN_PROMPT	"Type '^G' for help"
+#define PGN_PROMPT	"Type CTRL-g for help"
 #define PGN_INFO_HELP	"PGN Information Keys"
 #define PGN_EDIT_HELP	"PGN Edit Keys"
 #define PGN_EDIT_TAG	"Editing PGN Roster Tag"
@@ -45,19 +45,20 @@ struct {
 };
 
 const char *pgn_edit_help[] = {
-    "j/UP,k/DOWN - select menu entry",
-    "      ENTER - edit entry",
-    "          a - add an entry",
-    "          r - remove an entry",
-    "          q - quit with changes",
-    "        ESC - quit without changes",
+    "    UP/DOWN - select menu entry",
+    "[A-Za-z0-9] - jump to entry",
+    "      ENTER - edit selected entry",
+    "     CTRL-a - add an entry",
+    "     CTRL-r - remove an entry",
+    "     ESCAPE - quit",
     NULL
 };
 
 const char *pgn_info_help[] = {
-    "j/UP,k/DOWN - select menu entry",
-    "      ENTER - view entry",
-    "   ESC or q - quit",
+    "    UP/DOWN - select menu entry",
+    "[A-Za-z0-9] - jump to entry",
+    "      ENTER - view selected entry",
+    "     ESCAPE - quit",
     NULL
 };
 

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.17 2002-12-12 15:33:23 bjk Exp $ */
+/* $Id: pgn.c,v 1.18 2002-12-12 19:16:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -422,10 +422,9 @@ static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items)
 
 struct pgndata *edit_pgn_data(int edit)
 {
-    char *lastitem = NULL;
     struct pgndata *data = NULL;
     int data_index = 0;
-    int i;
+    int i, lastindex = 0;
 
     /* Edit the backup copy, not the original in case the save fails. */
     for (i = 0; i < game[gindex].pindex; i++)
@@ -444,6 +443,7 @@ struct pgndata *edit_pgn_data(int edit)
 	int selected = -1;
 	char tmptime[MAX_TIME_LEN];
 	struct tm tp;
+	char *mbuf = NULL;
 
 	for (i = 0; i < data_index; i++) {
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
@@ -479,29 +479,38 @@ struct pgndata *edit_pgn_data(int edit)
 
 	cbreak();
 	noecho();
-	nonl();
 	keypad(win, TRUE);
+	set_menu_pattern(menu, mbuf);
 
 	while (1) {
 	    int c;
 	    struct pgndata *tmppgn = NULL;
 	    char *newtag = NULL;
 	    int tpgn_index = 0;
+	    char *tmp;
 
-	    set_menu_pattern(menu, lastitem);
+	    if (set_current_item(menu, mitems[lastindex]) != E_OK) {
+		lastindex = item_count(menu) - 1;
+		continue;
+	    }
+
+	    /* This nl() statement needs to be here because NL is recognized
+	     * for some reason after the first selection.
+	     */
+	    nl();
 	    update_panels();
 	    doupdate();
 
 	    c = wgetch(win);
 
 	    switch (c) {
-		case '':
+		case CTRL('G'):
 		    if (edit)
 			help(PGN_EDIT_HELP, pgn_edit_help);
 		    else
 			help(PGN_INFO_HELP, pgn_info_help);
 		    break;
-		case 'r':
+		case CTRL('R'):
 		    if (!edit)
 			break;
 
@@ -528,7 +537,7 @@ struct pgndata *edit_pgn_data(int edit)
 		    free(tmppgn);
 		    goto cleanup;
 		    break;
-		case 'a':
+		case CTRL('A'):
 		    if (!edit)
 			break;
 
@@ -544,33 +553,44 @@ struct pgndata *edit_pgn_data(int edit)
 			goto cleanup;
 		    }
 
-		    lastitem = newtag;
 		    selected = data_index - 1;
 		    goto gotitem;
 		    break;
-		case 'j':
 		case KEY_UP:
 		    menu_driver(menu, REQ_UP_ITEM);
 		    break;
-		case 'k':
 		case KEY_DOWN:
 		    menu_driver(menu, REQ_DOWN_ITEM);
 		    break;
-		case KEY_RETURN:
+		case '\n':
 		    selected = item_index(current_item(menu));
 		    goto gotitem;
 		    break;
-		case 'q':
 		case KEY_ESCAPE:
 		    cleanup(win, panel, menu, mitems);
 		    goto done;
 		    break;
 		default:
+		    tmp = menu_pattern(menu);
+
+		    if (tmp && tmp[strlen(tmp) - 1] != c) {
+			menu_driver(menu, REQ_CLEAR_PATTERN);
+			menu_driver(menu, c);
+		    }
+		    else {
+			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			    menu_driver(menu, c);
+		    }
+
 		    break;
 	    }
+
+	    lastindex = item_index(current_item(menu));
 	}
 
 gotitem:
+	lastindex = selected;
+
 	if (!edit) {
 	    snprintf(buf, sizeof(buf), "Tag Information for \"%s\"", 
 		    data[selected].token);
