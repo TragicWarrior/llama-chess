@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.35 2003-01-08 00:48:11 bjk Exp $ */
+/* $Id: cboard.h,v 1.36 2003-01-08 14:21:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,7 +38,6 @@
 #define EXTRA_BROWSE	"Type TAB for file browser"
 #define LOAD_PGN	"Load PGN filename"
 #define SAVE_PGN	"Save to PGN filename"
-#define SAVE_HISTORY	"Type 'a' or 'c' or ESCAPE to cancel"
 
 /* The order must match the BOOK_... enumeration on common.h. */
 const char *book_methods[] = {

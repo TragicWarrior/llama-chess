@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.49 2003-01-08 00:48:11 bjk Exp $ */
+/* $Id: cboard.c,v 1.50 2003-01-08 14:21:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -51,7 +51,7 @@ char *random_agony()
     if (!agony) {
 	if ((fp = fopen(config.agonyfile, "r")) == NULL) {
 	    index = -1;
-	    message(ERROR, ANYKEY, "Could not open agony file.");
+	    message(ERROR, ANYKEY, "%s", E_AGONY);
 	    return NULL;
 	}
 
@@ -218,7 +218,7 @@ void parse_piece_command()
 	    x_grid_chars[sp.destcol - 1], sp.destrow);
 
     if ((p = a2a4tosan(board, str)) == NULL) {
-	message(NULL, ANYKEY, "Error parsing \"%s\". Probably a bug.", p);
+	message(p, ANYKEY, "%s", E_A2A4_PARSE);
 	return;
     }
 
@@ -577,8 +577,8 @@ blah:
 	    case 'h':
 		if (browse_history) {
 		    if (game[gindex].hindex != game[gindex].htotal) {
-			if ((c = message(NULL, YESNO, 
-					"Resume game from history?")) != 'y')
+			if ((c = message(NULL, YESNO, "%s", RESUME_HISTORY))
+				!= 'y')
 			    break;
 		    }
 
@@ -622,7 +622,7 @@ blah:
 		    if (c > 0)
 			message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
 		    else
-			message(NULL, ANYKEY, "%s: parse error", tmp);
+			message(NULL, ANYKEY, "%s: %s", tmp, E_PGN_PARSE);
 
 		    break;
 		}
@@ -636,7 +636,7 @@ blah:
 	    case 'S':
 	    case 's':
 		if (!game[gindex].htotal) {
-		    message(NULL, ANYKEY, "No moves to save");
+		    message(NULL, ANYKEY, "%s", E_SAVE_NOMOVE);
 		    break;
 		}
 
@@ -645,10 +645,7 @@ blah:
 		if (browse_history && game[gindex].hindex != 
 			game[gindex].htotal && (c == 'S' || config.saveprompt))
 		{
-		    c = message_uncentered(NULL, SAVE_HISTORY, 
-			    "You are in history mode. You can save all moves "
-			    "up to and including the current move by pressing "
-			    "'c', or the whole game history by pressing 'a'.");
+		    c = message_uncentered(NULL, SAVE_HISTORY_P, SAVE_HISTORY); 
 
 		    if (c == 'c')
 			game[gindex].htotal = game[gindex].hindex;
@@ -658,7 +655,7 @@ blah:
 		}
 
 		if ((c == 'S' || config.saveprompt) && 
-			message(NULL, YESNO, "Edit save game data?") == 'y') {
+			message(NULL, YESNO, "%s", SAVE_PGN_P) == 'y') {
 		    if ((tmppgn = edit_pgn_data(1)) == NULL) {
 			game[gindex].htotal = oldhistorytotal;
 			break;
@@ -689,14 +686,14 @@ blah:
 		parse_pgn_file(pgnfile);
 		gindex = gtotal - 1;
 		gactive = gindex;
-		status.notify = "Game saved";
+		status.notify = NOTIFY_SAVED;
 		update_all();
 		break;
 	    case CTRL('G'):
 		help(MAIN_HELP, mainhelp);
 		break;
 	    case 'N':
-		if (message(NULL, YESNO, "Really start a new game?") != 'y')
+		if (message(NULL, YESNO, "%s", NEWGAME_P) != 'y')
 		    break;
 
 		reset_history();
@@ -794,9 +791,7 @@ blah:
 		break;
 	    case ' ':
 		if (status.engine != ENGINE_READY) {
-		    message(NULL, ANYKEY, "Use the 'N' command to start a "
-			    "new game or the 'r' command to load a previous "
-			    "game");
+		    message(NULL, ANYKEY, "%s", NEWGAME);
 		    break;
 		}
 
@@ -877,7 +872,7 @@ void catch_signal(int which)
 	    if (quit)
 		break;
 
-	    message(NULL, ANYKEY, "Broken pipe. Quitting.");
+	    message(NULL, ANYKEY, "%s", E_BROKEN_PIPE);
 	    endwin();
 	    exit(EXIT_FAILURE);
 	    break;
@@ -974,7 +969,7 @@ int main(int argc, char *argv[])
     }
 
     if (!S_ISDIR(st.st_mode))
-	errx(EXIT_FAILURE, "%s: not a directory", datadir);
+	errx(EXIT_FAILURE, "%s: %s", datadir, E_NOTADIR);
 
     if (access(config.fifo, R_OK) == -1) {
 	if (mkfifo(config.fifo, 0600) == -1)
@@ -995,12 +990,12 @@ int main(int argc, char *argv[])
 	if (opt > 0)
 	    err(EXIT_FAILURE, "%s", pgnfile);
 	else
-	    errx(EXIT_FAILURE, "%s: parse error", pgnfile);
+	    errx(EXIT_FAILURE, "%s: %s", pgnfile, E_PGN_PARSE);
     }
 
     srandom(getpid());
     if (initscr() == NULL)
-	errx(EXIT_FAILURE, "Could not initialize curses.");
+	errx(EXIT_FAILURE, "%s", E_INITCURSES);
     else
 	curses_initialized = 1;
 

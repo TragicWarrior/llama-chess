@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.33 2003-01-08 00:48:11 bjk Exp $ */
+/* $Id: common.h,v 1.34 2003-01-08 14:21:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -30,6 +30,8 @@
 #ifdef HAVE_PANEL_H
 #include <panel.h>
 #endif
+
+#include "strings.h"
 
 #ifndef LINE_MAX
 #ifdef _POSIX2_LINE_MAX
