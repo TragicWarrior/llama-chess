@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.9 2002-12-14 21:00:53 bjk Exp $ */
+/* $Id: engine.c,v 1.10 2002-12-16 17:52:05 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -99,7 +99,7 @@ void send_to_engine(const char *format, ...)
 void parse_engine_output(char *str)
 {
     char *tmp;
-    char move[MAX_MOVE_LEN + 1];
+    char move[MAX_PGN_MOVE_LEN + 1];
 
     /* 'switch' command. */
     if (strstr(str, "White to move") != NULL) {
@@ -113,8 +113,7 @@ void parse_engine_output(char *str)
 
     /* Bad engine command or move. */
     if ((tmp = strstr(str, "Illegal move: ")) != NULL) {
-	str[strlen(str) - 1] = 0;
-	message(NULL, ANYKEY, "%s", str);
+	status.notify = "Illegal move";
 	RETURN;
     }
 
@@ -138,6 +137,7 @@ void parse_engine_output(char *str)
 	/* This is needed when leaving history mode and the turn is now black
 	 * since we just went. This cancels 'manual'.
 	 */
+	/* FIXME this relies on the fifo stuff. */
 	if (cancel_manual_mode) {
 	    SEND_TO_ENGINE("go\n");
 	    cancel_manual_mode = 0;
@@ -161,8 +161,7 @@ void parse_engine_output(char *str)
 
     /* Miscellaneous one-liners. */
     if ((tmp = strstr(str, "Cannot open file ")) != NULL) {
-	str[strlen(str) - 1] = 0;
-	message(NULL, ANYKEY, "%s", str);
+	status.notify = "Engine could not open file";
 	RETURN;
     }
 
