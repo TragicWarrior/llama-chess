@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.43 2002-12-23 19:56:24 bjk Exp $ */
+/* $Id: cboard.c,v 1.44 2002-12-26 17:39:35 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -271,14 +271,14 @@ void update_history()
     get_history_by_index(game[gindex].hindex, &h);
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : NONE,
-	    (h.comment[0] || h.nag[0]) ? "(press 'v')" : "");
+	    (h.comment[0] || h.nag[0]) ? "(press ']')" : "");
     mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, buf);
 
     if (get_history_by_index(game[gindex].hindex - 1, &h))
 	h.move[0] = 0;
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : NONE,
-	    (h.comment[0] || h.nag[0]) ? "(press 'V')" : "");
+	    (h.comment[0] || h.nag[0]) ? "(press '[')" : "");
     mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13, buf);
     return;
 }
@@ -493,10 +493,10 @@ blah:
 	switch (c) {
 	    int annotate;
 
-	    case 'v':
+	    case ']':
 	        view_annotation(game[gindex].hindex);
 		break;
-	    case 'V':
+	    case '[':
 	        view_annotation(game[gindex].hindex - 1);
 		break;
 	    case '>':
@@ -637,7 +637,6 @@ blah:
 		}
 
 		free(tmppgn);
-		strncpy(pgnfile, tmp, sizeof(pgnfile));
 		parse_pgn_file(pgnfile);
 		gindex = gtotal - 1;
 		gactive = gindex;
@@ -665,6 +664,7 @@ blah:
 		SEND_TO_ENGINE("\nnew\n");
 		set_engine_defaults();
 		update_all();
+		status.engine = ENGINE_READY;
 		break;
 	    case 'R':
 		refresh_all();
