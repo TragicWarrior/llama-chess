@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.41 2003-01-06 19:59:15 bjk Exp $ */
+/* $Id: pgn.c,v 1.42 2003-01-07 14:14:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -258,7 +258,7 @@ int move_text(FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", move, &count) != 1)
 	return 1;
 
-    if (parse_move_text(pgnboard, move))
+    if (parse_move_text(pgnboard, move, 0))
 	return 1;
 
     add_to_history(&game[gindex].history, &game[gindex].hindex,

@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.3 2003-01-06 20:16:15 bjk Exp $ */
+/* $Id: move.c,v 1.4 2003-01-07 14:14:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -407,7 +407,8 @@ int castle_move(struct board_matrix b[][8], int which)
     n = COLTOINT('e');
 
     if (which == KINGSIDE) {
-	if ((status.turn == WHITE && (wk || rkw)) || (status.turn == BLACK && (bk || rkb)))
+	if ((status.turn == WHITE && (wk || rkw)) || 
+		(status.turn == BLACK && (bk || rkb)))
 	    return 1;
 
 	p = b[ROWTOBOARD(row)][COLTOBOARD((n + 1))].icon;
@@ -466,7 +467,7 @@ int castle_move(struct board_matrix b[][8], int which)
     return 0;
 }
 
-int parse_move_text(struct board_matrix b[][8], char *move)
+int parse_move_text(struct board_matrix b[][8], char *move, int reset)
 {
     char *p;
     int piece;
@@ -476,6 +477,11 @@ int parse_move_text(struct board_matrix b[][8], char *move)
     int promo;
     int trow;
     static int enpassant, castle;
+
+    if (reset) {
+	enpassant = 0;
+	wk = bk = rqw = rkw = rqb = rkb = castle = 0;
+    }
 
     srow = row = col = scol = promo = piece = 0;
     p = (move) + strlen(move);

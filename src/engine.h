@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.8 2003-01-06 19:59:15 bjk Exp $ */
+/* $Id: engine.h,v 1.9 2003-01-07 14:14:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -36,6 +36,6 @@ void move_piece(char *);
 int save_pgn(const char *, struct pgndata *, int);
 void update_status();
 char *book_method(int);
-int parse_move_text(struct board_matrix [][], char *);
+int parse_move_text(struct board_matrix [][], char *, int);
 
 #endif

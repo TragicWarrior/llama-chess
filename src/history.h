@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.14 2003-01-06 20:16:15 bjk Exp $ */
+/* $Id: history.h,v 1.15 2003-01-07 14:14:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -47,6 +47,6 @@ void update_status(void);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
-int parse_move_text(struct board_matrix [][], char *);
+int parse_move_text(struct board_matrix [][], char *, int);
 
 #endif
