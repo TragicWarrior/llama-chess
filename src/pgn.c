@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.5 2002-12-06 21:54:40 bjk Exp $ */
+/* $Id: pgn.c,v 1.6 2002-12-07 14:29:30 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -43,24 +43,27 @@
 /* Returns 1 if a duplicate was found. 0 otherwise. The index argument is a
  * pointer to int, and incremented automatically.
  */
-int add_pgn_data(int *n, const char *token, const char *value)
+int add_pgn_data(struct pgndata **dst, int *n, const char *token,
+	const char *value)
 {
     int i, index = *n;
+    struct pgndata *tdata = *dst;
 
     for (i = 0; i < index; i++) {
-	if (strcasecmp(pgn[i].token, token) == 0)
+	if (strcasecmp(tdata[i].token, token) == 0)
 	    return 1;
     }
 
-    pgn = Realloc(pgn, (index + 2) * sizeof(struct pgndata));
+    tdata = Realloc(tdata, (index + 2) * sizeof(struct pgndata));
 
-    strncpy(pgn[index].token, token, sizeof(pgn[index].token));
+    strncpy(tdata[index].token, token, sizeof(tdata[index].token));
 
     if (value)
-	strncpy(pgn[index].value, value, sizeof(pgn[index].value));
+	strncpy(tdata[index].value, value, sizeof(tdata[index].value));
 
-    memset(&pgn[index + 1], 0, sizeof(struct pgndata));
+    memset(&tdata[index + 1], 0, sizeof(struct pgndata));
     *n = ++index;
+    *dst = tdata;
     return 0;
 }
 
@@ -101,13 +104,13 @@ static void init_data()
     strftime(tbuf, sizeof(tbuf), TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_pgn_data(&pgn_index, "Event", UNKNOWN);
-    add_pgn_data(&pgn_index, "Site", UNKNOWN);
-    add_pgn_data(&pgn_index, "Date", tbuf);
-    add_pgn_data(&pgn_index, "Round", UNKNOWN);
-    add_pgn_data(&pgn_index, "White", pwd->pw_gecos);
-    add_pgn_data(&pgn_index, "Black", UNKNOWN);
-    add_pgn_data(&pgn_index, "Result", UNKNOWN);
+    add_pgn_data(&pgn, &pgn_index, "Event", UNKNOWN);
+    add_pgn_data(&pgn, &pgn_index, "Site", UNKNOWN);
+    add_pgn_data(&pgn, &pgn_index, "Date", tbuf);
+    add_pgn_data(&pgn, &pgn_index, "Round", UNKNOWN);
+    add_pgn_data(&pgn, &pgn_index, "White", pwd->pw_gecos);
+    add_pgn_data(&pgn, &pgn_index, "Black", UNKNOWN);
+    add_pgn_data(&pgn, &pgn_index, "Result", UNKNOWN);
 
     return;
 }
@@ -182,7 +185,7 @@ int parse_pgn_file(const char *filename)
 		if (!value[0])
 		    value = UNKNOWN;
 
-		add_pgn_data(&pgn_index, token, remove_escapes(value));
+		add_pgn_data(&pgn, &pgn_index, token, remove_escapes(value));
 	    }
 
 	    continue;
@@ -267,11 +270,28 @@ int save_pgn(const char *filename)
     return 0;
 }
 
+/* Get pgn_index number. */
+static int get_index_number(WINDOW *win, int y, int x)
+{
+    int selected;
+    char buf[4] = {0};
+
+    mvwinnstr(win, y, x, buf, sizeof(buf) - 1);
+
+    if(sscanf(buf, "%u", &selected) != 1) {
+	message(ERROR, ANYKEY, "Could not get index number");
+	return -1;
+    }
+
+    return selected;
+}
+
 /* FIXME segfault after 'q' (sometimes), scrolling */
 void edit_pgn_data()
 {
-    const char *prompt = "UP/DOWN/ENTER selects, 'a' adds and 'q' quits";
+    const char *prompt = "UP/DOWN/ENTER selects, 'a' adds, 'r' removes, and 'q' quits";
 
+again:
     while (1) {
 	WINDOW *win;
 	PANEL *panel;
@@ -281,8 +301,8 @@ void edit_pgn_data()
 	int i;
 	unsigned selected = 0;
 	int cy = 2;
-	char buf[3] = {0};
 	char editprompt[76] = {0};
+	char buf[4] = {0};
 	char *tmp = NULL;
 
 	for (i = 0; (i < pgn_index && i < LINES - 5); i++) {
@@ -313,13 +333,16 @@ void edit_pgn_data()
 
 	for (i = 0; i < pgn_index; i++)
 	    mvwprintw(win, 2 + i, 1, "%u. %*s: %-*s", i + 1, tlen,
-		    pgn[i].token, (x - tlen - (sizeof(buf) + 4)), pgn[i].value);
+		    pgn[i].token, (x - tlen - (sizeof(buf) - 1 + 4)),
+		    pgn[i].value);
 
 	mvwprintw(win, y - 2, CENTERX(x, prompt), "%s", prompt);
 
 	while (1) {
 	    int c;
 	    char *newtoken;
+	    struct pgndata *tmppgn = NULL;
+	    int tpgn_index = 0;
 
 	    wmove(win, cy, 1);
 	    update_panels();
@@ -327,11 +350,43 @@ void edit_pgn_data()
 	    c = wgetch(win);
 
 	    switch (c) {
+		case 'r':
+		    if ((selected = get_index_number(win, cy, 1)) == -1) {
+			message(ERROR, ANYKEY, "Could not get index number");
+			continue;
+		    }
+
+		    selected--;
+
+		    if (selected <= 6) {
+			message(NULL, ANYKEY, 
+				"Cannot remove the Standard Seven");
+			continue;
+		    }
+
+		    for (i = 0; i < pgn_index; i++) {
+			if (i == selected)
+			    continue;
+
+			add_pgn_data(&tmppgn, &tpgn_index, pgn[i].token,
+				pgn[i].value);
+		    }
+
+		    for (i = pgn_index = 0; i < tpgn_index; i++) {
+			add_pgn_data(&pgn, &pgn_index, tmppgn[i].token,
+				tmppgn[i].value);
+		    }
+
+		    free(tmppgn);
+		    del_panel(panel);
+		    delwin(win);
+		    goto again;
+		    break;
 		case 'a':
 		    if ((newtoken = get_input("New tag name", NULL)) == NULL)
 			break;
 
-		    if (add_pgn_data(&pgn_index, newtoken, NULL)) {
+		    if (add_pgn_data(&pgn, &pgn_index, newtoken, NULL)) {
 			message(ERROR, ANYKEY, 
 				"Could not add duplicate tag \"%s\"",
 				newtoken);
@@ -355,10 +410,7 @@ void edit_pgn_data()
 			cy++;
 		    break;
 		case KEY_RETURN:
-		    /* Get pgn_index number. */
-		    mvwinnstr(win, cy, 1, buf, sizeof(buf) - 1);
-
-		    if(sscanf(buf, "%u", &selected) != 1) {
+		    if ((selected = get_index_number(win, cy, 1)) == -1) {
 			message(ERROR, ANYKEY, "Could not get index number");
 			continue;
 		    }
@@ -402,4 +454,3 @@ done:
     curs_set(0);
     return;
 }
-
