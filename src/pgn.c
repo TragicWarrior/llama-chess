@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.84 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: pgn.c,v 1.85 2003-02-04 22:01:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -813,8 +813,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 	else {
 	    copy_board(tmpboard, pgnboard);
 	    game[gindex].fentag = i;
-	    game[gindex].hindex = (n * 2 > game[gindex].htotal - 1) ?
-		game[gindex].hindex : n * 2;
+	    game[gindex].hindex = n * 2;
 	}
     }
 
@@ -824,6 +823,8 @@ done:
     if (compressed)
 	unlink(config.tmpfile);
 
+    status.mode = MODE_HISTORY;
+    update_status_window();
     //exit(0);
     return 0;
 }

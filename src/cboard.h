@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.61 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: cboard.h,v 1.62 2003-02-04 22:01:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -86,8 +86,8 @@ const char *mainhelp[] = {
     "     X - delete flagged games     ? - find game by tag expression*",
     "     r - resume a saved game      } - find next game by expression*",
     "     s - save game                { - find previous game by expression*",
-    "     S - save game with prompt",
-    "     q - quit                     * = can take a repeat count",
+    "     S - save game with prompt    t - edit roster tags",
+    "     q - quit                     e - edit board",
     NULL
 };
 
@@ -134,5 +134,6 @@ void switch_turn(void);
 char *str_etc(const char *, int, int);
 char *tilde_expand(char *);
 int parse_fen_file(BOARD, const char *);
+char *board_to_fen(BOARD, GAME);
 
 #endif

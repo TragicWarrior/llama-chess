@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.59 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: common.h,v 1.60 2003-02-04 22:01:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -92,6 +92,10 @@ enum {
     ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
 };
 
+enum {
+    MODE_HISTORY, MODE_PLAY, MODE_EDIT
+};
+
 #define cmessage(title, prompt, args...)	\
     dump_message(title, prompt, 1, NULL, NULL, NULL, 0, ##args)
 
@@ -115,6 +119,7 @@ struct {
     int side;
     char *notify;
     int turn;
+    int mode;
 } status;
 
 typedef struct tags {
@@ -226,7 +231,6 @@ int curses_initialized;
 char loadfile[FILENAME_MAX];
 int filetype;
 int gindex, gtotal; /* Current game and total number of games. */
-int browse_history; /* 1 if in history mode. */
 int engine_initialized;
 int oldhistorytotal; /* This is a failsafe when resuming a game. */
 int movestep;

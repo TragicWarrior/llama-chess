@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.44 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: history.c,v 1.45 2003-02-04 22:01:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -420,10 +420,7 @@ void parse_history_move(BOARD b, int index)
     game[gindex].rqb = 0;
     game[gindex].ply = 0;
 
-    if (game[gindex].fentag == 0)
-	init_board(b);
-    else
-	parse_fen_line(b, game[gindex].tag[game[gindex].fentag].value);
+    init_board(b);
 
     for (i = 0; i < index; i++) {
 	HISTORY h;
@@ -439,7 +436,7 @@ void parse_history_move(BOARD b, int index)
 	switch_turn();
     }
 
-    if (!status.notify && !browse_history)
+    if (!status.notify && !status.mode == MODE_HISTORY)
 	status.notify = GAME_HELP_PROMPT;
 
     return;
@@ -477,7 +474,7 @@ void history_next(BOARD b, int n)
 
 void init_history(BOARD b)
 {
-    browse_history = 1;
+    status.mode = MODE_HISTORY;
     parse_history_move(b, game[gindex].hindex);
     update_status_window();
     return;

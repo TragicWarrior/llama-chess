@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.23 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: strings.h,v 1.24 2003-02-04 22:01:16 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -46,10 +46,15 @@
 #define GAME_NEW_PROMPT	"Really start a new game from scratch?"
 #define GAME_NEW_TEXT	"Use the 'N' command to start a new game or the 'r' " \
     "command to load a previous game"
-#define GAME_HELP	"Command Keys"
+#define GAME_HELP	"Command Keys (* = can take a repeat count)"
 #define GAME_LOAD_TITLE	"Load Filename"
 #define GAME_SAVE_TITLE	"Save Game Filename"
 #define GAME_HELP_PROMPT	"Type CTRL-g for command keys"
+#define GAME_EDIT_TITLE		"Insert Piece"
+#define GAME_EDIT_PROMPT	"P = pawn, R = rook, N = knight, B = bishop, "\
+    "Q = queen, K = king"
+#define GAME_EDIT_TEXT		"Type the piece letter to insert. Lowercase " \
+    "for a black piece, uppercase for a white piece."
 
 /* Error strings. */
 #define E_TAG_NAMETOOLONG	"Cannot add tag. Name too long."
@@ -164,6 +169,8 @@
 #define BLACK_STR	"black"
 
 /* Status window strings. */
+#define STATUS_FILE_STR		"File:"
+#define STATUS_MODE_STR		"Mode:"
 #define STATUS_GAME_STR		"Game:"
 #define STATUS_ENGINE_STR	"Engine:"
 #define STATUS_DEPTH_STR	"Depth:"
@@ -175,7 +182,11 @@
 #define ENGINE_THINKING_STR	"thinking..."
 #define ENGINE_OFFLINE_STR	"offline"
 #define ENGINE_INITIALIZING_STR	"initializing..."
-#define ENGINE_MOVE_HISTORY_STR	" (move history)"
+
+/* Mode status strings. */
+#define MODE_HISTORY_STR	"move history"
+#define MODE_EDIT_STR		"edit"
+#define MODE_PLAY_STR		"play"
 
 /* History window strings. */
 #define HISTORY_MOVE_STEP	" (half step)"

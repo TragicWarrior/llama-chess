@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.91 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: cboard.c,v 1.92 2003-02-04 22:01:15 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -50,7 +50,7 @@ char *random_agony()
     char line[LINE_MAX];
 
     if (index == -1 || !config.agony || !curses_initialized ||
-	    (browse_history && !config.historyagony))
+	    (status.mode == MODE_HISTORY && !config.historyagony))
 	return NULL;
 
     if (!agony) {
@@ -340,64 +340,73 @@ void update_status_window()
 {
     int i;
     char buf[STATUS_WIDTH - 7];
-    char tmp[15];
+    char tmp[15], *engine, *mode;
     int w = STATUS_WIDTH - 10;
 
-    mvwprintw(statusw, 2, 1, "  File: %-*s", w,
+    mvwprintw(statusw, 2, 1, "%*s %-*s", 7, STATUS_FILE_STR, w,
 	    (loadfile[0]) ? str_etc(loadfile, w, 1) : UNAVAILABLE);
     snprintf(buf, sizeof(buf), "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
 	    (game[gindex].delete) ? GAME_NOTSAVED : "");
     mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
 
-    switch (status.engine) {
-	case ENGINE_THINKING:
-	    strcpy(buf, ENGINE_THINKING_STR);
+    switch (status.mode) {
+	case MODE_HISTORY:
+	    mode = MODE_HISTORY_STR;
 	    break;
-	case ENGINE_READY:
-	    strcpy(buf, ENGINE_READY_STR);
-
-	    if (browse_history)
-		strcat(buf, ENGINE_MOVE_HISTORY_STR);
-
+	case MODE_EDIT:
+	    mode = MODE_EDIT_STR;
 	    break;
-	case ENGINE_INITIALIZING:
-	    strcpy(buf, ENGINE_INITIALIZING_STR);
-	    break;
-	case ENGINE_OFFLINE:
-	    strcpy(buf, ENGINE_OFFLINE_STR);
-
-	    if (browse_history)
-		strcat(buf, ENGINE_MOVE_HISTORY_STR);
-
+	case MODE_PLAY:
+	    mode = MODE_PLAY_STR;
 	    break;
 	default:
-	    strcpy(buf, UNKNOWN);
+	    mode = UNKNOWN;
 	    break;
     }
 
-    mvwprintw(statusw, 4, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
+    mvwprintw(statusw, 4, 1, "%*s %-*s", 7, STATUS_MODE_STR, w, mode);
+
+    switch (status.engine) {
+	case ENGINE_THINKING:
+	    engine = ENGINE_THINKING_STR;
+	    break;
+	case ENGINE_READY:
+	    engine = ENGINE_READY_STR;
+	    break;
+	case ENGINE_INITIALIZING:
+	    engine = ENGINE_INITIALIZING_STR;
+	    break;
+	case ENGINE_OFFLINE:
+	    engine = ENGINE_OFFLINE_STR;
+	    break;
+	default:
+	    engine = UNKNOWN;
+	    break;
+    }
+
+    mvwprintw(statusw, 5, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
-    mvwaddstr(statusw, 4, 9, buf);
+    mvwaddstr(statusw, 5, 9, engine);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, 5, 1, "%*s %-*i", 7, STATUS_DEPTH_STR, w,
+    mvwprintw(statusw, 6, 1, "%*s %-*i", 7, STATUS_DEPTH_STR, w,
 	    config.engine_depth);
 
-    mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_BOOK_STR, w,
+    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_BOOK_STR, w,
 	    book_method(config.book_method));
 
-    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
+    mvwprintw(statusw, 8, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
 	    (status.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     snprintf(buf, sizeof(buf), "c/%i", game[gindex].wcaptures);
-    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     snprintf(buf, sizeof(buf), "c/%i", game[gindex].bcaptures);
-    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 10, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -921,6 +930,18 @@ cleanup:
     return ret;
 }
 
+void edit_board(BOARD b)
+{
+    chtype p;
+
+    p = b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon;
+    b[ROWTOBOARD(sp.destrow)][COLTOBOARD(sp.destcol)].icon = p;
+    b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = 
+	int_to_piece(OPEN_SQUARE);
+
+    return;
+}
+
 void game_loop()
 {  
     int error_recover = 0;
@@ -931,6 +952,7 @@ void game_loop()
     char gameexp[255] = {0};
     int delete_count = 0;
     int markstart = -1, markend = -1;
+    int editmode = 0;
 
     /* This is to just initialize the default tags etc. */
     parse_pgn_file(board, moveexp);
@@ -955,8 +977,10 @@ void game_loop()
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
 
+    /*
     if (loadfile[0])
 	init_history(board);
+	*/
 
     status.notify = GAME_HELP_PROMPT;
     movestep = 2;
@@ -1063,6 +1087,23 @@ void game_loop()
 	switch (c) {
 	    int annotate;
 
+	    case 'e':
+		if (game[gindex].htotal)
+		    break;
+
+	        if (editmode) {
+		    editmode = 0;
+		    add_tag(&game[gindex].tag, &game[gindex].tindex,
+			    "FEN", board_to_fen(board, game[gindex]));
+		    status.mode = MODE_PLAY;
+		}
+		else {
+		    status.mode = MODE_EDIT;
+		    editmode = 1;
+		}
+
+		update_all();
+		break;
 	    case '}':
 	    case '{':
 	    case '?':
@@ -1187,7 +1228,7 @@ void game_loop()
 
 		break;
 	    case 'j':
-		if (!browse_history || game[gindex].htotal < 2)
+		if (status.mode != MODE_HISTORY || game[gindex].htotal < 2)
 		    break;
 
 		/*
@@ -1251,6 +1292,18 @@ void game_loop()
 		break;
 	    case 'x':
 		pushkey = 0;
+
+		if (editmode) {
+		    if (sp.icon)
+			board[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon =
+			    int_to_piece(OPEN_SQUARE);
+		    else
+			board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon =
+			    int_to_piece(OPEN_SQUARE);
+
+		    sp.icon = sp.row = sp.col = 0;
+		    break;
+		}
 
 		if (gtotal < 2)
 		    break;
@@ -1340,15 +1393,28 @@ void game_loop()
 
 		update_history_window();
 		break;
-	    case 'e':
+	    case 't':
 		edit_save_tags(gindex);
 		update_tag_window();
+		break;
+	    case 'I':
+		if (!editmode)
+		    break;
+
+		c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
+			GAME_EDIT_TEXT);
+
+		if (piece_to_int(c) == -1)
+		    break;
+
+		board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
 		break;
 	    case 'i':
 		edit_tags(board, game[gindex].tag, game[gindex].tindex, 0);
 		break;
 	    case 'g':
-		if (browse_history || status.engine == ENGINE_THINKING)
+		if (status.mode == MODE_HISTORY || 
+			status.engine == ENGINE_THINKING)
 		    break;
 
 		status.engine = ENGINE_THINKING;
@@ -1368,7 +1434,7 @@ void game_loop()
 		SEND_TO_ENGINE("book %s\n", book_methods[config.book_method]);
 		break;
 	    case 'h':
-		if (browse_history) {
+		if (status.mode == MODE_HISTORY) {
 		    if (game[gindex].openingside == BLACK) {
 			cmessage(NULL, ANYKEY, "%s", E_RESUME_BLACK);
 			break;
@@ -1397,7 +1463,7 @@ void game_loop()
 		    pushkey = 0;
 		    oldhistorytotal = game[gindex].htotal;
 		    game[gindex].htotal = game[gindex].hindex;
-		    browse_history = 0;
+		    status.mode = MODE_PLAY;
 		    status.engine = ENGINE_READY;
 
 		    SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
@@ -1411,7 +1477,7 @@ void game_loop()
 		init_history(board);
 		break;
 	    case 'u':
-		if (browse_history || !game[gindex].htotal)
+		if (status.mode == MODE_HISTORY || !game[gindex].htotal)
 		    break;
 
 		history_previous(board, (count) ? count * 2 : 2);
@@ -1489,7 +1555,9 @@ void game_loop()
 			break;
 		}
 
-		browse_history = sp.icon = 0;
+		status.mode = MODE_PLAY;
+		editmode = 0;
+		sp.icon = 0;
 
 		if (c == 'n') {
 		    newgameinit = 1;
@@ -1554,7 +1622,7 @@ void game_loop()
 
 		continue;
 	    case KEY_UP:
-		if (browse_history) {
+		if (status.mode == MODE_HISTORY) {
 		    history_next(board, (count > 0) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep);
@@ -1582,7 +1650,7 @@ void game_loop()
 
 		break;
 	    case KEY_DOWN:
-		if (browse_history) {
+		if (status.mode == MODE_HISTORY) {
 		    history_previous(board, (count) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep);
@@ -1610,7 +1678,7 @@ void game_loop()
 
 		break;
 	    case KEY_LEFT:
-		if (browse_history) {
+		if (status.mode == MODE_HISTORY) {
 		    history_previous(board, (count) ?
 			    count * movestep : movestep);
 		    update_all();
@@ -1637,7 +1705,7 @@ void game_loop()
 
 		break;
 	    case KEY_RIGHT:
-		if (browse_history) {
+		if (status.mode == MODE_HISTORY) {
 		    history_next(board, (count) ? count * movestep : movestep);
 		    update_all();
 		    break;
@@ -1663,7 +1731,7 @@ void game_loop()
 
 		break;
 	    case 'w':
-		if (browse_history)
+		if (status.mode == MODE_HISTORY)
 		    break;
 
 		if (status.turn == BLACK && status.side == WHITE) {
@@ -1678,7 +1746,7 @@ void game_loop()
 		SEND_TO_ENGINE("\nswitch\n");
 		break;
 	    case ' ':
-		if (browse_history) {
+		if (!editmode && status.mode == MODE_HISTORY) {
 		    if (movestep == 1)
 			movestep = 2;
 		    else
@@ -1688,14 +1756,15 @@ void game_loop()
 		    break;
 		}
 
-		if (status.engine != ENGINE_READY || !engine_initialized) {
+		if (!editmode && (status.engine != ENGINE_READY || 
+			    !engine_initialized)) {
 		    if (start_chess_engine() < 0) {
 			sp.icon = 0;
 			break;
 		    }
 		}
 
-		if (sp.icon || status.engine == ENGINE_THINKING) {
+		if (sp.icon || (!editmode && status.engine == ENGINE_THINKING)) {
 		    beep();
 		    break;
 		}
@@ -1708,8 +1777,8 @@ void game_loop()
 		    break;
 		}
 
-		if ((islower(sp.icon) && status.turn != BLACK) ||
-			(isupper(sp.icon) && status.turn != WHITE)) {
+		if (!editmode && ((islower(sp.icon) && status.turn != BLACK) ||
+			(isupper(sp.icon) && status.turn != WHITE))) {
 		    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
 		    sp.icon = 0;
 		    break;
@@ -1718,7 +1787,7 @@ void game_loop()
 		sp.row = crow;
 		sp.col = ccol;
 
-		if (config.validmoves) {
+		if (!editmode && config.validmoves) {
 		    get_valid_moves(board, piece_to_int(sp.icon), sp.row, 
 			    sp.col, &minr, &maxr, &minc, &maxc);
 		    /*
@@ -1731,7 +1800,7 @@ void game_loop()
 	    case '\n':
 		pushkey = 0;
 
-		if (browse_history)
+		if (!editmode && status.mode == MODE_HISTORY)
 		    break;
 
 		if (status.engine == ENGINE_THINKING) {
@@ -1744,6 +1813,12 @@ void game_loop()
 
 		sp.destrow = crow;
 		sp.destcol = ccol;
+
+		if (editmode) {
+		    edit_board(board);
+		    sp.icon = sp.row = sp.col = 0;
+		    break;
+		}
 
 		if (move_to_engine(board)) {
 		    if (config.validmoves)
@@ -1839,6 +1914,7 @@ static void set_defaults()
 {
     struct stat st;
 
+    status.mode = MODE_PLAY;
     filetype = PGN_FILE;
 
     fancy_results[0].pgn = "1-0";
