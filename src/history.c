@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.36 2003-01-29 00:53:27 bjk Exp $ */
+/* $Id: history.c,v 1.37 2003-01-29 16:59:49 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -425,7 +425,7 @@ void parse_history_move(BOARD b, int index)
 
 void history_previous(BOARD b, int n)
 {
-    if (game[gindex].hindex - n <= 0) {
+    if (game[gindex].hindex - n < 0) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
 	    game[gindex].hindex = game[gindex].htotal;
 	else
