@@ -1,5 +1,6 @@
-ICS network support.
+ICS network game support.
 
 A clock.
 
-Recursive annotations
+RAV move text support. CBoard should read a file which has this with no
+problems, but it currently doesn't parse it.

@@ -1,3 +1,9 @@
+2003-01-09 Thursday 13:10  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.52):
+	
+	Default to "-" for the "Round" tag.
+
 2003-01-09 Thursday 13:02  Ben Kibbey <bjk@arbornet.org>
 
 	* src/pgn.c (1.51):
