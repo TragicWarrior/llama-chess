@@ -1,4 +1,4 @@
-/* $Id: debug.c,v 1.1 2003-09-23 14:28:30 bjk Exp $ */
+/* $Id: debug.c,v 1.2 2003-09-23 15:04:35 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -19,6 +19,7 @@
 #ifdef DEBUG
 #include <stdio.h>
 #include <stdlib.h>
+#include <ncurses.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
