@@ -130,7 +130,8 @@ ICS server port. The default is
 .Ar 5000 .
 .Pp
 .It Cm ics_user Ar username
-Optional username for ICS authentication.
+Optional username for ICS authentication. The default is
+.Ar \&"guest\&" .
 .Pp
 .It Cm ics_passwd Ar password
 Password for ICS username.

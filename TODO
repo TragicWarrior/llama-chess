@@ -4,3 +4,9 @@ A clock.
 
 RAV move text support. CBoard should read a file which has this with no
 problems, but it currently doesn't parse it.
+
+FEN move parsing.
+
+When saving multiple games, sort them by tag values specified by the standard.
+
+chess.uoknor.edu /pub/chess/ for tests
