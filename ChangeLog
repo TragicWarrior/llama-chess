@@ -1,3 +1,24 @@
+2002-12-26 Thursday 12:40  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: misc.c (1.7), pgn.c (1.35), pgn.h (1.14):
+	
+	Bugfixes for the directory browser.
+	
+	Bugfixes for the PGN tag menu.
+
+2002-12-26 Thursday 12:39  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.44), cboard.h (1.31):
+	
+	Changed annotation viewing keys to '[' and ']'.
+
+2002-12-23 Monday 15:20  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.24):
+	
+	Promotion from engine fix. Hopefully this will all be history
+	(time) anyway.
+
 2002-12-23 Monday 14:56  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.43), cboard.h (1.30), common.h (1.28),
