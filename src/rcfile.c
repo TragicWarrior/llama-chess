@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.8 2002-12-20 00:49:06 bjk Exp $ */
+/* $Id: rcfile.c,v 1.9 2002-12-20 00:53:45 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -108,7 +108,7 @@ void parse_rcfile(const char *filename)
 		value[0] = 0;
 
 	    for (n = 0; n < strlen(token); n++) {
-		if (!isalpha(token[n]) && token[n] != '_')
+		if (!isalnum(token[n]) && token[n] != '_')
 		    errx(EXIT_FAILURE, 
 			    "%s(%i): token names must match 0-9A-Za-z_.",
 			    filename, lines);
