@@ -1,4 +1,4 @@
-/* $Id: message.c,v 1.6 2002-12-28 21:07:50 bjk Exp $ */
+/* $Id: message.c,v 1.7 2002-12-30 19:00:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -36,7 +36,7 @@ int dump_message(const char *title, const char *prompt, int center,
     WINDOW *win;
     PANEL *panel;
     char *line, **lines = NULL;
-    int width, height;
+    int width = 0, height;
     int i, n, pos;
     int total = 0;
     char buf[LINE_MAX], *p;
