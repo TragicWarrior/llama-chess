@@ -1,4 +1,4 @@
-/* $Id: colors.h,v 1.5 2003-01-23 23:11:02 bjk Exp $ */
+/* $Id: colors.h,v 1.6 2003-01-25 14:57:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -138,5 +138,9 @@
 #define CP_BOARD_COUNT	((COLORS) ? \
 	COLOR_PAIR(30) | config.color[CONF_BCOUNT].attrs : \
 	config.color[CONF_BCOUNT].nattrs)
+
+#define CP_BOARD_WINDOW	((COLORS) ? \
+	COLOR_PAIR(31) | config.color[CONF_BDWINDOW].attrs : \
+	config.color[CONF_BDWINDOW].nattrs)
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.22 2003-01-24 20:29:17 bjk Exp $ */
+/* $Id: rcfile.c,v 1.23 2003-01-25 14:57:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -198,6 +198,8 @@ void parse_rcfile(const char *filename)
 	    token[0] = toupper(token[0]);
 	    add_tag(&config.tag, &config.tindex, token, value);
 	}
+	else if (strcmp(var, "board_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BDWINDOW]);
 	else if (strcmp(var, "board_selected") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BSELECTED]);
 	else if (strcmp(var, "board_moves") == 0)

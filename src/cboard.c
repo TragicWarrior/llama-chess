@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.64 2003-01-24 21:27:20 bjk Exp $ */
+/* $Id: cboard.c,v 1.65 2003-01-25 14:57:24 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1656,6 +1656,7 @@ int main(int argc, char *argv[])
     cbreak();
     noecho();
 
+    wbkgd(boardw, CP_BOARD_WINDOW);
     wbkgd(statusw, CP_STATUS_WINDOW);
     draw_window_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
 	    CP_STATUS_TITLE, CP_STATUS_BORDER);
