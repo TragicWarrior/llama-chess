@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.26 2002-12-19 16:55:12 bjk Exp $ */
+/* $Id: pgn.c,v 1.27 2002-12-19 17:05:58 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -553,9 +553,11 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 
     fprintf(fp, "\n");
 
+    /* Move text section. If it's dumping to the FIFO, dont dump comments and
+     * NAG data.
+     */
     for (i = 0, n = 1; i < game[gindex].hindex; i += 2, n++) {
 	int x;
-
 	int wlen = strlen(game[gindex].history[i].move);
 	int blen = strlen(game[gindex].history[i + 1].move);
 
@@ -566,23 +568,27 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 
 	fprintf(fp, "%u. %s ", n, game[gindex].history[i].move);
 
-	for (x = 0; x < MAX_PGN_NAG; x++) {
-	    if (game[gindex].history[i].nag[x])
-		fprintf(fp, "$%i ", game[gindex].history[i].nag[x]);
-	}
+	if (!isfifo) {
+	    for (x = 0; x < MAX_PGN_NAG; x++) {
+		if (game[gindex].history[i].nag[x])
+		    fprintf(fp, "$%i ", game[gindex].history[i].nag[x]);
+	    }
 
-	if (game[gindex].history[i].comment[0])
-	    fprintf(fp, "\n{%s}\n", game[gindex].history[i].comment);
+	    if (game[gindex].history[i].comment[0])
+		fprintf(fp, "\n{%s}\n", game[gindex].history[i].comment);
+	}
 
 	fprintf(fp, "%s ", game[gindex].history[i + 1].move);
 
-	for (x = 0; x < MAX_PGN_NAG; x++) {
-	    if (game[gindex].history[i + 1].nag[x])
-		fprintf(fp, "$%i ", game[gindex].history[i + 1].nag[x]);
-	}
+	if (!isfifo) {
+	    for (x = 0; x < MAX_PGN_NAG; x++) {
+		if (game[gindex].history[i + 1].nag[x])
+		    fprintf(fp, "$%i ", game[gindex].history[i + 1].nag[x]);
+	    }
 
-	if (game[gindex].history[i + 1].comment[0])
-	    fprintf(fp, "\n{%s}\n", game[gindex].history[i + 1].comment);
+	    if (game[gindex].history[i + 1].comment[0])
+		fprintf(fp, "\n{%s}\n", game[gindex].history[i + 1].comment);
+	}
 
 	len += wlen + blen + 6;
     }
