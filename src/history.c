@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.23 2002-12-23 19:56:24 bjk Exp $ */
+/* $Id: history.c,v 1.24 2002-12-23 20:20:43 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -477,10 +477,11 @@ void move_piece(char *move)
     else
 	status.turn = WHITE;
 
+    /* FIXME CBoard will always promote to queen, the engine doesn't. */
     if (piece == 'p' && (row == 0 || row == 7)) {
-	board[row][col].icon = (upper) ? 'Q' : 'q';
-	status.notify = (upper) ? "White promotion to queen!" :
-	    "Black promotion to queen!";
+	board[row][col].icon = (upper) ? 'Q' : move[4];
+	status.notify = (upper) ? "White promotion" :
+	    "Black promotion";
 	return;
     }
 
