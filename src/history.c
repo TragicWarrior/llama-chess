@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.33 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: history.c,v 1.34 2003-01-24 20:27:50 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -398,7 +398,7 @@ void add_to_history(struct history **h, int *n, int *t, const char *str)
     return;
 }
 
-static void parse_history_move(BOARD b, int index)
+void parse_history_move(BOARD b, int index)
 {
     int i;
 
@@ -426,12 +426,8 @@ static void parse_history_move(BOARD b, int index)
 void history_previous(BOARD b, int n)
 {
     if (game[gindex].hindex - n < 0) {
-	if (n == config.history_jump) {
-	    if (game[gindex].hindex == 0)
-		return;
-	    else
-	        game[gindex].hindex = 0;
-	}
+	if (n != 1)
+	    game[gindex].hindex = 0;
 	else
 	    game[gindex].hindex = game[gindex].htotal;
     }
@@ -445,12 +441,8 @@ void history_previous(BOARD b, int n)
 void history_next(BOARD b, int n)
 {
     if (game[gindex].hindex + n > game[gindex].htotal) {
-	if (n == config.history_jump) {
-	    if (game[gindex].hindex == game[gindex].htotal)
-		return;
-	    else
-	        game[gindex].hindex = game[gindex].htotal;
-	}
+	if (n != 1)
+	    game[gindex].hindex = game[gindex].htotal;
 	else
 	    game[gindex].hindex = 0;
     }
