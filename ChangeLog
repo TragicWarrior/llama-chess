@@ -1,3 +1,14 @@
+2003-01-07 Tuesday 15:35  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: engine.c (1.23), engine.h (1.10), move.c (1.5), move.h
+	(1.4), pgn.c (1.43), pgn.h (1.19):
+	
+	Save game from history bugfix.
+	
+	Moves are converted to SAN format when loading and from the engine.
+	This means that saving to SAN format works now (still buggy
+	though).
+
 2003-01-07 Tuesday 09:14  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: engine.c (1.22), engine.h (1.9), history.c (1.28),
