@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.16 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: cboard.h,v 1.17 2002-12-14 21:00:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -43,6 +43,7 @@
 #define MAIN_HELP	"Command Keys"
 #define MAIN_HELP_PROMPT	"Type CTRL-g for available command keys"
 #define ANNOTATE_HISTORY	"Editing Annotation for"
+#define NAG_PROMPT	"Type CTRL-t to edit NAG"
 
 /* The order must match the BOOK_... enumeration on common.h. */
 const char *book_methods[] = {
@@ -95,3 +96,4 @@ void history_next(int);
 void history_previous(int);
 void init_history(void);
 void parse_rcfile(const char *);
+void history_edit_nag(void);

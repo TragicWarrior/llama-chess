@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.14 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: common.h,v 1.15 2002-12-14 21:00:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -46,6 +46,7 @@ FILE *debugfp;
 
 #define ACK			message("ack", "ack", "ack")
 
+#define NONE			"none"
 #define x_grid_chars		"abcdefgh"
 #define MAX_PGN_LINE_LEN	255
 #define MAX_MOVE_LEN		7 /* As defined by SAN. */
@@ -96,6 +97,7 @@ struct pgndata {
 struct history {
     char move[MAX_MOVE_LEN];
     char comment[MAX_PGN_LINE_LEN];
+    int nag;
 };
 
 /* This is an array of 'games' structures. One for each game in a file, or
@@ -140,7 +142,8 @@ enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
     FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND};
 
-char *get_input(const char *, const char *, int, int, int, ...);
+char *get_input(const char *, const char *, int, int, const char *,
+	void (*)(void), int, ...);
 char *get_input_str(const char *, const char *);
 char *get_input_str_clear(const char *, const char *);
 void draw_window_title(WINDOW *, const char *, int);

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.19 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: pgn.c,v 1.20 2002-12-14 21:00:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -35,6 +35,7 @@
 #include <pwd.h>
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -438,27 +439,49 @@ static void dump_save_data(FILE *fp, struct pgndata *data)
 	fprintf(fp, "\n");
 
     fprintf(fp, "%s\n\n", pgn_escapes(data[PGN_RESULT].value));
+    fflush(fp);
 
     return;
 }
 
-int save_pgn(const char *filename, struct pgndata *data, int isfifo)
+int save_pgn(char *filename, struct pgndata *data, int isfifo)
 {
+    FILE *fp;
     pid_t pid;
     int status;
-    FILE *fp;
+    int fd;
+    char *tmp;
 
-    /* Writing a game to a fifo for the engine to read. This is a hack to let
-     * more than one game in a file work when resuming a game.
+    /* This is a hack to resume an exitsting game when more than one game is
+     * in a file.
+     *
+     * FIXME
      */
-    if ((fp = fopen(filename, "w")) == NULL) {
+    if (isfifo) {
+	tmp = tmpnam(NULL);
 
-	if (isfifo)
+	if (mkfifo(tmp, 0600) == -1)
+	    return 1;
+
+	filename = tmp;
+
+	SEND_TO_ENGINE("\npgnload %s\n", filename);
+
+	if ((fd = open(filename, O_WRONLY)) == -1) {
 	    unlink(filename);
+	    return 1;
+	}
 
-	return 1;
+	if ((fp = fdopen(fd, "w")) == NULL) {
+	    unlink(filename);
+	    return 1;
+	}
     }
+    else
+	if ((fp = fopen(filename, "a")) == NULL)
+	    return 1;
 
+    /*
     if (isfifo) {
 	switch ((pid = fork())) {
 	    case -1:
@@ -470,19 +493,20 @@ int save_pgn(const char *filename, struct pgndata *data, int isfifo)
 		unlink(filename);
 		_exit(EXIT_SUCCESS);
 	    default:
-		SEND_TO_ENGINE("\npgnload %s\n", filename);
-		wait(&status);
+		waitpid(pid, &status, 0);
 		return 0;
 	}
     }
+    */
 
     dump_save_data(fp, data);
 
 cleanup:
+    fclose(fp);
+
     if (isfifo)
 	unlink(filename);
 
-    fclose(fp);
     return 0;
 }
 
@@ -621,7 +645,7 @@ struct pgndata *edit_pgn_data(int edit)
 		    if (!edit)
 			break;
 
-		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 1, 0,
+		    if ((newtag = get_input(PGN_NEW_TAG, NULL, 1, 0, NULL, NULL,
 				    FIELD_TYPE_PGN_TAG_NAME)) == NULL)
 			break;
 
@@ -685,7 +709,8 @@ gotitem:
 	    tmp = strptime(data[selected].value, TIME_FORMAT, &tp);
 	    strftime(tmptime, MAX_TIME_LEN, PGN_TIME_FORMAT, &tp);
 
-	    tmp = get_input(buf, tmptime, 0, 0, FIELD_TYPE_PGN_DATE);
+	    tmp = get_input(buf, tmptime, 0, 0, 0, NULL, NULL,
+		    FIELD_TYPE_PGN_DATE);
 
 	    if (tmp) {
 		if (strptime(tmp, PGN_TIME_FORMAT, &tp) == NULL) {
@@ -698,9 +723,9 @@ gotitem:
 		goto cleanup;
 	}
 	else if (strcmp(data[selected].token, "Round") == 0)
-	    tmp = get_input(buf, NULL, 1, 1, FIELD_TYPE_PGN_ROUND);
+	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, FIELD_TYPE_PGN_ROUND);
 	else
-	    tmp = get_input(buf, data[selected].value, 0, 0, -1);
+	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, -1);
 
 	if (tmp) {
 	    if (strcmp(tmp, UNKNOWN) == 0)

@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.8 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: engine.c,v 1.9 2002-12-14 21:00:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -100,8 +100,6 @@ void parse_engine_output(char *str)
 {
     char *tmp;
     char move[MAX_MOVE_LEN + 1];
-
-    DEBUG("%s", str);
 
     /* 'switch' command. */
     if (strstr(str, "White to move") != NULL) {

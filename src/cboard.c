@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.23 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: cboard.c,v 1.24 2002-12-14 21:00:53 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -252,13 +252,13 @@ void update_history()
     get_history_by_index(game[gindex].hindex, &h);
 
     mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, 
-	    (h.move[0]) ? h.move : "none");
+	    (h.move[0]) ? h.move : NONE);
 
     if (get_history_by_index(game[gindex].hindex - 1, &h))
 	h.move[0] = 0;
 
     mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13,
-	    (h.move[0]) ? h.move : "none");
+	    (h.move[0]) ? h.move : NONE);
     return;
 }
 
@@ -283,7 +283,7 @@ void update_data()
     w = DATA_WIDTH - tlen - 4;
 
     if ((tmp = real_filename(pgnfile)) == NULL)
-	tmp = "none";
+	tmp = NONE;
 
     mvwprintw(dataw, 2, 1, "%*s: %-*s", tlen, "File", w, tmp);
 
@@ -483,7 +483,7 @@ blah:
 
 		if ((tmp = get_input(buf, 
 				game[gindex].history[annotate].comment, 0, 0, 
-				-1)) != NULL)
+				 NAG_PROMPT, history_edit_nag, -1)) != NULL)
 		    strncpy(game[gindex].history[annotate].comment, tmp,
 			    sizeof(game[gindex].history[annotate].comment));
 		update_history();
@@ -519,13 +519,6 @@ blah:
 					"Resume game from history?")) != 'y')
 			    break;
 
-			tmp = tmpnam(NULL);
-
-			if (mkfifo(tmp, 0600) == -1) {
-			    message(ERROR, ANYKEY, "Could not create fifo");
-			    break;
-			}
-
 			if (!engine_initialized) {
 			    if (start_chess_engine() < 0)
 				break;
@@ -534,24 +527,24 @@ blah:
 			oldhistorytotal = game[gindex].htotal;
 			game[gindex].htotal = game[gindex].hindex;
 
-			if (save_pgn(tmp, game[gindex].pgn, 1)) {
+			if (save_pgn(NULL, game[gindex].pgn, 1)) {
 			    message(ERROR, ANYKEY, "%s", strerror(errno));
 			    game[gindex].htotal = oldhistorytotal;
 			    break;
 			}
-
-			update_history();
 		    }
 
 		    browse_history = 0;
+		    status.engine = ENGINE_READY;
+
+		    update_all();
+		    break;
 
 		    if (status.bw != status.turn) {
 			SEND_TO_ENGINE("go\n");
 			break;
 		    }
 		    
-		    status.engine = ENGINE_READY;
-		    update_status();
 		    cancel_manual_mode = 1;
 		    break;
 		}
@@ -753,6 +746,7 @@ blah:
 		selected_x = cursor_x;
 		selected_y = cursor_y;
 		break;
+	    case '\015':
 	    case '\n':
 		if (browse_history)
 		    break;
