@@ -1,3 +1,19 @@
+2002-12-19 Thursday 13:19  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: common.h (1.22), history.c (1.18), rcfile.c (1.7):
+	
+	Added configuration parameter "historyagony" to show agony when
+	browsing move history.
+
+2002-12-19 Thursday 13:14  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.17):
+	
+	Dont attempt to redraw the board when the history is at the start
+	or end and wanting to go past.
+	
+	Dont show agony when browsing history.
+
 2002-12-19 Thursday 12:08  Ben Kibbey <bjk@arbornet.org>
 
 	* src/pgn.c (1.28):
