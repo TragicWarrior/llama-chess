@@ -1,4 +1,4 @@
-/* $Id: help.h,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: help.h,v 1.2 2002-12-05 20:49:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -25,10 +25,10 @@ const char *helptext[] = {
     "RIGHT/; - cursor right/forward   v - version information",
     "                                 q - quit",
     "SPACE   - select piece           w - switch sides",
-    "ENTER   - move selected piece    s - save game",
-    "ESC     - cancel selected piece  r - resume a previously saved game",
+    "ENTER   - move selected piece    s - save game in PGN format",
+    "ESC     - cancel selected piece  r - resume a PGN game",
     "                                 u - take back previous move",
-    "                                 h - toggle movement history",
+    "                                 h - toggle viewing of movement history",
     "                                 g - force engine to make next move",
     "                                 b - cycle through book modes",
     "                                 i - PGN information"
