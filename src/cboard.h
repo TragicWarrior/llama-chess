@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.25 2002-12-20 00:31:37 bjk Exp $ */
+/* $Id: cboard.h,v 1.26 2002-12-20 00:51:15 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -61,7 +61,7 @@ const char *mainhelp[] = {
     "  SPACE - select piece            g - force engine to make next move",
     "  ENTER - commit selected piece   h - toggle history mode",
     "    ESC - cancel selected piece   a - annotate previous move",
-    " ",
+    "                                v/V - view history annotations",
     "      N - new game",
     "      r - resume a saved game",
     "      i - show PGN game tags",
