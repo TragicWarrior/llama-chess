@@ -11,3 +11,5 @@ The first menu item isn't initially highlighted.
 Linux: Resuming a game specified on the command line is broken and the cursor
 needs moving to update the pieces (sometimes). Won't do it on Debian so I'm
 guessing it's RedHat specific.
+
+The 'draw' game result isn't recognized.
