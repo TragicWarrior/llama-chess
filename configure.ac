@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.17 2003-02-05 16:41:35 bjk Exp $
+dnl $Id: configure.ac,v 1.18 2003-02-07 19:27:39 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.6, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -63,8 +63,8 @@ AH_TOP([/* Default internet chess server port. */
 AH_TOP([/* Default internet chess server username. */
 #define DEFAULT_ICS_USER "guest"])
 
-AH_TOP([/* Default chess engine command and arguments. */
-#define DEFAULT_ENGINE_CMD "gnuchess xboard"])
+AH_TOP([/* Default chess engine. 0=gnuchess, 1=crafty. */ 
+#define DEFAULT_ENGINE 0])
 
 AC_DEFUN([AC_DEBUG],
 [
@@ -82,6 +82,25 @@ AC_DEFUN([AC_DEBUG],
 
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debugging.]),
     AC_DEBUG([$enableval]), AC_DEBUG)
+
+dnl Ripped from the screen package.
+AC_MSG_CHECKING([pty ranges])
+if test -d /dev/ptym; then
+    pdir='/dev/ptym'
+else
+    pdir='/dev'
+fi
+
+ptys=`echo $pdir/pty??`
+
+if test "$ptys" != "$pdir/pty??" ; then
+    p0=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\).$/\1/g' | sort -u | tr -d '\012'`
+    p1=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\)$/\1/g'  | sort -u | tr -d '\012'`
+
+AC_DEFINE_UNQUOTED([PTY_MAJOR], "$p0", [Pseudo tty ranges.])
+AC_DEFINE_UNQUOTED([PTY_MINOR], "$p1", [Pseudo tty ranges.])
+AC_MSG_RESULT($p0 $p1)
+fi
 
 AM_WITH_DMALLOC
 
