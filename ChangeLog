@@ -1,3 +1,9 @@
+2002-12-19 Thursday 11:56  Ben Kibbey <bjk@arbornet.org>
+
+	* etc/: agony.data (1.1), nag.data (1.1):
+	
+	Initial commit.
+
 2002-12-19 Thursday 11:55  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.36), cboard.h (1.24), common.h (1.21), engine.c
