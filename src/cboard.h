@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.18 2002-12-16 14:10:01 bjk Exp $ */
+/* $Id: cboard.h,v 1.19 2002-12-16 17:50:25 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -97,3 +97,4 @@ void history_previous(int);
 void init_history(void);
 void parse_rcfile(const char *);
 void history_edit_nag(void);
+void view_annotation(int);

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.25 2002-12-16 14:10:01 bjk Exp $ */
+/* $Id: cboard.c,v 1.26 2002-12-16 17:50:25 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -152,7 +152,7 @@ void draw_board()
 
 void parse_piece_command()
 {
-    char str[MAX_MOVE_LEN] = {0};
+    char str[MAX_PGN_MOVE_LEN] = {0};
 
     snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[sp.col - 1], sp.row,
 	    x_grid_chars[sp.destcol - 1], sp.destrow);
@@ -161,11 +161,39 @@ void parse_piece_command()
     return;
 }
 
+static char *book_method(int method)
+{
+    char *book;
+
+    switch (method) {
+	case -1:
+	    book = UNKNOWN;
+	    break;
+	case BOOK_BEST:
+	    book = "best";
+	    break;
+	case BOOK_WORST:
+	    book = "worst";
+	    break;
+	case BOOK_PREFER:
+	    book = "prefer";
+	    break;
+	case BOOK_RANDOM:
+	    book = "random";
+	    break;
+	default:
+	    book = "disabled";
+	    break;
+    }
+
+    return book;
+}
+
 void update_status()
 {
     int w = STATUS_WIDTH - 12;
     int i;
-    char *book, *engine;
+    char *engine;
     char buf[w + 1];
 
     switch (status.engine) {
@@ -191,28 +219,8 @@ void update_status()
     mvwaddstr(statusw, 2, 11, engine);
     wattroff(statusw, ENGINE_STATUS);
 
-    switch (status.book_method) {
-	case -1:
-	    book = UNKNOWN;
-	    break;
-	case BOOK_BEST:
-	    book = "best";
-	    break;
-	case BOOK_WORST:
-	    book = "worst";
-	    break;
-	case BOOK_PREFER:
-	    book = "prefer";
-	    break;
-	case BOOK_RANDOM:
-	    book = "random";
-	    break;
-	default:
-	    book = "disabled";
-	    break;
-    }
-
-    mvwprintw(statusw, 3, 1, "    Book: %-*s", w, book);
+    mvwprintw(statusw, 3, 1, "    Book: %-*s", w,
+	    book_method(status.book_method));
 
     mvwprintw(statusw, 4, 1, "    Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
@@ -237,13 +245,12 @@ void update_status()
 
 void update_history()
 {
-    char buf[16];
+    char buf[HISTORY_WIDTH];
     struct history h = {{0},{0}};
 
     if (game[gindex].htotal)
-	snprintf(buf, sizeof(buf), "%u%s of %u", game[gindex].hindex,
-		(game[gindex].history[game[gindex].hindex].comment[0]) ?
-		"*" : "", game[gindex].htotal);
+	snprintf(buf, sizeof(buf), "%u of %u", game[gindex].hindex,
+		game[gindex].htotal);
     else
 	strncpy(buf, UNKNOWN, sizeof(buf));
 
@@ -251,14 +258,16 @@ void update_history()
 
     get_history_by_index(game[gindex].hindex, &h);
 
-    mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, 
-	    (h.move[0]) ? h.move : NONE);
+    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : NONE,
+	    (h.comment[0] || h.nag[0]) ? "(press 'v')" : "");
+    mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, buf);
 
     if (get_history_by_index(game[gindex].hindex - 1, &h))
 	h.move[0] = 0;
 
-    mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13,
-	    (h.move[0]) ? h.move : NONE);
+    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : NONE,
+	    (h.comment[0] || h.nag[0]) ? "(press 'V')" : "");
+    mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13, buf);
     return;
 }
 
@@ -384,6 +393,12 @@ static int start_chess_engine()
     return enginepid;
 }
 
+static void set_engine_defaults()
+{
+    SEND_TO_ENGINE("\nbook %s\n", book_method(config.book_method));
+    return;
+}
+
 void game_loop()
 {
     int rrow = 8, rcol = 1;
@@ -454,6 +469,12 @@ blah:
 	    int annotate;
 	    int oldhistorytotal;
 
+	    case 'v':
+	        view_annotation(game[gindex].hindex);
+		break;
+	    case 'V':
+	        view_annotation(game[gindex].hindex - 1);
+		break;
 	    case '>':
 		if (gindex + 1 == gtotal)
 		    gindex = 0;
@@ -481,11 +502,15 @@ blah:
 		snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATE_HISTORY,
 			game[gindex].history[annotate].move);
 
-		if ((tmp = get_input(buf, 
-				game[gindex].history[annotate].comment, 0, 0, 
-				 NAG_PROMPT, history_edit_nag, -1)) != NULL)
+		tmp = get_input(buf, game[gindex].history[annotate].comment, 
+			0, 0, NAG_PROMPT, history_edit_nag, -1);
+
+		if (tmp)
 		    strncpy(game[gindex].history[annotate].comment, tmp,
-			    sizeof(game[gindex].history[annotate].comment));
+			sizeof(game[gindex].history[annotate].comment));
+		else
+		    game[gindex].history[annotate].comment[0] = 0;
+
 		update_history();
 		break;
 	    case 'i':
@@ -642,6 +667,7 @@ blah:
 		}
 
 		SEND_TO_ENGINE("\nnew\n");
+		set_engine_defaults();
 		update_all();
 		wtimeout(boardw, 70);
 		break;
@@ -841,6 +867,7 @@ static void set_defaults()
     status.engine = ENGINE_OFFLINE;
 
     config.history_jump = 5;
+    config.book_method = BOOK_RANDOM;
     return;
 }
 
