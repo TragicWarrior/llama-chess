@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.72 2003-01-29 00:53:26 bjk Exp $ */
+/* $Id: cboard.c,v 1.73 2003-01-29 17:03:41 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -405,14 +405,18 @@ void update_history_window()
 {
     char buf[HISTORY_WIDTH];
     struct history h = {{0},NULL,{0}};
-    int index = game[gindex].hindex;
+    int index, total;
 
     index = (game[gindex].hindex + 1) / 2;
 
+    if ((game[gindex].htotal % 2))
+	total = (game[gindex].htotal + 1) / 2;
+    else
+	total = game[gindex].htotal / 2;
+
     if (game[gindex].htotal)
-	snprintf(buf, sizeof(buf), "%u %s %u%s", index, N_OF_N_STR,
-		game[gindex].htotal / 2, (movestep == 1) 
-		? HISTORY_MOVE_STEP : "");
+	snprintf(buf, sizeof(buf), "%u %s %u%s", index, N_OF_N_STR, total,
+		(movestep == 1) ? HISTORY_MOVE_STEP : "");
     else
 	strncpy(buf, UNAVAILABLE, sizeof(buf));
 
@@ -759,21 +763,17 @@ static int find_move_exp(const char *str, int which, int count)
     int i;
     int ret;
     regex_t r;
-    int flags = REG_EXTENDED|REG_NOSUB;
     char errbuf[255];
     int incr;
     int found;
 
-    if (config.ignorecase)
-	flags |= REG_ICASE;
-
-    if ((ret = regcomp(&r, str, flags)) != 0) {
+    if ((ret = regcomp(&r, str, REG_EXTENDED|REG_NOSUB)) != 0) {
 	regerror(ret, &r, errbuf, sizeof(errbuf));
 	message(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
 	return -1;
     }
 
-    incr = (which == -1) ? -(1) : 1;
+    incr = (which == 0) ? -(1) : 1;
 
     for (i = game[gindex].hindex + incr, found = 0; ; i += incr) {
 	if (i == game[gindex].hindex)
@@ -789,7 +789,7 @@ static int find_move_exp(const char *str, int which, int count)
 	if (ret == 0) {
 	    if (count == ++found) {
 		regfree(&r);
-		return i;
+		return i + 1;
 	    }
 	}
 	else {
@@ -936,15 +936,11 @@ void game_loop()
 			break;
 
 		    strncpy(regexp, tmp, sizeof(regexp));
+		}
 
-		    if ((n = find_move_exp(tmp, 0, (count) ? count : 1)) == -1)
-			break;
-		}
-		else {
-		    if ((n = find_move_exp(regexp, (c == '}') ? 1 : -1,
-				    (count) ? count : 1)) == -1)
-			break;
-		}
+		if ((n = find_move_exp(regexp, (c == '{') ? 0 : 1,
+				(count) ? count : 1)) == -1)
+		    break;
 
 		game[gindex].hindex = n;
 		parse_history_move(board, game[gindex].hindex);
@@ -1113,6 +1109,8 @@ void game_loop()
 		if (browse_history || status.engine == ENGINE_THINKING)
 		    break;
 
+		status.engine = ENGINE_THINKING;
+		update_status_window();
 		SEND_TO_ENGINE("go\n");
 		break;
 	    case 'b':
