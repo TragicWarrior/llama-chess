@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.18 2002-12-17 18:42:53 bjk Exp $ */
+/* $Id: common.h,v 1.19 2002-12-17 23:25:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -82,10 +82,8 @@ enum {
 struct {
     int engine;
     int bw;
-    int book_method;
     char *notify;
     int turn;
-    int depth;
 } status;
 
 struct pgndata {

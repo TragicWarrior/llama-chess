@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.33 2002-12-17 22:57:45 bjk Exp $ */
+/* $Id: cboard.c,v 1.34 2002-12-17 23:25:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -222,16 +222,17 @@ void update_status()
     mvwaddstr(statusw, 3, 11, engine);
     wattroff(statusw, ENGINE_STATUS);
 
-    mvwprintw(statusw, 4, 1, "   Depth: %-*i", w, status.depth);
+    mvwprintw(statusw, 4, 1, "   Depth: %-*i", w, config.engine_depth);
 
     mvwprintw(statusw, 5, 1, "    Book: %-*s", w,
-	    book_method(status.book_method));
+	    book_method(config.book_method));
 
     mvwprintw(statusw, 6, 1, "    Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
-    mvwprintw(statusw, 7, 1, "Captures: %i white  %i black",
-	    game[gindex].wcaptures, game[gindex].bcaptures);
+    snprintf(buf, sizeof(buf), "%i white  %i black", game[gindex].wcaptures,
+	    game[gindex].bcaptures);
+    mvwprintw(statusw, 7, 1, "Captures: %-*s", w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -511,16 +512,16 @@ blah:
 		SEND_TO_ENGINE("go\n");
 		break;
 	    case 'b':
-		if (status.book_method == -1 || status.engine ==
+		if (config.book_method == -1 || status.engine ==
 			ENGINE_THINKING)
 		    break;
 
-		if (status.book_method + 1 >= BOOK_MAX)
-		    status.book_method = 0;
+		if (config.book_method + 1 >= BOOK_MAX)
+		    config.book_method = 0;
 		else
-		    status.book_method++;
+		    config.book_method++;
 
-		SEND_TO_ENGINE("book %s\n", book_methods[status.book_method]);
+		SEND_TO_ENGINE("book %s\n", book_methods[config.book_method]);
 		break;
 	    case 'h':
 		if (browse_history) {

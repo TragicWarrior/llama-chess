@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.14 2002-12-17 21:28:00 bjk Exp $ */
+/* $Id: engine.c,v 1.15 2002-12-17 23:25:31 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -273,6 +273,7 @@ void parse_engine_output(char *str)
 	/* This is needed when leaving history mode and the turn is now black
 	 * since we just went. This cancels 'manual'.
 	 */
+	/* FIXME */
 	if (cancel_manual_mode) {
 	    SEND_TO_ENGINE("go\n");
 	    cancel_manual_mode = 0;
@@ -331,7 +332,7 @@ engine_move:
 	tmp = strsep(&str, "Search to a depth of ");
 	tmp += 21;
 	tmp = trim(tmp);
-	status.depth = atoi(tmp);
+	config.engine_depth = atoi(tmp);
     }
 
     /* 'switch' command. */
@@ -356,17 +357,17 @@ engine_move:
     }
 
     if ((tmp = strstr(str, " No book found.")) != NULL)
-	status.book_method = -1; 
+	config.book_method = -1; 
     else if ((tmp = strstr(str, "book now off.")) != NULL)
-	status.book_method = BOOK_OFF;
+	config.book_method = BOOK_OFF;
     else if ((tmp = strstr(str, "book now on.")) != NULL)
-	status.book_method = BOOK_PREFER;
+	config.book_method = BOOK_PREFER;
     else if ((tmp = strstr(str, "book now best.")) != NULL)
-	status.book_method = BOOK_BEST;
+	config.book_method = BOOK_BEST;
     else if ((tmp = strstr(str, "book now worst.")) != NULL)
-	status.book_method = BOOK_WORST;
+	config.book_method = BOOK_WORST;
     else if ((tmp = strstr(str, "book now random.")) != NULL)
-	status.book_method = BOOK_RANDOM;
+	config.book_method = BOOK_RANDOM;
 
     return;
 }
