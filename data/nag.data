@@ -1,24 +1,24 @@
-good move
-poor move
-very good move
-very poor move
-speculative move
-questionable move
-forced move
-singular move
-worst move
-drawish position
-equal chances, quiet position
-equal chances, active position
-unclear position
-White has a slight advantage
-Black has a slight advantage
-White has a moderate advantage
-Black has a moderate advantage
-White has a decisive advantage
-Black has a decisive advantage
-White has a crushing advantage
-Black has a crushing advantage
+Good move (!)
+Poor move (?)
+Excellent move (!!)
+Blunder (??)
+Interesting move (!?)
+Dubious move (?!)
+Forced move
+Singular move; no reasonable alternatives
+Worst move
+Drawish position (=)
+Equal chances, quiet position (=)
+Equal chances, active position (=)
+Unclear position (~)
+White has a slight advantage (+=)
+Black has a slight advantage (=+)
+White has a moderate advantage (+/-)
+Black has a moderate advantage (-/+)
+White has a decisive advantage (+-)
+Black has a decisive advantage (-+)
+White has a crushing advantage (+-)
+Black has a crushing advantage (-+)
 White is in zugzwang
 Black is in zugzwang
 White has a slight space advantage
@@ -27,12 +27,12 @@ White has a moderate space advantage
 Black has a moderate space advantage
 White has a decisive space advantage
 Black has a decisive space advantage
-White has a slight time
-Black has a slight time
-White has a moderate time
-Black has a moderate time
-White has a decisive time
-Black has a decisive time
+White has a slight time (development) advantage
+Black has a slight time (development) advantage
+White has a moderate time (development) advantage
+Black has a moderate time (development) advantage
+White has a decisive time (development) advantage
+Black has a decisive time (development) advantage
 White has the initiative
 Black has the initiative
 White has a lasting initiative

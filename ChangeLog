@@ -1,3 +1,16 @@
+2002-12-30 Monday 09:25  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: common.h (1.30), pgn.c (1.38):
+	
+	Rewritten PGN parser supports !? ! etc.. NAG tags, and is just
+	better with beginnings of SAN move support.
+
+2002-12-28 Saturday 16:07  Ben Kibbey <bjk@arbornet.org>
+
+	* src/message.c (1.6):
+	
+	Fix for line length calculation.
+
 2002-12-27 Friday 09:36  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.45), cboard.h (1.32), colors.c (1.3), colors.h
