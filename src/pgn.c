@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.70 2003-01-31 19:51:36 bjk Exp $ */
+/* $Id: pgn.c,v 1.71 2003-01-31 20:47:38 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1132,9 +1132,6 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	filename = buf;
     }
 
-    if (!isfifo && saveindex == -1)
-	strncpy(pgnfile, filename, sizeof(pgnfile));
-
     if (!isfifo)
 	command = compression_cmd(filename, 0);
 
@@ -1192,6 +1189,9 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	pclose(fp);
     else
 	fclose(fp);
+
+    if (!isfifo && saveindex == -1)
+	strncpy(pgnfile, filename, sizeof(pgnfile));
 
     return 0;
 }

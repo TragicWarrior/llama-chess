@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.10 2003-01-24 20:28:24 bjk Exp $ */
+/* $Id: misc.c,v 1.11 2003-01-31 20:47:38 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -175,3 +175,34 @@ void DUMP(const char *fmt, ...)
     return;
 }
 #endif
+
+char *str_etc(const char *str, int maxlen, int rev)
+{
+    int len = strlen(str);
+    static char buf[80], *p = buf;
+    int i;
+
+    strncpy(buf, str, sizeof(buf));
+
+    if (len > maxlen) {
+	if (rev) {
+	    p = buf;
+	    *p++ = '.';
+	    *p++ = '.';
+	    *p++ = '.';
+
+	    for (i = 0; i < maxlen + 3; i++)
+		*p++ = buf[(len - maxlen) + i + 3]; 
+	}
+	else {
+	    p = buf + maxlen - 4;
+	    *p++ = '.';
+	    *p++ = '.';
+	    *p++ = '.';
+	}
+
+	*p = '\0';
+    }
+
+    return buf;
+}
