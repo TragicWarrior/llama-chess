@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.63 2003-01-22 20:04:49 bjk Exp $ */
+/* $Id: pgn.c,v 1.64 2003-01-23 21:48:12 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -234,7 +234,7 @@ void init_board(BOARD b)
 	    }
 
 	    b[row][col].icon = (row < 2) ? c : toupper(c);
-	    b[row][col].valid = 0;
+	    b[row][col].valid = b[row][col].movecount = 0;
 	}
     }
 

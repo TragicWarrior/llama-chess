@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.41 2003-01-22 20:04:49 bjk Exp $ */
+/* $Id: common.h,v 1.42 2003-01-23 21:48:12 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -77,6 +77,7 @@ enum {
 typedef struct board_matrix {
     chtype icon;
     short valid;
+    short movecount;
 } BOARD[8][8];
 
 enum { 

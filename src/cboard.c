@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.60 2003-01-22 20:04:49 bjk Exp $ */
+/* $Id: cboard.c,v 1.61 2003-01-23 21:48:12 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -75,7 +75,7 @@ char *random_agony()
     return agony[random() % index];
 }
 
-void draw_board(BOARD b)
+void draw_board(BOARD b, int crow, int ccol)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -88,7 +88,7 @@ void draw_board(BOARD b)
 
 	for (col = 0; col < maxx; col++) {
 	    int attrs = CP_BOARD_WHITE;
-	    chtype piece;
+	    chtype piece, movecount = 0;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -160,6 +160,13 @@ void draw_board(BOARD b)
 
 		    if (config.validmoves && b[brow][bcol].valid) {
 			attrs = CP_BOARD_MOVES;
+
+			/* FIXME add attrs here. (fg and bg are aquired) */
+			if (b[brow][bcol].movecount &&
+				(brow != crow && bcol != ccol)) {
+			    if (b[brow][bcol].movecount > 1)
+				movecount = b[brow][bcol].movecount + '0';
+			}
 		    }
 
 		    if (row == ROWTOMATRIX(crow) && col == COLTOMATRIX(ccol)) {
@@ -192,7 +199,8 @@ void draw_board(BOARD b)
 				piece | attrs : ' ' | attrs);
 		    }
 
-		    waddch(boardw, ' ');
+		    waddch(boardw,
+			    (movecount && row != maxy - 1) ? movecount : ' ');
 		    wattroff(boardw, attrs);
 		    col += 2;
 		    bcol++;
@@ -557,16 +565,127 @@ static void delete_game(int which)
     return;
 }
 
+/* FIXME dont show out of reach counts. Diagonals. */
+static void number_valid_moves(BOARD b, int srow, int scol)
+{
+    int row, col;
+    int count;
+
+    for (row = srow + 1, col = scol, count = 1; VALIDFILE(row); row++) {
+	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
+	    continue;
+
+	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
+    }
+
+    for (row = srow - 1, col = scol, count = 1; VALIDFILE(row); row--) {
+	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
+	    continue;
+
+	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
+    }
+
+    for (col = scol + 1, row = srow, count = 1; VALIDFILE(col); col++) {
+	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
+	    continue;
+
+	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
+    }
+
+    for (col = scol - 1, row = srow, count = 1; VALIDFILE(col); col--) {
+	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
+	    continue;
+
+	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
+    }
+
+    return;
+}
+
+static void get_valid_cursor(BOARD b, int which, int count, int *crow,
+	int *ccol, int minr, int maxr, int minc, int maxc)
+{
+    int row, col;
+    int incr, cincr;
+
+    if (which == UP || which == RIGHT)
+	incr = 1;
+    else
+	incr = -(1);
+
+    switch (which) {
+	case UP:
+	case DOWN:
+	    if (count > 1) {
+		if (which == UP)
+		    *crow += count;
+		else
+		    *crow -= count;
+	    }
+
+	    for (row = *crow + incr, col = *ccol; VALIDFILE(row); row += incr) {
+		if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
+		    continue;
+
+		*crow = row;
+		goto done;
+	    }
+
+	    break;
+	case RIGHT:
+	case LEFT:
+	    if (count > 1) {
+		if (which == RIGHT)
+		    *ccol += count;
+		else
+		    *ccol -= count;
+	    }
+
+	    for (col = *ccol + incr, row = *crow; VALIDFILE(col); col += incr) {
+		if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
+		    continue;
+
+		*ccol = col;
+		goto done;
+	    }
+	    break;
+	default:
+	    break;
+    }
+
+    if (*ccol < sp.col || (which == DOWN || which == LEFT))
+	cincr = -(1);
+    else
+	cincr = 1;
+
+    if (*ccol < sp.col && (which == DOWN || which == LEFT))
+	cincr = 1;
+
+    for (row = *crow + incr; VALIDFILE(row); row += incr) {
+	for (col = *ccol + cincr; VALIDFILE(col); col += cincr) {
+	    if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
+		continue;
+
+	    *crow = row;
+	    *ccol = col;
+	    goto done;
+	}
+    }
+
+done:
+    number_valid_moves(board, *crow, *ccol);
+    return;
+}
+
 void game_loop()
 {
     int error_recover = 0;
     int pushkey = 0;
     int count = 0;
+    int crow = 8, ccol = 1;
 
     gactive = gindex;
     gindex = gtotal - 1;
-    crow = 8;
-    ccol = 1;
 
     if (pgnfile[0])
 	init_history(board);
@@ -585,6 +704,7 @@ void game_loop()
 	char buf[78];
 	char tfile[FILENAME_MAX];
 	struct tags *tmptag = NULL;
+	int minr, maxr, minc, maxc;
 
 	if (engine_initialized) {
 	    tv.tv_sec = 0;
@@ -657,7 +777,7 @@ void game_loop()
 	}
 
 	error_recover = 0;
-	draw_board(board);
+	draw_board(board, crow, ccol);
 	wmove(boardw, ROWTOMATRIX(crow), COLTOMATRIX(ccol));
 	update_panels();
 	doupdate();
@@ -797,6 +917,7 @@ void game_loop()
 			    break;
 		    }
 
+		    /*
 		    if (!engine_initialized) {
 			if (start_chess_engine() < 0)
 			    break;
@@ -804,6 +925,7 @@ void game_loop()
 			pushkey = 'h';
 			break;
 		    }
+		    */
 
 		    pushkey = 0;
 		    oldhistorytotal = game[gindex].htotal;
@@ -999,6 +1121,12 @@ void game_loop()
 		    break;
 		}
 
+		if (sp.icon && config.validmoves) {
+		    get_valid_cursor(board, UP, (count) ? count : 1, 
+			    &crow, &ccol, minr, maxr, minc, maxc);
+		    break;
+		}
+
 		if (count) {
 		    crow += count;
 		    pushkey = '\n';
@@ -1016,6 +1144,12 @@ void game_loop()
 		    history_previous(board, (count) ?
 			    config.history_jump * count : config.history_jump);
 		    update_all();
+		    break;
+		}
+
+		if (sp.icon && config.validmoves) {
+		    get_valid_cursor(board, DOWN, (count) ? count : 1, 
+			    &crow, &ccol, minr, maxr, minc, maxc);
 		    break;
 		}
 
@@ -1038,6 +1172,12 @@ void game_loop()
 		    break;
 		}
 
+		if (sp.icon && config.validmoves) {
+		    get_valid_cursor(board, LEFT, (count) ? count : 1, 
+			    &crow, &ccol, minr, maxr, minc, maxc);
+		    break;
+		}
+
 		if (count) {
 		    ccol -= count;
 		    pushkey = '\n';
@@ -1054,6 +1194,12 @@ void game_loop()
 		if (browse_history) {
 		    history_next(board, (count) ? count : 1);
 		    update_all();
+		    break;
+		}
+
+		if (sp.icon && config.validmoves) {
+		    get_valid_cursor(board, RIGHT, (count) ? count : 1, 
+			    &crow, &ccol, minr, maxr, minc, maxc);
 		    break;
 		}
 
@@ -1087,12 +1233,14 @@ void game_loop()
 		if (browse_history)
 		    break;
 
+		/*
 		if (status.engine != ENGINE_READY || !engine_initialized) {
 		    if (start_chess_engine() < 0) {
 			sp.icon = 0;
 			break;
 		    }
 		}
+		*/
 
 		if (sp.icon || status.engine == ENGINE_THINKING) {
 		    beep();
@@ -1117,9 +1265,11 @@ void game_loop()
 		sp.row = crow;
 		sp.col = ccol;
 
-		if (config.validmoves)
+		if (config.validmoves) {
 		    get_valid_moves(board, piece_to_int(sp.icon), sp.row, 
-			    sp.col);
+			    sp.col, &minr, &maxr, &minc, &maxc);
+		    number_valid_moves(board, sp.row, sp.col);
+		}
 
 		break;
 	    case '\015':

@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.12 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: move.c,v 1.13 2003-01-23 21:48:12 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -836,11 +836,13 @@ void reset_valid_moves(BOARD b)
     return;
 }
 
-void get_valid_moves(BOARD b, int p, int srow, int scol)
+void get_valid_moves(BOARD b, int p, int srow, int scol, int *minr, int *maxr,
+	int *minc, int *maxc)
 {
     int row, col;
 
     validate_move = 1;
+    *minr = *maxr = *minc = *maxc = 1;
 
     for (row = 1; VALIDFILE(row); row++) {
 	for (col = 1; VALIDFILE(col); col++) {
@@ -856,6 +858,18 @@ void get_valid_moves(BOARD b, int p, int srow, int scol)
 		continue;
 
 	    b[ROWTOBOARD(row)][COLTOBOARD(col)].valid = 1;
+
+	    if (row < *minr)
+		*minr = row;
+
+	    if (row > *maxr)
+		*maxr = row;
+
+	    if (col < *minc)
+		*minc = col;
+
+	    if (col > *maxc)
+		*maxc = col;
 	}
     }
 

@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.44 2003-01-22 20:04:49 bjk Exp $ */
+/* $Id: cboard.h,v 1.45 2003-01-23 21:48:12 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -32,6 +32,10 @@
 #define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
 #define HISTORY_WIDTH	(COLS - BW_WIDTH)
 
+enum {
+    UP, DOWN, LEFT, RIGHT
+};
+
 /* The order must match the BOOK_... enumeration on common.h. */
 const char *book_methods[] = {
     BOOK_OFF_STR, BOOK_PREFER_STR, BOOK_BEST_STR, BOOK_WORST_STR,
@@ -48,7 +52,6 @@ WINDOW *historyw;
 PANEL *historyp;
 
 BOARD board;
-int crow, ccol; /* Cursor position. */
 int quit;
 int gactive;
 char **agony;
@@ -110,7 +113,7 @@ int piece_to_int(int);
 int int_to_piece(int);
 void free_tag_data(struct tags *, int);
 void free_historydata(struct history *, int);
-void get_valid_moves(BOARD, int, int, int);
+void get_valid_moves(BOARD, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
 int parse_move_text(BOARD, char *, int);
 
