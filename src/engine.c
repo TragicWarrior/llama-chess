@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.17 2002-12-18 17:06:39 bjk Exp $ */
+/* $Id: engine.c,v 1.18 2002-12-18 17:24:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -72,6 +72,13 @@ void send_to_engine(const char *format, ...)
 		if (n == -1) {
 		    if (errno == EAGAIN)
 			continue;
+
+		    if (kill(enginepid, 0) == -1) {
+			message(ERROR, ANYKEY, "Could not write to engine. "
+				"Process no longer exists.");
+			engine_initialized = 0;
+			return;
+		    }
 
 		    message(ERROR, ANYKEY, "Attempt #%i. write(): %s", ++try,
 			    strerror(errno));
@@ -208,6 +215,19 @@ void set_engine_defaults()
 {
     SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
     SEND_TO_ENGINE("depth %i\n", config.engine_depth);
+    return;
+}
+
+void stop_engine()
+{
+    SEND_TO_ENGINE("quit\n");
+
+    if (kill(enginepid, 0) != -1)
+	kill(enginepid, SIGTERM);
+
+    if (kill(enginepid, 0) != -1)
+	kill(enginepid, SIGKILL);
+
     return;
 }
 

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.34 2002-12-17 23:25:31 bjk Exp $ */
+/* $Id: cboard.c,v 1.35 2002-12-18 17:24:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -805,6 +805,11 @@ void usage(const char *pn)
 void catch_signal(int which)
 {
     switch (which) {
+	case SIGINT:
+	    stop_engine();
+	    endwin();
+	    exit(EXIT_FAILURE);
+	    break;
 	case SIGPIPE:
 	    if (quit)
 		break;
@@ -901,6 +906,7 @@ int main(int argc, char *argv[])
     signal(SIGPIPE, catch_signal);
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
+    signal(SIGINT, catch_signal);
 
     if ((opt = parse_pgn_file(pgnfile)) != 0) {
 	if (opt > 0)
@@ -948,8 +954,7 @@ int main(int argc, char *argv[])
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH);
 
     game_loop();
-
-    SEND_TO_ENGINE("quit\n");
+    stop_engine();
 
     endwin();
     free_game_data();
