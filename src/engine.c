@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.16 2002-12-18 14:48:31 bjk Exp $ */
+/* $Id: engine.c,v 1.17 2002-12-18 17:06:39 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -248,27 +248,23 @@ void parse_engine_output(char *str)
 {
     char *tmp;
     char move[MAX_PGN_MOVE_LEN + 1];
+    int count;
 
-    /* Human move. Add it to the move history (if not browsing). */
-    if (!browse_history) {
-	if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) == 1) {
-	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		    &game[gindex].htotal, move);
+    /* Human move. Add it to the move history. */
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count)
+	    == 1) {
+	add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		&game[gindex].htotal, move);
 
-	    if (status.turn == WHITE)
-		status.turn = BLACK;
-	    else if (status.turn == BLACK)
-		status.turn = WHITE;
+	if (status.turn == WHITE)
+	    status.turn = BLACK;
+	else if (status.turn == BLACK)
+	    status.turn = WHITE;
 
-	    status.engine = ENGINE_THINKING;
-	    move_piece(move);
-	    sp.icon = 0;
-
-	    /* This needs to be here in case the engine move text is bunched
-	     * up with the white move text.
-	     */
-	    goto engine_move;
-	}
+	status.engine = ENGINE_THINKING;
+	move_piece(move);
+	sp.icon = 0;
+	str += count;
 
 	/* This is needed when leaving history mode and the turn is now black
 	 * since we just went. This cancels 'manual'.
@@ -278,30 +274,27 @@ void parse_engine_output(char *str)
 	    SEND_TO_ENGINE("go\n");
 	    cancel_manual_mode = 0;
 	}
+
+	/* This needs to be here in case the engine move text is bunched
+	 * up with the white move text.
+	 */
+	goto engine_move;
     }
 
     /* Engine move. */
 engine_move:
-    /*
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-] ", move) 
-	    == 1) {
-    */
-    if ((tmp = strstr(str, "My move is: ")) != NULL) {
-	tmp += 12;
-	tmp = trim(tmp);
-
-	if (end_of_game(tmp))
-	    tmp[4] = 0;
-
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, 
+		&count) == 1) {
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, tmp);
+		&game[gindex].htotal, move);
 
 	if (status.turn == WHITE)
 	    status.turn = BLACK;
 	else if (status.turn == BLACK)
 	    status.turn = WHITE;
 
-	move_piece(tmp);
+	move_piece(move);
+	str += count;
 	RETURN;
     }
 
@@ -350,6 +343,7 @@ engine_move:
     /* Bad engine command or move. */
     if ((tmp = strstr(str, "Illegal move: ")) != NULL) {
 	status.notify = "Illegal move";
+	sp.icon = 0;
 	RETURN;
     }
 
