@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.4 2002-12-06 21:41:20 bjk Exp $ */
+/* $Id: common.h,v 1.5 2002-12-06 21:54:40 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -118,6 +118,7 @@ void parse_engine_output(char *);
 void help(void);
 void draw_window_title(WINDOW *, const char *, int);
 char *real_filename(char *);
+char *get_input(const char *, char *);
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
