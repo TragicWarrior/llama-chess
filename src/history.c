@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.14 2002-12-17 22:57:45 bjk Exp $ */
+/* $Id: history.c,v 1.15 2002-12-18 14:48:00 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -337,6 +337,18 @@ void move_piece(char *move)
 	    game[gindex].wcaptures++;
 
 	status.notify = random_agony();
+    }
+    else {
+	/* En Passant. */
+	if (row == 2 && board[srow][scol].icon == 'P') {
+	    board[row + 1][col].icon = '.';
+	    game[gindex].wcaptures++;
+	}
+
+	if (row == 5 && board[srow][scol].icon == 'p') {
+	    board[row - 1][col].icon = '.';
+	    game[gindex].bcaptures++;
+	}
     }
 
     board[row][col].icon = board[srow][scol].icon;
