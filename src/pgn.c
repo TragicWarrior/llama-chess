@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.59 2003-01-14 20:44:15 bjk Exp $ */
+/* $Id: pgn.c,v 1.60 2003-01-14 20:57:01 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1174,7 +1174,6 @@ char *country_codes(void *arg)
     int rows, cols;
     char *mbuf = NULL;
     char *tmp = NULL;
-    static char str[67];
 
     if (!ccodes) {
 	if (init_country_codes())
@@ -1183,7 +1182,7 @@ char *country_codes(void *arg)
 
     for (n = i = 0; ccodes[n].code[0]; n++, i++) {
 	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	mitems[i] = new_item(ccodes[n].code, ccodes[n].country);
+	mitems[i] = new_item(ccodes[n].country, ccodes[n].code);
     }
 
     mitems[i] = NULL;
@@ -1267,13 +1266,11 @@ char *country_codes(void *arg)
 		    menu_driver(menu, REQ_LAST_ITEM);
 		break;
 	    case '\n':
-		snprintf(str, sizeof(str), "%s %s",
-		    (char *)item_description(current_item(menu)),
-		    (char *)item_name(current_item(menu)));
+		tmp = (char *)item_description(current_item(menu));
 		goto done;
 		break;
 	    case KEY_ESCAPE:
-		str[0] = '\0'; 
+		tmp = NULL;
 		goto done;
 		break;
 	    default:
@@ -1302,7 +1299,7 @@ done:
     del_panel(panel);
     delwin(win);
     delwin(subw);
-    return (str[0]) ? str : NULL;
+    return tmp;
 }
 
 struct pgndata *edit_pgn_data(int edit)
