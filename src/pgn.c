@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.28 2002-12-19 17:08:38 bjk Exp $ */
+/* $Id: pgn.c,v 1.29 2002-12-19 18:32:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -332,8 +332,9 @@ int parse_pgn_file(const char *filename)
 	free_game_data();
 
     gtotal = gindex = 0;
+    browse_history = 1;
 
-    if (!filename[0]) {
+    if (!*filename) {
 	init_data();
 	return 0;
     }
@@ -351,10 +352,10 @@ int parse_pgn_file(const char *filename)
 	struct tm tp;
 
 	/* Standard file comment. This has nothing to do with annotations. */
-	if (tmp[0] == '%')
+	if (*tmp == '%')
 	    continue;
 
-	if (tag_section && tmp[0] == '\n') {
+	if (tag_section && *tmp == '\n') {
 	    tag_section = 0;
 	    continue;
 	}
@@ -363,7 +364,7 @@ int parse_pgn_file(const char *filename)
 	tmp = trim(tmp);
 
 	/* Must be a roster tag... */
-	if (tmp[0] == '[') {
+	if (*tmp == '[') {
 	    if (!tag_section) {
 		tag_section = 1;
 		game = Realloc(game, (gindex + 2) * sizeof(struct games));
@@ -399,11 +400,11 @@ int parse_pgn_file(const char *filename)
 		    }
 		}
 		else if (strcasecmp(token, "Round") == 0) {
-		    if (value[0] == '-' || value[0] == '?')
-			value[0] = 0;
+		    if (*value == '-' || *value == '?')
+			*value = 0;
 		}
 
-		if (!value[0])
+		if (!*value)
 		    strncpy(value, UNKNOWN, sizeof(value));
 
 		add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, 
@@ -413,7 +414,7 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
     
-	if (tmp[0] == 0)
+	if (!*tmp)
 	    continue;
 
 	/* Must be move text... */
@@ -422,13 +423,15 @@ int parse_pgn_file(const char *filename)
 
 	while (!feof(fp)) {
 	    char move[MAX_PGN_MOVE_LEN + 1];
-	    int moven;
+	    int moven, count;
+	    int c = 0;
 
-	    if (fscanf(fp, "%d. %7[a-zA-Z0-9+=#-] ", &moven, move) == 2) {
+	    if (fscanf(fp, "%d. %7[a-zA-Z0-9+=#-] %n", &moven, move, &count)
+		    == 2) {
 		add_move(fp, move);
 
 		/* Black. */
-		if (fscanf(fp, " %7[a-zA-Z0-9+=#-] ", move) == 1)
+		if (fscanf(fp, " %7[a-zA-Z0-9+=#-] %n", move, &offset) == 1)
 		    add_move(fp, move);
 
 		continue;
@@ -437,21 +440,30 @@ int parse_pgn_file(const char *filename)
 	    /* No move text, NAG or comments. Must be a game terminating
 	     * marker...
 	     */
-	    if ((tmp = fgets(buf, sizeof(buf), fp)) == NULL)
-		break;
+	    offset += count;
+	    fseek(fp, -(offset), SEEK_CUR);
+	    fread(buf, sizeof(char), offset, fp); 
 
-	    tmp = trim(tmp);
+	    while (!feof(fp)) {
+		if ((c = fgetc(fp)) == '\n')
+		    break;
+
+		buf[offset++] = c;
+	    }
+
+	    ungetc(c, fp);
+	    buf[offset] = 0;
 
 	    /* Normally this would match the "Result" tag, but not always.
 	     * So just leave it be (it's already defined from the tag parsing
 	     * section above).
 	     */
 	    for (i = 0; i < NARRAY(fancy_results); i++) {
-		if (strcmp(tmp, fancy_results[i].pgn) == 0)
+		if (strstr(buf, fancy_results[i].pgn) == 0)
 		    goto done;
 	    }
 
-	    fseek(fp, -(strlen(tmp) + 1), SEEK_CUR);
+	    fseek(fp, offset, SEEK_CUR);
 	    /*
 	       printf("parse error?\n");
 	       */

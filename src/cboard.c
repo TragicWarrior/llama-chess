@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.36 2002-12-19 16:55:12 bjk Exp $ */
+/* $Id: cboard.c,v 1.37 2002-12-19 18:32:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -836,7 +836,9 @@ void free_game_data()
 	free(game[i].history);
     }
 
+    /*
     free(game);
+    */
     return;
 }
 
