@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.47 2003-01-09 17:20:12 bjk Exp $ */
+/* $Id: pgn.c,v 1.48 2003-01-09 17:30:13 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -730,53 +730,57 @@ static void dumpgame(FILE *fp, struct games g, int isfifo)
     int i;
     int n, len = 0;
 
-    for (i = 0; g.pgn[i].token[0]; i++) {
-	struct tm tp;
+    if (!isfifo) {
+	for (i = 0; g.pgn[i].token[0]; i++) {
+	    struct tm tp;
 
-	if (strcmp(g.pgn[i].token, "Date") == 0) {
-	    if (strptime(g.pgn[i].value, TIME_FORMAT, &tp) != NULL)
-		strftime(g.pgn[i].value, sizeof(g.pgn[i].value), PGN_TIME_FORMAT,
-			&tp);
-	}
-	else if (strcmp(g.pgn[i].token, "Round") == 0) {
-	    if (strcmp(g.pgn[i].value, UNKNOWN) == 0) {
-		g.pgn[i].value[0] = '?';
-		g.pgn[i].value[1] = '\0';
+	    if (strcmp(g.pgn[i].token, "Date") == 0) {
+		if (strptime(g.pgn[i].value, TIME_FORMAT, &tp) != NULL)
+		    strftime(g.pgn[i].value, sizeof(g.pgn[i].value),
+			    PGN_TIME_FORMAT, &tp);
 	    }
-	}
-	else if (strcmp(g.pgn[i].token, "Result") == 0) {
-	    if (strcmp(g.pgn[i].value, UNKNOWN) == 0) {
-		g.pgn[i].value[0] = '*';
-		g.pgn[i].value[1] = '\0';
-	    }
-	    else {
-		for (n = 0; n < NARRAY(fancy_results); n++) {
-		    if (strcmp(g.pgn[i].value, fancy_results[n].fancy) == 0) {
-			strncpy(g.pgn[i].value, fancy_results[n].pgn, 
-				sizeof(g.pgn[i].value));
-			n = -1;
-			break;
-		    }
-		    else if (strcmp(g.pgn[i].value, fancy_results[n].pgn) == 0) {
-			n = -1;
-			break;
-		    }
-		}
-
-		if (n != -1) {
-		    g.pgn[i].value[0] = '*';
+	    else if (strcmp(g.pgn[i].token, "Round") == 0) {
+		if (strcmp(g.pgn[i].value, UNKNOWN) == 0) {
+		    g.pgn[i].value[0] = '?';
 		    g.pgn[i].value[1] = '\0';
 		}
 	    }
+	    else if (strcmp(g.pgn[i].token, "Result") == 0) {
+		if (strcmp(g.pgn[i].value, UNKNOWN) == 0) {
+		    g.pgn[i].value[0] = '*';
+		    g.pgn[i].value[1] = '\0';
+		}
+		else {
+		    for (n = 0; n < NARRAY(fancy_results); n++) {
+			if (strcmp(g.pgn[i].value, fancy_results[n].fancy)
+				== 0) {
+			    strncpy(g.pgn[i].value, fancy_results[n].pgn, 
+				    sizeof(g.pgn[i].value));
+			    n = -1;
+			    break;
+			}
+			else if (strcmp(g.pgn[i].value, fancy_results[n].pgn)
+				== 0) {
+			    n = -1;
+			    break;
+			}
+		    }
+
+		    if (n != -1) {
+			g.pgn[i].value[0] = '*';
+			g.pgn[i].value[1] = '\0';
+		    }
+		}
+	    }
+	    else if (strcmp(g.pgn[i].value, UNKNOWN) == 0)
+		g.pgn[i].value[0] = '\0';
+
+	    fprintf(fp, "[%s \"%s\"]\n", g.pgn[i].token, 
+		    (g.pgn[i].value[0]) ? pgn_escapes(g.pgn[i].value) : "");
 	}
-	else if (strcmp(g.pgn[i].value, UNKNOWN) == 0)
-	    g.pgn[i].value[0] = '\0';
 
-	fprintf(fp, "[%s \"%s\"]\n", g.pgn[i].token, 
-		(g.pgn[i].value[0]) ? pgn_escapes(g.pgn[i].value) : "");
+	fprintf(fp, "\n");
     }
-
-    fprintf(fp, "\n");
 
     /* Move text section. If it's dumping to the FIFO, dont dump comments and
      * NAG data.
