@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.48 2003-01-07 21:35:42 bjk Exp $ */
+/* $Id: cboard.c,v 1.49 2003-01-08 00:48:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -633,19 +633,42 @@ blah:
 		init_history();
 		update_all();
 		break;
+	    case 'S':
 	    case 's':
 		if (!game[gindex].htotal) {
 		    message(NULL, ANYKEY, "No moves to save");
 		    break;
 		}
 
-		if (message(NULL, YESNO, "Edit save game data?") == 'y') {
-		    if ((tmppgn = edit_pgn_data(1)) == NULL)
+		oldhistorytotal = game[gindex].htotal;
+
+		if (browse_history && game[gindex].hindex != 
+			game[gindex].htotal && (c == 'S' || config.saveprompt))
+		{
+		    c = message_uncentered(NULL, SAVE_HISTORY, 
+			    "You are in history mode. You can save all moves "
+			    "up to and including the current move by pressing "
+			    "'c', or the whole game history by pressing 'a'.");
+
+		    if (c == 'c')
+			game[gindex].htotal = game[gindex].hindex;
+		    else if (c == 'a');
+		    else
 			break;
+		}
+
+		if ((c == 'S' || config.saveprompt) && 
+			message(NULL, YESNO, "Edit save game data?") == 'y') {
+		    if ((tmppgn = edit_pgn_data(1)) == NULL) {
+			game[gindex].htotal = oldhistorytotal;
+			break;
+		    }
 		}
 
 		if ((tmp = get_input(SAVE_PGN, pgnfile, 1, 1, EXTRA_BROWSE,
 				browse_directory, NULL, '\t', -1)) == NULL) {
+		    game[gindex].htotal = oldhistorytotal;
+
 		    if (tmppgn)
 			free(tmppgn);
 
@@ -653,16 +676,20 @@ blah:
 		}
 
 		if (save_pgn(tmp, (tmppgn) ? tmppgn : game[gindex].pgn, 0)) {
+		    game[gindex].htotal = oldhistorytotal;
+
 		    if (tmppgn)
 			free(tmppgn);
 
 		    break;
 		}
 
+		game[gindex].htotal = oldhistorytotal;
 		free(tmppgn);
 		parse_pgn_file(pgnfile);
 		gindex = gtotal - 1;
 		gactive = gindex;
+		status.notify = "Game saved";
 		update_all();
 		break;
 	    case CTRL('G'):
@@ -896,6 +923,7 @@ static void set_defaults()
     config.historyagony = 0;
     config.agony = 1;
     config.linegraphics = 1;
+    config.saveprompt = 1;
 
     set_default_colors();
     set_pgn_defaults();

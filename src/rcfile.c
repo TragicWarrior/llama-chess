@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.15 2002-12-30 18:57:44 bjk Exp $ */
+/* $Id: rcfile.c,v 1.16 2003-01-08 00:48:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -259,6 +259,8 @@ void parse_rcfile(const char *filename)
 		    sizeof(config.savedirectory));
 	else if (strcmp(var, "line_graphics") == 0)
 	    config.linegraphics = on_or_off(filename, lines, val);
+	else if (strcmp(var, "save_prompt") == 0)
+	    config.saveprompt = on_or_off(filename, lines, val);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

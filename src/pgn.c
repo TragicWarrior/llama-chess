@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.43 2003-01-07 20:35:21 bjk Exp $ */
+/* $Id: pgn.c,v 1.44 2003-01-08 00:48:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -83,7 +83,7 @@ int add_pgn_data(struct pgndata **dst, int *n, char *token, char *value)
 	    if (value)
 		strncpy(tdata[i].value, value, sizeof(tdata[i].value));
 	    else
-		tdata[i].value[0] = 0;
+		tdata[i].value[0] = '\0';
 
 	    *dst = tdata;
 	    return 1;
@@ -120,7 +120,7 @@ static char *remove_pgn_tag_escapes(const char *str)
 	buf[n] = str[i];
     }
 
-    buf[n] = 0;
+    buf[n] = '\0';
     return buf;
 }
 
@@ -360,7 +360,7 @@ static void nag_text(FILE *fp)
 	}
     }
 
-    *n = 0;
+    *n = '\0';
 
     if (!nag)
 	nag = (nags[0]) ? atoi(nags) : 0;
@@ -388,7 +388,7 @@ static void move_annotation(FILE *fp, int terminator)
 
     while ((c = fgetc(fp)) != EOF && c != terminator) {
 	if (c == '\n')
-	    c = ' ';
+	    continue;
 
 	if (isspace(c) && isspace(lastchar))
 	    continue;
@@ -396,7 +396,7 @@ static void move_annotation(FILE *fp, int terminator)
 	*a++ = lastchar = c;
     }
 
-    *a = 0;
+    *a = '\0';
 
     strncpy(game[gindex].history[game[gindex].hindex - 1].comment, 
 	    trim(game[gindex].history[game[gindex].hindex - 1].comment),
@@ -418,14 +418,14 @@ static void pgn_tag(FILE *fp)
     while ((c = fgetc(fp)) != EOF && !isspace(c))
 	*n++ = c;
 
-    *n = 0;
+    *n = '\0';
     *name = toupper(*name);
 	
     skip_leading_space(fp);
 
     /* The value is until the first closing bracket. */
     while ((c = fgetc(fp)) != EOF && c != ']') {
-	if (i++ == 0 && c == '\"') {
+	if (i++ == '\0' && c == '\"') {
 	    quoted_string = 1;
 	    continue;
 	}
@@ -433,16 +433,16 @@ static void pgn_tag(FILE *fp)
 	*v++ = c;
     }
 
-    *v = 0;
+    *v = '\0';
 
     while (isspace(*--v))
-	*v = 0;
+	*v = '\0';
 
     if (*v == '\"')
-	*v = 0;
+	*v = '\0';
 
     while (isspace(*--v))
-	*v = 0;
+	*v = '\0';
 
     add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, name, 
 	    remove_pgn_tag_escapes(value));
@@ -640,21 +640,67 @@ static char *pgn_escapes(const char *str)
 	buf[n] = str[i];
     }
 
-    buf[n] = 0;
+    buf[n] = '\0';
     return buf;
 }
 	
-static void dump_comments_and_nag(FILE *fp, int index)
+static int integer_len(int n)
+{
+    int len = 1;
+
+    if (n >= 10)
+	len++;
+    else if (n >= 100)
+	len++;
+    else if (n >= 1000)
+	len++;
+    else if (n >= 10000)
+	len++;
+    else if (n >= 100000)
+	len++;
+
+    return len;
+}
+
+static void dump_comments_and_nag(FILE *fp, int index, int *len)
 {
     int i;
+    int n;
+    int x;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (game[gindex].history[index].nag[i])
+	if (game[gindex].history[index].nag[i]) {
+	    *len += integer_len(game[gindex].history[index].nag[i]) + 2;
+
+	    if (*len + 1 >= 80) {
+		fprintf(fp, "\n");
+		*len = 0;
+	    }
+
 	    fprintf(fp, "$%i ", game[gindex].history[index].nag[i]);
+	}
     }
 
-    if (game[gindex].history[index].comment[0])
-	fprintf(fp, "\n{%s}\n", game[gindex].history[index].comment);
+    if (game[gindex].history[index].comment[0]) {
+	fprintf(fp, "\n{");
+
+	if ((n = strlen(game[gindex].history[index].comment) + 1) >= 80) {
+	    for (i = 0, x = 0; i < (n - 1); i++, x++) {
+		if (x + 1 >= 80) {
+		    fprintf(fp, "\n");
+		    x = 0;
+		}
+
+		if (fputc(game[gindex].history[index].comment[i], fp) == EOF)
+		    warn("PGN Save");
+	    }
+	}
+	else
+	    fprintf(fp, "%s", game[gindex].history[index].comment);
+
+	fprintf(fp, "}\n");
+	*len = 0;
+    }
 
     return;
 }
@@ -749,13 +795,13 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 	else if (strcmp(data[i].token, "Round") == 0) {
 	    if (strcmp(data[i].value, UNKNOWN) == 0) {
 		data[i].value[0] = '-';
-		data[i].value[1] = 0;
+		data[i].value[1] = '\0';
 	    }
 	}
 	else if (strcmp(data[i].token, "Result") == 0) {
 	    if (strcmp(data[i].value, UNKNOWN) == 0) {
 		data[i].value[0] = '*';
-		data[i].value[1] = 0;
+		data[i].value[1] = '\0';
 	    }
 	    else {
 		for (n = 0; n < NARRAY(fancy_results); n++) {
@@ -768,7 +814,7 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
 	    }
 	}
 	else if (strcmp(data[i].value, UNKNOWN) == 0)
-	    data[i].value[0] = 0;
+	    data[i].value[0] = '\0';
 
 	fprintf(fp, "[%s \"%s\"]\n", data[i].token, 
 		(data[i].value[0]) ? pgn_escapes(data[i].value) : "");
@@ -779,29 +825,28 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     /* Move text section. If it's dumping to the FIFO, dont dump comments and
      * NAG data.
      */
-    for (i = 0, n = 1; i < game[gindex].htotal; i += 2, n++) {
-	int wlen = strlen(game[gindex].history[i].move);
-	int blen = strlen(game[gindex].history[i + 1].move);
+    for (i = len = 0, n = 1; i < game[gindex].htotal; i++) {
+	int mlen = strlen(game[gindex].history[i].move);
 
-	if (wlen + blen + 6 + len + 1 > 80) {
+	if (!(i % 2)) {
+	    len += 2;
+	    fprintf(fp, "%u. ", n++);
+	}
+
+	fprintf(fp, "%s ", game[gindex].history[i].move);
+
+	if (!isfifo)
+	    dump_comments_and_nag(fp, i, &len);
+
+	len += mlen + integer_len(n) + 1;
+
+	if (len + 1 >= 80) {
 	    fprintf(fp, "\n");
 	    len = 0;
 	}
-
-	fprintf(fp, "%u. %s ", n, game[gindex].history[i].move);
-
-	if (!isfifo)
-	    dump_comments_and_nag(fp, i);
-
-	fprintf(fp, "%s ", game[gindex].history[i + 1].move);
-
-	if (!isfifo)
-	    dump_comments_and_nag(fp, i + 1);
-
-	len += wlen + blen + 6;
     }
 
-    if (strlen(data[PGN_RESULT].value) + len + 1 > 80)
+    if (strlen(data[PGN_RESULT].value) + len + 1 >= 80)
 	fprintf(fp, "\n");
 
     fprintf(fp, "%s\n\n", pgn_escapes(data[PGN_RESULT].value));
@@ -1049,7 +1094,7 @@ gotitem:
 
 	if (tmp) {
 	    if (strcmp(tmp, UNKNOWN) == 0)
-		data[selected].value[0] = 0;
+		data[selected].value[0] = '\0';
 	}
 
 	strncpy(data[selected].value, (tmp) ? tmp : "",
@@ -1173,16 +1218,16 @@ again:
 
 	    /* /some/path/ */
 	    while (*--tmp != '/')
-		*tmp = 0;
+		*tmp = '\0';
 
 	    if (!*path) {
 		path[0] = '/';
-		path[1] = 0;
+		path[1] = '\0';
 	    }
 	}
 
 	if (path[1] && path[strlen(path) - 1] == '/')
-	    path[strlen(path) - 1] = 0;
+	    path[strlen(path) - 1] = '\0';
 
 	if ((entries = get_directory_entries(path)) == NULL) {
 	    message(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
@@ -1261,7 +1306,7 @@ again:
 		    break;
 		case KEY_ESCAPE:
 		    cleanup(win, panel, menu, mitems, entries);
-		    file[0] = 0;
+		    file[0] = '\0';
 		    goto done;
 		    break;
 		case CTRL('G'):

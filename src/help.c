@@ -1,4 +1,4 @@
-/* $Id: help.c,v 1.3 2002-12-21 21:32:17 bjk Exp $ */
+/* $Id: help.c,v 1.4 2003-01-08 00:48:11 bjk Exp $ */
 /* 
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -42,7 +42,7 @@ void help(const char *title, const char **text)
     }
 
     x += 4;
-    n = i + 5;
+    n = i + 4;
 
     win = newwin(n, x, LINES / 2 - n / 2, CALCPOSX(x));
     panel = new_panel(win);
@@ -53,7 +53,7 @@ void help(const char *title, const char **text)
     for (i = 0; text[i]; i++)
 	mvwprintw(win, y++, 2, "%s", text[i]);
 
-    draw_prompt(win, ++y, x, ANYKEY, CP_MESSAGE_PROMPT);
+    draw_prompt(win, y, x, ANYKEY, CP_MESSAGE_PROMPT);
 
     update_panels();
     doupdate();

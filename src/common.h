@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.32 2003-01-06 19:59:15 bjk Exp $ */
+/* $Id: common.h,v 1.33 2003-01-08 00:48:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -170,6 +170,7 @@ struct {
     int historyagony;
     int agony;
     int linegraphics;
+    int saveprompt;
     char nagfile[FILENAME_MAX];
     char agonyfile[FILENAME_MAX];
     char configfile[FILENAME_MAX];

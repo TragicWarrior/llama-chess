@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.34 2003-01-07 21:35:42 bjk Exp $ */
+/* $Id: cboard.h,v 1.35 2003-01-08 00:48:11 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,6 +38,7 @@
 #define EXTRA_BROWSE	"Type TAB for file browser"
 #define LOAD_PGN	"Load PGN filename"
 #define SAVE_PGN	"Save to PGN filename"
+#define SAVE_HISTORY	"Type 'a' or 'c' or ESCAPE to cancel"
 
 /* The order must match the BOOK_... enumeration on common.h. */
 const char *book_methods[] = {
@@ -55,13 +56,12 @@ const char *mainhelp[] = {
     "    ESC - cancel selected piece   a - annotate previous move",
     "                                  ] - view the next moves annotation",
     "      N - new game                [ - view the previous moves annotation",
-    "      r - resume a saved game",
+    "      r - resume a saved game     q - quit",
     "      i - show PGN roster tags",
     "      s - save game",
+    "      S - save game with prompt",
     "      > - next game or round",
     "      < - previous game or round",
-    " ",
-    "      q - quit",
     NULL
 };
 
