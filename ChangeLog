@@ -1,3 +1,9 @@
+2003-01-09 Thursday 12:20  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.47):
+	
+	Fix for aborting save with multigames.
+
 2003-01-09 Thursday 12:13  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.53), cboard.h (1.38):
