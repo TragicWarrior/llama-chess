@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.6 2002-12-19 16:53:05 bjk Exp $ */
+/* $Id: rcfile.c,v 1.7 2002-12-19 18:19:47 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -83,6 +83,13 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.engine_depth = atoi(val);
+	}
+	else if (strcmp(var, "historyagony") == 0) {
+	    if (!isinteger(val))
+		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
+			lines);
+
+	    config.historyagony = atoi(val);
 	}
 	else if (strcmp(var, "pgntag") == 0) {
 	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
