@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.8 2002-12-16 18:12:53 bjk Exp $ */
+/* $Id: history.c,v 1.9 2002-12-17 14:25:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -324,7 +324,7 @@ void move_piece(char *move)
 	    col = n;
     }
 
-    if (board[row][col].icon != '.' && !browse_history) {
+    if (board[row][col].icon != '.') {
 	if (isupper(board[row][col].icon))
 	    game[gindex].bcaptures++;
 	else
@@ -341,6 +341,7 @@ static void parse_history_move(int index)
     int i;
 
     init_board();
+    game[gindex].bcaptures = game[gindex].wcaptures = 0;
 
     for (i = 0; i < index; i++) {
 	struct history h;

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.29 2002-12-17 14:16:07 bjk Exp $ */
+/* $Id: cboard.c,v 1.30 2002-12-17 14:25:01 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -230,7 +230,7 @@ void update_status()
     mvwprintw(statusw, 6, 1, "    Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
-    mvwprintw(statusw, 7, 1, "Captures: %i (white)  %i (black)",
+    mvwprintw(statusw, 7, 1, "Captures: %i white  %i black",
 	    game[gindex].wcaptures, game[gindex].bcaptures);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
@@ -542,7 +542,6 @@ blah:
 		SEND_TO_ENGINE("book %s\n", book_methods[status.book_method]);
 		break;
 	    case 'h':
-		/* FIXME returning from history mode resets captures. */
 		if (!engine_initialized)
 		    break;
 
@@ -703,6 +702,7 @@ blah:
 		if (browse_history) {
 		    history_next(config.history_jump);
 		    update_history();
+		    update_status();
 		    break;
 		}
 
@@ -715,6 +715,7 @@ blah:
 	    case KEY_DOWN:
 		if (browse_history) {
 		    history_previous(config.history_jump);
+		    update_status();
 		    update_history();
 		    break;
 		}
@@ -728,6 +729,7 @@ blah:
 	    case KEY_LEFT:
 		if (browse_history) {
 		    history_previous(1);
+		    update_status();
 		    update_history();
 		    break;
 		}
@@ -741,6 +743,7 @@ blah:
 	    case KEY_RIGHT:
 		if (browse_history) {
 		    history_next(1);
+		    update_status();
 		    update_history();
 		    break;
 		}
