@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.16 2002-12-16 17:54:55 bjk Exp $ */
+/* $Id: common.h,v 1.17 2002-12-17 14:09:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -85,6 +85,7 @@ struct {
     int book_method;
     char *notify;
     int turn;
+    int depth;
 } status;
 
 struct pgndata {
@@ -123,6 +124,7 @@ struct {
 struct {
     int history_jump;
     int book_method;
+    int engine_depth;
 } config;
 
 /* Chess engine file descriptors. 0 = from, 1 = to. */

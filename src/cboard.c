@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.27 2002-12-16 18:46:58 bjk Exp $ */
+/* $Id: cboard.c,v 1.28 2002-12-17 14:09:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -196,6 +196,9 @@ void update_status()
     char *engine;
     char buf[w + 1];
 
+    snprintf(buf, sizeof(buf), "%i of %i", gindex + 1, gtotal);
+    mvwprintw(statusw, 2, 1, "    Game: %-*s", w, buf);
+
     switch (status.engine) {
 	case ENGINE_THINKING:
 	    engine = "thinking ...";
@@ -214,20 +217,20 @@ void update_status()
 	    break;
     }
 
-    mvwprintw(statusw, 2, 1, "  Engine: %-*s", w, " ");
+    mvwprintw(statusw, 3, 1, "  Engine: %-*s", w, " ");
     wattron(statusw, ENGINE_STATUS);
-    mvwaddstr(statusw, 2, 11, engine);
+    mvwaddstr(statusw, 3, 11, engine);
     wattroff(statusw, ENGINE_STATUS);
 
-    mvwprintw(statusw, 3, 1, "    Book: %-*s", w,
+    mvwprintw(statusw, 4, 1, "   Depth: %-*i", w, status.depth);
+
+    mvwprintw(statusw, 5, 1, "    Book: %-*s", w,
 	    book_method(status.book_method));
 
-    mvwprintw(statusw, 4, 1, "    Turn: %-*s", w, 
+    mvwprintw(statusw, 6, 1, "    Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
-    snprintf(buf, sizeof(buf), "%i of %i", gindex + 1, gtotal);
-    mvwprintw(statusw, 5, 1, "    Game: %-*s", w, buf);
-    mvwprintw(statusw, 6, 1, "Captures: %i (white)  %i (black)",
+    mvwprintw(statusw, 7, 1, "Captures: %i (white)  %i (black)",
 	    game[gindex].wcaptures, game[gindex].bcaptures);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
@@ -395,7 +398,8 @@ static int start_chess_engine()
 
 static void set_engine_defaults()
 {
-    SEND_TO_ENGINE("\nbook %s\n", book_method(config.book_method));
+    SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
+    SEND_TO_ENGINE("depth %i\n", config.engine_depth);
     return;
 }
 
@@ -538,6 +542,10 @@ blah:
 		SEND_TO_ENGINE("book %s\n", book_methods[status.book_method]);
 		break;
 	    case 'h':
+		/* FIXME returning from history mode resets captures. */
+		if (!engine_initialized)
+		    break;
+
 		if (browse_history) {
 		    if (game[gindex].hindex != game[gindex].htotal) {
 			message(NULL, ANYKEY, "Resuming a game from history "
@@ -569,6 +577,7 @@ blah:
 		    update_all();
 		    break;
 
+		    /* FIXME */
 		    if (status.bw != status.turn) {
 			SEND_TO_ENGINE("go\n");
 			break;
@@ -868,6 +877,7 @@ static void set_defaults()
 
     config.history_jump = 5;
     config.book_method = BOOK_RANDOM;
+    config.engine_depth = 0;
     return;
 }
 
@@ -910,6 +920,8 @@ int main(int argc, char *argv[])
 	    if (errno != ENOENT)
 		err(EXIT_FAILURE, "%s", rcfile);
 	}
+
+	parse_rcfile(rcfile);
     }
     else
 	parse_rcfile(rcfile);
