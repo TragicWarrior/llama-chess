@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.14 2002-12-27 14:36:01 bjk Exp $ */
+/* $Id: rcfile.c,v 1.15 2002-12-30 18:57:44 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -125,7 +125,6 @@ void parse_rcfile(const char *filename)
     FILE *fp;
     char *line, buf[LINE_MAX];
     int lines = 0;
-    int n;
 
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
@@ -134,7 +133,6 @@ void parse_rcfile(const char *filename)
 	int n;
 	char var[30], val[50];
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
-	char *tmp;
 
 	lines++;
 	line = trim(line);
