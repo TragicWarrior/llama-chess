@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.11 2002-12-09 21:24:24 bjk Exp $ */
+/* $Id: cboard.h,v 1.12 2002-12-10 22:17:28 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -26,10 +26,12 @@
 #define ENGINE_STATUS	((COLORS) ? COLOR_PAIR(6) : A_BOLD)
 #define NOTIFY_STATUS	((COLORS) ? COLOR_PAIR(7) | A_BOLD : A_BOLD)
 #define WINDOW_BORDER	((COLORS) ? COLOR_PAIR(9) : A_NORMAL)
+#define ENGINE_COMMAND_PROMPT	"Engine Command"
 
 #define STATUS_TITLE	"Game Status"
 #define DATA_TITLE	"Game Information"
 #define MAIN_HELP	"Command Keys"
+#define ANNOTATE_HISTORY	"Editing Annotation for"
 
 /* order must match the BOOK_... enumeration on common.h */
 const char *book_methods[] = {
@@ -56,6 +58,7 @@ const char *mainhelp[] = {
     "                                 g - force engine to make next move",
     "                                 b - cycle through book modes",
     "                                 i - PGN information",
+    "                                 a - annotate the previous move",
     NULL
 };
 
