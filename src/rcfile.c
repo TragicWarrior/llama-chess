@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.1 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: rcfile.c,v 1.2 2002-12-16 18:48:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -30,12 +30,53 @@
 void parse_rcfile(const char *filename)
 {
     FILE *fp;
-
-    fprintf(stderr, "rc file parsing not done yet\n");
-    return;
+    char *line, buf[LINE_MAX];
+    int lines = 0;
 
     if ((fp = fopen(filename, "r")) == NULL)
-	err(EXIT_FAILURE, "filename");
+	err(EXIT_FAILURE, "%s", filename);
+
+
+    while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
+	char var[30], val[50];
+
+	lines++;
+
+	if (line[0] == '#')
+	    continue;
+
+	if (sscanf(line, "%s %s", var, val) != 2)
+	    errx(EXIT_FAILURE, "%s(%i): parse error", filename, lines);
+
+	strncpy(val, trim(val), sizeof(val));
+	strncpy(var, trim(var), sizeof(var));
+
+	if (strcmp(var, "book") == 0) {
+	    if (strcmp(val, "prefer") == 0)
+		config.book_method = BOOK_PREFER;
+	    else if (strcmp(val, "random") == 0)
+		config.book_method = BOOK_RANDOM;
+	    else if (strcmp(val, "worst") == 0)
+		config.book_method = BOOK_WORST;
+	    else if (strcmp(val, "best") == 0)
+		config.book_method = BOOK_BEST;
+	    else if (strcmp(val, "off") == 0)
+		config.book_method = BOOK_OFF;
+	    else
+		errx(EXIT_FAILURE, "%s(%i): invalid book method \"%s\"", 
+			filename, lines, val);
+	}
+	else if (strcmp(var, "jumpcount") == 0) {
+	    if (!isinteger(val))
+		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
+			lines);
+
+	    config.history_jump = atoi(val);
+	}
+	else
+	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
+		    lines, var);
+    }
 
     fclose(fp);
     return;
