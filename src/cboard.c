@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.21 2002-12-12 19:16:51 bjk Exp $ */
+/* $Id: cboard.c,v 1.22 2002-12-12 19:21:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -705,8 +705,9 @@ void game_loop()
 
 void usage(const char *pn)
 {
-    printf("Usage: %s [-h] [-p <pgnfile>]\n", pn);
+    printf("Usage: %s [-hv] [-p <pgnfile>]\n", pn);
     printf("  -p  Load PGN file.\n");
+    printf("  -v  Version information.\n");
     printf("  -h  This help text.\n");
 
     exit(EXIT_FAILURE);
