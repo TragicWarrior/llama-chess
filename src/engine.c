@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.5 2002-12-10 23:40:35 bjk Exp $ */
+/* $Id: engine.c,v 1.6 2002-12-11 17:45:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -35,90 +35,22 @@
 #include "common.h"
 #include "engine.h"
 
-static void parse_piece(char *str)
-{
-    int len;
-    char *tmp;
-
-    if ((tmp = strsep(&str, "\n")) == NULL)
-	tmp = str;
-
-    len = strlen(tmp);
-
-    if (tmp[len - 1] == '#')
-	status.notify = "Game Over!";
-    else if (tmp[len - 1] == '+')
-	status.notify = "Check!";
-    else if (tmp[len - 2] == '=') /* FIXME */
-	status.notify = "Promotion!";
-    else
-	status.notify = NULL;
-
-    return;
-}
-
 void parse_engine_output(char *str)
 {
     char *buf = str, *tmp;
     int row = 0;
-    int i = 0;
     char move[MAX_MOVE_LEN + 1];
 
-
-    if (strstr(str, "1-0 {") != NULL || strstr(str, "0-1 {") != NULL ||
-	    strstr(str, "1/2-1/2 {") != NULL) {
-	tmp = strsep(&str, " ");
-
-	/*
-	for (i = 0; i < NARRAY(fancy_results); i++) {
-	    if (strcmp(tmp, fancy_results[i].pgn) == 0)
-		strncpy(data.result, fancy_results[i].fancy,
-			sizeof(data.result));
-	}
-	*/
-    }
     if (strstr(str, "Thinking...") != NULL)
 	status.engine = ENGINE_THINKING;
 
-    /* This loads a PGN game into the history array. */
-    if ((buf = strstr(str, "      White   Black")) != NULL) {
-	if ((tmp = strsep(&buf, "\n")) != NULL) {
-	    while ((tmp = strsep(&buf, "\n")) != NULL) {
-		char black[MAX_MOVE_LEN + 1], white[MAX_MOVE_LEN + 1];
-
-		if (!tmp[0])
-		    break;
-
-		if (sscanf(tmp, "%*u%*c%s%s", white, black) != 2) {
-		    message(NULL, ANYKEY, "parse error while getting history");
-		    return;
-		}
-
-		add_to_history(&i, white);
-		add_to_history(&i, black);
-	    }
-
-	    history_index = i;
-	    browse_history = 1;
-	    status.engine = HISTORY_MODE;
-	}
-    }
-
     /* 'switch' command. */
     if (strstr(str, "White to move\n") != NULL) {
-	status.bw = WHITE;
-
-	if (status.turn == BLACK)
-	    status.turn = WHITE;
-
+	status.bw = status.turn = WHITE;
 	return;
     }
     else if (strstr(str, "Black to move\n") != NULL) {
-	status.bw = BLACK;
-
-	if (status.turn == WHITE)
-	    status.turn = BLACK;
-
+	status.bw = status.turn = BLACK;
 	return;
     }
 
@@ -133,31 +65,34 @@ void parse_engine_output(char *str)
     if (!browse_history) {
 	if (sscanf(str, "%*u%*c%s", move) == 1)
 	    add_to_history(&history_index, move);
+
+	/* This is needed when leaving history mode and the turn is now black
+	 * since we just went. This cancels 'manual'.
+	 */
+	if (cancel_manual_mode) {
+	    send_to_engine("go\n");
+	    cancel_manual_mode = 0;
+	}
     }
 
     /* This is output whenever a move is made/undone (and 'show board'). */
     if ((buf = strstr(str, "white  ")) != NULL || 
 	    (buf = strstr(str, "black  ")) != NULL) {
 
+	if (strstr(buf, "white  "))
+	    status.turn = WHITE;
+
+	if (strstr(buf, "black  "))
+	    status.turn = BLACK;
+
 	/* Engine finished move, add it to the move history. */
 	if ((tmp = strstr(buf, "My move is : ")) != NULL) {
-	    status.engine = ENGINE_READY;
 	    tmp += 13;
-
-	    if (tmp[strlen(tmp) - 1] == '\n')
-		tmp[strlen(tmp) - 1] = 0;
-
+	    tmp = parse_piece(tmp);
 	    add_to_history(&history_index, tmp);
-	    parse_piece(tmp);
 	}
 
 	tmp = strsep(&buf, "\n");
-
-	/* Whose turn? */
-	if (strstr(tmp, "white  KQkq") != NULL)
-	    status.turn = WHITE;
-	else
-	    status.turn = BLACK;
 
 	/* Parse the board. */
 	while ((tmp = strsep(&buf, "\n")) != NULL) {
@@ -173,13 +108,18 @@ void parse_engine_output(char *str)
 		if (tmp[i] == '.')
 		    board[row][col++].icon = ' ';
 		else
-		    board[row][col++].icon = (isupper(tmp[i])) 
-			? tmp[i] | A_BOLD : tmp[i];
+		    board[row][col++].icon = tmp[i];
 	    }
 
 	    row++;
 	}
 
+	if (browse_history)
+	    status.engine = HISTORY_MODE;
+	else {
+	    if (status.bw == status.turn)
+		status.engine = ENGINE_READY;
+	}
 	return;
     }
 

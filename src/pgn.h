@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.5 2002-12-10 22:19:04 bjk Exp $ */
+/* $Id: pgn.h,v 1.6 2002-12-11 17:45:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -32,6 +32,9 @@
 #define PGN_INFO_TITLE	"PGN Information"
 #define MAX_VALUE_WIDTH	30
 
+enum {PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK,
+    PGN_RESULT };
+
 struct {
     char *pgn;
     char *fancy;
@@ -58,3 +61,6 @@ const char *pgn_info_help[] = {
     "   ESC or q - quit",
     NULL
 };
+
+void add_to_history(int *, const char *);
+void reset_history(void);

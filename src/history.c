@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.2 2002-12-10 22:15:49 bjk Exp $ */
+/* $Id: history.c,v 1.3 2002-12-11 17:45:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,13 +38,6 @@ char *get_history_by_index(int index)
 void reset_history()
 {
     history_index = history_total = 0;
-    return;
-}
-
-void init_history()
-{
-    send_to_engine("manual\n");
-    send_to_engine("show game\n");
     return;
 }
 

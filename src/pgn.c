@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.14 2002-12-10 23:40:35 bjk Exp $ */
+/* $Id: pgn.c,v 1.15 2002-12-11 17:45:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -44,6 +44,37 @@
 
 #include "common.h"
 #include "pgn.h"
+
+char *parse_piece(char *str)
+{
+    int len, i;
+    char *tmp, *tmp2;
+
+    if ((tmp = strsep(&str, "\n")) == NULL)
+	tmp = trim(str);
+
+    len = strlen(tmp);
+
+    if (tmp[len - 1] == '#') {
+	status.notify = "Game Over!";
+
+	if ((tmp2 = strsep(&str, " ")) != NULL) {
+	    for (i = 0; i < NARRAY(fancy_results); i++) {
+		if (strcmp(tmp2, fancy_results[i].pgn) == 0)
+		    strncpy(pgn[PGN_RESULT].value, fancy_results[i].fancy,
+			    sizeof(data.result));
+	    }
+	}
+    }
+    else if (tmp[len - 1] == '+')
+	status.notify = "Check!";
+    else if (tmp[len - 2] == '=')
+	status.notify = "Promotion!";
+    else
+	status.notify = NULL;
+
+    return tmp;
+}
 
 /* Returns 1 if a duplicate was found. 0 otherwise. The index argument is a
  * pointer to int, and incremented automatically.
@@ -130,6 +161,7 @@ int parse_pgn_file(const char *filename)
     FILE *fp;
     char buf[MAX_PGN_LINE_LEN], *tmp;
     int tag_section = 0;
+    int skip_move_text = 0;
 
     if (!filename[0]) {
 	init_data();
@@ -148,7 +180,7 @@ int parse_pgn_file(const char *filename)
 	char tbuf[MAX_TIME_LEN + 1] = {0};
 	struct tm tp;
 
-	/* Need more comment handling. */
+	/* Standard file comment. This has nothing to do with annotations. */
 	if (tmp[0] == '%')
 	    continue;
 
@@ -165,6 +197,7 @@ int parse_pgn_file(const char *filename)
 	if (tmp[0] == '[') {
 	    if (!tag_section) {
 		tag_section = 1;
+		skip_move_text = 0;
 		pgn_index = 0; /* Reset everytime a new tag section is
 				  detected. */
 	    }
@@ -188,6 +221,10 @@ int parse_pgn_file(const char *filename)
 			    value = fancy_results[i].fancy;
 		    }
 		}
+		else if (strcmp(token, "Round") == 0) {
+		    if (value[0] == '-' || value[0] == '?')
+			value[0] = 0;
+		}
 
 		if (!value[0])
 		    value = UNKNOWN;
@@ -198,10 +235,63 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
     
+	if (skip_move_text)
+	    continue;
+
 	/* Must be move text... */
+	fseek(fp, -(strlen(tmp) + 1), SEEK_CUR);
+	reset_history();
+
+	/* Move text section contained no moves. */
+	if ((i = fgetc(fp)) == '*') {
+	    skip_move_text = 1;
+	    continue;
+	}
+
+	ungetc(i, fp);
+
+	while (!feof(fp)) {
+	    char white[MAX_MOVE_LEN], black[MAX_MOVE_LEN];
+	    int count, moven;
+	    char *tmp2;
+
+	    if (fscanf(fp, "%d. %s %s %n", &moven, white, black, &count) != 3) {
+		fseek(fp, -(count), SEEK_CUR);
+		tmp = fgets(buf, sizeof(buf), fp);
+
+		for (i = 0; i < NARRAY(fancy_results); i++) {
+		    if ((tmp2 = strstr(tmp, fancy_results[i].pgn)) != NULL)
+			break;
+		}
+
+		/* End of move text. */
+		if ((i = fgetc(fp)) == '\n')
+		    break;
+
+		/* Dunno. */
+		ungetc(i, fp);
+		return -1;
+		break;
+	    }
+
+	    for (i = 0; i < NARRAY(fancy_results); i++) {
+		if (strcmp(fancy_results[i].pgn, white) == 0 || 
+			strcmp(fancy_results[i].pgn, black) == 0)
+		    break;
+	    }
+
+	    add_to_history(&history_index, white);
+	    add_to_history(&history_index, black);
+	}
     }
 
     fclose(fp);
+
+    if (history_index) {
+	browse_history = 1;
+	send_to_engine("manual\n");
+    }
+
     return 0;
 }
 
@@ -247,8 +337,23 @@ int save_pgn(const char *filename, struct pgndata *data)
 	}
 	else if (strcmp(data[i].token, "Round") == 0) {
 	    if (strcmp(data[i].value, UNKNOWN) == 0) {
-		data[i].value[0] = '?';
+		data[i].value[0] = '-';
 		data[i].value[1] = 0;
+	    }
+	}
+	else if (strcmp(data[i].token, "Result") == 0) {
+	    if (strcmp(data[i].value, UNKNOWN) == 0) {
+		data[i].value[0] = '*';
+		data[i].value[1] = 0;
+	    }
+	    else {
+		for (n = 0; n < NARRAY(fancy_results); n++) {
+		    if (strcmp(data[i].value, fancy_results[n].fancy) == 0) {
+			strncpy(data[i].value, fancy_results[n].pgn, 
+				sizeof(data[i].value));
+			break;
+		    }
+		}
 	    }
 	}
 	else if (strcmp(data[i].value, UNKNOWN) == 0)
@@ -264,20 +369,19 @@ int save_pgn(const char *filename, struct pgndata *data)
 	int wlen = strlen(history[i].move);
 	int blen = strlen(history[i + 1].move);
 
-	if (wlen + blen + 6 + len > 80) {
+	if (wlen + blen + 6 + len + 1 > 80) {
 	    fprintf(fp, "\n");
 	    len = 0;
 	}
 
-	fprintf(fp, "%u. %s %s", n, history[i].move, history[i + 1].move);
-
-	if (i + 2 < history_index)
-	    fprintf(fp, " ");
-
+	fprintf(fp, "%u. %s %s ", n, history[i].move, history[i + 1].move);
 	len += wlen + blen + 6;
     }
 
-    fprintf(fp, "\n\n");
+    if (strlen(data[PGN_RESULT].value) + len + 1 > 80)
+	fprintf(fp, "\n");
+
+    fprintf(fp, "%s\n\n", pgn_escapes(data[PGN_RESULT].value));
     fclose(fp);
 
     return 0;

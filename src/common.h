@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.10 2002-12-10 23:40:35 bjk Exp $ */
+/* $Id: common.h,v 1.11 2002-12-11 17:45:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -119,6 +119,7 @@ int history_index;
 int history_total;
 int browse_history;
 int pgn_index;
+int cancel_manual_mode;
 WINDOW *historyw;
 PANEL *historyp;
 
@@ -134,6 +135,7 @@ char *get_input_str_clear(const char *, const char *);
 void help(const char *, const char **);
 char *trim(char *);
 char *itoa(long);
+void send_to_engine(const char *, ...);
 
 enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
