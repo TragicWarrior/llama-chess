@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.13 2002-12-11 17:42:52 bjk Exp $ */
+/* $Id: cboard.h,v 1.14 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,16 @@
 */
 #define COPYRIGHT	"Copyright (c) 2002 " PACKAGE_BUGREPORT
 
+#define BOARD_HEIGHT	18
+#define BOARD_WIDTH	34
+#define STATUS_HEIGHT	(10)
+#define STATUS_WIDTH	(COLS - BOARD_WIDTH)
+#define DATA_HEIGHT	(LINES - STATUS_HEIGHT)
+#define DATA_WIDTH	(COLS - BOARD_WIDTH)
+#define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
+#define HISTORY_WIDTH	(COLS - DATA_WIDTH)
+#define HISTORY_TITLE	"Move History"
+
 #define BOARD_WHITE	((COLORS) ? COLOR_PAIR(1) : A_REVERSE)
 #define BOARD_BLACK	((COLORS) ? COLOR_PAIR(2) : A_NORMAL)
 #define BOARD_SELECTED	((COLORS) ? COLOR_PAIR(3) : A_BOLD | A_REVERSE)
@@ -31,9 +41,10 @@
 #define STATUS_TITLE	"Game Status"
 #define DATA_TITLE	"Game Information"
 #define MAIN_HELP	"Command Keys"
+#define MAIN_HELP_PROMPT	"Type '^G' for available command keys"
 #define ANNOTATE_HISTORY	"Editing Annotation for"
 
-/* order must match the BOOK_... enumeration on common.h */
+/* The order must match the BOOK_... enumeration on common.h. */
 const char *book_methods[] = {
     "off", "prefer", "best", "worst", "random"
 };
@@ -45,17 +56,17 @@ struct {
 } selected_piece;
 
 const char *mainhelp[] = {
-    "UP/j    - cursor up              N - new game",
-    "DOWN/k  - cursor down            R - refresh screen",
-    "LEFT/l  - cursor left/reverse    c - send a command to the game engine",
-    "RIGHT/; - cursor right/forward   v - version information",
+    "   UP/j - cursor up              N - new game",
+    " DOWN/k - cursor down            R - refresh screen",
+    " LEFT/l - cursor left/reverse    c - send a command to the game engine",
+    " RIGHT/;- cursor right/forward   v - version information",
     "                                 q - quit",
-    "SPACE   - select piece           w - switch sides",
-    "ENTER   - move selected piece    s - save game in PGN format",
-    "ESC     - cancel selected piece  r - resume a PGN game",
+    "  SPACE - select piece           w - switch sides",
+    "  ENTER - move selected piece    s - save game in PGN format",
+    "    ESC - cancel selected piece  r - resume a PGN game",
     "                                 u - take back previous move",
-    "                                 h - toggle viewing of movement history",
-    "                                 g - force engine to make next move",
+    "      > - next game              h - toggle viewing of movement history",
+    "      < - previous game          g - force engine to make next move",
     "                                 b - cycle through book modes",
     "                                 i - PGN information",
     "                                 a - annotate the previous move",
@@ -70,7 +81,6 @@ WINDOW *dataw;
 PANEL *datap;
 
 const char *x_grid_chars = "abcdefgh";
-int piece_selected;
 int selected_y, selected_x;
 int quit;
 
@@ -80,3 +90,7 @@ int save_pgn(const char *, struct pgndata *);
 void update_history(void);
 void reset_history(void);
 struct pgndata *edit_pgn_data(int);
+void parse_engine_output(char *);
+char *real_filename(char *);
+void send_to_engine(const char *, ...);
+char *get_history_by_index(int);

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.11 2002-12-11 17:45:17 bjk Exp $ */
+/* $Id: common.h,v 1.12 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,16 +38,6 @@
 #endif
 #endif
 
-#define BOARD_HEIGHT	18
-#define BOARD_WIDTH	34
-#define STATUS_HEIGHT	(10)
-#define STATUS_WIDTH	(COLS - BOARD_WIDTH)
-#define DATA_HEIGHT	(LINES - STATUS_HEIGHT)
-#define DATA_WIDTH	(COLS - BOARD_WIDTH)
-#define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
-#define HISTORY_WIDTH	(COLS - DATA_WIDTH)
-#define HISTORY_TITLE	"Move History"
-
 FILE *debugfp;
 
 #define DEBUG(fmt, args...)	debugfp = fopen("debug", "a"); \
@@ -55,6 +45,7 @@ FILE *debugfp;
         fclose(debugfp)
 
 #define ACK			message("ack", "ack", "ack")
+
 #define MAX_PGN_LINE_LEN	255
 #define MAX_MOVE_LEN		7 /* As defined by SAN. */
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
@@ -71,24 +62,11 @@ FILE *debugfp;
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
 #define CENTERX(x, str)		(x / 2 - strlen(str) / 2)
 
-#define MESSAGE_CP		((COLORS) ? COLOR_PAIR(8) : 0)
-
 enum {WHITE, BLACK};
 
 struct {
     chtype icon;
 } board[8][8];
-
-struct {
-    char white[32];
-    char black[32];
-    char date[32];
-    char site[32];
-    char event[32];
-    char round[32];
-    char result[32];
-    char pgnfile[FILENAME_MAX];
-} data;
 
 enum { BOOK_OFF, BOOK_PREFER, BOOK_BEST, BOOK_WORST, BOOK_RANDOM, BOOK_MAX };
 enum { ENGINE_READY, ENGINE_THINKING, HISTORY_MODE };
@@ -99,48 +77,54 @@ struct {
     int book_method;
     char *notify;
     int turn;
-    int games;
 } status;
 
 struct pgndata {
     char token[MAX_PGN_LINE_LEN];
     char value[MAX_PGN_LINE_LEN];
-} *pgn;
+};
 
-struct history_s {
+struct history {
     char move[MAX_MOVE_LEN];
     char comment[MAX_PGN_LINE_LEN];
-} *history;
+};
 
+/* This is an array of 'games' structures. One for each game in a file, or
+ * the current game.
+ */
+struct games {
+    struct pgndata *pgn;
+    int pindex;
+    struct history *history;
+    int hindex;
+    int htotal;
+} *game;
+
+char pgnfile[FILENAME_MAX];
+int gindex, gtotal;
 int cursor_y, cursor_x;
 int to_engine;
 int from_engine;
-int history_index;
-int history_total;
 int browse_history;
-int pgn_index;
 int cancel_manual_mode;
 WINDOW *historyw;
 PANEL *historyp;
 
+enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
+    FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
+    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND};
+
+char *get_input(const char *, const char *, int, int, int, ...);
+char *get_input_str(const char *, const char *);
+char *get_input_str_clear(const char *, const char *);
 void draw_window_title(WINDOW *, const char *, int);
 void *Calloc(size_t, size_t);
 void *Realloc(void *, size_t);
 int message(const char *, const char *, const char *, ...);
-void parse_engine_output(char *);
 void draw_window_title(WINDOW *, const char *, int);
-char *real_filename(char *);
-char *get_input_str(const char *, const char *);
-char *get_input_str_clear(const char *, const char *);
 void help(const char *, const char **);
 char *trim(char *);
 char *itoa(long);
-void send_to_engine(const char *, ...);
-
-enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
-    FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
-    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND};
-char *get_input(const char *, const char *, int, int, int, ...);
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>

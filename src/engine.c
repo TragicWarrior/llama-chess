@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.6 2002-12-11 17:45:17 bjk Exp $ */
+/* $Id: engine.c,v 1.7 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -35,6 +35,52 @@
 #include "common.h"
 #include "engine.h"
 
+void send_to_engine(const char *format, ...)
+{
+    va_list ap;
+    int len;
+    char *line;
+
+    va_start(ap, format);
+#ifdef HAVE_VASPRINTF
+    len = vasprintf(&line, format, ap);
+#else
+    line = Malloc(LINE_MAX);
+    len = vsnprintf(line, LINE_MAX, format, ap);
+#endif
+    va_end(ap);
+
+    while (1) {
+	int n;
+	fd_set fds;
+	struct timeval tv;
+
+	FD_ZERO(&fds);
+	FD_SET(to_engine, &fds);
+
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+
+	if ((n = select(to_engine + 1, NULL, &fds, NULL, &tv)) > 0) {
+	    if (FD_ISSET(to_engine, &fds)) {
+		if ((n = write(to_engine, line, len)) != len) {
+		    message(NULL, ANYKEY, "write() error to engine. "
+			    "Expected %i, got %i.", len, n);
+		}
+		else {
+		    break;
+		}
+	    }
+	}
+	else {
+	//    message(ERROR, ANYKEY, "write() timeout, trying again.\n");
+	}
+    }
+
+    free(line);
+    return;
+}
+
 void parse_engine_output(char *str)
 {
     char *buf = str, *tmp;
@@ -64,7 +110,8 @@ void parse_engine_output(char *str)
     /* Human move. Add it to the move history (if not browsing). */
     if (!browse_history) {
 	if (sscanf(str, "%*u%*c%s", move) == 1)
-	    add_to_history(&history_index, move);
+	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		    &game[gindex].htotal, move);
 
 	/* This is needed when leaving history mode and the turn is now black
 	 * since we just went. This cancels 'manual'.
@@ -89,7 +136,8 @@ void parse_engine_output(char *str)
 	if ((tmp = strstr(buf, "My move is : ")) != NULL) {
 	    tmp += 13;
 	    tmp = parse_piece(tmp);
-	    add_to_history(&history_index, tmp);
+	    add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		    &game[gindex].htotal, tmp);
 	}
 
 	tmp = strsep(&buf, "\n");
@@ -192,48 +240,3 @@ void init_chess_engine()
     return;
 }
 
-void send_to_engine(const char *format, ...)
-{
-    va_list ap;
-    int len;
-    char *line;
-
-    va_start(ap, format);
-#ifdef HAVE_VASPRINTF
-    len = vasprintf(&line, format, ap);
-#else
-    line = Malloc(LINE_MAX);
-    len = vsnprintf(line, LINE_MAX, format, ap);
-#endif
-    va_end(ap);
-
-    while (1) {
-	int n;
-	fd_set fds;
-	struct timeval tv;
-
-	FD_ZERO(&fds);
-	FD_SET(to_engine, &fds);
-
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-
-	if ((n = select(to_engine + 1, NULL, &fds, NULL, &tv)) > 0) {
-	    if (FD_ISSET(to_engine, &fds)) {
-		if ((n = write(to_engine, line, len)) != len) {
-		    message(NULL, ANYKEY, "write() error to engine. "
-			    "Expected %i, got %i.", len, n);
-		}
-		else {
-		    break;
-		}
-	    }
-	}
-	else {
-	//    message(ERROR, ANYKEY, "write() timeout, trying again.\n");
-	}
-    }
-
-    free(line);
-    return;
-}

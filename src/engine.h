@@ -1,4 +1,4 @@
-/* $Id: engine.h,v 1.3 2002-12-11 17:45:17 bjk Exp $ */
+/* $Id: engine.h,v 1.4 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -17,5 +17,5 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 enum { HUMAN, ENGINE };
-void add_to_history(int *, const char *);
+void add_to_history(struct history **, int *, int *, const char *);
 char *parse_piece(char *);

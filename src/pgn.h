@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.6 2002-12-11 17:45:17 bjk Exp $ */
+/* $Id: pgn.h,v 1.7 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -28,7 +28,6 @@
 #define PGN_REMOVE_STR	"Cannot remove the Seven Tag Roster"
 #define PGN_NEW_TAG	"New Roster Tag Name"
 #define PGN_DUPLICATE	"Could not add duplicate tag"
-#define PGN_EDIT_REFUSE	"Refusing to edit"
 #define PGN_INFO_TITLE	"PGN Information"
 #define MAX_VALUE_WIDTH	30
 
@@ -62,5 +61,5 @@ const char *pgn_info_help[] = {
     NULL
 };
 
-void add_to_history(int *, const char *);
+void add_to_history(struct history **, int *, int *, const char *);
 void reset_history(void);

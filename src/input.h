@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.3 2002-12-10 22:17:01 bjk Exp $ */
+/* $Id: input.h,v 1.4 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -24,5 +24,3 @@ const char *inputhelp[] = {
     "blah",
     NULL
 };
-
-char *trim(char *);

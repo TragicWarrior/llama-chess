@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.19 2002-12-11 17:42:51 bjk Exp $ */
+/* $Id: cboard.c,v 1.20 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -178,6 +178,7 @@ void update_status()
     int w = STATUS_WIDTH - 10;
     int i;
     char *book, *engine;
+    char buf[w];
 
     switch (status.engine) {
 	case ENGINE_THINKING:
@@ -225,7 +226,8 @@ void update_status()
     mvwprintw(statusw, 4, 1, "  Turn: %-*s", w, 
 	    (status.turn == WHITE) ? "white" : "black");
 
-    mvwprintw(statusw, 5, 1, "Game #: %i", status.games);
+    snprintf(buf, sizeof(buf), "%i of %i", gindex + 1, gtotal);
+    mvwprintw(statusw, 5, 1, "  Game: %-*s", w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -240,6 +242,25 @@ void update_status()
     return;
 }
 
+void update_history()
+{
+    char buf[16];
+
+    if (game[gindex].htotal)
+	snprintf(buf, sizeof(buf), "%u%s of %u", game[gindex].hindex,
+		(game[gindex].history[game[gindex].hindex].comment[0]) ?
+		"*" : "", game[gindex].htotal);
+    else
+	strncpy(buf, UNKNOWN, sizeof(buf));
+
+    mvwprintw(historyw, 2, 1, "     Move: %-*s", HISTORY_WIDTH - 13, buf);
+    mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, 
+	    get_history_by_index(game[gindex].hindex));
+    mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13,
+	    get_history_by_index(game[gindex].hindex - 1));
+    return;
+}
+
 void update_data()
 {
     int w;
@@ -247,31 +268,42 @@ void update_data()
     int i, tlen = 0;
     int n;
 
-    /* Get the longest tag length. */
-    for (i = 0; (i < DATA_HEIGHT - 4 && pgn[i].token[0]); i++) {
-	int ttlen = strlen(pgn[i].token);
+    /* Get the longest tag length and clear the initial lines. */
+    for (i = 0; (i < DATA_HEIGHT - 6 && game[gindex].pgn[i].token[0]); i++) {
+	int ttlen = strlen(game[gindex].pgn[i].token);
 
 	if (tlen < ttlen)
 	    tlen = ttlen;
+
+	for (n = 1; n < DATA_WIDTH - 1; n++)
+	    mvwprintw(dataw, i + 3, n, " ");
     }
 
     w = DATA_WIDTH - tlen - 4;
 
-    if ((tmp = real_filename(data.pgnfile)) == NULL)
+    if ((tmp = real_filename(pgnfile)) == NULL)
 	tmp = "none";
 
     mvwprintw(dataw, 2, 1, "%*s: %-*s", tlen, "File", w, tmp);
 
-    for (i = 0; (i < DATA_HEIGHT - 4 && pgn[i].token[0]); i++) {
-	for (n = tlen; n < w; n++)
-	    mvwprintw(dataw, i + 3, n, " ");
+    for (i = 0; (i < DATA_HEIGHT - 6 && game[gindex].pgn[i].token[0]); i++) {
+	char buf[w + 1];
 
-	mvwprintw(dataw, i + 3, 1, "%*s: %-.*s", tlen, pgn[i].token, w,
-		pgn[i].value);
+	if (strlen(game[gindex].pgn[i].value) > w)
+	    snprintf(buf, sizeof(buf), "%-.*s...", w - 3, 
+		    game[gindex].pgn[i].value);
+	else
+	    snprintf(buf, sizeof(buf), "%-.*s", w, game[gindex].pgn[i].value);
+
+	mvwprintw(dataw, i + 3, 1, "%*s: %-.*s", tlen,
+		game[gindex].pgn[i].token, w, buf);
     }
 
     for (; i < DATA_HEIGHT - 4; i++)
 	mvwprintw(dataw, i + 3, 1, "%*s", DATA_WIDTH - 4, " ");
+
+    mvwprintw(dataw, DATA_HEIGHT - 2, CENTERX(DATA_WIDTH, MAIN_HELP_PROMPT),
+	    "%s", MAIN_HELP_PROMPT);
 
     return;
 }
@@ -324,12 +356,13 @@ void game_loop()
     int rrow = 8, rcol = 1;
 
     cursor_x = 2, cursor_y = 1;
+    gindex = gtotal - 1;
 
     wtimeout(boardw, 500);
     send_to_engine("nopost\n");
 
-    if (data.pgnfile[0])
-	send_to_engine("pgnload %s\n", data.pgnfile);
+    if (pgnfile[0])
+	send_to_engine("pgnload %s\n", pgnfile);
     else
 	send_to_engine("show board\n");
 
@@ -376,30 +409,48 @@ void game_loop()
 	switch (c) {
 	    int annotate;
 
-	    case 'a':
-	        annotate = history_index;
+	    case '>':
+		if (gindex + 1 == gtotal)
+		    gindex = 0;
+		else
+		    gindex++;
 
-		if (annotate && history[annotate - 1].move[0])
+		update_all();
+		break;
+	    case '<':
+		if (gindex - 1 < 0)
+		    gindex = gtotal - 1;
+		else
+		    gindex--;
+
+		update_all();
+		break;
+	    case 'a':
+	        annotate = game[gindex].hindex;
+
+		if (annotate && game[gindex].history[annotate - 1].move[0])
 		    annotate--;
 		else
 		    break;
 
 		snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATE_HISTORY,
-			history[annotate].move);
+			game[gindex].history[annotate].move);
 
-		if ((tmp = get_input(buf, history[annotate].comment, 0, 0, 
+		if ((tmp = get_input(buf, 
+				game[gindex].history[annotate].comment, 0, 0, 
 				-1)) != NULL)
-		    strncpy(history[annotate].comment, tmp,
-			    sizeof(history[annotate].comment));
+		    strncpy(game[gindex].history[annotate].comment, tmp,
+			    sizeof(game[gindex].history[annotate].comment));
 		update_history();
 		break;
 	    case 'i':
-		if (!data.pgnfile[0])
+		if (!pgnfile[0])
 		    break;
 
 		edit_pgn_data(0);
 		break;
 	    case 'v':
+		/* FIXME */
 		message(NULL, ANYKEY, "%s\n%s\n\nTerminal supports %i colors.\n"
 			"Using %s\n", PACKAGE_STRING, COPYRIGHT, COLORS,
 			curses_version());
@@ -424,12 +475,12 @@ void game_loop()
 		break;
 	    case 'h':
 		if (browse_history) {
-		    if (history_index != history_total) {
+		    if (game[gindex].hindex != game[gindex].htotal) {
 			if ((c = message(NULL, YESNO, 
 					"Resume game from history?")) != 'y')
 			    break;
 
-			history_total = history_index;
+			game[gindex].htotal = game[gindex].hindex;
 			update_history();
 		    }
 
@@ -455,6 +506,7 @@ void game_loop()
 		if (browse_history)
 		    break;
 
+		/* FIXME history */
 		send_to_engine("remove\n");
 		break;
 	    case 'r':
@@ -471,23 +523,29 @@ void game_loop()
 		    break;
 		}
 
-		strncpy(data.pgnfile, tmp, sizeof(data.pgnfile));
-		send_to_engine("pgnload %s\n", data.pgnfile);
+		gindex = gtotal - 1;
+		strncpy(pgnfile, tmp, sizeof(pgnfile));
+		send_to_engine("pgnload %s\n", pgnfile);
 		break;
 	    case 's':
+		if (!game[gindex].htotal) {
+		    message(NULL, ANYKEY, "No moves to save");
+		    break;
+		}
+
 		if (message(NULL, YESNO, "Edit save game data?") == 'y') {
 		    if ((tmppgn = edit_pgn_data(1)) == NULL)
 			break;
 		}
 
 		if ((tmp = get_input_str_clear("Save game filename", 
-				data.pgnfile)) == NULL) {
+				pgnfile)) == NULL) {
 		    if (tmppgn)
 			free(tmppgn);
 		    break;
 		}
 
-		if (save_pgn(tmp, (tmppgn) ? tmppgn : pgn)) {
+		if (save_pgn(tmp, (tmppgn) ? tmppgn : game[gindex].pgn)) {
 		    if (tmppgn)
 			free(tmppgn);
 
@@ -496,8 +554,9 @@ void game_loop()
 		}
 
 		free(tmppgn);
-		strncpy(data.pgnfile, tmp, sizeof(data.pgnfile));
-		parse_pgn_file(data.pgnfile);
+		strncpy(pgnfile, tmp, sizeof(pgnfile));
+		parse_pgn_file(pgnfile);
+		gindex = gtotal - 1;
 		update_data();
 		update_status();
 		break;
@@ -511,12 +570,11 @@ void game_loop()
 		reset_history();
 		browse_history = 0;
 
-		if (data.pgnfile[0]) {
-		    data.pgnfile[0] = 0;
-		    parse_pgn_file(data.pgnfile);
+		if (pgnfile[0]) {
+		    pgnfile[0] = 0;
+		    parse_pgn_file(pgnfile);
 		}
 
-		status.games = 0;
 		update_all();
 
 		status.bw = WHITE;
@@ -561,11 +619,11 @@ void game_loop()
 	    case 'l':
 	    case KEY_LEFT:
 		if (browse_history) {
-		    if (history_index - 1 < 0)
+		    if (game[gindex].hindex - 1 < 0)
 			break;
 
 		    send_to_engine("undo\n");
-		    history_index--;
+		    game[gindex].hindex--;
 		    break;
 		}
 
@@ -577,10 +635,11 @@ void game_loop()
 	    case ';':
 	    case KEY_RIGHT:
 		if (browse_history) {
-		    if (history_index + 1 > history_total)
+		    if (game[gindex].hindex + 1 > game[gindex].htotal)
 			break;
 
-		    send_to_engine("%s\n", history[history_index++].move);
+		    send_to_engine("%s\n", 
+			    game[gindex].history[game[gindex].hindex++].move);
 		    break;
 		}
 
@@ -696,7 +755,7 @@ int main(int argc, char *argv[])
 		printf("%s\n%s\n", PACKAGE_STRING, COPYRIGHT);
 		exit(EXIT_SUCCESS);
 	    case 'p':
-		strncpy(data.pgnfile, optarg, sizeof(data.pgnfile));
+		strncpy(pgnfile, optarg, sizeof(pgnfile));
 		break;
 	    case 'h':
 	    default:
@@ -708,11 +767,11 @@ int main(int argc, char *argv[])
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
 
-    if ((opt = parse_pgn_file(data.pgnfile)) != 0) {
+    if ((opt = parse_pgn_file(pgnfile)) != 0) {
 	if (opt > 0)
-	    err(EXIT_FAILURE, "%s", data.pgnfile);
+	    err(EXIT_FAILURE, "%s", pgnfile);
 	else
-	    errx(EXIT_FAILURE, "%s: parse error", data.pgnfile);
+	    errx(EXIT_FAILURE, "%s: parse error", pgnfile);
     }
 
     initscr();

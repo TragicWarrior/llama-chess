@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.15 2002-12-11 17:45:17 bjk Exp $ */
+/* $Id: pgn.c,v 1.16 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -60,9 +60,12 @@ char *parse_piece(char *str)
 
 	if ((tmp2 = strsep(&str, " ")) != NULL) {
 	    for (i = 0; i < NARRAY(fancy_results); i++) {
-		if (strcmp(tmp2, fancy_results[i].pgn) == 0)
-		    strncpy(pgn[PGN_RESULT].value, fancy_results[i].fancy,
-			    sizeof(data.result));
+		if (strcmp(tmp2, fancy_results[i].pgn) == 0) {
+		    strncpy(game[gindex].pgn[PGN_RESULT].value, 
+			    fancy_results[i].fancy,
+			    sizeof(game[gindex].pgn[PGN_RESULT].value));
+		    break;
+		}
 	    }
 	}
     }
@@ -99,8 +102,8 @@ int add_pgn_data(struct pgndata **dst, int *n, char *token, char *value)
     if (value)
 	strncpy(tdata[index].value, value, sizeof(tdata[index].value));
 
-    memset(&tdata[index + 1], 0, sizeof(struct pgndata));
-    *n = ++index;
+    memset(&tdata[++index], 0, sizeof(struct pgndata));
+    *n = index;
     *dst = tdata;
     return 0;
 }
@@ -126,6 +129,7 @@ static char *remove_escapes(const char *str)
     return buf;
 }
 
+/* FIXME need a way to 'append' a game or round. */
 static void init_data()
 {
     time_t now;
@@ -136,32 +140,49 @@ static void init_data()
     if ((pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
 
-    pgn_index = 0;
     time(&now);
     tp = localtime(&now);
     strftime(tbuf, sizeof(tbuf), TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_pgn_data(&pgn, &pgn_index, "Event", UNKNOWN);
-    add_pgn_data(&pgn, &pgn_index, "Site", UNKNOWN);
-    add_pgn_data(&pgn, &pgn_index, "Date", tbuf);
-    add_pgn_data(&pgn, &pgn_index, "Round", UNKNOWN);
-    add_pgn_data(&pgn, &pgn_index, "White", pwd->pw_gecos);
-    add_pgn_data(&pgn, &pgn_index, "Black", UNKNOWN);
-    add_pgn_data(&pgn, &pgn_index, "Result", UNKNOWN);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Event",
+	    UNKNOWN);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Site",
+	    UNKNOWN);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Date", tbuf);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Round", 
+	    UNKNOWN);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "White", 
+	    pwd->pw_gecos);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Black",
+	    UNKNOWN);
+    add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, "Result", 
+	    UNKNOWN);
+
+    gtotal = gindex + 1;
 
     return;
 }
 
-/* We can count the number of games in a file, but only one can be loaded. The
- * last one, since games are more than likely appended to the file.
- */
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
+    int i;
     char buf[MAX_PGN_LINE_LEN], *tmp;
     int tag_section = 0;
     int skip_move_text = 0;
+
+    if (gtotal) {
+	for (i = 0; i < gtotal; i++) {
+	    free(game[i].pgn);
+	    free(game[i].history);
+	}
+
+	free(game);
+    }
+
+    gtotal = gindex = 0;
+    game = Calloc(1, sizeof(struct games));
 
     if (!filename[0]) {
 	init_data();
@@ -170,8 +191,6 @@ int parse_pgn_file(const char *filename)
 
     if ((fp = fopen(filename, "r")) == NULL)
 	return 1;
-
-    pgn_index = status.games = 0;
 
     while ((tmp = fgets(buf, sizeof(buf), fp)) != NULL) {
 	char *token, *value;
@@ -186,7 +205,6 @@ int parse_pgn_file(const char *filename)
 
 	if (tag_section && tmp[0] == '\n') {
 	    tag_section = 0;
-	    status.games++;
 	    continue;
 	}
 
@@ -198,8 +216,8 @@ int parse_pgn_file(const char *filename)
 	    if (!tag_section) {
 		tag_section = 1;
 		skip_move_text = 0;
-		pgn_index = 0; /* Reset everytime a new tag section is
-				  detected. */
+		game = Realloc(game, (gindex + 2) * sizeof(struct games));
+		game[gindex].pindex = 0;
 	    }
 
 	    tmp++;
@@ -229,7 +247,8 @@ int parse_pgn_file(const char *filename)
 		if (!value[0])
 		    value = UNKNOWN;
 
-		add_pgn_data(&pgn, &pgn_index, token, remove_escapes(value));
+		add_pgn_data(&game[gindex].pgn, &game[gindex].pindex, 
+			token, remove_escapes(value));
 	    }
 
 	    continue;
@@ -240,7 +259,7 @@ int parse_pgn_file(const char *filename)
 
 	/* Must be move text... */
 	fseek(fp, -(strlen(tmp) + 1), SEEK_CUR);
-	reset_history();
+	game[gindex].hindex = game[gindex].htotal = 0;
 
 	/* Move text section contained no moves. */
 	if ((i = fgetc(fp)) == '*') {
@@ -280,18 +299,17 @@ int parse_pgn_file(const char *filename)
 		    break;
 	    }
 
-	    add_to_history(&history_index, white);
-	    add_to_history(&history_index, black);
+	    add_to_history(&game[gindex].history, &game[gindex].hindex,
+		    &game[gindex].htotal, white);
+	    add_to_history(&game[gindex].history, &game[gindex].hindex,
+		    &game[gindex].htotal, black);
 	}
+
+	gindex++;
     }
 
+    gtotal = gindex;
     fclose(fp);
-
-    if (history_index) {
-	browse_history = 1;
-	send_to_engine("manual\n");
-    }
-
     return 0;
 }
 
@@ -365,16 +383,17 @@ int save_pgn(const char *filename, struct pgndata *data)
 
     fprintf(fp, "\n");
 
-    for (i = 0, n = 1; i < history_index; i += 2, n++) {
-	int wlen = strlen(history[i].move);
-	int blen = strlen(history[i + 1].move);
+    for (i = 0, n = 1; i < game[gindex].hindex; i += 2, n++) {
+	int wlen = strlen(game[gindex].history[i].move);
+	int blen = strlen(game[gindex].history[i + 1].move);
 
 	if (wlen + blen + 6 + len + 1 > 80) {
 	    fprintf(fp, "\n");
 	    len = 0;
 	}
 
-	fprintf(fp, "%u. %s %s ", n, history[i].move, history[i + 1].move);
+	fprintf(fp, "%u. %s %s ", n, game[gindex].history[i].move, 
+		game[gindex].history[i + 1].move);
 	len += wlen + blen + 6;
     }
 
@@ -409,8 +428,9 @@ struct pgndata *edit_pgn_data(int edit)
     int i;
 
     /* Edit the backup copy, not the original in case the save fails. */
-    for (i = 0; i < pgn_index; i++)
-	add_pgn_data(&data, &data_index, pgn[i].token, pgn[i].value);
+    for (i = 0; i < game[gindex].pindex; i++)
+	add_pgn_data(&data, &data_index, game[gindex].pgn[i].token,
+		game[gindex].pgn[i].value);
 
     while (1) {
 	WINDOW *win;
@@ -441,7 +461,7 @@ struct pgndata *edit_pgn_data(int edit)
 
 	cols += 2;
 
-	win = newwin(rows + 5, cols, CALCPOSY(rows), CALCPOSX(cols));
+	win = newwin(rows + 5, cols, CALCPOSY(rows + 5), CALCPOSX(cols));
 	set_menu_format(menu, 12, 0);
 	set_menu_win(menu, win);
 	set_menu_sub(menu, derwin(win, rows, cols - 2, 2, 1));

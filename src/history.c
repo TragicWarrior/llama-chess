@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.3 2002-12-11 17:45:17 bjk Exp $ */
+/* $Id: history.c,v 1.4 2002-12-12 15:07:49 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -29,47 +29,29 @@
 
 char *get_history_by_index(int index)
 {
-    if (index < 0 || index > history_total - 1)
+    if (index < 0 || index > game[gindex].htotal - 1)
 	return "none";
 
-    return history[index].move;
+    return game[gindex].history[index].move;
 }
 
 void reset_history()
 {
-    history_index = history_total = 0;
+    game[gindex].hindex = game[gindex].htotal = 0;
     return;
 }
 
-void update_history()
+void add_to_history(struct history **h, int *n, int *t, const char *str)
 {
-    char buf[16];
-
-    if (history_total)
-	snprintf(buf, sizeof(buf), "%u%s of %u", history_index, 
-		(history[history_index].comment[0]) ? "*" : "",
-		history_total);
-    else
-	strncpy(buf, UNKNOWN, sizeof(buf));
-
-    mvwprintw(historyw, 2, 1, "     Move: %-*s", HISTORY_WIDTH - 13, buf);
-    mvwprintw(historyw, 3, 1, "Next move: %-*s", HISTORY_WIDTH - 13, 
-	    get_history_by_index(history_index));
-    mvwprintw(historyw, 4, 1, "Last move: %-*s", HISTORY_WIDTH - 13,
-	    get_history_by_index(history_index - 1));
-    return;
-}
-
-void add_to_history(int *n, const char *str)
-{
+    struct history *history = *h;
     int index = *n;
 
-    history = Realloc(history, (index + 2) * sizeof(struct history_s));
+    history = Realloc(history, (index + 2) * sizeof(struct history));
     strncpy(history[index].move, str, sizeof(history[index].move));
 
-    history_total = index + 1;
-    memset(&history[index + 1], 0, sizeof(struct history_s));
+    memset(&history[++index], 0, sizeof(struct history));
 
-    *n = ++index;
+    *n = *t = index;
+    *h = history;
     return;
 }
