@@ -1,3 +1,21 @@
+2002-12-17 Tuesday 17:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.33), history.c (1.14), history.h (1.6):
+	
+	Added the beginnings of agony strings after a capture.
+
+2002-12-17 Tuesday 17:36  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.13):
+	
+	Can now handle castling.
+
+2002-12-17 Tuesday 16:43  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.12):
+	
+	Can now handle promotions.
+
 2002-12-17 Tuesday 16:25  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.32), cboard.h (1.21):
