@@ -156,10 +156,6 @@ Password for ICS username.
 When a piece is selected, show valid squares the piece can move to. The
 default is 
 .Ar on .
-.It Cm ignorecase Ar on|off
-Ignore the distinction between upper and lower case when searching move text.
-The default is
-.Ar off .
 .El
 .
 .Sh COLORS

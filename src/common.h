@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.49 2003-01-29 00:53:26 bjk Exp $ */
+/* $Id: common.h,v 1.50 2003-01-29 17:07:19 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -186,7 +186,6 @@ struct {
     int deleteprompt;
     int clevel;
     int validmoves;
-    int ignorecase;
     char ics_server[MAXHOSTNAMELEN];
     int ics_port;
     char *ics_user;

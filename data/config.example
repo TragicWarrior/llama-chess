@@ -47,10 +47,6 @@ line_graphics	off
 # If on, show valid moves for the selected piece.
 valid_moves	on
 
-# Ignore the distinction between upper and lower case in the move text search
-# expression.
-ignorecase	off
-
 # ICS server.
 ics_server	ics.freechess.org
 
