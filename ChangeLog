@@ -1,3 +1,9 @@
+2003-01-08 Wednesday 16:59  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.52):
+	
+	Fix for 'S' command.
+
 2003-01-08 Wednesday 16:54  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.51), cboard.h (1.37), common.h (1.35), engine.c
