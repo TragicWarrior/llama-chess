@@ -78,6 +78,12 @@ or
 The default is 
 .Ar random .
 .Pp
+.It Cm engine_cmd Ar command Op args ...
+The chess engine command to execute with any arguments. The default is
+\&"
+.Ar gnuchess xboard
+\&".
+.Pp
 .It Cm jumpcount Ar integer
 When viewing move history, you can jump more than one move to the next or
 previous move with the UP and DOWN keys. This sets the number of moves to

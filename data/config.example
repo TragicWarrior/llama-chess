@@ -4,6 +4,9 @@
 # ignored. Parameters and values are separated by one or more space or TAB
 # characters.
 ###############################################################################
+# The engine command and any arguments. Only the default has been tested.
+engine_cmd	gnuchess xboard
+
 # The number of moves to jump when browsing history and pressing the UP or
 # DOWN keys.
 jumpcount	5
