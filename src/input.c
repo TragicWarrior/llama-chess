@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.5 2002-12-09 18:51:43 bjk Exp $ */
+/* $Id: input.c,v 1.6 2002-12-09 21:20:13 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -70,6 +70,7 @@ char *get_input(const char *prompt, const char *init, int type, ...)
 	    len + 4 : INPUT_WIDTH;
 
     fields[0] = new_field(1, width - 4, 0, 0, 0, 0);
+    set_max_field(fields[0], 255);
 
     va_start(ap, type);
 
@@ -124,6 +125,7 @@ char *get_input(const char *prompt, const char *init, int type, ...)
     curs_set(1);
     panel = new_panel(win);
     draw_window_title(win, prompt, width);
+    form_driver(finput, REQ_END_LINE);
 
     while (1) {
 	int c;
@@ -167,14 +169,12 @@ char *get_input(const char *prompt, const char *init, int type, ...)
 		form_driver(finput, REQ_DEL_PREV);
 		break;
 	    case '\n':
+		form_driver(finput, REQ_VALIDATION);
 		goto done;
 	    case KEY_ESCAPE:
-		goto quit;
-		/*
-	    case ' ':
-		form_driver(finput, REQ_INS_CHAR);
-		break;
-		*/
+		if (init)
+		    set_field_buffer(fields[0], 0, init);
+		goto done;
 	    default:
 		form_driver(finput, c);
 		form_driver(finput, REQ_VALIDATION);
@@ -185,8 +185,6 @@ char *get_input(const char *prompt, const char *init, int type, ...)
 done:
     tmp = trim(field_buffer(fields[0], 0));
     strncpy(dst, (tmp) ? tmp : "", sizeof(dst));
-
-quit:
     cleanup(win, panel, finput, fields);
     noecho();
     nonl();
