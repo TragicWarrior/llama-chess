@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.18 2003-01-29 17:05:50 bjk Exp $ */
+/* $Id: move.c,v 1.19 2003-01-29 20:22:38 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1014,6 +1014,36 @@ done:
     return (check != 0) ? 1 : 0;
 }
 
+/* FIXME */
+static int drawtest(BOARD b)
+{
+    int row, col;
+    int other = 0;
+
+    for (row = 1; VALIDFILE(row); row++) {
+	for (col = 1; VALIDFILE(col); col++) {
+	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
+	    int piece = piece_to_int(p);
+
+	    switch (piece) {
+		case PAWN:
+		    return 0;
+		    break;
+		case KING:
+		    break;
+		default:
+		    other++;
+		    break;
+	    }
+	}
+    }
+
+    if (!other)
+	return 1;
+
+    return 0;
+}
+
 int parse_move_text(BOARD b, char *move, int reset)
 {
     char *p;
@@ -1231,9 +1261,12 @@ done:
 	game[gindex].castle = 0;
     }
 
+    game[gindex].gameover = 0;
     validate_move = 1;
 
-    /* FIXME draw. */
+    if (drawtest(b))
+	return 1;
+
     switch (checktest(b, kr, kc, okr, okc)) {
 	case 0:
 	    break;
@@ -1260,6 +1293,8 @@ done:
 
 		if (curses_initialized)
 		    update_tag_window();
+
+		game[gindex].gameover = 1;
 	    }
 	    else {
 		*p++ = '+';
