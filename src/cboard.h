@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.45 2003-01-23 21:48:12 bjk Exp $ */
+/* $Id: cboard.h,v 1.46 2003-01-24 20:21:50 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -57,24 +57,26 @@ int gactive;
 char **agony;
 
 const char *mainhelp[] = {
-    "   UP/j - cursor up/hist jump     R - refresh screen",
-    " DOWN/k - cursor down/hist jump   b - cycle through book modes",
-    " LEFT/l - cursor left/hist rev    c - send a command to the game engine",
-    "RIGHT/; - cursor right/hist fwd   w - switch playing sides",
-    "    1-7 - cursor repeat count     u - undo previous move",
-    "  SPACE - select piece            g - force engine to make next move",
-    "  ENTER - commit selected piece   h - toggle history mode",
-    "    ESC - cancel selected piece   a - annotate previous move",
-    "                                  ] - view the next moves annotation",
-    "      n - new game or round       [ - view the previous moves annotation",
-    "      N - new game from scratch   i - show PGN roster tags",
-    "      r - resume a saved game",
-    "      s - save game",
-    "      S - save game with prompt",
-    "      > - next game or round",
-    "      < - previous game or round",
-    "      d - toggle game for deletion",
-    "      D - delete game(s)",
+    "   UP - cursor up/hist jump     R - refresh screen",
+    " DOWN - cursor down/hist jump   b - cycle through book modes",
+    " LEFT - cursor left/hist rev    c - send a command to the game engine",
+    "RIGHT - cursor right/hist fwd   w - switch playing sides",
+    " 0..9 - cursor repeat count     u - undo previous move",
+    "SPACE - select piece            g - force engine to make next move",
+    "ENTER - commit selected piece   h - toggle history mode",
+    "  ESC - cancel selected piece   a - annotate previous move",
+    "                                ] - view the next moves annotation",
+    "    n - new game or round       [ - view the previous moves annotation",
+    "    N - new game from scratch   i - show PGN roster tags",
+    "    > - next game or round      j - jump to move number",
+    "    < - previous game or round  q - quit",
+    "    J - jump to game or round",
+    "    d - toggle game for deletion",
+    "    D - delete game(s)",
+    " ",
+    "    r - resume a saved game",
+    "    s - save game",
+    "    S - save game with prompt",
     NULL
 };
 
@@ -116,5 +118,6 @@ void free_historydata(struct history *, int);
 void get_valid_moves(BOARD, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
 int parse_move_text(BOARD, char *, int);
+void parse_history_move(BOARD, int);
 
 #endif
