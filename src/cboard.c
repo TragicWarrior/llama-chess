@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.14 2002-12-09 18:54:24 bjk Exp $ */
+/* $Id: cboard.c,v 1.15 2002-12-09 21:18:32 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -235,7 +235,7 @@ void update_data()
     char *tmp;
     int i, tlen = 0;
 
-    /* Get the longest token length. */
+    /* Get the longest tag length. */
     for (i = 0; (i < DATA_HEIGHT - 4 && pgn[i].token[0]); i++) {
 	int ttlen = strlen(pgn[i].token);
 
@@ -251,7 +251,7 @@ void update_data()
     mvwprintw(dataw, 2, 1, "%*s: %-*s", tlen, "File", w, tmp);
 
     for (i = 0; (i < DATA_HEIGHT - 4 && pgn[i].token[0]); i++)
-	mvwprintw(dataw, i + 3, 1, "%*s: %-*s", tlen, pgn[i].token, w,
+	mvwprintw(dataw, i + 3, 1, "%*s: %-.*s", tlen, pgn[i].token, w,
 		pgn[i].value);
 
     /*
@@ -324,6 +324,7 @@ void game_loop()
 	char enginebuf[8192] = {0};
 	struct timeval tv;
 	char *tmp;
+	struct pgndata *tmppgn = NULL;
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
@@ -442,18 +443,27 @@ void game_loop()
 		}
 		break;
 	    case 's':
-		/* FIXME user defined tags */
-		if (message(NULL, YESNO, "Edit save game data?") == 'y')
-		    edit_pgn_data(1);
+		if (message(NULL, YESNO, "Edit save game data?") == 'y') {
+		    if ((tmppgn = edit_pgn_data(1)) == NULL)
+			break;
+		}
 
-		if ((tmp = get_input_str("Save game filename", NULL)) == NULL)
+		if ((tmp = get_input_str("Save game filename", data.pgnfile))
+			== NULL) {
+		    if (tmppgn)
+			free(tmppgn);
 		    break;
+		}
 
-		if (save_pgn(tmp)) {
+		if (save_pgn(tmp, (tmppgn) ? tmppgn : pgn)) {
+		    if (tmppgn)
+			free(tmppgn);
+
 		    message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
 		    break;
 		}
 
+		free(tmppgn);
 		strncpy(data.pgnfile, tmp, sizeof(data.pgnfile));
 		parse_pgn_file(data.pgnfile);
 		update_data();
