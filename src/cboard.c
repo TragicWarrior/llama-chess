@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.52 2003-01-08 21:59:42 bjk Exp $ */
+/* $Id: cboard.c,v 1.53 2003-01-09 17:13:57 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -257,13 +257,12 @@ char *book_method(int method)
 
 void update_status()
 {
-    int w = STATUS_WIDTH - 12;
     int i;
     char *engine;
-    char buf[w + 1];
+    char buf[STATUS_WIDTH - 7];
 
     snprintf(buf, sizeof(buf), "%i of %i", gindex + 1, gtotal);
-    mvwprintw(statusw, 2, 1, "    Game: %-*s", w, buf);
+    mvwprintw(statusw, 2, 1, "Game: %-*s", STATUS_WIDTH - 8, buf);
 
     switch (status.engine) {
 	case ENGINE_THINKING:
@@ -283,17 +282,18 @@ void update_status()
 	    break;
     }
 
-    mvwprintw(statusw, 3, 1, "  Engine: %-*s", w, " ");
+    mvwprintw(statusw, 3, 1, "Engine: %-*s", STATUS_WIDTH - 10, " ");
     wattron(statusw, CP_STATUS_ENGINE);
-    mvwaddstr(statusw, 3, 11, engine);
+    mvwaddstr(statusw, 3, 9, engine);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, 4, 1, "   Depth: %-*i", w, config.engine_depth);
+    mvwprintw(statusw, 4, 1, "Depth: %-*i", STATUS_WIDTH - 9,
+	    config.engine_depth);
 
-    mvwprintw(statusw, 5, 1, "    Book: %-*s", w,
+    mvwprintw(statusw, 5, 1, "Book: %-*s", STATUS_WIDTH - 8,
 	    book_method(config.book_method));
 
-    mvwprintw(statusw, 6, 1, "    Turn: %-*s", w, 
+    mvwprintw(statusw, 6, 1, "Turn: %-*s", STATUS_WIDTH - 8,
 	    (status.turn == WHITE) ? "white" : "black");
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
@@ -339,13 +339,15 @@ void update_history()
 
 void update_white_black()
 {
-    draw_window_title(whitew, game[gindex].pgn[PGN_WHITE].value, BW_WIDTH, 
-	    CP_WHITE_TITLE, CP_WHITE_BORDER);
-    draw_window_title(blackw, game[gindex].pgn[PGN_BLACK].value, BW_WIDTH, 
-	    CP_BLACK_TITLE, CP_BLACK_BORDER);
+    mvwprintw(whitew, 2, 1, "Name: %-*s", BW_WIDTH - 8,
+	    (game[gindex].pgn[PGN_WHITE].value[0]) ?
+	    game[gindex].pgn[PGN_WHITE].value : NONE);
+    mvwprintw(blackw, 2, 1, "Name: %-*s", BW_WIDTH - 8,
+	    (game[gindex].pgn[PGN_BLACK].value[0]) ?
+	    game[gindex].pgn[PGN_BLACK].value : NONE);
 
-    mvwprintw(whitew, 2, 1, "Captures: %-2i", game[gindex].wcaptures);
-    mvwprintw(blackw, 2, 1, "Captures: %-2i", game[gindex].bcaptures);
+    mvwprintw(whitew, 3, 1, "Captures: %-2i", game[gindex].wcaptures);
+    mvwprintw(blackw, 3, 1, "Captures: %-2i", game[gindex].bcaptures);
     return;
 }
 
@@ -402,10 +404,10 @@ void refresh_all()
     werase(blackw);
     werase(boardw);
     update_all();
-    draw_window_title(whitew, game[gindex].pgn[PGN_WHITE].value, BW_WIDTH, 
-	    CP_WHITE_TITLE, CP_WHITE_BORDER);
-    draw_window_title(blackw, game[gindex].pgn[PGN_BLACK].value, BW_WIDTH, 
-	    CP_BLACK_TITLE, CP_BLACK_BORDER);
+    draw_window_title(whitew, "White", BW_WIDTH, CP_WHITE_TITLE, 
+	    CP_WHITE_BORDER);
+    draw_window_title(blackw, "Black", BW_WIDTH, CP_BLACK_TITLE, 
+	    CP_BLACK_BORDER);
     draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
 	    CP_STATUS_BORDER);
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
@@ -441,6 +443,58 @@ static void game_next_prev(int n)
     }
 
     update_all();
+    return;
+}
+
+void free_game_data()
+{
+    int i;
+
+    if (!gtotal)
+	return;
+
+    for (i = 0; i < gtotal; i++) {
+	free(game[i].pgn);
+	free(game[i].history);
+    }
+
+    /*
+    free(game);
+    */
+    return;
+}
+
+static void delete_game(int which)
+{
+    struct games *g = NULL;
+    int gi = 0;
+    int i;
+    
+    for (i = 0; i < gtotal; i++) {
+	if (i == which) {
+	    free(game[i].history);
+	    free(game[i].pgn);
+	    continue;
+	}
+
+	g = Realloc(g, (gi + 2) * sizeof(struct games));
+
+	memcpy(&g[gi], &game[i], sizeof(struct games));
+
+	g[gi].pgn = game[i].pgn;
+	g[gi].history = game[i].history;
+	gi++;
+    }
+
+    game = g;
+    gtotal = gi;
+
+    if (which + 1 >= gtotal)
+	gindex = gtotal - 1;
+    else
+	gindex = which;
+
+    gactive = gindex;
     return;
 }
 
@@ -527,7 +581,6 @@ blah:
 	    case '<':
 		game_next_prev(0);
 		break;
-		/*
 	    case 'D':
 		if (gtotal < 2) {
 		    message(NULL, ANYKEY, "%s", E_DELETE_GAME);
@@ -539,8 +592,8 @@ blah:
 		    break;
 
 		delete_game(gindex);
+		init_history();
 		break;
-		*/
 	    case 'a':
 	        annotate = game[gindex].hindex;
 
@@ -565,9 +618,6 @@ blah:
 		update_history();
 		break;
 	    case 'i':
-		if (!pgnfile[0])
-		    break;
-
 		edit_pgn_data(0);
 		break;
 	    case 'g':
@@ -920,24 +970,6 @@ void catch_signal(int which)
     return;
 }
 
-void free_game_data()
-{
-    int i;
-
-    if (!gtotal)
-	return;
-
-    for (i = 0; i < gtotal; i++) {
-	free(game[i].pgn);
-	free(game[i].history);
-    }
-
-    /*
-    free(game);
-    */
-    return;
-}
-
 static void set_defaults()
 {
     status.engine = ENGINE_OFFLINE;
@@ -1022,6 +1054,10 @@ int main(int argc, char *argv[])
 	    errx(EXIT_FAILURE, "%s: %s", pgnfile, E_PGN_PARSE);
     }
 
+    /*
+    delete_game(1);
+    exit(0);
+    */
     srandom(getpid());
 
     if (initscr() == NULL)
@@ -1057,11 +1093,11 @@ int main(int argc, char *argv[])
     draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
 	    CP_STATUS_BORDER);
     wbkgd(whitew, CP_WHITE_WINDOW);
-    draw_window_title(whitew, game[gindex].pgn[PGN_WHITE].value, BW_WIDTH, 
-	    CP_WHITE_TITLE, CP_WHITE_BORDER);
+    draw_window_title(whitew, "White", BW_WIDTH, CP_WHITE_TITLE, 
+	    CP_WHITE_BORDER);
     wbkgd(blackw, CP_BLACK_WINDOW);
-    draw_window_title(blackw, game[gindex].pgn[PGN_BLACK].value, BW_WIDTH, 
-	    CP_BLACK_TITLE, CP_BLACK_BORDER);
+    draw_window_title(blackw, "Black", BW_WIDTH, CP_BLACK_TITLE, 
+	    CP_BLACK_BORDER);
     wbkgd(historyw, CP_HISTORY_WINDOW);
     draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
 	    CP_HISTORY_BORDER);

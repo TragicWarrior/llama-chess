@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.37 2003-01-08 21:54:07 bjk Exp $ */
+/* $Id: cboard.h,v 1.38 2003-01-09 17:13:57 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -55,9 +55,9 @@ const char *mainhelp[] = {
     "    ESC - cancel selected piece   a - annotate previous move",
     "                                  ] - view the next moves annotation",
     "      n - new game                [ - view the previous moves annotation",
-    "      N - new game from scratch   q - quit",
+    "      N - new game from scratch   i - show PGN roster tags",
+    "      D - delete current game",
     "      r - resume a saved game",
-    "      i - show PGN roster tags",
     "      s - save game",
     "      S - save game with prompt",
     "      > - next game or round",
@@ -105,5 +105,6 @@ char *browse_directory(void *);
 char *a2a4tosan(struct board_matrix [][], char *);
 int add_pgn_data(struct pgndata **, int *, const char *, const char *);
 void new_game(struct board_matrix [][]);
+void *Malloc(size_t);
 
 #endif
