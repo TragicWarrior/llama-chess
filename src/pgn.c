@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.87 2003-02-05 16:21:45 bjk Exp $ */
+/* $Id: pgn.c,v 1.88 2003-02-05 20:16:57 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -644,17 +644,45 @@ static void rav_text(FILE *fp, int which)
     return;
 }
 
+/* This is called at the EOG marker and the beginning of the move text
+ * section. So at least a move or EOG marker has to exist. It initializes the
+ * board (b) to the FEN tag. */
+static void fen_tag(BOARD b)
+{
+    int n, i;
+    BOARD tmpboard;
+
+    init_board(tmpboard);
+
+    n = find_tag(game[gindex], "Setup");
+    i = find_tag(game[gindex], "FEN");
+
+    if ((n > -1 && i > -1 && atoi(game[gindex].tag[n].value) == 1) 
+	    || (i != -1 && n == -1)) {
+	if ((n = parse_fen_line(tmpboard,
+			game[gindex].tag[i].value)) == -1)
+	    cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
+	else {
+	    copy_board(tmpboard, b);
+	    game[gindex].fentag = i;
+	}
+    }
+
+    return;
+}
+
 int parse_pgn_file(BOARD b, const char *filename)
 {
     FILE *fp;
+#ifdef DEBUG
     char buf[LINE_MAX] = {0}, *p = buf;
+#endif
     int compressed = 0;
     int c;
     int tag_section = 0;
     int parse_error = 0;
     int nulltags = 1;
-    int n, i;
-    BOARD tmpboard;
+    int done_fen_tag = 0;
 
     if (!*filename) {
 	reset_game_data();
@@ -762,6 +790,11 @@ int parse_pgn_file(BOARD b, const char *filename)
 	    eog_marker(fp);
 	    nulltags = 1;
 	    tag_section = 0;
+
+	    if (!done_fen_tag)
+		fen_tag(pgnboard);
+
+	    done_fen_tag = 0;
 	    continue;
 	}
 
@@ -769,7 +802,11 @@ int parse_pgn_file(BOARD b, const char *filename)
 		c == 'B' || c == 'R' || c == 'P' || c == 'O') {
 	    ungetc(c, fp);
 
-	    tag_section = 0;
+	    if (tag_section) {
+		fen_tag(pgnboard);
+		done_fen_tag = 1;
+		tag_section = 0;
+	    }
 
 	    if (nulltags) {
 		new_game(pgnboard);
@@ -782,14 +819,14 @@ int parse_pgn_file(BOARD b, const char *filename)
 	    continue;
 	}
 
+#ifdef DEBUG
 	*p++ = c;
 
-#ifdef DEBUG
 	DUMP("unparsed: '%s'\n", buf);
-#endif
 
 	if (strlen(buf) + 1 == sizeof(buf))
 	    bzero(buf, sizeof(buf));
+#endif
 
 	continue;
     }
@@ -803,20 +840,6 @@ int parse_pgn_file(BOARD b, const char *filename)
 
     sort_tags(game[gindex]);
     gtotal = gindex + 1;
-
-    n = find_tag(game[gindex], "Setup");
-    i = find_tag(game[gindex], "FEN");
-
-    if ((n > -1 && i > -1 && atoi(game[gindex].tag[n].value) == 1) 
-	    || (i != -1 && n == -1)) {
-	if ((n = parse_fen_line(tmpboard, game[gindex].tag[i].value)) == -1)
-	    cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
-	else {
-	    copy_board(tmpboard, pgnboard);
-	    game[gindex].fentag = i;
-	    game[gindex].hindex = n * 2;
-	}
-    }
 
     copy_board(pgnboard, b);
 

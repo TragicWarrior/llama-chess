@@ -1,4 +1,4 @@
-/* $Id: epd.c,v 1.1 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: epd.c,v 1.2 2003-02-05 20:16:56 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -70,7 +70,7 @@ char *board_to_fen(BOARD b, GAME g)
 
     --p;
     *p++ = ' ';
-    *p++ = (status.turn == WHITE) ? 'b' : 'w';
+    *p++ = (status.turn == WHITE) ? 'w' : 'b';
     *p++ = ' ';
 
     if (!g.wk && !g.rkw)
@@ -175,8 +175,16 @@ int parse_fen_line(BOARD b, char *str)
 other:
     tmp++;
 
-    if (*tmp != 'b' && *tmp != 'w')
-	return -1;
+    switch (*tmp) {
+	case 'b':
+	    status.turn = BLACK;
+	    break;
+	case 'w':
+	    status.turn = WHITE;
+	    break;
+	default:
+	    return 1;
+    }
 
     tmp++;
 

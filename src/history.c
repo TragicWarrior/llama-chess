@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.46 2003-02-05 16:21:44 bjk Exp $ */
+/* $Id: history.c,v 1.47 2003-02-05 20:16:56 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -421,6 +421,10 @@ void parse_history_move(BOARD b, int index)
     game[gindex].ply = 0;
 
     init_board(b);
+
+    /* FIXME Move numbers and turns. */
+    if (game[gindex].fentag)
+	parse_fen_line(b, game[gindex].tag[game[gindex].fentag].value);
 
     for (i = 0; i < index; i++) {
 	HISTORY h;
