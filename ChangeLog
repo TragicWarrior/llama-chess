@@ -1,3 +1,27 @@
+2002-12-12 Thursday 14:16  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.21), cboard.h (1.15), common.h (1.13), input.c
+	(1.11), input.h (1.5):
+	
+	Help updates.
+	
+	Use a CTRL() macro for control keys.
+	
+	Miscellaeous cleanups.
+
+2002-12-12 Thursday 14:16  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: pgn.c (1.18), pgn.h (1.8):
+	
+	Pressing an alphanumeric character in the menu will jump to a
+	matching line.
+
+2002-12-12 Thursday 10:33  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: input.c (1.10), pgn.c (1.17):
+	
+	Increased fgets() buffer size.
+
 2002-12-12 Thursday 10:07  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.20), cboard.h (1.14), common.h (1.12), engine.c
