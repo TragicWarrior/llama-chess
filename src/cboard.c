@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.83 2003-01-31 20:47:38 bjk Exp $ */
+/* $Id: cboard.c,v 1.84 2003-01-31 21:16:43 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -454,17 +454,12 @@ void update_tag_window()
     int w = TAG_WIDTH - 10;
 
     for (i = 0; i < 7; i++) {
-	char *value;
+	char *value = game[gindex].tag[i].value;
 	int n;
 
-	if ((game[gindex].tag[i].value[0] == '?' ||
-		    game[gindex].tag[i].value[0] == '-') &&
-		game[gindex].tag[i].value[1] == '\0')
+	if ((*value == '?' || *value == '-') && value[1] == '\0')
 	    value = UNAVAILABLE;
-	else
-	    value = game[gindex].tag[i].value;
-
-	if (strcmp(game[gindex].tag[i].name, "Result") == 0) {
+	else if (strcmp(game[gindex].tag[i].name, "Result") == 0) {
 	    for (n = 0; n < NARRAY(fancy_results); n++) {
 		if (strcmp(value, fancy_results[n].pgn) == 0) {
 		    value = fancy_results[n].fancy;
@@ -473,7 +468,7 @@ void update_tag_window()
 	    }
 	}
 
-	value = str_etc(game[gindex].tag[i].value, TAG_WIDTH - 6 - 4, 0);
+	value = str_etc(value, w, 0);
 
 	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, game[gindex].tag[i].name,
 		w, value);
