@@ -1,3 +1,12 @@
+2002-12-18 Wednesday 12:24  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.35), cboard.h (1.23), engine.c (1.18):
+	
+	Determine if the engine process died if theres an error during
+	write().
+	
+	stop_engine() on SIGINT.
+
 2002-12-18 Wednesday 12:06  Ben Kibbey <bjk@arbornet.org>
 
 	* src/engine.c (1.17):
