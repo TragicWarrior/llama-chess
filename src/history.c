@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.38 2003-01-29 20:23:19 bjk Exp $ */
+/* $Id: history.c,v 1.39 2003-01-30 16:53:23 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -21,6 +21,7 @@
 #include <limits.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -60,7 +61,7 @@ static int init_nag()
     int i = 0;
 
     if ((fp = fopen(config.nagfile, "r")) == NULL) {
-	message(ERROR, ANYKEY, "Could not open NAG file.");
+	message(ERROR, ANYKEY, "%s: %s", config.nagfile, strerror(errno));
 	return 1;
     }
 

@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.19 2003-01-30 14:07:19 bjk Exp $ */
+/* $Id: input.c,v 1.20 2003-01-30 16:53:23 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -95,6 +95,7 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     FIELDTYPE *TYPE_PGN_DATE;
     FIELDTYPE *TYPE_PGN_ROUND;
     int quit = 0;
+    int argnull = 0;
 
     bzero(dst, sizeof(dst));
 
@@ -196,6 +197,13 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 	c = wgetch(win);
 
 	if (c == ckey && custom_func) {
+	    form_driver(form, REQ_VALIDATION);
+
+	    if (arg == NULL || argnull) {
+		arg = field_buffer(fields[0], 0);
+		argnull = 1;
+	    }
+
 	    if ((tmp = custom_func(arg)) != NULL) {
 		set_field_buffer(fields[0], 0, tmp);
 		form_driver(form, REQ_END_LINE);

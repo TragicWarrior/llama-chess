@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.76 2003-01-30 14:08:09 bjk Exp $ */
+/* $Id: cboard.c,v 1.77 2003-01-30 16:53:23 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -56,7 +56,7 @@ char *random_agony()
     if (!agony) {
 	if ((fp = fopen(config.agonyfile, "r")) == NULL) {
 	    index = -1;
-	    message(ERROR, ANYKEY, "%s", E_AGONY);
+	    message(ERROR, ANYKEY, "%s: %s", config.agonyfile, strerror(errno));
 	    return NULL;
 	}
 
@@ -1188,14 +1188,8 @@ void game_loop()
 				'\t', -1)) == NULL)
 		    break;
 
-		if ((c = parse_pgn_file(board, tmp)) != 0) {
-		    if (c > 0)
-			message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
-		    else
-			message(NULL, ANYKEY, "%s: %s", tmp, E_PGN_PARSE);
-
+		if (parse_pgn_file(board, tmp))
 		    break;
-		}
 
 		gindex = gtotal - 1;
 		gactive = gindex;
@@ -1652,7 +1646,7 @@ static void set_defaults()
 
     status.engine = ENGINE_OFFLINE;
 
-    config.engine_cmd = strdup("gnuchess xboard");
+    config.engine_cmd = DEFAULT_ENGINE_CMD;
     config.jumpcount = 5;
     config.clevel = 6;
     config.book_method = BOOK_RANDOM;
@@ -1665,18 +1659,30 @@ static void set_defaults()
     config.validmoves = 1;
     strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
     config.ics_port = DEFAULT_ICS_PORT;
-    config.ics_user = strdup(DEFAULT_ICS_USER);
+    config.ics_user = DEFAULT_ICS_USER;
 
     set_default_colors();
 
-    if (stat(config.nagfile, &st) == -1 && errno == ENOENT)
-	copydatafile(config.nagfile, "nag.data");
+    if (stat(config.nagfile, &st) == -1) {
+	if (errno == ENOENT)
+	    copydatafile(config.nagfile, "nag.data");
+	else
+	    warn("%s", config.nagfile);
+    }
 
-    if (stat(config.agonyfile, &st) == -1 && errno == ENOENT)
-	copydatafile(config.agonyfile, "agony.data");
+    if (stat(config.agonyfile, &st) == -1) {
+	if (errno == ENOENT)
+	    copydatafile(config.agonyfile, "agony.data");
+	else
+	    warn("%s", config.agonyfile);
+    }
 
-    if (stat(config.ccfile, &st) == -1 && errno == ENOENT)
-	copydatafile(config.ccfile, "cc.data");
+    if (stat(config.ccfile, &st) == -1) {
+	if (errno == ENOENT)
+	    copydatafile(config.nagfile, "cc.data");
+	else
+	    warn("%s", config.ccfile);
+    }
 
     return;
 }
@@ -1774,7 +1780,7 @@ int main(int argc, char *argv[])
     if (!S_ISDIR(st.st_mode))
 	errx(EXIT_FAILURE, "%s: %s", datadir, E_NOTADIR);
 
-    if (access(config.fifo, R_OK) == -1) {
+    if (access(config.fifo, R_OK) == -1 && errno == ENOENT) {
 	if (mkfifo(config.fifo, 0600) == -1)
 	    err(EXIT_FAILURE, "%s", config.fifo);
     }
@@ -1789,12 +1795,8 @@ int main(int argc, char *argv[])
     signal(SIGSTOP, catch_signal);
     signal(SIGINT, catch_signal);
 
-    if ((opt = parse_pgn_file(board, pgnfile)) != 0) {
-	if (opt > 0)
-	    err(EXIT_FAILURE, "%s", pgnfile);
-	else
-	    errx(EXIT_FAILURE, "%s: %s", pgnfile, E_PGN_PARSE);
-    }
+    if (parse_pgn_file(board, pgnfile))
+	exit(EXIT_FAILURE);
 
     srandom(getpid());
 

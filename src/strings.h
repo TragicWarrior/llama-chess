@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.15 2003-01-29 00:53:27 bjk Exp $ */
+/* $Id: strings.h,v 1.16 2003-01-30 16:53:23 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 /*
- * The actual help text strings are found in the other header files.
+ * The help dialog box strings are found in the other header files.
  */
 #ifndef STRINGS_H
 #define STRINGS_H
@@ -59,8 +59,6 @@
 #define E_REMOVE_STR	"Cannot remove the Seven Tag Roster"
 #define E_DUPLICATE_TAG	"Could not add duplicate tag"
 #define E_DELETE_GAME	"Cannot delete last game."
-#define E_AGONY		"Could not open agony data file."
-#define E_CCODE_FILE	"Could not open country code data file."
 #define E_A2A4_PARSE	"Parse error. Probably a bug."
 #define E_PGN_PARSE	"Parse error."
 #define E_BROKEN_PIPE	"Broken pipe. Quitting."

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.67 2003-01-28 17:38:20 bjk Exp $ */
+/* $Id: pgn.c,v 1.68 2003-01-30 16:53:23 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -691,16 +691,33 @@ int parse_pgn_file(BOARD b, const char *filename)
 	return 0;
     }
 
-    if (access(filename, R_OK) == -1)
+    if (access(filename, R_OK) == -1) {
+	if (curses_initialized)
+	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	else
+	    warn("%s", filename);
+
 	return 1;
+    }
 
     if ((command = compression_cmd(filename, 1)) != NULL) {
 	snprintf(tfile, sizeof(tfile), "%s", config.tmpfile);
 
-	if ((ofp = fopen(tfile, "w+")) == NULL)
+	if ((ofp = fopen(tfile, "w+")) == NULL) {
+	    if (curses_initialized)
+		message(ERROR, ANYKEY, "%s: %s", tfile, strerror(errno));
+	    else
+		warn("%s", tfile);
+
 	    return 1;
+	}
 
 	if ((fp = popen(command, "r")) == NULL) {
+	    if (curses_initialized)
+		message(ERROR, ANYKEY, "%s: %s", command, strerror(errno));
+	    else
+		warn("%s", command);
+
 	    fclose(ofp);
 	    return 1;
 	}
@@ -714,8 +731,14 @@ int parse_pgn_file(BOARD b, const char *filename)
 	filename = (char *)tfile;
     }
 
-    if ((fp = fopen(filename, "r")) == NULL)
+    if ((fp = fopen(filename, "r")) == NULL) {
+	if (curses_initialized)
+	    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	else
+	    warn("%s", filename);
+
 	return 1;
+    }
 
     reset_game_data();
 
@@ -1207,7 +1230,7 @@ static int init_country_codes()
     int cindex = 0;
 
     if ((fp = fopen(config.ccfile, "r")) == NULL) {
-	message(ERROR, ANYKEY, "%s", E_CCODE_FILE);
+	message(ERROR, ANYKEY, "%s: %s", config.ccfile, strerror(errno));
 	return 1;
     }
 
@@ -1738,6 +1761,8 @@ char *browse_directory(void *arg)
     static char file[FILENAME_MAX];
     char *oldwd = getcwd(NULL, 0);
     DIR *dp;
+    char *inputstr = (char *)arg;
+    int initkey = inputstr[0];
 
     if (config.savedirectory) {
 	if ((dp = opendir(config.savedirectory)) == NULL) {
@@ -1830,6 +1855,11 @@ again:
 	noecho();
 	keypad(win, TRUE);
 	set_menu_pattern(menu, mbuf);
+
+	if (isgraph(initkey)) {
+	    menu_driver(menu, initkey);
+	    initkey = '\0';
+	}
 
 	while (1) {
 	    int c;
