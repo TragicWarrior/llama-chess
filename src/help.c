@@ -1,4 +1,4 @@
-/* $Id: help.c,v 1.5 2003-01-09 18:46:35 bjk Exp $ */
+/* $Id: help.c,v 1.6 2003-01-25 14:57:07 bjk Exp $ */
 /* 
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,7 @@
 */
 #include <stdio.h>
 #include <panel.h>
+#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
