@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.10 2003-01-10 21:53:13 bjk Exp $
+dnl $Id: configure.ac,v 1.11 2003-01-14 20:36:46 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(cboard, 0.1.3, [Ben Kibbey <bjk@arbornet.org>])
 AC_CONFIG_AUX_DIR(build)
@@ -47,6 +47,8 @@ AC_DEFINE([MAX_PGN_NAG], 5, [Maximum number of NAG entries per move.])
 AC_DEFINE_UNQUOTED([DEFAULT_ICS_SERVER], "localhost", 
 		   [Default internet chess server.])
 AC_DEFINE([DEFAULT_ICS_PORT], 5000, [Default internet chess server port.])
+AC_DEFINE_UNQUOTED([DEFAULT_ICS_USER], "guest",
+		   [Default internet chess server port.])
 
 AM_WITH_DMALLOC
 
