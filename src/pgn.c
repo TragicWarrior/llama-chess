@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.9 2002-12-09 18:54:24 bjk Exp $ */
+/* $Id: pgn.c,v 1.10 2002-12-09 21:24:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -227,7 +227,7 @@ static char *pgn_escapes(const char *str)
     return buf;
 }
 	
-int save_pgn(const char *filename)
+int save_pgn(const char *filename, struct pgndata *data)
 {
     int i, n;
     int len = 0;
@@ -236,19 +236,19 @@ int save_pgn(const char *filename)
     if ((fp = fopen(filename, "a")) == NULL)
 	return 1;
 
-    for (i = 0; i < pgn_index; i++) {
+    for (i = 0; data[i].token[0]; i++) {
 	struct tm tp;
 
-	if (strcmp(pgn[i].token, "Date") == 0) {
-	    if (strptime(pgn[i].value, TIME_FORMAT, &tp) != NULL)
-		strftime(pgn[i].value, sizeof(pgn[i].value), PGN_TIME_FORMAT,
+	if (strcmp(data[i].token, "Date") == 0) {
+	    if (strptime(data[i].value, TIME_FORMAT, &tp) != NULL)
+		strftime(data[i].value, sizeof(data[i].value), PGN_TIME_FORMAT,
 			&tp);
 	}
-	else if (strcmp(pgn[i].value, UNKNOWN) == 0)
-	    pgn[i].value[0] = 0;
+	else if (strcmp(data[i].value, UNKNOWN) == 0)
+	    data[i].value[0] = 0;
 
-	fprintf(fp, "[%s \"%s\"]\n", pgn[i].token, 
-		(pgn[i].value[0]) ? pgn_escapes(pgn[i].value) : "");
+	fprintf(fp, "[%s \"%s\"]\n", data[i].token, 
+		(data[i].value[0]) ? pgn_escapes(data[i].value) : "");
     }
 
     fprintf(fp, "\n");
@@ -290,25 +290,33 @@ static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items)
     delwin(win);
 }
 
-void edit_pgn_data(int edit)
+struct pgndata *edit_pgn_data(int edit)
 {
+    char *lastitem = NULL;
+    struct pgndata *data = NULL;
+    int data_index = 0;
+    int i;
+
+    /* Edit the backup copy, not the original in case the save fails. */
+    for (i = 0; i < pgn_index; i++)
+	add_pgn_data(&data, &data_index, pgn[i].token, pgn[i].value);
+
     while (1) {
 	WINDOW *win;
 	PANEL *panel;
 	ITEM **mitems = NULL;
 	MENU *menu;
 	int i;
-	char editprompt[76] = {0};
+	char buf[76] = {0};
 	char *tmp = NULL;
 	int rows, cols;
 	int selected = -1;
 
-	if (!edit)
-	    set_item_opts(NULL, ~O_SELECTABLE);
-
-	for (i = 0; i < pgn_index; i++) {
+	for (i = 0; i < data_index; i++) {
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	    mitems[i] = new_item(pgn[i].token, pgn[i].value);
+	    mitems[i] = new_item(data[i].token,
+		    (strlen(data[i].value) > MAX_VALUE_WIDTH)
+		     ? "Press ENTER..." : data[i].value);
 	}
 
 	mitems[i] = NULL;
@@ -345,10 +353,11 @@ void edit_pgn_data(int edit)
 
 	while (1) {
 	    int c;
-	    struct pgndata *tmppgn;
+	    struct pgndata *tmppgn = NULL;
 	    char *newtag = NULL;
 	    int tpgn_index = 0;
 
+	    set_menu_pattern(menu, lastitem);
 	    update_panels();
 	    doupdate();
 
@@ -366,16 +375,16 @@ void edit_pgn_data(int edit)
 			goto cleanup;
 		    }
 
-		    for (i = 0; i < pgn_index; i++) {
+		    for (i = 0; i < data_index; i++) {
 			if (i == selected)
 			    continue;
 
-			add_pgn_data(&tmppgn, &tpgn_index, pgn[i].token,
-				pgn[i].value);
+			add_pgn_data(&tmppgn, &tpgn_index, data[i].token,
+				data[i].value);
 		    }
 
-		    for (i = pgn_index = 0; i < tpgn_index; i++) {
-			add_pgn_data(&pgn, &pgn_index, tmppgn[i].token,
+		    for (i = data_index = 0; i < tpgn_index; i++) {
+			add_pgn_data(&data, &data_index, tmppgn[i].token,
 				tmppgn[i].value);
 		    }
 
@@ -389,13 +398,14 @@ void edit_pgn_data(int edit)
 		    if ((newtag = get_input_str(PGN_NEW_TAG, NULL)) == NULL)
 			break;
 
-		    if (add_pgn_data(&pgn, &pgn_index, newtag, NULL)) {
+		    if (add_pgn_data(&data, &data_index, newtag, NULL)) {
 			message(ERROR, ANYKEY, "%s \"%s\"", PGN_DUPLICATE,
 				newtag);
 			goto cleanup;
 		    }
 
-		    selected = pgn_index - 1;
+		    lastitem = newtag;
+		    selected = data_index - 1;
 		    goto gotitem;
 		    break;
 		case 'j':
@@ -407,9 +417,6 @@ void edit_pgn_data(int edit)
 		    menu_driver(menu, REQ_DOWN_ITEM);
 		    break;
 		case KEY_RETURN:
-		    if (!edit)
-			break;
-
 		    selected = item_index(current_item(menu));
 		    goto gotitem;
 		    break;
@@ -424,28 +431,40 @@ void edit_pgn_data(int edit)
 	}
 
 gotitem:
-	if (strcmp(pgn[selected].token, "Date") == 0) {
+	if (!edit) {
+	    snprintf(buf, sizeof(buf), "Tag Information for \"%s\"", 
+		    data[selected].token);
+	    message(buf, ANYKEY, "%s", data[selected].value);
+	    goto cleanup;
+	}
+
+	if (strcmp(data[selected].token, "Date") == 0) {
 	    message(NULL, ANYKEY, "%s \"Date\"", PGN_EDIT_REFUSE);
 	    goto cleanup;
 	}
 
-	snprintf(editprompt, sizeof(editprompt),
-		"%s \"%s\"", PGN_EDIT_TAG, pgn[selected].token);
+	snprintf(buf, sizeof(buf), "%s \"%s\"", PGN_EDIT_TAG,
+		data[selected].token);
 
-	tmp = get_input_str(editprompt, pgn[selected].value);
+	tmp = get_input_str(buf, data[selected].value);
 
 	if (tmp) {
 	    if (strcmp(tmp, UNKNOWN) == 0)
-		pgn[selected].value[0] = 0;
+		data[selected].value[0] = 0;
 	}
 
-	strncpy(pgn[selected].value, (tmp) ? tmp : "",
-		sizeof(pgn[selected].value));
+	strncpy(data[selected].value, (tmp) ? tmp : "",
+		sizeof(data[selected].value));
 
 cleanup:
 	cleanup(win, panel, menu, mitems);
     }
 
 done:
-    return;
+    if (!edit) {
+	free(data);
+	return NULL;
+    }
+
+    return data;
 }

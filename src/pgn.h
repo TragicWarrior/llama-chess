@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.3 2002-12-09 18:54:24 bjk Exp $ */
+/* $Id: pgn.h,v 1.4 2002-12-09 21:24:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -29,6 +29,7 @@
 #define PGN_DUPLICATE	"Could not add duplicate tag"
 #define PGN_EDIT_REFUSE	"Refusing to edit"
 #define PGN_INFO_TITLE	"PGN Information"
+#define MAX_VALUE_WIDTH	30
 
 struct {
     char *pgn;
