@@ -1,3 +1,9 @@
+2002-12-26 Thursday 12:53  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.36):
+	
+	Open the current directory if opendir() fails the first time.
+
 2002-12-26 Thursday 12:40  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: misc.c (1.7), pgn.c (1.35), pgn.h (1.14):
