@@ -1,3 +1,25 @@
+2003-01-07 Tuesday 09:14  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: engine.c (1.22), engine.h (1.9), history.c (1.28),
+	history.h (1.15), move.c (1.4), pgn.c (1.42), pgn.h (1.18):
+	
+	Reset castle and En Passant when browsing history moves.
+
+2003-01-06 Monday 15:16  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.47), cboard.h (1.33), history.c (1.27),
+	history.h (1.14), move.c (1.3), move.h (1.3):
+	
+	Readded status.notify strings and random agony.
+
+2003-01-06 Monday 14:59  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: common.h (1.32), engine.c (1.21), engine.h (1.8), history.c
+	(1.26), history.h (1.13), move.c (1.2), move.h (1.2), pgn.c (1.41),
+	pgn.h (1.17):
+	
+	Can read SAN move format now. Still no saving to SAN format though.
+
 2002-12-30 Monday 14:00  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.46), common.h (1.31), history.h (1.12):
