@@ -31,6 +31,9 @@ historyagony	off
 # command.
 save_prompt	on
 
+# Compression level of gzip'd and .zip'd files.
+clevel		6
+
 # If "off", the chess board line graphics will not be drawn.
 line_graphics	on
 

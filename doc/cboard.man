@@ -14,7 +14,7 @@
 .\" along with this program; if not, write to the Free Software
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 .
-.Dd December 17, 2002
+.Dd January 09, 2003
 .Os
 .Dt CBOARD 6
 .
@@ -40,7 +40,14 @@ The following command line options are available:
 .
 .Bl -tag -width
 .It Fl p Ar pgnfile
-Load a PGN formatted file.
+Load a PGN formatted file. If the filename extension ends with .Z, .gz or .zip,
+then it will be uncompressed (and compressed if saving) automatically provided
+you have
+.Xr compress 1 ,
+.Xr gzip 1
+and
+.Xr zip 1
+installed.
 .It Fl v
 Version information.
 .It Fl h
@@ -105,6 +112,12 @@ character will expand to your home directory.
 When saving a game, prompt to edit PGN tag data. Or when saving in history
 mode, prompt for additional save commands. The default is
 .Ar on .
+.Pp
+.It Cm clevel Ar 1-9
+Compression level of compressed saved files compressed with
+.Xr zip 1
+and 
+.Xr gzip 1 .
 .El
 .
 .Sh COLORS
