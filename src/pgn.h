@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.15 2002-12-27 14:36:01 bjk Exp $ */
+/* $Id: pgn.h,v 1.16 2002-12-30 18:57:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -84,6 +84,9 @@ const char *file_browser_help[] = {
     NULL
 };
 
+struct board_matrix pgnboard[8][8];
+
+void *Malloc(size_t);
 void add_to_history(struct history **, int *, int *, const char *);
 void reset_history(void);
 void free_game_data(void);
@@ -93,5 +96,6 @@ void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
+int validate_move(struct board_matrix[][], const char *);
 
 #endif

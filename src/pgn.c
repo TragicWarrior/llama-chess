@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.39 2002-12-30 14:31:16 bjk Exp $ */
+/* $Id: pgn.c,v 1.40 2002-12-30 18:57:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -124,7 +124,7 @@ static char *remove_pgn_tag_escapes(const char *str)
     return buf;
 }
 
-void init_board()
+void init_board(struct board_matrix matrix[8][8])
 {
     int row, col;
 
@@ -162,7 +162,7 @@ void init_board()
 		    break;
 	    }
 
-	    board[row][col].icon = (row < 2) ? c : toupper(c);
+	    matrix[row][col].icon = (row < 2) ? c : toupper(c);
 	}
     }
 
@@ -214,7 +214,7 @@ static void init_data()
 {
     set_pgn_defaults();
     gtotal = gindex + 1;
-    init_board();
+    init_board(board);
     return;
 }
 
@@ -224,8 +224,6 @@ static void reset_game_data()
 	free_game_data();
 
     gtotal = gindex = 0;
-    init_board();
-
     return;
 }
 
@@ -242,23 +240,21 @@ static void skip_leading_space(FILE *fp)
     return;
 }
 
-static int move_text(FILE *fp)
+int move_text(FILE *fp)
 {
     int c;
-    char move[MAX_PGN_MOVE_LEN + 1], *p;
+    char move[MAX_PGN_MOVE_LEN + 1];
     int count;
 
+    /* Skip move number. */
     while ((c = fgetc(fp)) == '.' || isdigit(c));
     ungetc(c, fp);
 
-    if (fscanf(fp, " %[OA-Ha-hNQKRBP1-8#=x+-]%n", move, &count) != 1)
+    if (fscanf(fp, " %[OoA-Ha-hNnQqKkRrBbPp1-8#=xX+-]%n", move, &count) != 1)
 	return 1;
 
-    p = (move) + count;
-
-    /* Remove trailing things from the move like check etc... */
-    while (*--p != 'O' && !isdigit(*p))
-	*p = 0;
+    if (validate_move(pgnboard, move))
+	return 1;
 
     add_to_history(&game[gindex].history, &game[gindex].hindex,
 	    &game[gindex].htotal, move);
@@ -442,6 +438,21 @@ static void pgn_tag(FILE *fp)
     return;
 }
 
+static int eog_marker(FILE *fp)
+{
+    int c, i = 0;
+    char buf[8], *p = buf;
+
+    while ((c = fgetc(fp)) != EOF && !isspace(c) && i++ < sizeof(buf))
+	*p++ = c;
+
+    if (strcmp(buf, "1-0") == 0);
+    if (strcmp(buf, "0-1") == 0);
+    if (strcmp(buf, "1/2-1/2") == 0);
+    if (strcmp(buf, "*") == 0);
+    return 1;
+}
+
 int parse_pgn_file(const char *filename)
 {
     FILE *fp;
@@ -449,6 +460,7 @@ int parse_pgn_file(const char *filename)
     int c;
     int tag_section = 0;
     int firstrun = 1;
+    int row, col;
 
     if (!*filename) {
 	reset_game_data();
@@ -460,15 +472,25 @@ int parse_pgn_file(const char *filename)
 	return 1;
 
     reset_game_data();
+
+    /* Temporary validation board. */
+    init_board(pgnboard);
+
     game = Calloc(1, sizeof(struct games));
 
     while (1) {
+	int nextchar = 0;
+
 	if ((c = fgetc(fp)) == EOF) {
 	    if (feof(fp))
 		break;
 
 	    if (ferror(fp)) {
-		message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+		if (curses_initialized)
+		    message(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+		else
+		    warnx("%s: %s", filename, strerror(errno));
+
 		clearerr(fp);
 		continue;
 	    }
@@ -513,51 +535,49 @@ int parse_pgn_file(const char *filename)
 	    continue;
 	}
 
-	/* FIXME EOG markers. */
+	nextchar = fgetc(fp);
+
+	/* EOG markers. */
+	if ((isdigit(c) && (nextchar == '-' || nextchar == '/')) || c == '*') {
+	    ungetc(nextchar, fp);
+	    ungetc(c, fp);
+	    eog_marker(fp);
+	    continue;
+	}
+
+	ungetc(nextchar, fp);
+
 	if (isdigit(c) || (c >= 'a' && c <= 'h') || c == 'N' || c == 'K'
 		|| c == 'Q' || c == 'B' || c == 'R' || c == 'P' || c == 'O') {
 	    ungetc(c, fp);
 
 	    tag_section = 0;
 
-	    if (move_text(fp) == 0)
-		continue;
-	}
+	    if (move_text(fp))
+		break;
 
-	if (strcmp(buf, "*") == 0) {
-	    goto special;
-	}
-	/*
-	else if (strcmp(buf, "1-0") == 0) {
-	    printf("white wins\n");
-	    bzero(buf, sizeof(buf));
-	    p = buf;
 	    continue;
 	}
-	else if (strcmp(buf, "0-1") == 0) {
-	    printf("black wins\n");
-	    bzero(buf, sizeof(buf));
-	    p = buf;
-	    continue;
-	}
-	else if (strcmp(buf, "1/2-1/2") == 0) {
-	    printf("draw\n");
-	    bzero(buf, sizeof(buf));
-	    p = buf;
-	    continue;
-	}
-	*/
 
 	*p++ = c;
+
 	DEBUG("unparsed: '%s'\n", buf);
 
-special:
-	bzero(buf, sizeof(buf));
-	p = buf;
+	if (strlen(buf) + 1 == sizeof(buf))
+	    bzero(buf, sizeof(buf));
+
+	continue;
     }
 
     fclose(fp);
     gtotal = gindex + 1;
+
+    for (row = 0; row < 8; row++) {
+	for (col = 0; col < 8; col++)
+	    board[row][col].icon = pgnboard[row][col].icon;
+    }
+
+    exit(0);
     return 0;
 }
 
@@ -1253,7 +1273,6 @@ gotitem:
 	    continue;
 	}
 
-cleanup:
 	cleanup(win, panel, menu, mitems, entries);
 
 	if (S_ISDIR(st.st_mode)) {
