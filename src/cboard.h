@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: cboard.h,v 1.2 2002-12-05 22:06:16 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -33,6 +33,7 @@
 #define WINDOW_TITLE	((COLORS) ? COLOR_PAIR(5) : A_REVERSE)
 #define ENGINE_STATUS	((COLORS) ? COLOR_PAIR(6) : A_BOLD)
 #define NOTIFY_STATUS	((COLORS) ? COLOR_PAIR(7) | A_BOLD : A_BOLD)
+#define WINDOW_BORDER	((COLORS) ? COLOR_PAIR(9) : A_NORMAL)
 
 #define STATUS_TITLE	"Game Status"
 #define DATA_TITLE	"Game Information"

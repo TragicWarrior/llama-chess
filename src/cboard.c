@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.3 2002-12-05 21:43:21 bjk Exp $ */
+/* $Id: cboard.c,v 1.4 2002-12-05 22:06:16 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -339,7 +339,9 @@ void draw_window_title(WINDOW *win, const char *title, int width)
     mvwprintw(win, 1, CENTERX(width, title), "%s", title);
 
     wattroff(win, WINDOW_TITLE);
+    wattron(win, WINDOW_BORDER);
     box(win, ACS_VLINE, ACS_HLINE);
+    wattroff(win, WINDOW_BORDER);
 
     return;
 }
@@ -423,7 +425,7 @@ void pgn_info()
 
 void game_loop()
 {
-    int rrow = -1, rcol = 0;
+    int rrow = 0, rcol = 0;
 
     cursor_x = 2, cursor_y = 1;
 
@@ -669,7 +671,6 @@ void game_loop()
 		send_to_engine("switch\n");
 		break;
 	    case ' ':
-		/* FIXME coordanites are messed up after 'switch'ing */
 		if (browse_history)
 		    break;
 
@@ -797,7 +798,7 @@ int main(int argc, char *argv[])
 	init_pair(6, COLOR_YELLOW, COLOR_BLACK);
 	init_pair(7, COLOR_RED, COLOR_BLACK);
 	init_pair(8, COLOR_WHITE, COLOR_GREEN);
-	/* 9 is reserved for active pieces */
+	init_pair(9, COLOR_CYAN, COLOR_BLACK);
     }
 
     boardw = newwin(BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);
