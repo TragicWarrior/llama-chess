@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.4 2002-12-07 21:32:26 bjk Exp $ */
+/* $Id: input.c,v 1.5 2002-12-09 18:51:43 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,7 @@
 */
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -46,7 +47,11 @@ static void cleanup(WINDOW *win, PANEL *panel, FORM *f, FIELD **fields)
     return;
 }
 
-char *get_input(const char *prompt, const char *init)
+/* This function prompts for one line of input. The init argument is the
+ * initial value. The type argument is the type of validation for the input.
+ * Remaining arguments are values for the type argument. See field_type(3X).
+ */
+char *get_input(const char *prompt, const char *init, int type, ...)
 {
     WINDOW *win;
     PANEL *panel;
@@ -56,12 +61,48 @@ char *get_input(const char *prompt, const char *init)
     int y, x;
     static unsigned char dst[255];
     char *tmp;
+    va_list ap;
+
+    bzero(dst, sizeof(dst));
 
     len = strlen(prompt);
     width = (len + 4 > INPUT_WIDTH && len + 4 < COLS - 2) ?
 	    len + 4 : INPUT_WIDTH;
 
     fields[0] = new_field(1, width - 4, 0, 0, 0, 0);
+
+    va_start(ap, type);
+
+    switch (type) {
+	case FIELD_TYPE_ALNUM:
+	    set_field_type(fields[0], TYPE_ALNUM, va_arg(ap, int));
+	    break;
+	case FIELD_TYPE_ALPHA:
+	    set_field_type(fields[0], TYPE_ALPHA, va_arg(ap, int));
+	    break;
+	case FIELD_TYPE_ENUM:
+	    set_field_type(fields[0], TYPE_ENUM, va_arg(ap, char **),
+		    va_arg(ap, int), va_arg(ap, int));
+	    break;
+	case FIELD_TYPE_INTEGER:
+	    set_field_type(fields[0], TYPE_INTEGER, va_arg(ap, int),
+		    va_arg(ap, long), va_arg(ap, long));
+	    break;
+	case FIELD_TYPE_NUMERIC:
+	    set_field_type(fields[0], TYPE_NUMERIC, va_arg(ap, int),
+		    va_arg(ap, double), va_arg(ap, double));
+	    break;
+	case FIELD_TYPE_REGEXP:
+	    set_field_type(fields[0], TYPE_REGEXP, va_arg(ap, char *));
+	    break;
+	case FIELD_TYPE_IPV4:
+	    set_field_type(fields[0], TYPE_IPV4);
+	    break;
+	default:
+	    break;
+    }
+
+    va_end(ap);
 
     if (init)
 	set_field_buffer(fields[0], 0, init);
@@ -125,12 +166,15 @@ char *get_input(const char *prompt, const char *init)
 	    case KEY_BACKSPACE:
 		form_driver(finput, REQ_DEL_PREV);
 		break;
-	    case KEY_F(1):
-		help(INPUT_HELP, inputhelp);
-		break;
 	    case '\n':
-	    case KEY_ESCAPE:
 		goto done;
+	    case KEY_ESCAPE:
+		goto quit;
+		/*
+	    case ' ':
+		form_driver(finput, REQ_INS_CHAR);
+		break;
+		*/
 	    default:
 		form_driver(finput, c);
 		form_driver(finput, REQ_VALIDATION);
@@ -141,9 +185,16 @@ char *get_input(const char *prompt, const char *init)
 done:
     tmp = trim(field_buffer(fields[0], 0));
     strncpy(dst, (tmp) ? tmp : "", sizeof(dst));
+
+quit:
     cleanup(win, panel, finput, fields);
     noecho();
     nonl();
     curs_set(0);
     return (dst[0]) ? dst : NULL;
+}
+
+char *get_input_str(const char *prompt, const char *init)
+{
+    return get_input(prompt, init, -1, 20);
 }
