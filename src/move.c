@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.15 2003-01-27 21:57:31 bjk Exp $ */
+/* $Id: move.c,v 1.16 2003-01-28 17:37:21 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -378,7 +378,7 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
     int i;
     int dist = 0;
 
-    /* FIXME valid moves. */
+    /* FIXME valid move ambiguities. */
     switch (piece) {
 	case PAWN:
 	    if (*srow == 0 && *scol == col) {
@@ -878,7 +878,6 @@ void get_valid_moves(BOARD b, int p, int srow, int scol, int *minr, int *maxr,
     return;
 }
 
-/* FIXME promotions? */
 static int checkmate_pawn_test(BOARD b, int row, int col, int *srow, int *scol)
 {
     int r, c;
@@ -941,9 +940,7 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 		    int_to_piece(OPEN_SQUARE);
 
 		if (piece_to_int(p) == KING) {
-		    switch_turn();
-
-		    if (piece_side(p) != status.turn) {
+		    if (piece_side(p) == status.turn) {
 			nokr = row;
 			nokc = col;
 		    }
@@ -951,8 +948,6 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 			nkr = row;
 			nkc = col;
 		    }
-
-		    switch_turn();
 		}
 
 		switch_turn();
@@ -966,6 +961,11 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
     }
 
     check = 1;
+
+    if (status.turn == WHITE)
+	result = BLACKWINS;
+    else
+	result = WHITEWINS;
 
 done:
     switch_turn();
@@ -1149,7 +1149,6 @@ int parse_move_text(BOARD b, char *move, int reset)
 	if (castle_move(b, game[gindex].castle))
 	    return 1;
 
-	game[gindex].castle = 0;
 	goto done;
     }
 
@@ -1182,8 +1181,14 @@ int parse_move_text(BOARD b, char *move, int reset)
     b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
 
 done:
+    if (game[gindex].castle) {
+	p = move + strlen(move);
+	game[gindex].castle = 0;
+    }
+
     kingsquare(b, &kr, &kc, &okr, &okc);
 
+    /* FIXME draw. */
     switch (checktest(b, kr, kc, okr, okc)) {
 	case 0:
 	    break;
@@ -1193,9 +1198,18 @@ done:
 	    if (checkmatetest(b, kr, kc, okr, okc)) {
 		*p++ = '#';
 
-		if ((status.turn == WHITE && status.side == BLACK) ||
-			(status.turn == BLACK && status.side == WHITE))
-		    status.notify = NOTIFY_CHECKMATE;
+		if (result == WHITEWINS) {
+		    game[gindex].tag[TAG_RESULT].value = 
+			Realloc(game[gindex].tag[TAG_RESULT].value, 4);
+		    strncpy(game[gindex].tag[TAG_RESULT].value, "1-0", 4);
+		    status.notify = NOTIFY_CHECKMATE_WHITE_WINS;
+		}
+		else if (result == BLACKWINS) {
+		    game[gindex].tag[TAG_RESULT].value = 
+			Realloc(game[gindex].tag[TAG_RESULT].value, 4);
+		    strncpy(game[gindex].tag[TAG_RESULT].value, "0-1", 4);
+		    status.notify = NOTIFY_CHECKMATE_BLACK_WINS;
+		}
 	    }
 	    else {
 		*p++ = '+';
