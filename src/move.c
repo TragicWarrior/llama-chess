@@ -1,6 +1,6 @@
-/* $Id: move.c,v 1.6 2003-01-07 21:35:42 bjk Exp $ */
+/* $Id: move.c,v 1.7 2003-01-09 18:46:35 bjk Exp $ */
 /*
-    Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
+    Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -1,6 +1,6 @@
-/* $Id: cboard.h,v 1.39 2003-01-09 17:52:33 bjk Exp $ */
+/* $Id: cboard.h,v 1.40 2003-01-09 18:46:35 bjk Exp $ */
 /*
-    Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
+    Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #ifndef CBOARD_H
 #define CBOARD_H
 
-#define COPYRIGHT	"Copyright (c) 2002 " PACKAGE_BUGREPORT
+#define COPYRIGHT	"Copyright (C) 2002-2003 " PACKAGE_BUGREPORT
 #define BOARD_HEIGHT	18
 #define BOARD_WIDTH	34
 #define STATUS_HEIGHT	(10)
