@@ -1,4 +1,4 @@
-/* $Id: message.c,v 1.2 2002-12-10 22:14:18 bjk Exp $ */
+/* $Id: message.c,v 1.3 2002-12-20 00:30:55 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -28,25 +28,24 @@
 #include "common.h"
 #include "message.h"
 
-int message(const char *title, const char *prompt, const char *format, ...)
+static int dump_message(const char *title, const char *prompt, 
+	const char *extra_help, void(*custom_func)(void*), void *arg, int ckey,
+	const char *format, va_list ap)
 {
     WINDOW *win;
     PANEL *panel;
     FIELD *fields[2];
     FORM *form;
-    va_list ap;
     char *line;
     int width, height;
     int c;
 
-    va_start(ap, format);
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, format, ap);
 #else
     line = Malloc(LINE_MAX);
     vsnprintf(line, LINE_MAX, format, ap);
 #endif
-    va_end(ap);
 
     width = (strlen(line) < MSG_WIDTH) ? strlen(line) : MSG_WIDTH;
     height = (width < MSG_WIDTH) ? 1 : strlen(line) / MSG_WIDTH + 1;
@@ -67,6 +66,9 @@ int message(const char *title, const char *prompt, const char *format, ...)
 
     width += 2;
 
+    if (extra_help)
+	height++;
+
     win = newwin((title) ? height + 5 : height + 4, width + 2,
 	    CALCPOSY(((title) ? height + 5 : height + 4)),
 	    CALCPOSX(width));
@@ -76,14 +78,26 @@ int message(const char *title, const char *prompt, const char *format, ...)
     panel = new_panel(win);
     set_form_win(form, win);
     set_form_sub(form, derwin(win, height, width, (title) ? 2 : 1, 1));
+
+    if (extra_help)
+	mvwprintw(win, (title) ? height + 2 : height + 1, 
+		CENTERX(width, extra_help), "%s", extra_help);
+
     mvwprintw(win, (title) ? height + 3 : height + 2, 
 	    CENTERX(width, prompt), "%s", prompt);
     post_form(form);
 
-    update_panels();
-    doupdate();
+    while (1) {
+	update_panels();
+	doupdate();
 
-    c = wgetch(win);
+	c = wgetch(win);
+
+	if (!custom_func || c != ckey)
+	    break;
+
+	custom_func(arg);
+    }
 
     unpost_form(form);
     free_form(form);
@@ -93,4 +107,31 @@ int message(const char *title, const char *prompt, const char *format, ...)
     free(line);
 
     return c;
+}
+
+int show_message(const char *title, const char *prompt, 
+	const char *extra_help, void(*custom_func)(void*), void *arg, int ckey,
+	const char *format, ...)
+{
+    va_list ap;
+    int ret;
+
+    va_start(ap, format);
+    ret = dump_message(title, prompt, extra_help, custom_func, arg, ckey, 
+	    format, ap);
+    va_end(ap);
+
+    return ret;
+}
+
+int message(const char *title, const char *prompt, const char *format, ...)
+{
+    va_list ap;
+    int ret;
+
+    va_start(ap, format);
+    ret = dump_message(title, prompt, NULL, NULL, NULL, 0, format, ap);
+    va_end(ap);
+
+    return ret;
 }
