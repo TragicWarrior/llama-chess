@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.61 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: pgn.c,v 1.62 2003-01-22 14:52:22 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1608,8 +1608,8 @@ gotitem:
 		data[selected].name);
 
 	if (strcmp(data[selected].name, "Date") == 0) {
-	    tmp = get_input(buf, data[selected].value, 0, 0, 0, NULL, NULL,
-		    NULL, FIELD_TYPE_PGN_DATE);
+	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, NULL,
+		    0, FIELD_TYPE_PGN_DATE);
 
 	    if (tmp) {
 		if (strptime(tmp, PGN_TIME_FORMAT, &tp) == NULL) {
