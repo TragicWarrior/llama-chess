@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.26 2002-12-16 17:50:25 bjk Exp $ */
+/* $Id: cboard.c,v 1.27 2002-12-16 18:46:58 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -705,7 +705,7 @@ blah:
 	    case 'k':
 	    case KEY_DOWN:
 		if (browse_history) {
-		    history_next(config.history_jump);
+		    history_previous(config.history_jump);
 		    update_history();
 		    break;
 		}
