@@ -1,4 +1,4 @@
-/* $Id: colors.c,v 1.12 2003-01-30 18:36:40 bjk Exp $ */
+/* $Id: colors.c,v 1.13 2003-01-30 18:41:26 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -92,7 +92,7 @@ void set_default_colors()
     config.color[CONF_BDWINDOW].bg = COLOR_BLACK;
     config.color[CONF_BCOORDS].fg = COLOR_YELLOW;
     config.color[CONF_BCOORDS].bg = COLOR_BLACK;
-    config.color[CONF_BMOVESW].fg = COLOR_BLUE;
+    config.color[CONF_BMOVESW].fg = COLOR_WHITE;
     config.color[CONF_BMOVESW].bg = COLOR_MAGENTA;
     config.color[CONF_BMOVESW].nattrs = A_REVERSE;
     config.color[CONF_BMOVESB].fg = COLOR_WHITE;
