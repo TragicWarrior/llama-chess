@@ -1,3 +1,262 @@
+2003-01-30 Thursday 14:28  Ben Kibbey <bjk@arbornet.org>
+
+	* NEWS (1.6), configure.ac (1.16):
+	
+	Release version 0.1.5.
+
+2003-01-30 Thursday 14:24  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.80):
+	
+	Dont call leaveok() for the board window.
+
+2003-01-30 Thursday 13:41  Ben Kibbey <bjk@arbornet.org>
+
+	* src/colors.c (1.13):
+	
+	Fix default color.
+
+2003-01-30 Thursday 13:36  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.79), colors.c (1.12), colors.h (1.8), common.h
+	(1.53), rcfile.c (1.28):
+	
+	Replaced the board_moves color parameter with
+	board_white/black_moves.
+
+2003-01-30 Thursday 12:52  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: common.h (1.52), pgn.h (1.26):
+	
+	Linux compile time warning fixes.
+
+2003-01-30 Thursday 12:52  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.78):
+	
+	Agony fix.
+
+2003-01-30 Thursday 11:54  Ben Kibbey <bjk@arbornet.org>
+
+	* configure.ac (1.15):
+	
+	Put #defines at the top of config.h (AH_TOP).
+
+2003-01-30 Thursday 11:54  Ben Kibbey <bjk@arbornet.org>
+
+	* data/Makefile.am (1.5):
+	
+	Install fixes.
+
+2003-01-30 Thursday 11:53  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.77), history.c (1.39), input.c (1.20), pgn.c
+	(1.68), strings.h (1.16):
+	
+	Display errno strings on file errors.
+	
+	The first letter of the input dialog (if any) is pushed onto the
+	menu buffer in the directory browser.
+
+2003-01-30 Thursday 11:51  Ben Kibbey <bjk@arbornet.org>
+
+	* src/Makefile.am (1.12):
+	
+	DATA_PATH is $(pgkdatadir) not $(datadir)/cboard.
+
+2003-01-30 Thursday 11:50  Ben Kibbey <bjk@arbornet.org>
+
+	* Makefile.am (1.5):
+	
+	Renamed etc/ to data/.
+	
+	Don't list default automake files in EXTRA_DIST.
+
+2003-01-30 Thursday 09:08  Ben Kibbey <bjk@arbornet.org>
+
+	* Makefile.am (1.4):
+	
+	Add README to archive.
+
+2003-01-30 Thursday 09:08  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.76):
+	
+	Show ncurses version in -v command line option.
+
+2003-01-30 Thursday 09:07  Ben Kibbey <bjk@arbornet.org>
+
+	* README (1.1):
+	
+	Initial commit.
+
+2003-01-30 Thursday 09:07  Ben Kibbey <bjk@arbornet.org>
+
+	* src/input.c (1.19):
+	
+	Reduce input size by one.
+
+2003-01-29 Wednesday 15:23  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.75), cboard.h (1.54), common.h (1.51), engine.c
+	(1.32), engine.h (1.15), history.c (1.38):
+	
+	Go into history mode after end-of-game.
+	
+	Memory leak fix when resuming a game from previous history.
+
+2003-01-29 Wednesday 15:22  Ben Kibbey <bjk@arbornet.org>
+
+	* src/move.c (1.19):
+	
+	"draw" result is recognized somewhat.
+
+2003-01-29 Wednesday 12:47  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.74), cboard.h (1.53):
+	
+	Found move expressions are positioned at the previous move.
+
+2003-01-29 Wednesday 12:07  Ben Kibbey <bjk@arbornet.org>
+
+	* doc/cboard.man (1.17), data/config.example (1.17), src/common.h
+	(1.50), src/rcfile.c (1.27):
+	
+	Removed "ignorecase" configuration parameter.
+
+2003-01-29 Wednesday 12:06  Ben Kibbey <bjk@arbornet.org>
+
+	* src/move.h (1.10):
+	
+	Added update_history_window() prototype.
+
+2003-01-29 Wednesday 12:05  Ben Kibbey <bjk@arbornet.org>
+
+	* src/move.c (1.18):
+	
+	Pawn validation fix.
+	
+	Check/checkmate fix.
+
+2003-01-29 Wednesday 12:03  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.73):
+	
+	Fix for move numbers in the history window.
+	
+	Fix for the 'g'o command to update engine thinking.
+
+2003-01-29 Wednesday 11:59  Ben Kibbey <bjk@arbornet.org>
+
+	* src/history.c (1.37):
+	
+	The previous move key will show move zero.
+
+2003-01-28 Tuesday 19:53  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.72), cboard.h (1.52), common.h (1.49),
+	history.c (1.36), strings.h (1.15):
+	
+	The 'f' command has changed to '/'.
+	
+	Move numbers are full move numbers in the history window.
+	
+	SPACE in history mode will toggle half-move stepping. The default
+	is full move stepping with cursor commands.
+
+2003-01-28 Tuesday 19:51  Ben Kibbey <bjk@arbornet.org>
+
+	* src/move.c (1.17):
+	
+	Testing ambiguous fixes...
+
+2003-01-28 Tuesday 12:39  Ben Kibbey <bjk@arbornet.org>
+
+	* configure.ac (1.14):
+	
+	Check for regex.h.
+
+2003-01-28 Tuesday 12:39  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.71), cboard.h (1.51), common.h (1.48), move.h
+	(1.9), rcfile.c (1.26), strings.h (1.14):
+	
+	Added commands 'f', '{' and '}' to search move text. The search is
+	an extended regular expression and the commands can all take a
+	count.
+
+2003-01-28 Tuesday 12:38  Ben Kibbey <bjk@arbornet.org>
+
+	* src/pgn.c (1.67):
+	
+	Initialize empty tags to '?'.
+
+2003-01-28 Tuesday 12:37  Ben Kibbey <bjk@arbornet.org>
+
+	* src/move.c (1.16):
+	
+	Update the Result tag on checkmate.
+
+2003-01-27 Monday 16:57  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: move.c (1.15), pgn.c (1.66):
+	
+	Check and checkmate recognition are working. Needs more testing
+	though.
+
+2003-01-27 Monday 13:25  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.70):
+	
+	Dont update the tag window so often.
+
+2003-01-27 Monday 13:10  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: colors.c (1.11), strings.h (1.13):
+	
+	Change the notify color prompt default.
+
+2003-01-27 Monday 13:09  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.69), cboard.h (1.50):
+	
+	Reset repeat count on ESCAPE.
+	
+	Show command key help prompt on startup.
+	
+	More static window sizes. Looks better in a frame buffer from what
+	I can tell.
+
+2003-01-27 Monday 11:55  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.68), cboard.h (1.49), colors.c (1.10), colors.h
+	(1.7), common.h (1.47), engine.c (1.31), engine.h (1.14), history.c
+	(1.35), history.h (1.20), pgn.h (1.25), rcfile.c (1.25), strings.h
+	(1.12):
+	
+	Removed the black/white status windows are replaced them with a STR
+	window (like the data window before the black and white windows).
+	Eventually, the black/white status info will go in the game status
+	window.
+	
+	Added a repeat count to the 'u'ndo command.
+	
+	Memory leak fix with game command line parsing.
+
+2003-01-27 Monday 09:30  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.67), cboard.h (1.48):
+	
+	Commands which take a repeat count act like VIM's repeat count. The
+	first non-integer is the command. This fixes the maximum of ten
+	repeat.
+
+2003-01-25 Saturday 12:43  Ben Kibbey <bjk@arbornet.org>
+
+	* src/engine.c (1.30):
+	
+	Dont assume gnuchess as the executable.
+
 2003-01-25 Saturday 11:41  Ben Kibbey <bjk@arbornet.org>
 
 	* NEWS (1.5), configure.ac (1.13):
@@ -6,7 +265,7 @@
 
 2003-01-25 Saturday 11:38  Ben Kibbey <bjk@arbornet.org>
 
-	* etc/Makefile.am (1.4):
+	* data/Makefile.am (1.4):
 	
 	Install fixes.
 
@@ -122,7 +381,7 @@
 
 2003-01-22 Wednesday 15:02  Ben Kibbey <bjk@arbornet.org>
 
-	* etc/Makefile.am (1.3):
+	* data/Makefile.am (1.3):
 	
 	Datafiles are installed to DATADIR/cboard.
 
@@ -212,7 +471,7 @@
 
 2003-01-14 Tuesday 15:37  Ben Kibbey <bjk@arbornet.org>
 
-	* etc/: Makefile.am (1.2), cc.data (1.1), config.example (1.9):
+	* data/: Makefile.am (1.2), cc.data (1.1), config.example (1.9):
 	
 	Added cc.data to the archive.
 
@@ -599,7 +858,7 @@
 
 2002-12-20 Friday 16:55  Ben Kibbey <bjk@arbornet.org>
 
-	* etc/Makefile.am (1.1):
+	* data/Makefile.am (1.1):
 	
 	Initial commit.
 
@@ -617,7 +876,7 @@
 
 2002-12-20 Friday 16:47  Ben Kibbey <bjk@arbornet.org>
 
-	* doc/cboard.man (1.3), etc/config.example (1.2):
+	* doc/cboard.man (1.3), data/config.example (1.2):
 	
 	Updated. :)
 
@@ -649,7 +908,7 @@
 
 2002-12-20 Friday 12:13  Ben Kibbey <bjk@arbornet.org>
 
-	* etc/config.example (1.1):
+	* data/config.example (1.1):
 	
 	Initial commit.
 
@@ -737,7 +996,7 @@
 
 2002-12-19 Thursday 11:56  Ben Kibbey <bjk@arbornet.org>
 
-	* etc/: agony.data (1.1), nag.data (1.1):
+	* data/: agony.data (1.1), nag.data (1.1):
 	
 	Initial commit.
 
