@@ -1,3 +1,11 @@
+2002-12-06 Friday 15:07  Ben Kibbey <bjk@arbornet.org>
+
+	* src/cboard.c (1.9):
+	
+	More PGN export conformance.
+	
+	Better pawn movetext to avoid ambiguity.
+
 2002-12-06 Friday 14:11  Ben Kibbey <bjk@arbornet.org>
 
 	* src/: cboard.c (1.8), cboard.h (1.4):
