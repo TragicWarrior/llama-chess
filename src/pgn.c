@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.76 2003-02-01 19:39:21 bjk Exp $ */
+/* $Id: pgn.c,v 1.77 2003-02-01 19:48:46 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1430,10 +1430,9 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 	int rows, cols;
 	int selected = -1;
 	char *mbuf = NULL;
+	int nlen = 0, vlen = 0;
 
 	for (i = 0; i < data_index; i++) {
-	    int nlen = 0, vlen = 0;
-
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
 
 	    if (data[i].value[0]) {
@@ -1616,19 +1615,23 @@ TAG *edit_tags(TAG *old, int maxtags, int edit)
 
 gotitem:
 	lastindex = selected;
+	nlen = strlen(data[selected].name) + 3;
+	nlen += (edit) ? strlen(TAG_EDIT_TAG_TITLE) : strlen(TAG_VIEW_TAG_TITLE);
+
+	if (nlen > MAX_VALUE_WIDTH)
+	    snprintf(buf, sizeof(buf), "%s", data[selected].name);
+	else
+	    snprintf(buf, sizeof(buf), "%s \"%s\"",
+		    (edit) ? TAG_EDIT_TAG_TITLE : TAG_VIEW_TAG_TITLE,
+		    data[selected].name);
 
 	if (!edit) {
 	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
 		goto cleanup;
 
-	    snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_VIEW_TAG_TITLE,
-		    data[selected].name);
 	    cmessage(buf, ANYKEY, "%s", data[selected].value);
 	    goto cleanup;
 	}
-
-	snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_EDIT_TAG_TITLE,
-		data[selected].name);
 
 	if (strcmp(data[selected].name, "Date") == 0) {
 	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, NULL,
