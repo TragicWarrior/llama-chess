@@ -1,4 +1,4 @@
-/* $Id: help.c,v 1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: help.c,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
 /* 
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
