@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.9 2002-12-07 21:32:26 bjk Exp $ */
+/* $Id: cboard.h,v 1.10 2002-12-09 18:54:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -78,4 +78,4 @@ int save_pgn(const char *);
 void update_history(void);
 void init_history(void);
 void reset_history(void);
-void edit_pgn_data(void);
+void edit_pgn_data(int);

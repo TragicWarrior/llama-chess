@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.6 2002-12-07 21:32:26 bjk Exp $ */
+/* $Id: common.h,v 1.7 2002-12-09 18:54:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,10 @@
 */
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
+
+#ifdef HAVE_FORM_H
+#include <form.h>
 #endif
 
 #ifdef HAVE_PANEL_H
@@ -44,6 +48,11 @@
 #define HISTORY_WIDTH	(COLS - DATA_WIDTH)
 #define HISTORY_TITLE	"Move History"
 
+FILE *debugfp;
+#define DEBUG(fmt, args...)	(debugfp = fopen("debug", "a"), \
+	fprintf(debugfp, fmt, ##args), fclose(debugfp))
+
+#define ACK			message("ack", "ack", "ack")
 #define MAX_PGN_LINE_LEN	255
 #define MAX_MOVE_LEN		7 /* As defined by SAN. */
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
@@ -54,7 +63,6 @@
 #define YESNO			"[ Yes or No ]"
 #define ERROR			"[ ERROR ]"
 #define CONFIRM			"[ CONFIRM ]"
-#define ACK			message("ack", "ack", "ack")
 #define ENGINE_COMMAND_PROMPT	"Command: "
 #define UNKNOWN			"not available"
 
@@ -119,8 +127,13 @@ int message(const char *, const char *, const char *, ...);
 void parse_engine_output(char *);
 void draw_window_title(WINDOW *, const char *, int);
 char *real_filename(char *);
-char *get_input(const char *, const char *);
+char *get_input_str(const char *, const char *);
 void help(const char *, const char **);
+char *trim(char *);
+
+enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
+    FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM };
+char *get_input(const char *, const char *, int, ...);
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>

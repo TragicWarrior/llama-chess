@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.13 2002-12-07 21:32:26 bjk Exp $ */
+/* $Id: cboard.c,v 1.14 2002-12-09 18:54:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -299,52 +299,6 @@ void refresh_all()
     return;
 }
 
-/* FIXME scrolling for values wider than COLS and tokens that are more LINES */
-/* Just dumps the pgn array to a window. */
-void pgn_info()
-{
-    WINDOW *win;
-    PANEL *pan;
-    int y = (pgn_index + 5 > LINES - 2) ? LINES - 2 : pgn_index + 5;
-    int x = 0;
-    int tlen = 0;
-    int i;
-
-    for (i = 0; (i < pgn_index && i < LINES - 5); i++) {
-	int ttlen = strlen(pgn[i].token);
-	int vlen = strlen(pgn[i].value);
-	int llen = ttlen + vlen + 2;
-
-	if (tlen < ttlen)
-	    tlen = ttlen;
-
-	if (x < llen)
-	    x = llen;
-    }
-
-    x += 4;
-
-    if (x < strlen(ANYKEY) + 4)
-	x = strlen(ANYKEY) + 4;
-
-    win = newwin(y, x, LINES / 2 - y / 2, CALCPOSX(x));
-    pan = new_panel(win);
-    draw_window_title(win, "PGN Information", x);
-    
-    for (i = 0; i < pgn_index; i++)
-	mvwprintw(win, 2 + i, 1, "%*s: %-*s", tlen, pgn[i].token, 
-		(x - tlen - 4), pgn[i].value);
-
-    mvwprintw(win, y - 2, CENTERX(x, ANYKEY), "%s", ANYKEY);
-
-    update_panels();
-    doupdate();
-    wgetch(win);
-    del_panel(pan);
-    delwin(win);
-    return;
-}
-
 void game_loop()
 {
     int rrow = 8, rcol = 1;
@@ -408,7 +362,7 @@ void game_loop()
 		if (!data.pgnfile[0])
 		    break;
 
-		pgn_info();
+		edit_pgn_data(0);
 		break;
 	    case 'v':
 		message(NULL, ANYKEY, "%s\n%s\n\nTerminal supports %i colors.\n"
@@ -475,7 +429,8 @@ void game_loop()
 		    break;
 		}
 
-		if ((tmp = get_input("Load saved game filename", NULL)) == NULL)
+		if ((tmp = get_input_str("Load saved game filename", NULL)) 
+			== NULL)
 		    break;
 
 		if (parse_pgn_file(tmp))
@@ -489,9 +444,9 @@ void game_loop()
 	    case 's':
 		/* FIXME user defined tags */
 		if (message(NULL, YESNO, "Edit save game data?") == 'y')
-		    edit_pgn_data();
+		    edit_pgn_data(1);
 
-		if ((tmp = get_input("Save game filename", NULL)) == NULL)
+		if ((tmp = get_input_str("Save game filename", NULL)) == NULL)
 		    break;
 
 		if (save_pgn(tmp)) {
@@ -535,7 +490,8 @@ void game_loop()
 		if (status.engine == ENGINE_THINKING)
 		    break;
 
-		if ((tmp = get_input(ENGINE_COMMAND_PROMPT, NULL)) != NULL) {
+		if ((tmp = get_input_str(ENGINE_COMMAND_PROMPT, NULL)) 
+			!= NULL) {
 		    send_to_engine("%s\n", tmp);
 		}
 		break;

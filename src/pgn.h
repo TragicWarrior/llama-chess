@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.2 2002-12-07 14:51:13 bjk Exp $ */
+/* $Id: pgn.h,v 1.3 2002-12-09 18:54:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -28,6 +28,7 @@
 #define PGN_NEW_TAG	"New Roster Tag Name"
 #define PGN_DUPLICATE	"Could not add duplicate tag"
 #define PGN_EDIT_REFUSE	"Refusing to edit"
+#define PGN_INFO_TITLE	"PGN Information"
 
 struct {
     char *pgn;

@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.8 2002-12-09 14:13:31 bjk Exp $ */
+/* $Id: pgn.c,v 1.9 2002-12-09 18:54:24 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -35,6 +35,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#ifdef HAVE_MENU_H
+#include <menu.h>
 #endif
 
 #include "common.h"
@@ -272,94 +276,94 @@ int save_pgn(const char *filename)
     return 0;
 }
 
-/* Get pgn_index number. */
-static int get_index_number(WINDOW *win, int y, int x)
+static void cleanup(WINDOW *win, PANEL *panel, MENU *menu, ITEM **items)
 {
-    int selected;
-    char buf[4] = {0};
+    int i;
 
-    mvwinnstr(win, y, x, buf, sizeof(buf) - 1);
+    unpost_menu(menu);
+    free_menu(menu);
 
-    if(sscanf(buf, "%u", &selected) != 1)
-	return -1;
+    for (i = 0; items[i]; i++)
+	free_item(items[i]);
 
-    return selected;
+    del_panel(panel);
+    delwin(win);
 }
 
-/* FIXME segfault after 'q' (sometimes), scrolling */
-void edit_pgn_data()
+void edit_pgn_data(int edit)
 {
-again:
     while (1) {
 	WINDOW *win;
 	PANEL *panel;
-	int y = (pgn_index + 5 > LINES - 2) ? LINES - 2 : pgn_index + 5;
-	int x = 0;
-	int tlen = 0;
+	ITEM **mitems = NULL;
+	MENU *menu;
 	int i;
-	unsigned selected = 0;
-	int cy = 2;
 	char editprompt[76] = {0};
-	char buf[4] = {0};
 	char *tmp = NULL;
+	int rows, cols;
+	int selected = -1;
 
-	for (i = 0; (i < pgn_index && i < LINES - 5); i++) {
-	    int ttlen = strlen(pgn[i].token);
-	    int vlen = strlen(pgn[i].value);
-	    int llen = ttlen + vlen + 2;
+	if (!edit)
+	    set_item_opts(NULL, ~O_SELECTABLE);
 
-	    if (tlen < ttlen)
-		tlen = ttlen;
-
-	    if (x < llen)
-		x = llen;
+	for (i = 0; i < pgn_index; i++) {
+	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+	    mitems[i] = new_item(pgn[i].token, pgn[i].value);
 	}
 
-	x += 4;
+	mitems[i] = NULL;
+	menu = new_menu(mitems);
+	scale_menu(menu, &rows, &cols);
 
-	if (x < strlen(PGN_EDIT_PROMPT) + 4)
-	    x = strlen(PGN_EDIT_PROMPT) + 4;
+	if (edit) {
+	    if (cols < strlen(PGN_EDIT_TITLE))
+		cols = strlen(PGN_EDIT_TITLE) + 2;
+	}
+	else {
+	    if (cols < strlen(PGN_INFO_TITLE))
+		cols = strlen(PGN_INFO_TITLE) + 2;
+	}
 
-	win = newwin(y, x, LINES / 2 - y / 2, CALCPOSX(x));
+	win = newwin(rows + 3, cols + 2, CALCPOSY(rows), CALCPOSX(cols));
+	/* FIXME */
+	set_menu_format(menu, 12, 0);
+	set_menu_win(menu, win);
+	set_menu_sub(menu, derwin(win, rows, cols, 2, 1));
+	set_menu_fore(menu, A_REVERSE);
+	set_menu_grey(menu, A_NORMAL);
+	set_menu_mark(menu, NULL);
+	set_menu_spacing(menu, 2, 0, 0);
+	menu_opts_off(menu, O_NONCYCLIC);
+	post_menu(menu);
 	panel = new_panel(win);
-	draw_window_title(win, PGN_EDIT_TITLE, x);
-	curs_set(1);
+	draw_window_title(win, (edit) ? PGN_EDIT_TITLE : PGN_INFO_TITLE, 
+		cols + 2);
 	cbreak();
 	noecho();
 	nonl();
 	keypad(win, TRUE);
 
-	for (i = 0; i < pgn_index; i++)
-	    mvwprintw(win, 2 + i, 1, "%u. %*s: %-*s", i + 1, tlen,
-		    pgn[i].token, (x - tlen - (sizeof(buf) - 1 + 4)),
-		    pgn[i].value);
-
-	mvwprintw(win, y - 2, CENTERX(x, PGN_EDIT_PROMPT), "%s",
-		PGN_EDIT_PROMPT);
-
 	while (1) {
 	    int c;
-	    char *newtoken;
-	    struct pgndata *tmppgn = NULL;
+	    struct pgndata *tmppgn;
+	    char *newtag = NULL;
 	    int tpgn_index = 0;
 
-	    wmove(win, cy, 1);
 	    update_panels();
 	    doupdate();
+
 	    c = wgetch(win);
 
 	    switch (c) {
 		case 'r':
-		    if ((selected = get_index_number(win, cy, 1)) == -1) {
-			message(ERROR, ANYKEY, PGN_BAD_INDEX);
-			continue;
-		    }
+		    if (!edit)
+			break;
 
-		    selected--;
+		    selected = item_index(current_item(menu));
 
 		    if (selected <= 6) {
 			message(NULL, ANYKEY, PGN_REMOVE_STR);
-			continue;
+			goto cleanup;
 		    }
 
 		    for (i = 0; i < pgn_index; i++) {
@@ -376,64 +380,59 @@ again:
 		    }
 
 		    free(tmppgn);
-		    del_panel(panel);
-		    delwin(win);
-		    goto again;
+		    goto cleanup;
 		    break;
 		case 'a':
-		    if ((newtoken = get_input(PGN_NEW_TAG, NULL)) == NULL)
+		    if (!edit)
 			break;
 
-		    if (add_pgn_data(&pgn, &pgn_index, newtoken, NULL)) {
+		    if ((newtag = get_input_str(PGN_NEW_TAG, NULL)) == NULL)
+			break;
+
+		    if (add_pgn_data(&pgn, &pgn_index, newtag, NULL)) {
 			message(ERROR, ANYKEY, "%s \"%s\"", PGN_DUPLICATE,
-				newtoken);
-			    continue;
+				newtag);
+			goto cleanup;
 		    }
 
 		    selected = pgn_index - 1;
-		    goto gotkey;
+		    goto gotitem;
+		    break;
 		case 'j':
 		case KEY_UP:
-		    if (cy - 1 < 2)
-			cy = y - 4;
-		    else
-			cy--;
+		    menu_driver(menu, REQ_UP_ITEM);
 		    break;
 		case 'k':
 		case KEY_DOWN:
-		    if (cy + 1 > y - 4)
-			cy = 2;
-		    else
-			cy++;
+		    menu_driver(menu, REQ_DOWN_ITEM);
 		    break;
 		case KEY_RETURN:
-		    if ((selected = get_index_number(win, cy, 1)) == -1) {
-			message(ERROR, ANYKEY, PGN_BAD_INDEX);
-			continue;
-		    }
+		    if (!edit)
+			break;
 
-		    selected--;
-		    goto gotkey;
+		    selected = item_index(current_item(menu));
+		    goto gotitem;
+		    break;
 		case 'q':
-		    del_panel(panel);
-		    delwin(win);
+		case KEY_ESCAPE:
+		    cleanup(win, panel, menu, mitems);
 		    goto done;
+		    break;
 		default:
-		    beep();
 		    break;
 	    }
 	}
 
-gotkey:
+gotitem:
 	if (strcmp(pgn[selected].token, "Date") == 0) {
 	    message(NULL, ANYKEY, "%s \"Date\"", PGN_EDIT_REFUSE);
-	    continue;
+	    goto cleanup;
 	}
 
 	snprintf(editprompt, sizeof(editprompt),
 		"%s \"%s\"", PGN_EDIT_TAG, pgn[selected].token);
 
-	tmp = get_input(editprompt, pgn[selected].value);
+	tmp = get_input_str(editprompt, pgn[selected].value);
 
 	if (tmp) {
 	    if (strcmp(tmp, UNKNOWN) == 0)
@@ -443,11 +442,10 @@ gotkey:
 	strncpy(pgn[selected].value, (tmp) ? tmp : "",
 		sizeof(pgn[selected].value));
 
-	del_panel(panel);
-	delwin(win);
+cleanup:
+	cleanup(win, panel, menu, mitems);
     }
 
 done:
-    curs_set(0);
     return;
 }
