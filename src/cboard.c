@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.85 2003-02-01 15:55:07 bjk Exp $ */
+/* $Id: cboard.c,v 1.86 2003-02-01 17:26:48 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1257,10 +1257,15 @@ void game_loop()
 			break;
 		    }
 
-		    if (!pushkey && 
-			    game[gindex].hindex != game[gindex].htotal) {
-			if ((c = message(NULL, YESNO, "%s",
-					GAME_RESUME_HISTORY_TEXT)) != 'y')
+		    if (game[gindex].hindex != game[gindex].htotal) {
+			if (!pushkey) {
+			    if ((c = message(NULL, YESNO, "%s",
+					    GAME_RESUME_HISTORY_TEXT)) != 'y')
+				break;
+			}
+		    }
+		    else {
+			if (game[gindex].gameover)
 			    break;
 		    }
 
