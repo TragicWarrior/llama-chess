@@ -9,4 +9,6 @@ FEN move parsing.
 
 When saving multiple games, sort them by tag values specified by the standard.
 
-chess.uoknor.edu /pub/chess/ for tests
+A command to show pinned pieces.
+
+Cursor keys cycle valid moves, not suqares (option)

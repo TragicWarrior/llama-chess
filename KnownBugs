@@ -1,3 +1,5 @@
+SAN move format is broken with ambiguities.
+
 End of game and check aren't recognized.
 
 The PGN specification says import format shouldn't need move numbers. Right

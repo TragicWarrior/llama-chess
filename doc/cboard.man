@@ -28,6 +28,8 @@
 .Nm cboard
 .Op Fl hv
 .Op Fl p Ar pgnfile
+.Op Fl i Ar server Op :port
+.Op Fl u Ar user Op :password
 .
 .Sh DESCRIPTION
 .
@@ -49,6 +51,10 @@ automatically provided you have
 and
 .Xr zip 1
 installed.
+.It Fl i Ar server Op :port
+ICS server and option port.
+.It Fl u Ar user Op :password
+ICS username and optional password.
 .It Fl v
 Version information.
 .It Fl h
@@ -135,6 +141,11 @@ Optional username for ICS authentication. The default is
 .Pp
 .It Cm ics_passwd Ar password
 Password for ICS username.
+.Pp
+.It Cm valid_moves Ar on|off
+When a piece is selected, show valid squares the piece can move to. The
+default is 
+.Ar on .
 .El
 .
 .Sh COLORS
@@ -145,6 +156,7 @@ Password for ICS username.
 .It Cm board_white Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_graphics Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm board_coords Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm board_moves Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_window Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_title Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_border Ar foreground Ar background Op Ar cattr Op Ar attr
@@ -201,17 +213,21 @@ Some color parameters have a _window extension. This will set the default
 color and attibutes for all characters for the given parameter set.
 .
 .Sh FILES
-.Bl -tag -compact -width ~/.cboardrc/agony.data
+.Bl -tag -compact -width ~/.cboard/agony.data
 .It Pa ~/.cboard/config
 Configuration file.
 .It Pa ~/.cboard/agony.data
 A list of agony strings, one per line, which is displayed randomly when a
 capature has been made.
+.It Pa ~/.cboard/cc.data
+Country codes. Used when editing the \&"Site\&" tag.
 .It Pa ~/.cboard/nag.data
 Appending to this file is fine for custom NAG types, but lines before 140 are
 reserved by the PGN standard.
 .It Pa ~/.cboard/fifo
 A FIFO read by the chess engine for resuming games.
+.It Pa ~/.cboard/tmpfile
+Temporary file created and removed when reading compressed files.
 .El
 .
 .Sh AUTHORS

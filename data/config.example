@@ -37,6 +37,9 @@ clevel		6
 # If "off", the chess board line graphics will not be drawn.
 line_graphics	on
 
+# If on, show valid moves for the selected piece.
+valid_moves	on
+
 # ICS server.
 ics_server	ics.freechess.org
 
@@ -68,6 +71,7 @@ board_cursor	white	green	none	bold,reverse
 board_black	white	black
 board_white	white	red	none	reverse
 board_coords	yellow	black	bold
+board_moves	white	magenta	none	reverse
 
 status_window	white	black
 status_title	white	blue	none	reverse
