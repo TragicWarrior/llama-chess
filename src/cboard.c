@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.75 2003-01-29 20:23:19 bjk Exp $ */
+/* $Id: cboard.c,v 1.76 2003-01-30 14:08:09 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1731,7 +1731,8 @@ int main(int argc, char *argv[])
 		}
 		break;
 	    case 'v':
-		printf("%s\n%s\n", PACKAGE_STRING, COPYRIGHT);
+		printf("%s (%s)\n%s\n", PACKAGE_STRING, curses_version(), 
+			COPYRIGHT);
 		exit(EXIT_SUCCESS);
 	    case 'p':
 		strncpy(pgnfile, optarg, sizeof(pgnfile));
