@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.21 2002-12-20 21:46:39 bjk Exp $ */
+/* $Id: history.c,v 1.22 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -31,6 +31,7 @@
 #endif
 
 #include "common.h"
+#include "colors.h"
 #include "history.h"
 
 static int init_nag()
@@ -179,7 +180,9 @@ void history_edit_nag(void *arg)
     noecho();
     keypad(win, TRUE);
     set_menu_pattern(menu, mbuf);
-    draw_window_title(win, NAG_TITLE, cols + 2);
+    wbkgd(win, CP_MESSAGE_WINDOW);
+    draw_window_title(win, NAG_TITLE, cols + 2, CP_HISTORY_TITLE,
+	    CP_HISTORY_BORDER);
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
 	if (game[gindex].history[index].nag[i] && 
@@ -204,7 +207,7 @@ void history_edit_nag(void *arg)
 
 	snprintf(buf, sizeof(buf), "Item %i of %i (%i of %i selected) %s", c, 
 		item_count(menu), itemcount, MAX_PGN_NAG, NAG_PROMPT);
-	mvwprintw(win, rows + 2, CENTERX(cols, buf), "%s", buf);
+	draw_prompt(win, rows + 2, cols, buf, CP_MESSAGE_PROMPT);
 
 	wattroff(win, A_REVERSE);
 

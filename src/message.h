@@ -1,4 +1,4 @@
-/* $Id: message.h,v 1.4 2002-12-20 17:14:08 bjk Exp $ */
+/* $Id: message.h,v 1.5 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -20,8 +20,7 @@
 #define MESSAGE_H
 
 #define MSG_WIDTH	60 /* For multiline messages. */
-#define MESSAGE_CP	((COLORS) ? \
-	COLOR_PAIR(9) | config.color[CONF_MESSAGE].attrs : \
-	config.color[CONF_MESSAGE].nattrs)
 
+void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
+void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 #endif

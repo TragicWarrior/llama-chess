@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.6 2002-12-18 14:48:31 bjk Exp $ */
+/* $Id: input.h,v 1.7 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,7 @@
 */
 #ifndef INPUT_H
 #define INPUT_H
+
 #define INPUT_WIDTH	((COLS > 60) ? 60 : COLS - 2)
 #define INPUT_HELP_PROMPT	"Type CTRL-g for available line editing keys"
 #define INPUT_HELP	"Line Editing Keys"
@@ -36,4 +37,9 @@ const char *inputhelp[] = {
     "             ENTER - quit with changes",
     NULL
 };
+
+void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
+void draw_prompt(WINDOW *win, int, int, const char *, chtype);
+void help(const char *, const char **);
+
 #endif

@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.11 2002-12-18 14:48:32 bjk Exp $ */
+/* $Id: pgn.h,v 1.12 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -32,6 +32,7 @@
 #define PGN_NEW_TAG	"New Roster Tag Name"
 #define PGN_DUPLICATE	"Could not add duplicate tag"
 #define PGN_INFO_TITLE	"PGN Information"
+#define OVERWRITE_PROMPT	"'a' to append, 'o' to overwrite"
 #define MAX_VALUE_WIDTH	30
 
 enum {PGN_EVENT, PGN_SITE, PGN_DATE, PGN_ROUND, PGN_WHITE, PGN_BLACK,
@@ -69,4 +70,8 @@ void add_to_history(struct history **, int *, int *, const char *);
 void reset_history(void);
 void free_game_data(void);
 void send_to_engine(const char *, ...);
+void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
+void draw_prompt(WINDOW *win, int, int, const char *, chtype);
+void help(const char *, const char **);
+
 #endif

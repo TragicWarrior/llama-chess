@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.10 2002-12-20 00:31:37 bjk Exp $ */
+/* $Id: history.h,v 1.11 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,7 @@
 */
 #ifndef HISTORY_H
 #define HISTORY_H
+
 #define NAG_TITLE	"Editing NAG Information"
 #define NAG_PROMPT	"Type CTRL-g for help"
 #define NAG_HELP	"NAG Menu Keys"
@@ -45,6 +46,8 @@ const char *naghelp[] = {
 
 void init_board(void);
 void update_status(void);
-int show_message(const char *, const char *, const char *, void(*)(void*),
-	void *, int, const char *, va_list);
+void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
+void draw_prompt(WINDOW *win, int, int, const char *, chtype);
+void help(const char *, const char **);
+
 #endif

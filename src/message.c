@@ -1,4 +1,4 @@
-/* $Id: message.c,v 1.4 2002-12-20 21:45:18 bjk Exp $ */
+/* $Id: message.c,v 1.5 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -26,11 +26,12 @@
 #endif
 
 #include "common.h"
+#include "colors.h"
 #include "message.h"
 
-static int dump_message(const char *title, const char *prompt, int center,
+int dump_message(const char *title, const char *prompt, int center,
 	const char *extra_help, void(*custom_func)(void*), void *arg, int ckey,
-	const char *format, va_list ap)
+	const char *format, ...)
 {
     WINDOW *win;
     PANEL *panel;
@@ -40,6 +41,9 @@ static int dump_message(const char *title, const char *prompt, int center,
     int total = 0;
     char buf[LINE_MAX], *p;
     char *tmp;
+    va_list ap;
+
+    va_start(ap, format);
 
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, format, ap);
@@ -47,6 +51,8 @@ static int dump_message(const char *title, const char *prompt, int center,
     line = Malloc(LINE_MAX);
     vsnprintf(line, LINE_MAX, format, ap);
 #endif
+
+    va_end(ap);
 
     /* Get the longest line to dynamically adjust the message box width. */
     for (i = n = pos = 0; line[i]; i++, n++) {
@@ -124,22 +130,19 @@ static int dump_message(const char *title, const char *prompt, int center,
     win = newwin((title) ? height + 5 : height + 4, width,
 	    CALCPOSY(((title) ? height + 5 : height + 4)), CALCPOSX(width));
     panel = new_panel(win);
-    draw_window_title(win, title, width);
-
-    wattron(win, MESSAGE_CP);
+    wbkgd(win, CP_MESSAGE_WINDOW);
+    draw_window_title(win, title, width, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
     for (i = 0; lines[i]; i++)
 	mvwprintw(win, (title) ? 2 + i: 1 + i, 
 		(center) ? CENTERX(width, lines[i]) : 1, "%s", lines[i]);
 
     if (extra_help)
-	mvwprintw(win, (title) ? height + 2 : height + 1, 
-		CENTERX(width, extra_help), "%s", extra_help);
+	draw_prompt(win, (title) ? height + 2 : height + 1, width, extra_help,
+		CP_MESSAGE_PROMPT);
 
-    mvwprintw(win, (title) ? height + 3 : height + 2, 
-	    CENTERX(width, prompt), "%s", prompt);
-
-    wattroff(win, MESSAGE_CP);
+    draw_prompt(win, (title) ? height + 3 : height + 2, width, prompt,
+	    CP_MESSAGE_PROMPT);
 
     while (1) {
 	update_panels();
@@ -161,44 +164,4 @@ static int dump_message(const char *title, const char *prompt, int center,
 
     free(lines);
     return n;
-}
-
-int show_message(const char *title, const char *prompt, 
-	const char *extra_help, void(*custom_func)(void*), void *arg, int ckey,
-	const char *format, ...)
-{
-    va_list ap;
-    int ret;
-
-    va_start(ap, format);
-    ret = dump_message(title, prompt, 0, extra_help, custom_func, arg, ckey, 
-	    format, ap);
-    va_end(ap);
-
-    return ret;
-}
-
-int message(const char *title, const char *prompt, const char *format, ...)
-{
-    va_list ap;
-    int ret;
-
-    va_start(ap, format);
-    ret = dump_message(title, prompt, 1, NULL, NULL, NULL, 0, format, ap);
-    va_end(ap);
-
-    return ret;
-}
-
-int message_uncentered(const char *title, const char *prompt, 
-	const char *format, ...)
-{
-    va_list ap;
-    int ret;
-
-    va_start(ap, format);
-    ret = dump_message(title, prompt, 0, NULL, NULL, NULL, 0, format, ap);
-    va_end(ap);
-
-    return ret;
 }

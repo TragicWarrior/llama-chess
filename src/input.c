@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.13 2002-12-20 00:29:35 bjk Exp $ */
+/* $Id: input.c,v 1.14 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -30,6 +30,7 @@
 #endif
 
 #include "common.h"
+#include "colors.h"
 #include "input.h"
 
 static bool validate_pgn_tag_name(int c, const void *arg)
@@ -172,13 +173,15 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     keypad(win, TRUE);
     curs_set(1);
     panel = new_panel(win);
-    draw_window_title(win, title, width);
+    wbkgd(win, CP_INPUT_WINDOW);
+    draw_window_title(win, title, width, CP_INPUT_TITLE, CP_INPUT_BORDER);
 
     if (extra_help)
-	mvwprintw(win, y + 3, CENTERX(x, extra_help), "%s", extra_help);
+	draw_prompt(win, y + 3, width, extra_help, CP_INPUT_PROMPT);
 
-    mvwprintw(win, (extra_help) ? y + 4 : y + 3,
-	    CENTERX(x, INPUT_HELP_PROMPT), "%s", INPUT_HELP_PROMPT);
+    draw_prompt(win, (extra_help) ? y + 4 : y + 3, width, INPUT_HELP_PROMPT,
+	    CP_INPUT_PROMPT);
+
     form_driver(form, REQ_END_FIELD);
 
     while (1) {
@@ -293,14 +296,4 @@ cleanup:
     nonl();
     curs_set(0);
     return (dst[0]) ? dst : NULL;
-}
-
-char *get_input_str(const char *title, const char *init)
-{
-    return get_input(title, init, 1, 0, NULL, NULL, NULL, -1, 20);
-}
-
-char *get_input_str_clear(const char *title, const char *init)
-{
-    return get_input(title, init, 1, 1, NULL, NULL, NULL, -1, 20);
 }

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.41 2002-12-20 21:46:39 bjk Exp $ */
+/* $Id: cboard.c,v 1.42 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -35,6 +35,7 @@
 #endif
 
 #include "common.h"
+#include "colors.h"
 #include "cboard.h"
 
 void draw_board()
@@ -49,55 +50,56 @@ void draw_board()
 	rcol = 0;
 
 	for (col = 0; col < maxx; col++) {
-	    int attrs = BOARD_WHITE;
+	    int attrs = CP_BOARD_WHITE;
 	    chtype piece;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
 		    mvwaddch(boardw, row, col, 
-			    (row) ? ACS_LLCORNER | BOARD_GRAPHICS :
-			    ACS_ULCORNER | BOARD_GRAPHICS);
+			    (row) ? ACS_LLCORNER | CP_BOARD_GRAPHICS :
+			    ACS_ULCORNER | CP_BOARD_GRAPHICS);
 		else if (col == maxx - 2)
 		    mvwaddch(boardw, row, col,
-			    (row) ? ACS_LRCORNER | BOARD_GRAPHICS : 
-			    ACS_URCORNER | BOARD_GRAPHICS);
+			    (row) ? ACS_LRCORNER | CP_BOARD_GRAPHICS : 
+			    ACS_URCORNER | CP_BOARD_GRAPHICS);
 		else if (!(col % 4))
 		    mvwaddch(boardw, row, col, 
-			    (row) ? ACS_BTEE | BOARD_GRAPHICS : 
-			    ACS_TTEE | BOARD_GRAPHICS);
+			    (row) ? ACS_BTEE | CP_BOARD_GRAPHICS : 
+			    ACS_TTEE | CP_BOARD_GRAPHICS);
 		else {
 		    if (col != maxx - 1)
-			mvwaddch(boardw, row, col, ACS_HLINE | BOARD_GRAPHICS);
+			mvwaddch(boardw, row, col,
+				ACS_HLINE | CP_BOARD_GRAPHICS);
 		}
 
 		continue;
 	    }
 
 	    if ((row % 2) && col == maxx - 1 && coords_y) {
-		wattron(boardw, BOARD_COORDS);
+		wattron(boardw, CP_BOARD_COORDS);
 		mvwprintw(boardw, row, col, "%d", coords_y--);
-		wattroff(boardw, BOARD_COORDS);
+		wattroff(boardw, CP_BOARD_COORDS);
 		continue;
 	    }
 
 	    if ((col == 0 || col == maxx - 2) && row != maxy - 1) {
 		if (!(row % 2))
 		    mvwaddch(boardw, row, col,
-			    (col) ? ACS_RTEE | BOARD_GRAPHICS : 
-			    ACS_LTEE | BOARD_GRAPHICS);
+			    (col) ? ACS_RTEE | CP_BOARD_GRAPHICS : 
+			    ACS_LTEE | CP_BOARD_GRAPHICS);
 		else
-		    mvwaddch(boardw, row, col, ACS_VLINE | BOARD_GRAPHICS);
+		    mvwaddch(boardw, row, col, ACS_VLINE | CP_BOARD_GRAPHICS);
 
 		continue;
 	    }
 
 	    if ((row % 2) && !(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col, ACS_VLINE | BOARD_GRAPHICS);
+		mvwaddch(boardw, row, col, ACS_VLINE | CP_BOARD_GRAPHICS);
 		continue;
 	    }
 
 	    if (!(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col, ACS_PLUS | BOARD_GRAPHICS);
+		mvwaddch(boardw, row, col, ACS_PLUS | CP_BOARD_GRAPHICS);
 		continue;
 	    }
 
@@ -110,14 +112,14 @@ void draw_board()
 
 		    if (((ncols % 2) && !(offset % 2)) || (!(ncols % 2) 
 				&& (offset % 2)))
-			attrs = BOARD_BLACK;
+			attrs = CP_BOARD_BLACK;
 
 		    if (row == cursor_y && col == (cursor_x - 1)) {
-			attrs = BOARD_CURSOR;
+			attrs = CP_BOARD_CURSOR;
 		    }
 
 		    if (row == selected_y && col == (selected_x - 1)) {
-			attrs = BOARD_SELECTED;
+			attrs = CP_BOARD_SELECTED;
 		    }
 
 		    if (row == maxy - 1)
@@ -127,7 +129,7 @@ void draw_board()
 		    mvwaddch(boardw, row, col, ' ');
 
 		    if (row == maxy - 1)
-			waddch(boardw, x_grid_chars[rcol] | BOARD_COORDS);
+			waddch(boardw, x_grid_chars[rcol] | CP_BOARD_COORDS);
 		    else {
 			piece = board[row / 2][rcol].icon;
 
@@ -148,7 +150,7 @@ void draw_board()
 	    }
 	    else {
 		if (col != maxx - 1)
-		    mvwaddch(boardw, row, col, ACS_HLINE | BOARD_GRAPHICS);
+		    mvwaddch(boardw, row, col, ACS_HLINE | CP_BOARD_GRAPHICS);
 	    }
 	}
     }
@@ -224,9 +226,9 @@ void update_status()
     }
 
     mvwprintw(statusw, 3, 1, "  Engine: %-*s", w, " ");
-    wattron(statusw, ENGINE_STATUS);
+    wattron(statusw, CP_STATUS_ENGINE);
     mvwaddstr(statusw, 3, 11, engine);
-    wattroff(statusw, ENGINE_STATUS);
+    wattroff(statusw, CP_STATUS_ENGINE);
 
     mvwprintw(statusw, 4, 1, "   Depth: %-*i", w, config.engine_depth);
 
@@ -244,10 +246,10 @@ void update_status()
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
 
     if (status.notify) {
-	wattron(statusw, NOTIFY_STATUS);
+	wattron(statusw, CP_STATUS_NOTIFY);
 	mvwprintw(statusw, STATUS_HEIGHT - 2,
 		CENTERX(STATUS_WIDTH, status.notify), "%s", status.notify);
-	wattroff(statusw, NOTIFY_STATUS);
+	wattroff(statusw, CP_STATUS_NOTIFY);
     }
 	
     return;
@@ -328,23 +330,39 @@ void update_data()
     return;
 }
 
-void draw_window_title(WINDOW *win, const char *title, int width)
+void draw_prompt(WINDOW *win, int y, int width, const char *str, chtype attr)
+{
+    int i;
+
+    wattron(win, attr);
+
+    for (i = 1; i < width - 1; i++)
+	mvwaddch(win, y, i, ' ');
+
+    mvwprintw(win, y, CENTERX(width, str), "%s", str);
+
+    wattroff(win, attr);
+    return;
+}
+
+void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
+	chtype battr)
 {
     int i;
 
     if (title) {
-	wattron(win, WINDOW_TITLE);
+	wattron(win, attr);
 
 	for (i = 1; i < width - 1; i++)
-	    mvwprintw(win, 1, i, "%c", ' ');
+	    mvwaddch(win, 1, i, ' ');
 
 	mvwprintw(win, 1, CENTERX(width, title), "%s", title);
-	wattroff(win, WINDOW_TITLE);
+	wattroff(win, attr);
     }
 
-    wattron(win, WINDOW_BORDER);
+    wattron(win, battr);
     box(win, ACS_VLINE, ACS_HLINE);
-    wattroff(win, WINDOW_BORDER);
+    wattroff(win, battr);
 
     return;
 }
@@ -364,9 +382,12 @@ void refresh_all()
     werase(dataw);
     werase(boardw);
     update_all();
-    draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH);
-    draw_window_title(dataw, DATA_TITLE, DATA_WIDTH);
-    draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH);
+    draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
+	    CP_STATUS_BORDER);
+    draw_window_title(dataw, DATA_TITLE, DATA_WIDTH, CP_DATA_TITLE, 
+	    CP_DATA_BORDER);
+    draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
+	    CP_HISTORY_BORDER);
     update_panels();
     doupdate();
     return;
@@ -611,8 +632,6 @@ blah:
 		if (save_pgn(tmp, (tmppgn) ? tmppgn : game[gindex].pgn, 0)) {
 		    if (tmppgn)
 			free(tmppgn);
-
-		    message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
 		    break;
 		}
 
@@ -856,36 +875,8 @@ static void set_defaults()
     config.engine_depth = 0;
     config.historyagony = 0;
     config.agony = 1;
-    config.color[CONF_COORDS].fg = COLOR_WHITE;
-    config.color[CONF_COORDS].bg = COLOR_BLACK;
-    config.color[CONF_GRAPHICS].fg = COLOR_WHITE;
-    config.color[CONF_GRAPHICS].bg = COLOR_BLACK;
-    config.color[CONF_MESSAGE].fg = COLOR_WHITE;
-    config.color[CONF_MESSAGE].bg = COLOR_GREEN;
-    config.color[CONF_BORDER].fg = COLOR_CYAN;
-    config.color[CONF_BORDER].bg = COLOR_BLACK;
-    config.color[CONF_BORDER].attrs = A_BOLD;
-    config.color[CONF_WHITE].fg = COLOR_WHITE;
-    config.color[CONF_WHITE].bg = COLOR_RED;
-    config.color[CONF_WHITE].nattrs = A_REVERSE;
-    config.color[CONF_BLACK].fg = COLOR_WHITE;
-    config.color[CONF_BLACK].bg = COLOR_BLACK;
-    config.color[CONF_SELECTED].fg = COLOR_WHITE;
-    config.color[CONF_SELECTED].bg = COLOR_YELLOW;
-    config.color[CONF_SELECTED].nattrs = A_BOLD | A_REVERSE;
-    config.color[CONF_CURSOR].fg = COLOR_WHITE;
-    config.color[CONF_CURSOR].bg = COLOR_GREEN;
-    config.color[CONF_CURSOR].nattrs = A_BOLD | A_REVERSE;
-    config.color[CONF_TITLE].fg = COLOR_WHITE;
-    config.color[CONF_TITLE].bg = COLOR_BLUE;
-    config.color[CONF_TITLE].nattrs = A_REVERSE;
-    config.color[CONF_ENGINE].fg = COLOR_YELLOW;
-    config.color[CONF_ENGINE].bg = COLOR_BLACK;
-    config.color[CONF_ENGINE].nattrs = A_BOLD;
-    config.color[CONF_NOTIFY].fg = COLOR_RED;
-    config.color[CONF_NOTIFY].bg = COLOR_BLACK;
-    config.color[CONF_NOTIFY].nattrs = A_BOLD;
 
+    set_default_colors();
     set_pgn_defaults();
     return;
 }
@@ -966,28 +957,8 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     }
 
-    if (has_colors() == TRUE && start_color() == OK) {
-	init_pair(1, config.color[CONF_WHITE].fg, config.color[CONF_WHITE].bg);
-	init_pair(2, config.color[CONF_BLACK].fg, config.color[CONF_BLACK].bg);
-	init_pair(3, config.color[CONF_SELECTED].fg,
-		config.color[CONF_SELECTED].bg);
-	init_pair(4, config.color[CONF_CURSOR].fg,
-		config.color[CONF_CURSOR].bg);
-	init_pair(5, config.color[CONF_TITLE].fg,
-		config.color[CONF_TITLE].bg);
-	init_pair(6, config.color[CONF_ENGINE].fg,
-		config.color[CONF_ENGINE].bg);
-	init_pair(7, config.color[CONF_NOTIFY].fg,
-		config.color[CONF_NOTIFY].bg);
-	init_pair(8, config.color[CONF_BORDER].fg, 
-		config.color[CONF_BORDER].bg);
-	init_pair(9, config.color[CONF_MESSAGE].fg,
-		config.color[CONF_MESSAGE].bg);
-	init_pair(10, config.color[CONF_GRAPHICS].fg,
-		config.color[CONF_GRAPHICS].bg);
-	init_pair(11, config.color[CONF_COORDS].fg,
-		config.color[CONF_COORDS].bg);
-    }
+    if (has_colors() == TRUE && start_color() == OK)
+	init_color_pairs();
 
     boardw = newwin(BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);
     boardp = new_panel(boardw);
@@ -1003,9 +974,15 @@ int main(int argc, char *argv[])
     cbreak();
     noecho();
 
-    draw_window_title(dataw, DATA_TITLE, DATA_WIDTH);
-    draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH);
-    draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH);
+    wbkgd(statusw, CP_STATUS_WINDOW);
+    draw_window_title(statusw, STATUS_TITLE, STATUS_WIDTH, CP_STATUS_TITLE,
+	    CP_STATUS_BORDER);
+    wbkgd(dataw, CP_DATA_WINDOW);
+    draw_window_title(dataw, DATA_TITLE, DATA_WIDTH, CP_DATA_TITLE, 
+	    CP_DATA_BORDER);
+    wbkgd(historyw, CP_HISTORY_WINDOW);
+    draw_window_title(historyw, HISTORY_TITLE, HISTORY_WIDTH, CP_HISTORY_TITLE,
+	    CP_HISTORY_BORDER);
 
     game_loop();
     stop_engine();

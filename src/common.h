@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.26 2002-12-20 21:46:39 bjk Exp $ */
+/* $Id: common.h,v 1.27 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -80,8 +80,23 @@ enum {
     ENGINE_INITIALIZING
 };
 
+#define message(title, prompt, args...)	\
+    dump_message(title, prompt, 1, NULL, NULL, NULL, 0, ##args)
+
+#define message_uncentered(title, prompt, args...) \
+    dump_message(title, prompt, 0, NULL, NULL, NULL, 0, ##args)
+
+#define show_message(title, prompt, ehelp, func, arg, key, args...) \
+    dump_message(title, prompt, 0, ehelp, func, arg, key, ##args)
+
 #define SEND_TO_ENGINE(fmt, args...)	(engine_initialized) ? \
     send_to_engine(fmt, ##args) : 0
+
+#define get_input_str(title, init) \
+    get_input(title, init, 1, 0, NULL, NULL, NULL, -1, 20)
+
+#define get_input_str_clear(title, init) \
+    get_input(title, init, 1, 1, NULL, NULL, NULL, -1, 20)
 
 struct {
     int engine;
@@ -124,9 +139,14 @@ struct {
 } sp;
 
 enum { 
-    CONF_WHITE, CONF_BLACK, CONF_SELECTED, CONF_CURSOR, CONF_BORDER, 
-    CONF_TITLE, CONF_NOTIFY, CONF_ENGINE, CONF_MESSAGE, CONF_GRAPHICS,
-    CONF_COORDS, CONF_MAX_COLORS
+    CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,
+    CONF_BCOORDS,
+    CONF_DWINDOW, CONF_DTITLE, CONF_DBORDER,
+    CONF_SWINDOW, CONF_STITLE, CONF_SBORDER, CONF_SNOTIFY, CONF_SENGINE,
+    CONF_HWINDOW, CONF_HTITLE, CONF_HBORDER,
+    CONF_MWINDOW, CONF_MTITLE, CONF_MBORDER, CONF_MPROMPT,
+    CONF_IWINDOW, CONF_ITITLE, CONF_IBORDER, CONF_IPROMPT,
+    CONF_MAX_COLORS
 };
 
 struct colors {
@@ -170,17 +190,11 @@ enum { FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
 
 char *get_input(const char *, const char *, int, int, const char *,
 	void (*)(void *), void *, int, ...);
-char *get_input_str(const char *, const char *);
-char *get_input_str_clear(const char *, const char *);
-void draw_window_title(WINDOW *, const char *, int);
 void *Calloc(size_t, size_t);
 void *Realloc(void *, size_t);
-int message(const char *, const char *, const char *, ...);
-int message_uncentered(const char *, const char *, const char *, ...);
-void draw_window_title(WINDOW *, const char *, int);
-void help(const char *, const char **);
+int dump_message(const char *, const char *, int, const char *, 
+	void (*)(void *), void *, int, const char *, ...);
 char *trim(char *);
-char *itoa(long);
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>

@@ -1,4 +1,4 @@
-/* $Id: help.c,v 1.2 2002-12-07 21:31:20 bjk Exp $ */
+/* $Id: help.c,v 1.3 2002-12-21 21:32:17 bjk Exp $ */
 /* 
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -24,6 +24,10 @@
 #endif
 
 #include "common.h"
+#include "colors.h"
+
+void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
+void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 
 void help(const char *title, const char **text)
 {
@@ -43,12 +47,13 @@ void help(const char *title, const char **text)
     win = newwin(n, x, LINES / 2 - n / 2, CALCPOSX(x));
     panel = new_panel(win);
 
-    draw_window_title(win, title, x);
+    wbkgd(win, CP_MESSAGE_WINDOW);
+    draw_window_title(win, title, x, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
     for (i = 0; text[i]; i++)
 	mvwprintw(win, y++, 2, "%s", text[i]);
 
-    mvwprintw(win, ++y, CENTERX(x, ANYKEY), "%s", ANYKEY);
+    draw_prompt(win, ++y, x, ANYKEY, CP_MESSAGE_PROMPT);
 
     update_panels();
     doupdate();

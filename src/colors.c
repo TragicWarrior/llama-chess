@@ -1,4 +1,4 @@
-/* $Id: colors.c,v 1.1 2002-12-21 21:20:54 bjk Exp $ */
+/* $Id: colors.c,v 1.2 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -83,7 +83,6 @@ void set_default_colors()
 {
     config.color[CONF_BCOORDS].fg = COLOR_YELLOW;
     config.color[CONF_BCOORDS].bg = COLOR_BLACK;
-    config.color[CONF_BCOORDS].attrs = A_BOLD;
     config.color[CONF_BGRAPHICS].fg = COLOR_WHITE;
     config.color[CONF_BGRAPHICS].bg = COLOR_BLACK;
     config.color[CONF_BWHITE].fg = COLOR_WHITE;
@@ -131,8 +130,8 @@ void set_default_colors()
     config.color[CONF_MTITLE].fg = COLOR_WHITE;
     config.color[CONF_MTITLE].bg = COLOR_GREEN;
     config.color[CONF_MTITLE].nattrs = A_REVERSE;
-    config.color[CONF_MPROMPT].fg = COLOR_WHITE;
-    config.color[CONF_MPROMPT].bg = COLOR_GREEN;
+    config.color[CONF_MPROMPT].fg = COLOR_CYAN;
+    config.color[CONF_MPROMPT].bg = COLOR_BLACK;
     config.color[CONF_MPROMPT].nattrs = A_BOLD;
     config.color[CONF_IWINDOW].fg = COLOR_WHITE;
     config.color[CONF_IWINDOW].bg = COLOR_BLACK;
@@ -141,8 +140,8 @@ void set_default_colors()
     config.color[CONF_ITITLE].fg = COLOR_WHITE;
     config.color[CONF_ITITLE].bg = COLOR_GREEN;
     config.color[CONF_ITITLE].nattrs = A_REVERSE;
-    config.color[CONF_IPROMPT].fg = COLOR_WHITE;
-    config.color[CONF_IPROMPT].bg = COLOR_GREEN;
+    config.color[CONF_IPROMPT].fg = COLOR_CYAN;
+    config.color[CONF_IPROMPT].bg = COLOR_BLACK;
     config.color[CONF_IPROMPT].nattrs = A_BOLD;
 
     return;

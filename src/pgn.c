@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.32 2002-12-20 21:45:59 bjk Exp $ */
+/* $Id: pgn.c,v 1.33 2002-12-21 21:32:17 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -47,6 +47,7 @@
 #endif
 
 #include "common.h"
+#include "colors.h"
 #include "pgn.h"
 
 int end_of_game(const char *str)
@@ -531,17 +532,36 @@ int save_pgn(char *filename, struct pgndata *pgn, int isfifo)
     int len = 0;
     int data_index = 0;
     struct pgndata *data = NULL;
+    char *mode = NULL;
+    int c;
 
     /* This is a hack to resume an existing game when more than one game is
      * available. Also resuming a saved game and a game from history.
      */
-    if (isfifo) {
-	if ((fp = fopen(filename, "w")) == NULL)
-	    return 1;
+    if (isfifo)
+	mode = "w";
+    else {
+	if (access(filename, W_OK) == 0) {
+	    c = message(NULL, OVERWRITE_PROMPT,
+		    "File \"%s\" exists.", filename);
+
+	    switch (c) {
+		case 'a':
+		    mode = "a";
+		    break;
+		case 'o':
+		    mode = "w+";
+		    break;
+		default:
+		    return 1;
+	    }
+	}
+	else
+	    mode = "a";
     }
-    else
-	if ((fp = fopen(filename, "a")) == NULL)
-	    return 1;
+
+    if ((fp = fopen(filename, mode)) == NULL)
+	return 1;
 
     /* Modify a backup of the data so all the fancy tag names are kept while
      * PGN data is saved (history).
@@ -688,10 +708,11 @@ struct pgndata *edit_pgn_data(int edit)
 	menu_opts_off(menu, O_NONCYCLIC);
 	post_menu(menu);
 	panel = new_panel(win);
+	wbkgd(win, CP_MESSAGE_WINDOW);
 	draw_window_title(win, (edit) ? PGN_EDIT_TITLE : PGN_INFO_TITLE, 
-		cols);
+		cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
-	mvwprintw(win, rows + 3, CENTERX(cols, PGN_PROMPT), "%s", PGN_PROMPT);
+	draw_prompt(win, rows + 3, cols, PGN_PROMPT, CP_MESSAGE_PROMPT);
 
 	cbreak();
 	noecho();
