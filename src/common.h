@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: common.h,v 1.2 2002-12-05 20:49:27 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -96,7 +96,6 @@ int from_engine;
 int history_index;
 int history_total;
 int browse_history;
-char engine_version[32];
 int pgn_index;
 
 void *Calloc(size_t, size_t);

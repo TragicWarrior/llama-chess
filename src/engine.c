@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: engine.c,v 1.2 2002-12-05 20:49:27 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -223,13 +223,6 @@ void parse_engine_output(char *str)
 	str[strlen(str) - 1] = 0;
 	message(NULL, ANYKEY, "%s", str);
     }
-
-    /* FIXME 'version' */
-    /*
-    if ((tmp = strstr(str, "GNU Chess ")) != NULL) {
-	strncpy(engine_version, str, strlen(tmp) - 1);
-    }
-    */
 
     return;
 }

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: cboard.c,v 1.2 2002-12-05 20:49:27 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -485,9 +485,9 @@ void game_loop()
 		pgn_info();
 		break;
 	    case 'v':
-		message(NULL, ANYKEY, "%s\n%s\n\n%s\nTerminal supports %i colors.\n"
-			"Using %s\n", PACKAGE_STRING, COPYRIGHT, 
-			engine_version, COLORS, curses_version());
+		message(NULL, ANYKEY, "%s\n%s\n\nTerminal supports %i colors.\n"
+			"Using %s\n", PACKAGE_STRING, COPYRIGHT, COLORS,
+			curses_version());
 		break;
 	    case 'g':
 		if (browse_history || status.engine == ENGINE_THINKING)
