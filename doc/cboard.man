@@ -1,0 +1,87 @@
+.\" Copyright (C) 2002  Ben Kibbey <bjk@arbornet.org>
+.\" 
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\" 
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\" 
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software
+.\" Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+.
+.Dd October 08, 2002
+.Os
+.Dt CBOARD 6
+.
+.Sh NAME
+.
+.Nm cboard
+.Nd an ncurses chess engine frontend
+.
+.Sh SYNOPSIS
+.
+.Nm cboard
+.Op Fl hv
+.Op Fl f Ar rcfile
+.Op Fl p Ar pgnfile
+.
+.Sh DESCRIPTION
+.
+.Nm cboard
+is a ncurses frontend to
+.Xr gnuchess .
+.
+.Pp
+The following command line options are available:
+.
+.Bl -tag -width
+.It Fl f Ar rcfile
+Alternate configuration file to load. The default is ~/.cboardrc.
+.It Fl p Ar pgnfile
+Load a PGN formatted file.
+.It Fl v
+Version information.
+.It Fl h
+Program help text.
+.El
+.
+.Sh "CONFIGURATION FILE"
+Empty lines and lines beginning with a '#' are ignored. Other lines are
+parameter and value pairs which must be on the same line and separated with
+one or more space or TAB characters.
+.Pp
+.Bl -tag -compact
+.It Cm book Ar string
+The book method to use where string is one of: 
+.Ar off , 
+.Ar prefer , 
+.Ar worst  ,
+.Ar best
+or
+.Ar random . 
+The default is 
+.Ar prefer .
+.Pp
+.It Cm jumpcount Ar integer
+When viewing move history, you can jump more than one move to the next or
+previous move with the UP and DOWN keys. This sets the number of moves to
+jump.
+.Pp
+.It Cm depth Ar integer
+The search depth level of the engine when it's it's turn to move.
+.El
+.
+.Sh FILES
+.Bl -tag -compact -width ~/.cboardrc
+.It Pa ~/.cboardrc
+Default configuration file.
+.El
+.
+.Sh AUTHORS
+.
+.An "Ben Kibbey" Aq bjk@arbornet.org
