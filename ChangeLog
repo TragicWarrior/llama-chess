@@ -1,3 +1,23 @@
+2002-12-19 Thursday 11:55  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: cboard.c (1.36), cboard.h (1.24), common.h (1.21), engine.c
+	(1.19), history.c (1.16), history.h (1.9), pgn.c (1.26):
+	
+	There is no longer a -f option to specify a configuration file.
+	Everything is now stored in ~/.cboard/. This includes:
+	
+	    config	the new configuration file
+	    nag.data	for NAG data
+	    agony.data	for agony data
+	    fifo	a fifo for writing game information to the engine
+
+2002-12-19 Thursday 11:53  Ben Kibbey <bjk@arbornet.org>
+
+	* src/: rcfile.c (1.6), rcfile.h (1.4):
+	
+	Added parameter "pgntag" to override default tag values and to add
+	custom tags.
+
 2002-12-18 Wednesday 16:59  Ben Kibbey <bjk@arbornet.org>
 
 	* src/pgn.c (1.25):
