@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.36 2003-01-08 14:21:14 bjk Exp $ */
+/* $Id: cboard.h,v 1.37 2003-01-08 21:54:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -54,8 +54,9 @@ const char *mainhelp[] = {
     "  ENTER - commit selected piece   h - toggle history mode",
     "    ESC - cancel selected piece   a - annotate previous move",
     "                                  ] - view the next moves annotation",
-    "      N - new game                [ - view the previous moves annotation",
-    "      r - resume a saved game     q - quit",
+    "      n - new game                [ - view the previous moves annotation",
+    "      N - new game from scratch   q - quit",
+    "      r - resume a saved game",
     "      i - show PGN roster tags",
     "      s - save game",
     "      S - save game with prompt",
@@ -91,7 +92,7 @@ void init_history(void);
 void parse_rcfile(const char *);
 char *history_edit_nag(void *);
 void view_annotation(int);
-int save_pgn(const char *, struct pgndata *, int);
+int save_pgn(const char *, int);
 void set_engine_defaults(void);
 int start_chess_engine(void);
 void stop_engine(void);
@@ -102,5 +103,7 @@ void set_default_colors(void);
 void init_color_pairs(void);
 char *browse_directory(void *);
 char *a2a4tosan(struct board_matrix [][], char *);
+int add_pgn_data(struct pgndata **, int *, const char *, const char *);
+void new_game(struct board_matrix [][]);
 
 #endif

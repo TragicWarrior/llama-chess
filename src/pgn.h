@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.19 2003-01-07 20:35:21 bjk Exp $ */
+/* $Id: pgn.h,v 1.20 2003-01-08 21:54:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -56,29 +56,39 @@ struct d_entries {
 
 const char *pgn_edit_help[] = {
     "    UP/DOWN - select menu entry",
-    "[A-Za-z0-9] - jump to entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
     "      ENTER - edit selected entry",
     "     CTRL-a - add an entry",
-    "     CTRL-r - remove an entry",
+    "     CTRL-r - remove selected entry",
     "     ESCAPE - quit",
     NULL
 };
 
 const char *pgn_info_help[] = {
     "    UP/DOWN - select menu entry",
-    "[A-Za-z0-9] - jump to entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
     "      ENTER - view selected entry",
     "     ESCAPE - quit",
     NULL
 };
 
 const char *file_browser_help[] = {
-    "     CTRL-x - change directory",
-    "          ~ - open home directory",
     "    UP/DOWN - select menu entry",
-    "CTRL-P/PGUP - previous page",
-    "CTRL-N/PGDN - next page",
-    "[A-Za-z0-9] - jump to entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
+    "     CTRL-x - change directory",
+    "          ~ - change to home directory",
     "      ENTER - commit selected entry",
     "     ESCAPE - quit",
     NULL

@@ -1,4 +1,4 @@
-/* $Id: engine.c,v 1.24 2003-01-07 21:35:42 bjk Exp $ */
+/* $Id: engine.c,v 1.25 2003-01-08 21:54:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -325,7 +325,7 @@ engine_move:
 
     /* The engine is now reading a FIFO. Dump what we need to it. */
     if (strstr(str, "pgnload") != NULL) {
-	if (save_pgn(config.fifo, game[gindex].pgn, 1)) {
+	if (save_pgn(config.fifo, 1)) {
 	    game[gindex].htotal = oldhistorytotal;
 	    oldhistorytotal = 0;
 	    return;

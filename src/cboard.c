@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.50 2003-01-08 14:21:14 bjk Exp $ */
+/* $Id: cboard.c,v 1.51 2003-01-08 21:54:06 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -527,6 +527,20 @@ blah:
 	    case '<':
 		game_next_prev(0);
 		break;
+		/*
+	    case 'D':
+		if (gtotal < 2) {
+		    message(NULL, ANYKEY, "%s", E_DELETE_GAME);
+		    break;
+		}
+
+		if ((c = message(NULL, YESNO, "%s #%i?", DELETE_GAME,
+				gindex + 1)) != 'y')
+		    break;
+
+		delete_game(gindex);
+		break;
+		*/
 	    case 'a':
 	        annotate = game[gindex].hindex;
 
@@ -614,7 +628,7 @@ blah:
 		update_history();
 		break;
 	    case 'r':
-		if ((tmp = get_input(LOAD_PGN, pgnfile, 1, 1, EXTRA_BROWSE,
+		if ((tmp = get_input(LOAD_PGN, NULL, 1, 1, EXTRA_BROWSE,
 				browse_directory, NULL, '\t', -1)) == NULL)
 		    break;
 
@@ -635,8 +649,15 @@ blah:
 		break;
 	    case 'S':
 	    case 's':
-		if (!game[gindex].htotal) {
-		    message(NULL, ANYKEY, "%s", E_SAVE_NOMOVE);
+		for (c = n = 0; c < gtotal; c++) {
+		    if (!game[c].htotal)
+			continue;
+
+		    n = 1;
+		}
+
+		if (!n) {
+		    message(NULL, ANYKEY, "%s", E_SAVE_NOGMOVES);
 		    break;
 		}
 
@@ -660,29 +681,26 @@ blah:
 			game[gindex].htotal = oldhistorytotal;
 			break;
 		    }
+
+		    game[gindex].pindex = 0;
+
+		    for (c = 0; tmppgn[c].token[0]; c++)
+			add_pgn_data(&game[gindex].pgn, &game[gindex].pindex,
+				tmppgn[c].token, tmppgn[c].value);
 		}
 
 		if ((tmp = get_input(SAVE_PGN, pgnfile, 1, 1, EXTRA_BROWSE,
 				browse_directory, NULL, '\t', -1)) == NULL) {
 		    game[gindex].htotal = oldhistorytotal;
-
-		    if (tmppgn)
-			free(tmppgn);
-
 		    break;
 		}
 
-		if (save_pgn(tmp, (tmppgn) ? tmppgn : game[gindex].pgn, 0)) {
+		if (save_pgn(tmp, 0)) {
 		    game[gindex].htotal = oldhistorytotal;
-
-		    if (tmppgn)
-			free(tmppgn);
-
 		    break;
 		}
 
 		game[gindex].htotal = oldhistorytotal;
-		free(tmppgn);
 		parse_pgn_file(pgnfile);
 		gindex = gtotal - 1;
 		gactive = gindex;
@@ -692,14 +710,25 @@ blah:
 	    case CTRL('G'):
 		help(MAIN_HELP, mainhelp);
 		break;
+	    case 'n':
 	    case 'N':
-		if (message(NULL, YESNO, "%s", NEWGAME_P) != 'y')
-		    break;
+		if (c == 'N') {
+		    if (message(NULL, YESNO, "%s", NEWGAME_P) != 'y')
+			break;
+		}
 
-		reset_history();
-		browse_history = pgnfile[0] = sp.icon = 0;
+		browse_history = sp.icon = 0;
 
-		parse_pgn_file(pgnfile);
+		if (c == 'n') {
+		    new_game(board);
+		    gactive = gindex;
+		}
+		else {
+		    reset_history();
+		    pgnfile[0] = '\0';
+		    parse_pgn_file(pgnfile);
+		}
+
 		status.bw = WHITE;
 		game[gindex].wcaptures = game[gindex].bcaptures = 0;
 
@@ -710,8 +739,9 @@ blah:
 
 		SEND_TO_ENGINE("\nnew\n");
 		set_engine_defaults();
-		update_all();
 		status.engine = ENGINE_READY;
+		status.notify = NULL;
+		update_all();
 		break;
 	    case 'R':
 		refresh_all();
@@ -921,7 +951,6 @@ static void set_defaults()
     config.saveprompt = 1;
 
     set_default_colors();
-    set_pgn_defaults();
     return;
 }
 
@@ -994,6 +1023,7 @@ int main(int argc, char *argv[])
     }
 
     srandom(getpid());
+
     if (initscr() == NULL)
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);
     else

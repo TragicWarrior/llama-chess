@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.28 2003-01-07 14:14:17 bjk Exp $ */
+/* $Id: history.c,v 1.29 2003-01-08 21:54:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -207,7 +207,7 @@ char *history_edit_nag(void *arg)
 
 	snprintf(buf, sizeof(buf), "Item %i of %i (%i of %i selected) %s", c, 
 		item_count(menu), itemcount, MAX_PGN_NAG, NAG_PROMPT);
-	draw_prompt(win, rows + 2, cols, buf, CP_MESSAGE_PROMPT);
+	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
 
 	wattroff(win, A_REVERSE);
 
@@ -283,6 +283,12 @@ char *history_edit_nag(void *arg)
 
 		set_current_item(menu, mitems[found]);
 		break;
+	    case KEY_HOME:
+		menu_driver(menu, REQ_FIRST_ITEM);
+		break;
+	    case KEY_END:
+		menu_driver(menu, REQ_LAST_ITEM);
+		break;
 	    case KEY_UP:
 		menu_driver(menu, REQ_UP_ITEM);
 		break;
@@ -291,11 +297,13 @@ char *history_edit_nag(void *arg)
 		break;
 	    case KEY_PPAGE:
 	    case CTRL('P'):
-		menu_driver(menu, REQ_SCR_UPAGE);
+		if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_FIRST_ITEM);
 		break;
 	    case KEY_NPAGE:
 	    case CTRL('N'):
-		menu_driver(menu, REQ_SCR_DPAGE);
+		if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_LAST_ITEM);
 		break;
 	    case ' ':
 		if (item_index(current_item(menu)) == 0 && 

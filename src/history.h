@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.15 2003-01-07 14:14:17 bjk Exp $ */
+/* $Id: history.h,v 1.16 2003-01-08 21:54:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -29,13 +29,13 @@ struct nags {
 } *nag;
 
 const char *naghelp[] = {
-    "[a-zA-Z0-9] - jump to item",
-    "         UP - previous item",
-    "       DOWN - next item",
-    "       LEFT - previous selected item",
-    "      RIGHT - next selected item",
-    "     CTRL-p - previous page",
-    "     CTRL-n - next page",
+    "    UP/DOWN - previous/next item",
+    " LEFT/RIGHT - previous/next selected item",
+    "       HOME - first item",
+    "        END - last item",
+    "CTRL-p/PGUP - previous page",
+    "CTRL-n/PGDN - next page",
+    "  a-zA-Z0-9 - jump to item",
     "      SPACE - toggle current item",
     "      ENTER - quit with changes",
     "     ESCAPE - quit without changes",

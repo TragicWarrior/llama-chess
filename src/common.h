@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.34 2003-01-08 14:21:14 bjk Exp $ */
+/* $Id: common.h,v 1.35 2003-01-08 21:54:07 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -61,7 +61,7 @@ FILE *debugfp;
 #define YESNO			"[ Yes or No ]"
 #define ERROR			"[ ERROR ]"
 #define CONFIRM			"[ CONFIRM ]"
-#define UNKNOWN			"not available"
+#define UNKNOWN			"(empty value)"
 
 #define CALCPOSY(y)		((y > LINES - 1) ? 0 : LINES / 2 - y / 2)
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
