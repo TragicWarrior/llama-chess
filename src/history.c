@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.12 2002-12-17 21:43:02 bjk Exp $ */
+/* $Id: history.c,v 1.13 2002-12-17 22:36:44 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -301,6 +301,7 @@ void move_piece(char *move)
     char tsrc[2], *t = tsrc;
     char tdst[2], *tt = tdst;
     char *p = move;
+    int piece, upper;
 
     *s++ = *p++;
     *s++ = *t++ = *p++;
@@ -334,21 +335,45 @@ void move_piece(char *move)
     board[row][col].icon = board[srow][scol].icon;
     board[srow][scol].icon = '.';
 
-    if (board[row][col].icon != '.') {
-	if (isupper(board[row][col].icon)) {
-	    if (row == 0 && board[row][col].icon == 'P')
-		board[row][col].icon = 'Q';
+    if (board[row][col].icon == '.')
+	return;
 
-	    status.turn = BLACK;
-	}
-	else {
-	    if (row == 7 && board[row][col].icon == 'p')
-		board[row][col].icon = 'q';
+    upper = isupper(board[row][col].icon);
+    piece = tolower(board[row][col].icon);
 
-	    status.turn = WHITE;
+    if (upper)
+	status.turn = BLACK;
+    else
+	status.turn = WHITE;
+
+    if (piece == 'p' && (row == 0 || row == 7)) {
+	board[row][col].icon = (upper) ? 'Q' : 'q';
+	status.notify = (upper) ? "White promotion to queen!" :
+	    "Black promotion to queen!";
+	return;
+    }
+
+    if (piece == 'k') {
+	n = scol - col;
+
+	if (abs(n) > 1) {
+	    if (n > 0) {
+		board[row][col + 1].icon = board[row][0].icon;
+		board[row][0].icon = '.';
+		status.notify = (upper) ? "White castles queen side!" :
+		    "Black castles queen side!";
+	    }
+	    else {
+		board[row][col - 1].icon = board[row][7].icon;
+		board[row][7].icon = '.';
+		status.notify = (upper) ? "White castles king side!" :
+		    "Black castles king side!";
+	    }
+
+	    return;
 	}
     }
-    
+
     return;
 }
 
