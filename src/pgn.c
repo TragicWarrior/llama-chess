@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.16 2002-12-12 15:07:49 bjk Exp $ */
+/* $Id: pgn.c,v 1.17 2002-12-12 15:33:23 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -168,7 +168,7 @@ int parse_pgn_file(const char *filename)
 {
     FILE *fp;
     int i;
-    char buf[MAX_PGN_LINE_LEN], *tmp;
+    char buf[LINE_MAX], *tmp;
     int tag_section = 0;
     int skip_move_text = 0;
 

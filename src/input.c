@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.9 2002-12-10 23:02:52 bjk Exp $ */
+/* $Id: input.c,v 1.10 2002-12-12 15:33:23 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -249,6 +249,8 @@ done:
     }
     else
 	dst[0] = 0;
+
+    dst[sizeof(dst) - 1] = 0;
 
 cleanup:
     unpost_form(form);
