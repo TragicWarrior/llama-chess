@@ -1,4 +1,4 @@
-/* $Id: move.c,v 1.24 2003-02-01 19:39:21 bjk Exp $ */
+/* $Id: move.c,v 1.25 2003-02-03 18:23:47 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -829,10 +829,8 @@ int checktest(BOARD b, int kr, int kc, int okr, int okc, int matetest)
 	    if (!matetest) {
 		switch_turn();
 
-		if (get_source_yx(b, pi, kr, kc, &srow, &scol) == 0) {
-		    switch_turn();
+		if (get_source_yx(b, pi, kr, kc, &srow, &scol) == 0)
 		    return -1;
-		}
 
 		switch_turn();
 	    }
