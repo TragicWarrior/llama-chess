@@ -1,4 +1,4 @@
-/* $Id: rcfile.h,v 1.1 2002-12-13 21:55:30 bjk Exp $ */
+/* $Id: rcfile.h,v 1.2 2002-12-17 14:24:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -16,3 +16,4 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+int isinteger(const char *);

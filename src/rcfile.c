@@ -1,4 +1,4 @@
-/* $Id: rcfile.c,v 1.3 2002-12-17 14:10:49 bjk Exp $ */
+/* $Id: rcfile.c,v 1.4 2002-12-17 14:24:14 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -18,6 +18,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <err.h>
 
 #ifdef HAVE_CONFIG_H
