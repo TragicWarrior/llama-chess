@@ -1,0 +1,43 @@
+###############################################################################
+# This is an example configuration file for CBoard. All of the settings below
+# are set to the defaults. Empty lines and lines beginning with '#' are
+# ignored. Parameters and values are separated by one or more space or TAB
+# characters.
+###############################################################################
+# The number of moves to jump when browsing history and pressing the UP or
+# DOWN keys.
+jumpcount	5
+
+# The book method for the engine to use. Must be one of: off, prefer, best,
+# worst or random.
+book		random
+
+# The engine search level for the next move.
+depth		0
+
+# Show agony strings on captures.
+agony		1
+
+# Show agony strings when browsing history. If "agony" above is off,
+# this will be off also regardless of the setting.
+historyagony	0
+
+# Below are color and attribute settings. These parameters may contain up to
+# four values. The first and second are the foreground and background color
+# names which must be one of: black, white, red, magenta, yellow, blue, cyan
+# or green. 
+#
+# The third and fourth values are attributes for the color and non-color
+# terminal. To include more than one attribute for a value, separate them with
+# a single comma. The following attributes are available: bold, blink,
+# reverse, dim, standout, underline, invisible, or none. Note that not all
+# terminals support all attributes.
+window_border	cyan	black	bold
+window_title	white	blue	none	reverse
+board_selected	white	yellow	none	bold,reverse
+board_cursor	white	green	none	bold,reverse
+board_black	white	black
+board_white	white	red	none	reverse
+status_notify	red	black	none	bold
+status_engine	yellow	black	none	bold
+message_box	white	green
