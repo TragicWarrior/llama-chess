@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.1.1.1 2002-12-05 20:38:47 bjk Exp $ */
+/* $Id: input.c,v 1.2 2002-12-06 17:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -41,7 +41,8 @@ static void updateinput(WINDOW *win, const char str[], size_t size, unsigned y, 
     return;
 }
 
-char *get_input(const char *prompt)
+/* FIXME cbreak() */
+char *get_input(const char *prompt, char *init)
 {
     WINDOW *win;
     PANEL *p;
@@ -63,6 +64,13 @@ char *get_input(const char *prompt)
     x = 1;
 
     wmove(win, y, x);
+
+    if (init) {
+	strncpy(dst, init, sizeof(dst));
+	i = strlen(dst);
+	mvwaddstr(win, y, x, init);
+    }
+
     update_panels();
     doupdate();
 

@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.6 2002-12-06 00:00:15 bjk Exp $ */
+/* $Id: cboard.c,v 1.7 2002-12-06 17:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -375,8 +375,192 @@ void refresh_all()
     return;
 }
 
+char *pgn_escapes(const char *str)
+{
+    int i, n;
+    int len = strlen(str);
+    static char buf[MAX_PGN_LINE_LEN] = {0};
+
+    for (i = n = 0; i < len; i++, n++) {
+	switch (str[i]) {
+	    case '\\':
+	    case '\"':
+		buf[n++] = '\\';
+		break;
+	    default:
+		break;
+	}
+
+	buf[n] = str[i];
+    }
+
+    buf[n] = 0;
+    return buf;
+}
+	
+int save_pgn(const char *filename)
+{
+    int i, n;
+    FILE *fp;
+
+    if ((fp = fopen(filename, "a")) == NULL)
+	return 1;
+
+    for (i = 0; i < pgn_index; i++)
+	fprintf(fp, "[%s \"%s\"]\n", pgn[i].token, pgn_escapes(pgn[i].value));
+
+    fprintf(fp, "\n");
+
+    for (i = 0, n = 1; i < history_index; i += 2, n++)
+	fprintf(fp, "%u. %s %s ", n, history[i].move, history[i + 1].move);
+
+    fprintf(fp, "\n");
+    fclose(fp);
+
+    return 0;
+}
+
+/* FIXME segfault after 'q' (sometimes), scrolling */
 void edit_pgn_data()
 {
+    const char *prompt = "UP/DOWN/ENTER selects, 'a' adds and 'q' quits";
+
+    while (1) {
+	WINDOW *win;
+	PANEL *panel;
+	int y = (pgn_index + 5 > LINES - 2) ? LINES - 2 : pgn_index + 5;
+	int x = 0;
+	int tlen = 0;
+	int i;
+	unsigned selected = 0;
+	int cy = 2;
+	chtype buf[3] = {0};
+	char buf2[sizeof(buf)] = {0};
+	char editprompt[76] = {0};
+	char *tmp = NULL;
+
+	for (i = 0; (i < pgn_index && i < LINES - 5); i++) {
+	    int ttlen = strlen(pgn[i].token);
+	    int vlen = strlen(pgn[i].value);
+	    int llen = ttlen + vlen + 2;
+
+	    if (tlen < ttlen)
+		tlen = ttlen;
+
+	    if (x < llen)
+		x = llen;
+	}
+
+	x += 4;
+
+	if (x < strlen(prompt) + 4)
+	    x = strlen(prompt) + 4;
+
+	win = newwin(y, x, LINES / 2 - y / 2, CALCPOSX(x));
+	panel = new_panel(win);
+	draw_window_title(win, "Editing PGN Save Data", x);
+	curs_set(1);
+	cbreak();
+	noecho();
+	nonl();
+	keypad(win, TRUE);
+
+	for (i = 0; i < pgn_index; i++)
+	    mvwprintw(win, 2 + i, 1, "%u. %*s: %-*s", i + 1, tlen,
+		    pgn[i].token, (x - tlen - (sizeof(buf) + 4)), pgn[i].value);
+
+	mvwprintw(win, y - 2, CENTERX(x, prompt), "%s", prompt);
+
+	while (1) {
+	    int c;
+	    char *newtoken;
+
+	    wmove(win, cy, 1);
+	    update_panels();
+	    doupdate();
+	    c = wgetch(win);
+
+	    switch (c) {
+		case 'a':
+		    if ((newtoken = get_input("New tag name", NULL)) == NULL)
+			break;
+
+		    if (add_pgn_data(&pgn_index, newtoken, NULL)) {
+			message(ERROR, ANYKEY, 
+				"Could not add duplicate tag \"%s\"",
+				newtoken);
+			    continue;
+		    }
+
+		    selected = pgn_index;
+		    goto gotkey;
+		case 'j':
+		case KEY_UP:
+		    if (cy - 1 < 2)
+			cy = y - 4;
+		    else
+			cy--;
+		    break;
+		case 'k':
+		case KEY_DOWN:
+		    if (cy + 1 > y - 4)
+			cy = 2;
+		    else
+			cy++;
+		    break;
+		case KEY_RETURN:
+		    /* Get pgn_index number. */
+		    mvwinchnstr(win, cy, 1, buf, sizeof(buf) - 1);
+
+		    for (i = 0; i < sizeof(buf); i++)
+			buf2[i] = buf[i] & A_CHARTEXT;
+
+		    buf2[i] = 0;
+
+		    if(sscanf(buf2, "%u", &selected) != 1) {
+			message(ERROR, ANYKEY, "Could not get index number");
+			continue;
+		    }
+
+		    selected--;
+		    goto gotkey;
+		case 'q':
+		    del_panel(panel);
+		    delwin(win);
+		    goto done;
+		default:
+		    beep();
+		    break;
+	    }
+	}
+
+gotkey:
+	    /*
+	       if (strcmp(pgn[i].token, "Date") == 0)
+	       continue;
+	       else if (strcmp(pgn[i].token, "Round") == 0)
+	       continue;
+	       */
+
+	snprintf(editprompt, sizeof(editprompt),
+		"Editing roster tag \"%s\"", pgn[selected].token);
+
+	tmp = get_input(editprompt, pgn[selected].value);
+
+	if (tmp) {
+	    if (strcmp(tmp, UNKNOWN) == 0)
+		pgn[selected].value[0] = 0;
+	}
+
+	strncpy(pgn[selected].value, (tmp) ? tmp : "",
+		sizeof(pgn[selected].value));
+
+	del_panel(panel);
+	delwin(win);
+    }
+
+done:
+    curs_set(0);
     return;
 }
 
@@ -568,7 +752,7 @@ void game_loop()
 		    break;
 		}
 
-		if ((tmp = get_input("Load saved game filename")) == NULL)
+		if ((tmp = get_input("Load saved game filename", NULL)) == NULL)
 		    break;
 
 		if (parse_pgn_file(tmp))
@@ -584,12 +768,14 @@ void game_loop()
 		if (message(NULL, YESNO, "Edit save game data?") == 'y')
 		    edit_pgn_data();
 
-		if ((tmp = get_input("Save game filename")) == NULL)
+		if ((tmp = get_input("Save game filename", NULL)) == NULL)
 		    break;
 
-		send_to_engine("pgnsave %s\n", tmp);
+		if (save_pgn(tmp)) {
+		    message(NULL, ANYKEY, "%s: %s", tmp, strerror(errno));
+		    break;
+		}
 
-		/* FIXME this is no good if the save fails */
 		strncpy(data.pgnfile, tmp, sizeof(data.pgnfile));
 		parse_pgn_file(data.pgnfile);
 		update_data();
@@ -626,7 +812,7 @@ void game_loop()
 		if (status.engine == ENGINE_THINKING)
 		    break;
 
-		if ((tmp = get_input(ENGINE_COMMAND_PROMPT)) != NULL) {
+		if ((tmp = get_input(ENGINE_COMMAND_PROMPT, NULL)) != NULL) {
 		    send_to_engine("%s\n", tmp);
 		}
 		break;

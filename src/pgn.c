@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.2 2002-12-05 23:48:33 bjk Exp $ */
+/* $Id: pgn.c,v 1.3 2002-12-06 17:27:46 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -40,14 +40,49 @@
 #include "common.h"
 #include "pgn.h"
 
-static void add_pgn_data(int index, const char *token, const char *value)
+/* Returns 1 if a duplicate was found. 0 otherwise. The index argument is a
+ * pointer to int, and incremented automatically.
+ */
+int add_pgn_data(int *n, const char *token, const char *value)
 {
+    int i, index = *n;
+
+    for (i = 0; i < index; i++) {
+	if (strcasecmp(pgn[i].token, token) == 0)
+	    return 1;
+    }
+
     pgn = Realloc(pgn, (index + 2) * sizeof(struct pgndata));
 
     strncpy(pgn[index].token, token, sizeof(pgn[index].token));
-    strncpy(pgn[index].value, value, sizeof(pgn[index].value));
+
+    if (value)
+	strncpy(pgn[index].value, value, sizeof(pgn[index].value));
+
     memset(&pgn[index + 1], 0, sizeof(struct pgndata));
-    return;
+    *n = ++index;
+    return 0;
+}
+
+static char *remove_escapes(const char *str)
+{
+    int i, n;
+    int len = strlen(str);
+    static char buf[MAX_PGN_LINE_LEN] = {0};
+
+    for (i = n = 0; i < len; i++, n++) {
+	switch (str[i]) {
+	    case '\\':
+		i++;
+	    default:
+		break;
+	}
+
+	buf[n] = str[i];
+    }
+
+    buf[n] = 0;
+    return buf;
 }
 
 static void init_data()
@@ -66,13 +101,13 @@ static void init_data()
     strftime(tbuf, sizeof(tbuf), TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_pgn_data(pgn_index++, "Event", UNKNOWN);
-    add_pgn_data(pgn_index++, "Site", UNKNOWN);
-    add_pgn_data(pgn_index++, "Date", tbuf);
-    add_pgn_data(pgn_index++, "Round", UNKNOWN);
-    add_pgn_data(pgn_index++, "White", pwd->pw_gecos);
-    add_pgn_data(pgn_index++, "Black", UNKNOWN);
-    add_pgn_data(pgn_index++, "Result", UNKNOWN);
+    add_pgn_data(&pgn_index, "Event", UNKNOWN);
+    add_pgn_data(&pgn_index, "Site", UNKNOWN);
+    add_pgn_data(&pgn_index, "Date", tbuf);
+    add_pgn_data(&pgn_index, "Round", UNKNOWN);
+    add_pgn_data(&pgn_index, "White", pwd->pw_gecos);
+    add_pgn_data(&pgn_index, "Black", UNKNOWN);
+    add_pgn_data(&pgn_index, "Result", UNKNOWN);
 
     return;
 }
@@ -147,7 +182,7 @@ int parse_pgn_file(const char *filename)
 		if (!value[0])
 		    value = UNKNOWN;
 
-		add_pgn_data(pgn_index++, token, value);
+		add_pgn_data(&pgn_index, token, remove_escapes(value));
 	    }
 
 	    continue;
