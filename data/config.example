@@ -88,13 +88,9 @@ status_border	cyan	black
 status_notify	red	black	none	bold
 status_engine	yellow	black	none	bold
 
-white_window	white	black
-white_title	white	blue	none	reverse
-white_border	cyan	black
-
-black_window	white	black
-black_title	white	blue	none	reverse
-black_border	cyan	black
+tag_window	white	black
+tag_title	white	blue	none	reverse
+tag_border	cyan	black
 
 history_window	white	black
 history_title	white	blue	none	reverse

@@ -173,12 +173,9 @@ default is
 .It Cm status_border Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_notify Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm status_engine Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm white_window Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm white_title Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm white_border Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm black_window Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm black_title Ar foreground Ar background Op Ar cattr Op Ar attr
-.It Cm black_border Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm tag_window Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm tag_title Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm tag_border Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm history_window Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm history_title Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm history_border Ar foreground Ar background Op Ar cattr Op Ar attr
