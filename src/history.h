@@ -1,4 +1,4 @@
-/* $Id: history.h,v 1.6 2002-12-17 22:57:46 bjk Exp $ */
+/* $Id: history.h,v 1.7 2002-12-17 23:24:25 bjk Exp $ */
 /*
     Copyright (C) 2002 Ben Kibbey <bjk@arbornet.org>
 
@@ -178,7 +178,7 @@ const char *nag[] = {
     "Black has severe time control pressure"
 };
 
-const char *agony[] = {
+char *agony[] = {
     "Ack!",
     "Ahhhh my legs!",
     "That's a fracture...",
