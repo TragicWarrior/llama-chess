@@ -1,4 +1,4 @@
-/* $Id: history.c,v 1.45 2003-02-04 22:01:16 bjk Exp $ */
+/* $Id: history.c,v 1.46 2003-02-05 16:21:44 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -253,7 +253,7 @@ char *history_edit_nag(void *arg)
 	    int found;
 
 	    case CTRL('G'):
-		help(NAG_EDIT_HELP, naghelp);
+		help(NAG_EDIT_HELP, ANYKEY, naghelp);
 		break;
 	    case KEY_RIGHT:
 		if (!itemcount)

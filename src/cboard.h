@@ -1,4 +1,4 @@
-/* $Id: cboard.h,v 1.62 2003-02-04 22:01:16 bjk Exp $ */
+/* $Id: cboard.h,v 1.63 2003-02-05 16:21:44 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -67,27 +67,76 @@ const char *cmdlinehelp[] = {
     NULL
 };
 
+const char *historyhelp[] = {
+    "   UP/DOWN - next or previous history with jump count *",
+    "RIGHT/LEFT - next or previous history *",
+    "     SPACE - toggle half move stepping",
+    "         j - jump to move number *",
+    "         / - specify a new move text search expression *",
+    "         ] - find the next move text expression *",
+    "         [ - find the previous move text expression *",
+    "         a - edit comments for the previous move",
+    "         v - view comments for the next move",
+    "         V - view comments for the previous move",
+    "         h - toggle history mode",
+    NULL
+};
+
 const char *mainhelp[] = {
-    "    UP - cursor up/hist jump*     R - refresh screen",
-    "  DOWN - cursor down/hist jump*   b - cycle through book modes",
-    "  LEFT - cursor left/hist rev*    c - send a command to the game engine",
-    " RIGHT - cursor right/hist fwd*   w - switch playing sides",
-    "  0..9 - command repeat count     u - undo previous move*",
-    " SPACE - select piece/half step   g - force engine to make next move",
-    " ENTER - commit selected piece    h - toggle history mode",
-    "   ESC - cancel selected piece    a - annotate previous move",
-    "!-*A-H - move cursor to rank/file v - view the next moves annotation",
-    "     n - new game or round        V - view the previous moves annotation",
-    "     N - new game from scratch    i - view PGN roster tags",
-    "     > - next game or round*      j - jump to move number*",
-    "     < - previous game or round*  / - find move text by expression*",
-    "     J - jump to game or round*   ] - find next move text expression*",
-    "     x - toggle delete flag*      [ - find previous move text expression*",
-    "     X - delete flagged games     ? - find game by tag expression*",
-    "     r - resume a saved game      } - find next game by expression*",
-    "     s - save game                { - find previous game by expression*",
-    "     S - save game with prompt    t - edit roster tags",
-    "     q - quit                     e - edit board",
+    "p - play mode keys",
+    "h - history mode keys",
+    "e - board edit mode keys",
+    "g - other game keys",
+    NULL
+};
+
+const char *edithelp[] = {
+    "             0...9 - cursor repeat count",
+    "UP/DOWN/LEFT/RIGHT - position cursor *",
+    "            !-*A-H - position cursor at rank or file",
+    "             SPACE - select piece under cursor for movement",
+    "             ENTER - commit selected piece",
+    "            ESCAPE - cancel selected piece",
+    "                 x - delete the piece under the cursor",
+    "                 I - insert a new piece",
+    "                 e - toggle board edit mode",
+    NULL,
+};
+
+const char *gamehelp[] = {
+    " 0...9 - command repeat count",
+    "     t - edit the current games roster tags",
+    "     i - view the current games roster tags",
+    "     ? - specify a new roster tag expression *",
+    "     } - find the next roster tag expression *",
+    "     { - find the previous roster tag expression *",
+    "     n - start new game or round",
+    "     N - start new game from scratch resetting all other games",
+    "     > - next game or round *",
+    "     < - previous game or round *",
+    "     J - jump to game or round *",
+    "     x - toggle game delete flag *",
+    "     X - delete the current or all flagged games",
+    "     r - resume a saved game",
+    "     s - save game",
+    "     S - save game and prompt",
+    "     q - quit",
+    NULL
+};
+
+const char *playhelp[] = {
+    "             0...9 - cursor repeat count",
+    "UP/DOWN/LEFT/RIGHT - position cursor *",
+    "            !-*A-H - position cursor at rank or file",
+    "             SPACE - select piece under cursor for movement",
+    "             ENTER - commit selected piece",
+    "            ESCAPE - cancel selected piece",
+    "                 + - set engine depth level *",
+    "                 b - cycle through book modes",
+    "                 w - switch playing side",
+    "                 u - undo previous move *",
+    "                 g - force engine to make the next move",
+    "                 c - send a command to the chess engine",
     NULL
 };
 
@@ -110,7 +159,7 @@ int save_pgn(const char *, int, int);
 void set_engine_defaults(void);
 int start_chess_engine(void);
 void stop_engine(void);
-void help(const char *, const char **);
+int help(const char *, const char *, const char **);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void set_default_colors(void);
 void init_color_pairs(void);

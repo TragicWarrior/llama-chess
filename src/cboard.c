@@ -1,4 +1,4 @@
-/* $Id: cboard.c,v 1.94 2003-02-05 00:58:36 bjk Exp $ */
+/* $Id: cboard.c,v 1.95 2003-02-05 16:21:44 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -1177,6 +1177,14 @@ void game_loop()
 	    case 'H':
 	        ccol = 8;
 		break;
+	    case '+':
+		if (status.engine != ENGINE_READY)
+		    break;
+
+		config.engine_depth = (count) ? count : ++config.engine_depth;
+
+		SEND_TO_ENGINE("depth %i\n", config.engine_depth);
+		break;
 	    case ']':
 	    case '[':
 	    case '/':
@@ -1476,7 +1484,7 @@ void game_loop()
 		    break;
 		}
 
-		if (!game[gindex].htotal)
+		if (!game[gindex].htotal || status.engine == ENGINE_THINKING)
 		    break;
 
 		init_history(board);
@@ -1553,7 +1561,31 @@ void game_loop()
 		update_all();
 		break;
 	    case CTRL('G'):
-		help(GAME_HELP, mainhelp);
+		n = 0;
+
+		while (n != 'q') {
+		    n = help(GAME_HELP_INDEX_TITLE,
+			    GAME_HELP_INDEX_PROMPT, mainhelp);
+
+		    switch (n) {
+			case 'h':
+			    help(GAME_HELP_HISTORY_TITLE, ANYKEY, historyhelp);
+			    break;
+			case 'p':
+			    help(GAME_HELP_PLAY_TITLE, ANYKEY, playhelp);
+			    break;
+			case 'e':
+			    help(GAME_HELP_EDIT_TITLE, ANYKEY, edithelp);
+			    break;
+			case 'g':
+			    help(GAME_HELP_GAME_TITLE, ANYKEY, gamehelp);
+			    break;
+			default:
+			    n = 'q';
+			    break;
+		    }
+		}
+
 		break;
 	    case 'n':
 	    case 'N':
@@ -1763,8 +1795,8 @@ void game_loop()
 		    break;
 		}
 
-		if (!editmode && (status.engine != ENGINE_READY || 
-			    !engine_initialized)) {
+		if ((status.engine == ENGINE_OFFLINE || !engine_initialized)
+			&& !editmode) {
 		    if (start_chess_engine() < 0) {
 			sp.icon = 0;
 			break;

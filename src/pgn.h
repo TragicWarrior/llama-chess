@@ -1,4 +1,4 @@
-/* $Id: pgn.h,v 1.31 2003-02-04 18:27:46 bjk Exp $ */
+/* $Id: pgn.h,v 1.32 2003-02-05 16:21:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -103,7 +103,7 @@ void free_game_data(void);
 void send_to_engine(const char *, ...);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
-void help(const char *, const char **);
+void help(const char *, const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
 int parse_move_text(BOARD, char *);

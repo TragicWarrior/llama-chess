@@ -1,4 +1,4 @@
-/* $Id: strings.h,v 1.24 2003-02-04 22:01:16 bjk Exp $ */
+/* $Id: strings.h,v 1.25 2003-02-05 16:21:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -46,7 +46,13 @@
 #define GAME_NEW_PROMPT	"Really start a new game from scratch?"
 #define GAME_NEW_TEXT	"Use the 'N' command to start a new game or the 'r' " \
     "command to load a previous game"
-#define GAME_HELP	"Command Keys (* = can take a repeat count)"
+#define GAME_HELP_INDEX_TITLE	"Command Key Index"
+#define GAME_HELP_REPEAT " (* = can take a repeat count)"
+#define GAME_HELP_INDEX_PROMPT	"p/h/e/g or any other key to quit"
+#define GAME_HELP_HISTORY_TITLE "History Mode Keys" ## GAME_HELP_REPEAT
+#define GAME_HELP_PLAY_TITLE "Play Mode Keys" ## GAME_HELP_REPEAT
+#define GAME_HELP_EDIT_TITLE "Edit Mode Keys" ## GAME_HELP_REPEAT
+#define GAME_HELP_GAME_TITLE "Other Game Keys" ## GAME_HELP_REPEAT
 #define GAME_LOAD_TITLE	"Load Filename"
 #define GAME_SAVE_TITLE	"Save Game Filename"
 #define GAME_HELP_PROMPT	"Type CTRL-g for command keys"

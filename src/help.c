@@ -1,4 +1,4 @@
-/* $Id: help.c,v 1.6 2003-01-25 14:57:07 bjk Exp $ */
+/* $Id: help.c,v 1.7 2003-02-05 16:21:44 bjk Exp $ */
 /* 
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -30,17 +30,21 @@
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 
-void help(const char *title, const char **text)
+int help(const char *title, const char *prompt, const char **text)
 {
     WINDOW *win;
     PANEL *panel;
     int y = 2, x = 0, n;
     int i;
+    int c;
 
     for (i = 0; text[i]; i++) {
 	if ((n = strlen(text[i])) > x)
 	    x = n;
     }
+
+    if (x < strlen(prompt))
+	x = strlen(prompt);
 
     x += 4;
     n = i + 4;
@@ -54,15 +58,15 @@ void help(const char *title, const char **text)
     for (i = 0; text[i]; i++)
 	mvwprintw(win, y++, 2, "%s", text[i]);
 
-    draw_prompt(win, y, x, ANYKEY, CP_MESSAGE_PROMPT);
+    draw_prompt(win, y, x, prompt, CP_MESSAGE_PROMPT);
 
     update_panels();
     doupdate();
 
-    wgetch(win);
+    c = wgetch(win);
 
     del_panel(panel);
     delwin(win);
 
-    return;
+    return c;
 }

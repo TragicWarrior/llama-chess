@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.21 2003-01-31 19:36:55 bjk Exp $ */
+/* $Id: input.c,v 1.22 2003-02-05 16:21:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -235,7 +235,7 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 		form_driver(form, REQ_CLR_FIELD);
 		break;
 	    case CTRL('G'):
-		help(INPUT_HELP_TITLE, inputhelp);
+		help(INPUT_HELP_TITLE, ANYKEY, inputhelp);
 		break;
 	    case KEY_LEFT:
 		form_driver(form, REQ_LEFT_CHAR);

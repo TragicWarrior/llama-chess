@@ -1,4 +1,4 @@
-/* $Id: pgn.c,v 1.86 2003-02-05 00:58:36 bjk Exp $ */
+/* $Id: pgn.c,v 1.87 2003-02-05 16:21:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -825,7 +825,6 @@ done:
 	unlink(config.tmpfile);
 
     status.mode = MODE_HISTORY;
-    update_status_window();
     //exit(0);
     return 0;
 }
@@ -1298,7 +1297,7 @@ char *country_codes(void *arg)
 
 	switch (c) {
 	    case CTRL('G'):
-		help(CC_KEY_HELP, cc_help);
+		help(CC_KEY_HELP, ANYKEY, cc_help);
 		break;
 	    case KEY_HOME:
 		menu_driver(menu, REQ_FIRST_ITEM);
@@ -1467,9 +1466,9 @@ TAG *edit_tags(BOARD b, TAG *old, int maxtags, int edit)
 	    switch (c) {
 		case CTRL('G'):
 		    if (edit)
-			help(TAG_EDIT_HELP, pgn_edit_help);
+			help(TAG_EDIT_HELP, ANYKEY, pgn_edit_help);
 		    else
-			help(TAG_VIEW_HELP, pgn_info_help);
+			help(TAG_VIEW_HELP, ANYKEY, pgn_info_help);
 		    break;
 		case CTRL('R'):
 		    if (!edit)
@@ -1889,7 +1888,7 @@ again:
 		    goto done;
 		    break;
 		case CTRL('G'):
-		    help(BROWSER_HELP, file_browser_help);
+		    help(BROWSER_HELP, ANYKEY, file_browser_help);
 		    break;
 		case '~':
 		    if ((tmp = getenv("HOME")) == NULL) {

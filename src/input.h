@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.9 2003-01-22 00:16:24 bjk Exp $ */
+/* $Id: input.h,v 1.10 2003-02-05 16:21:45 bjk Exp $ */
 /*
     Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
 
@@ -38,6 +38,6 @@ const char *inputhelp[] = {
 
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
-void help(const char *, const char **);
+void help(const char *, const char *, const char **);
 
 #endif
