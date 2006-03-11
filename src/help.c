@@ -1,6 +1,6 @@
-/* $Id: help.c,v 1.7 2003-02-05 16:21:44 bjk Exp $ */
+/* vim:tw=78:ts=8:sw=4:set ft=c:  */
 /* 
-    Copyright (C) 2002-2003 Ben Kibbey <bjk@arbornet.org>
+    Copyright (C) 2002-2006 Ben Kibbey <bjk@arbornet.org>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

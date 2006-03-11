@@ -1,6 +1,7 @@
 dnl $Id: configure.ac,v 1.18 2003-02-07 19:27:39 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(cboard, 0.1.6, [Ben Kibbey <bjk@arbornet.org>])
+AC_PREREQ(2.59)
+AC_INIT(cboard, 0.1-git, [Ben Kibbey <bjk@luxsci.net>])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
@@ -20,6 +21,8 @@ esac
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
 dnl Checks for programs.
+AC_PROG_AWK
+AC_PROG_LN_S
 AC_PROG_CC
 AC_PROG_INSTALL
 
@@ -34,18 +37,34 @@ AC_CHECK_LIB(menu, new_menu, ,
 	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
 
 dnl Checks for header files.
+AC_HEADER_DIRENT
+AC_HEADER_SYS_WAIT
 AC_HEADER_STDC
-AC_CHECK_HEADERS([limits.h sys/time.h unistd.h stdlib.h string.h ncurses.h \
-		 panel.h form.h menu.h getopt.h sys/param.h regex.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h paths.h \
+		  sys/socket.h limits.h sys/time.h unistd.h stdlib.h string.h \
+		  ncurses.h panel.h form.h menu.h getopt.h sys/param.h \
+		  regex.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
 AC_C_CONST
+AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_HEADER_TIME
+AC_STRUCT_TM
 
 dnl Checks for library functions.
+AC_FUNC_CLOSEDIR_VOID
+AC_FUNC_FORK
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([bzero strdup strerror strrchr vasprintf])
+AC_FUNC_REALLOC
+AC_FUNC_SELECT_ARGTYPES
+AC_TYPE_SIGNAL
+AC_FUNC_STAT
+AC_FUNC_STRFTIME
+AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
+		select socket strcasecmp strdup strerror strrchr strstr \
+		vasprintf])
 
 AH_TOP([/* Maximum line length in a PGN file. */
 #define MAX_PGN_LINE_LEN 255])

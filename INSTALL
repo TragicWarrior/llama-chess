@@ -4,10 +4,10 @@ Foundation, Inc.
    This file is free documentation; the Free Software Foundation gives
 unlimited permission to copy, distribute and modify it.
 
-Basic Installation
-==================
+0.1 Basic Installation
+======================
 
-   These are generic installation instructions.
+These are generic installation instructions.
 
    The `configure' shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses
@@ -64,12 +64,12 @@ The simplest way to compile this package is:
      all sorts of other programs in order to regenerate files that came
      with the distribution.
 
-Compilers and Options
-=====================
+0.2 Compilers and Options
+=========================
 
-   Some systems require unusual options for compilation or linking that
-the `configure' script does not know about.  Run `./configure --help'
-for details on some of the pertinent environment variables.
+Some systems require unusual options for compilation or linking that the
+`configure' script does not know about.  Run `./configure --help' for
+details on some of the pertinent environment variables.
 
    You can give `configure' initial values for configuration parameters
 by setting variables in the command line or in the environment.  Here
@@ -79,10 +79,10 @@ is an example:
 
    *Note Defining Variables::, for more details.
 
-Compiling For Multiple Architectures
-====================================
+0.3 Compiling For Multiple Architectures
+========================================
 
-   You can compile the package for more than one kind of computer at the
+You can compile the package for more than one kind of computer at the
 same time, by placing the object files for each architecture in their
 own directory.  To do this, you must use a version of `make' that
 supports the `VPATH' variable, such as GNU `make'.  `cd' to the
@@ -96,10 +96,10 @@ time in the source code directory.  After you have installed the
 package for one architecture, use `make distclean' before reconfiguring
 for another architecture.
 
-Installation Names
-==================
+0.4 Installation Names
+======================
 
-   By default, `make install' will install the package's files in
+By default, `make install' will install the package's files in
 `/usr/local/bin', `/usr/local/man', etc.  You can specify an
 installation prefix other than `/usr/local' by giving `configure' the
 option `--prefix=PATH'.
@@ -119,10 +119,10 @@ you can set and what kinds of files go in them.
 with an extra prefix or suffix on their names by giving `configure' the
 option `--program-prefix=PREFIX' or `--program-suffix=SUFFIX'.
 
-Optional Features
-=================
+0.5 Optional Features
+=====================
 
-   Some packages pay attention to `--enable-FEATURE' options to
+Some packages pay attention to `--enable-FEATURE' options to
 `configure', where FEATURE indicates an optional part of the package.
 They may also pay attention to `--with-PACKAGE' options, where PACKAGE
 is something like `gnu-as' or `x' (for the X Window System).  The
@@ -134,14 +134,14 @@ find the X include and library files automatically, but if it doesn't,
 you can use the `configure' options `--x-includes=DIR' and
 `--x-libraries=DIR' to specify their locations.
 
-Specifying the System Type
-==========================
+0.6 Specifying the System Type
+==============================
 
-   There may be some features `configure' cannot figure out
-automatically, but needs to determine by the type of machine the package
-will run on.  Usually, assuming the package is built to be run on the
-_same_ architectures, `configure' can figure that out, but if it prints
-a message saying it cannot guess the machine type, give it the
+There may be some features `configure' cannot figure out automatically,
+but needs to determine by the type of machine the package will run on.
+Usually, assuming the package is built to be run on the _same_
+architectures, `configure' can figure that out, but if it prints a
+message saying it cannot guess the machine type, give it the
 `--build=TYPE' option.  TYPE can either be a short name for the system
 type, such as `sun4', or a canonical name which has the form:
 
@@ -164,21 +164,21 @@ platform different from the build platform, you should specify the
 "host" platform (i.e., that on which the generated programs will
 eventually be run) with `--host=TYPE'.
 
-Sharing Defaults
-================
+0.7 Sharing Defaults
+====================
 
-   If you want to set default values for `configure' scripts to share,
-you can create a site shell script called `config.site' that gives
-default values for variables like `CC', `cache_file', and `prefix'.
+If you want to set default values for `configure' scripts to share, you
+can create a site shell script called `config.site' that gives default
+values for variables like `CC', `cache_file', and `prefix'.
 `configure' looks for `PREFIX/share/config.site' if it exists, then
 `PREFIX/etc/config.site' if it exists.  Or, you can set the
 `CONFIG_SITE' environment variable to the location of the site script.
 A warning: not all `configure' scripts look for a site script.
 
-Defining Variables
-==================
+0.8 Defining Variables
+======================
 
-   Variables not defined in a site shell script can be set in the
+Variables not defined in a site shell script can be set in the
 environment passed to `configure'.  However, some packages may run
 configure again during the build, and the customized values of these
 variables may be lost.  In order to avoid this problem, you should set
@@ -189,11 +189,10 @@ them in the `configure' command line, using `VAR=value'.  For example:
 will cause the specified gcc to be used as the C compiler (unless it is
 overridden in the site shell script).
 
-`configure' Invocation
-======================
+0.9 `configure' Invocation
+==========================
 
-   `configure' recognizes the following options to control how it
-operates.
+`configure' recognizes the following options to control how it operates.
 
 `--help'
 `-h'
