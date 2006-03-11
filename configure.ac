@@ -165,5 +165,6 @@ fi
 
 AM_WITH_DMALLOC
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile data/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile data/Makefile \
+		 test/Makefile])
 AC_OUTPUT
