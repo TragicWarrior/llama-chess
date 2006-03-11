@@ -19,7 +19,7 @@
 #ifndef CBOARD_H
 #define CBOARD_H
 
-#define COPYRIGHT	"Copyright (C) 2002-2003 " ## PACKAGE_BUGREPORT
+#define COPYRIGHT	"Copyright (C) 2002-2003 " PACKAGE_BUGREPORT
 #define LINE_GRAPHIC(c)	((!config.linegraphics) ? ' ' : c)
 #define ROWTOMATRIX(r)	((8 - r) * 2 + 2 - 1)
 #define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)

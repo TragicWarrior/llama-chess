@@ -106,6 +106,7 @@ void send_to_engine(const char *format, ...)
     return;
 }
 
+#ifndef UNIX98
 /* From the Xboard and screen packages. */
 static int get_pty(char *pty_name)
 {
@@ -136,6 +137,7 @@ static int get_pty(char *pty_name)
 
     return -1;
 }
+#endif
 
 static char **parseargs(char *str)
 {
@@ -190,15 +192,33 @@ pid_t init_chess_engine(char **args)
     int from[2], to[2];
     char pty[FILENAME_MAX];
 
+#ifndef UNIX98
     if ((to[1] = get_pty(pty)) == -1) {
 	errno = 0;
 	return -1;
     }
+#else
+    if ((to[1] = open("/dev/ptmx", O_RDWR | O_NOCTTY)) == -1) {
+	return -1;
+    }
+
+    if (grantpt(to[1]) == -1) {
+	return -1;
+    }
+
+    if (unlockpt(to[1]) == -1) {
+	return -1;
+    }
+#endif
 
     from[0] = to[1];
     errno = 0;
 
+#ifndef UNIX98
     if ((to[0] = open(pty, O_RDWR | O_NOCTTY)) == -1)
+#else
+    if ((to[0] = open(ptsname(to[1]), O_RDWR | O_NOCTTY)) == -1)
+#endif
 	return -1;
 
     from[1] = to[0];

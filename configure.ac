@@ -17,6 +17,8 @@ case "$target_os" in
         ;;
 esac
 
+CFLAGS="$CFLAGS -D_GNU_SOURCE"
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -83,23 +85,63 @@ AC_DEFUN([AC_DEBUG],
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debugging.]),
     AC_DEBUG([$enableval]), AC_DEBUG)
 
-dnl Ripped from the screen package.
-AC_MSG_CHECKING([pty ranges])
-if test -d /dev/ptym; then
-    pdir='/dev/ptym'
+AC_MSG_CHECKING([for Unix98 pty support])
+if test -c "/dev/ptmx"; then
+    have_ptmx=yes
 else
-    pdir='/dev'
+    have_ptmx=no
 fi
 
-ptys=`echo $pdir/pty??`
+ptmx_works=no
 
-if test "$ptys" != "$pdir/pty??" ; then
+if test "x$have_ptmx" = "xyes"; then
+    AC_RUN_IFELSE([\
+		   #include <stdio.h>
+		   #include <sys/types.h>
+		   #include <sys/stat.h>
+		   #include <fcntl.h>
+
+		   int main()
+		   {
+		       int fd;
+
+		       if ((fd = open("/dev/ptmx", O_RDWR)) == -1)
+		           exit(1);
+
+		       if (ptsname(fd) == NULL)
+		           exit(1);
+
+		       exit(0);
+		   }
+		   ], [ptmx_works=yes], [ptmx_works=no])
+
+    if test "x$ptmx_works" = "xyes"; then
+	AC_MSG_RESULT([yes])
+	AC_DEFINE([UNIX98], 1, [Define if your system has Unix98 pty support.])
+    else
+	AC_MSG_RESULT([no])
+    fi
+fi
+
+if test "x$have_ptmx" = "xno" -o "x$ptmx_works" = "xno"; then
+# From the GNU Screen package.
+    AC_MSG_CHECKING([pty ranges])
+    if test -d /dev/ptym; then
+    pdir='/dev/ptym'
+    else
+    pdir='/dev'
+    fi
+
+    ptys=`echo $pdir/pty??`
+
+    if test "$ptys" != "$pdir/pty??" ; then
     p0=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\).$/\1/g' | sort -u | tr -d '\012'`
     p1=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\)$/\1/g'  | sort -u | tr -d '\012'`
 
-AC_DEFINE_UNQUOTED([PTY_MAJOR], "$p0", [Pseudo tty ranges.])
-AC_DEFINE_UNQUOTED([PTY_MINOR], "$p1", [Pseudo tty ranges.])
-AC_MSG_RESULT($p0 $p1)
+    AC_DEFINE_UNQUOTED([PTY_MAJOR], "$p0", [Pseudo tty ranges.])
+    AC_DEFINE_UNQUOTED([PTY_MINOR], "$p1", [Pseudo tty ranges.])
+    AC_MSG_RESULT($p0 $p1)
+    fi
 fi
 
 AM_WITH_DMALLOC
