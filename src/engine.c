@@ -338,7 +338,7 @@ static void parse_crafty_line(BOARD b, char *line)
 
     /* Bad engine command or move. */
     if (strncmp(line, "Illegal move: ", 14) == 0) {
-	status.notify = E_INVALID_COMMAND;
+	update_status_notify("%s", E_INVALID_COMMAND);
 	sp.icon = 0;
 	RETURN;
     }
@@ -530,7 +530,7 @@ void parse_gnuchess_line(BOARD b, char *str)
 
     /* Bad engine command or move. */
     if (strncmp(str, "Illegal move: ", 14) == 0) {
-	status.notify = E_INVALID_COMMAND;
+	update_status_notify("%s", E_INVALID_COMMAND);
 	sp.icon = 0;
 	RETURN;
     }

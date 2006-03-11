@@ -332,12 +332,12 @@ int castle_move(BOARD b, int which)
 	    if (status.turn == WHITE) {
 		SET_FLAG(game[gindex].flags, GF_WK);
 		SET_FLAG(game[gindex].flags, GF_WKR);
-		status.notify = NOTIFY_WCASTLEK;
+		update_status_notify("%s", NOTIFY_WCASTLEK);
 	    }
 	    else if (status.turn == BLACK) {
 		SET_FLAG(game[gindex].flags, GF_BK);
 		SET_FLAG(game[gindex].flags, GF_BKR);
-		status.notify = NOTIFY_BCASTLEK;
+		update_status_notify("%s", NOTIFY_BCASTLEK);
 	    }
 	}
     }
@@ -368,12 +368,12 @@ int castle_move(BOARD b, int which)
 	    if (status.turn == WHITE) {
 		SET_FLAG(game[gindex].flags, GF_WK);
 		SET_FLAG(game[gindex].flags, GF_WQR);
-		status.notify = NOTIFY_WCASTLEQ;
+		update_status_notify("%s", NOTIFY_WCASTLEQ);
 	    }
 	    else if (status.turn == BLACK) {
 		SET_FLAG(game[gindex].flags, GF_BK);
 		SET_FLAG(game[gindex].flags, GF_BQR);
-		status.notify = NOTIFY_BCASTLEQ;
+		update_status_notify("%s", NOTIFY_BCASTLEQ);
 	    }
 	}
     }
@@ -461,7 +461,7 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 
 			if ((status.turn == WHITE && status.side != WHITE) ||
 				(status.turn == BLACK && status.side != BLACK))
-			status.notify = NOTIFY_ENPASSANT;
+			    update_status_notify("%s", NOTIFY_ENPASSANT);
 		    }
 		}
 	    }
@@ -1058,7 +1058,7 @@ int parse_move_text(BOARD b, char *move)
 	return 1;
 
     capture = 0;
-    status.notify = NULL;
+    update_status_notify(NULL);
     srow = row = col = scol = promo = piece = 0;
     p = (move) + strlen(move);
 
@@ -1226,7 +1226,7 @@ int parse_move_text(BOARD b, char *move)
 	    else
 		game[gindex].wcaptures++;
 
-	    status.notify = random_agony();
+	    update_status_notify("%s", random_agony());
 	}
     }
 
@@ -1236,7 +1236,7 @@ int parse_move_text(BOARD b, char *move)
 
 	    if ((status.turn == WHITE && status.side != WHITE) ||
 		    (status.turn == BLACK && status.side != BLACK))
-		status.notify = NOTIFY_PROMOTION;
+		update_status_notify("%s", NOTIFY_PROMOTION);
 	}
 	else 
 	    piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
@@ -1280,7 +1280,7 @@ done:
 	game[gindex].tag[TAG_RESULT].value = 
 	    Realloc(game[gindex].tag[TAG_RESULT].value, 8);
 	strncpy(game[gindex].tag[TAG_RESULT].value, "1/2-1/2", 8);
-	status.notify = NOTIFY_GAMEOVER_DRAW;
+	update_status_notify("%s", NOTIFY_GAMEOVER_DRAW);
 
 	if (curses_initialized)
 	    update_tag_window();
@@ -1303,13 +1303,13 @@ done:
 			game[gindex].tag[TAG_RESULT].value = 
 			    Realloc(game[gindex].tag[TAG_RESULT].value, 4);
 			strncpy(game[gindex].tag[TAG_RESULT].value, "1-0", 4);
-			status.notify = NOTIFY_GAMEOVER_WWINS;
+			update_status_notify("%s", NOTIFY_GAMEOVER_WWINS);
 		    }
 		    else if (result == BLACKWINS) {
 			game[gindex].tag[TAG_RESULT].value = 
 			    Realloc(game[gindex].tag[TAG_RESULT].value, 4);
 			strncpy(game[gindex].tag[TAG_RESULT].value, "0-1", 4);
-			status.notify = NOTIFY_GAMEOVER_BWINS;
+			update_status_notify("%s", NOTIFY_GAMEOVER_BWINS);
 		    }
 
 		    if (curses_initialized)
@@ -1322,7 +1322,7 @@ done:
 
 		    if ((status.turn == WHITE && status.side == WHITE) ||
 			    (status.turn == BLACK && status.side == BLACK))
-			status.notify = NOTIFY_CHECK;
+			update_status_notify("%s", NOTIFY_CHECK);
 		}
 
 		*p = '\0';

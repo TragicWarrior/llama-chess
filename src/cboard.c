@@ -458,6 +458,8 @@ void update_status_window()
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
 
+    status.notify = (status.notify) ? status.notify : GAME_HELP_PROMPT;
+
     if (status.notify) {
 	wattron(statusw, CP_STATUS_NOTIFY);
 	mvwprintw(statusw, STATUS_HEIGHT - 2,
@@ -990,6 +992,46 @@ void edit_board(BOARD b)
     return;
 }
 
+// Updates the notification line in the status window then refreshes the
+// status window.
+void update_status_notify(char *fmt, ...)
+{
+    va_list ap;
+#ifdef HAVE_VASPRINTF
+    char *line;
+#else
+    char line[COLS];
+#endif
+
+    if (!fmt) {
+	if (status.notify) {
+	    free(status.notify);
+	    status.notify = NULL;
+	    update_status_window();
+	}
+
+	return;
+    }
+
+    va_start(ap, fmt);
+#ifdef HAVE_VASPRINTF
+    vasprintf(&line, fmt, ap);
+#else
+    vsnprintf(line, sizeof(line), fmt, ap);
+#endif
+    va_end(ap);
+
+    if (status.notify)
+	free(status.notify);
+
+    status.notify = strdup(line);
+
+#ifdef HAVE_VASPRINTF
+    free(line);
+#endif
+    update_status_window();
+}
+
 void game_loop()
 {  
     int error_recover = 0;
@@ -1028,7 +1070,7 @@ void game_loop()
     if (loadfile[0])
 	init_history(board);
 
-    status.notify = GAME_HELP_PROMPT;
+    update_status_notify("%s", GAME_HELP_PROMPT);
     movestep = 2;
     paused = 1;
 
@@ -1623,8 +1665,7 @@ void game_loop()
 		    else if (n == 'a')
 			x = -1;
 		    else {
-			status.notify = NOTIFY_SAVE_ABORTED;
-			update_status_window();
+			update_status_notify("%s", NOTIFY_SAVE_ABORTED);
 			break;
 		    }
 		}
@@ -1632,8 +1673,7 @@ void game_loop()
 		if ((tmp = get_input(GAME_SAVE_TITLE, loadfile, 1, 1,
 				BROWSER_PROMPT, browse_directory, NULL, 
 				'\t', -1)) == NULL) {
-		    status.notify = NOTIFY_SAVE_ABORTED;
-		    update_status_window();
+		    update_status_notify("%s", NOTIFY_SAVE_ABORTED);
 		    break;
 		}
 
@@ -1646,11 +1686,11 @@ void game_loop()
 		}
 
 		if (save_pgn(tmp, 0, x)) {
-		    status.notify = NOTIFY_SAVE_FAILED;
+		    update_status_notify("%s", NOTIFY_SAVE_FAILED);
 		    break;
 		}
 
-		status.notify = NOTIFY_SAVED;
+		update_status_notify("%s", NOTIFY_SAVED);
 		update_all();
 		break;
 	    case CTRL('G'):
@@ -1714,7 +1754,7 @@ void game_loop()
 		SEND_TO_ENGINE("\nnew\n");
 		set_engine_defaults();
 		status.engine = ENGINE_READY;
-		status.notify = NULL;
+		update_status_notify(NULL);
 		update_all();
 		update_tag_window();
 		break;
@@ -1739,8 +1779,12 @@ void game_loop()
 		break;
 	    case KEY_ESCAPE:
 		sp.icon = sp.row = sp.col = 0;
-		count = 0;
 		markend = markstart = 0;
+
+		if (count) {
+		    count = 0;
+		    update_status_notify(NULL);
+		}
 
 		if (config.validmoves)
 		    reset_valid_moves(board);
@@ -1754,6 +1798,7 @@ void game_loop()
 		else
 		    count = n;
 
+		update_status_notify("Repeat %i", count);
 		continue;
 	    case KEY_UP:
 		if (status.mode == MODE_HISTORY) {
@@ -1803,6 +1848,7 @@ void game_loop()
 		if (count) {
 		    crow -= count;
 		    pushkey = '\n';
+		    update_status_notify(NULL);
 		}
 		else
 		    crow--;
@@ -1941,7 +1987,8 @@ void game_loop()
 		break;
 	    case '\015':
 	    case '\n':
-		pushkey = 0;
+		pushkey = count = 0;
+		update_status_notify(NULL);
 
 		if (!editmode && status.mode == MODE_HISTORY)
 		    break;

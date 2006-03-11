@@ -7,8 +7,6 @@ include strings.h only in source files that require it
 
 fix for game flags (visual)
 
-show the repeat count in the status window
-
 removed board move number count code. i'll add it back in later probably
 
 dont use cpp concatination token '##' for strings. fixes gcc 3 compilation

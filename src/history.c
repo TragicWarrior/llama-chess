@@ -452,7 +452,7 @@ void parse_history_move(BOARD b, int index)
     }
 
     if (!status.notify && !status.mode == MODE_HISTORY)
-	status.notify = GAME_HELP_PROMPT;
+	update_status_notify("%s", GAME_HELP_PROMPT);
 
     return;
 }
