@@ -641,7 +641,7 @@ static void fen_tag(BOARD b)
 			game[gindex].tag[i].value)) == -1)
 	    cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
 	else {
-	    copy_board(tmpboard, b);
+	    memcpy(b, pgnboard, sizeof(BOARD));
 	    game[gindex].fentag = i;
 	}
     }
@@ -824,8 +824,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
     sort_tags(game[gindex]);
     gtotal = gindex + 1;
-
-    copy_board(pgnboard, b);
+    memcpy(b, pgnboard, sizeof(BOARD));
 
 done:
     if (compressed)

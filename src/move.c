@@ -972,7 +972,7 @@ static int checkmatetest(BOARD b, int kr, int kc, int okr, int okc)
 		}
 
 		/* Valid move. */
-		copy_board(b, t);
+		memcpy(t, b, sizeof(BOARD));
 		p = t[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
 		t[ROWTOBOARD(row)][COLTOBOARD(col)].icon = p;
 		t[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = 

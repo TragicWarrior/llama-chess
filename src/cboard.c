@@ -236,21 +236,6 @@ void draw_board(BOARD b, int crow, int ccol)
     return;
 }
 
-void copy_board(BOARD s, BOARD d)
-{
-    int row, col;
-
-    for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++) {
-	    d[row][col].icon = s[row][col].icon;
-	    d[row][col].valid = s[row][col].valid;
-	    d[row][col].movecount = s[row][col].movecount;
-	}
-    }
-
-    return;
-}
-
 /* Convert the selected piece to SAN format and validate it. */
 static char *board_to_san(BOARD b)
 {
@@ -277,7 +262,7 @@ static char *board_to_san(BOARD b)
 	*p = '\0';
     }
 
-    copy_board(b, t);
+    memcpy(t, b, sizeof(BOARD));
 
     if ((p = a2a4tosan(t, str)) == NULL) {
 	cmessage(p, ANYKEY, "%s", E_A2A4_PARSE);
@@ -293,6 +278,7 @@ static char *board_to_san(BOARD b)
     }
 
     validate_move = 0;
+    memcpy(b, t, sizeof(BOARD));
     return p;
 }
 
@@ -303,8 +289,18 @@ static int move_to_engine(BOARD b)
     if ((p = board_to_san(b)) == NULL)
 	return 0;
 
+    sp.row = sp.col = sp.icon = 0;
+
+    if (noengine) {
+	add_to_history(&game[gindex].history, &game[gindex].hindex, 
+		&game[gindex].htotal, p);
+	switch_turn();
+	SET_FLAG(game[gindex].flags, GF_MODIFIED);
+	update_all();
+	return 1;
+    }
+
     SEND_TO_ENGINE("%s\n", p);
-    sp.row = sp.col = 0;
     return 1;
 }
 
