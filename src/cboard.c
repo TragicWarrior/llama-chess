@@ -2138,9 +2138,11 @@ int main(int argc, char *argv[])
 	    case 'V':
 		validate = 1;
 		break;
+#ifdef DEBUG
 	    case 'D':
 		debug = 1;
 		break;
+#endif
 	    case 'u':
 		i = 0;
 
