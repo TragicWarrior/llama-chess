@@ -1060,16 +1060,30 @@ int parse_move_text(BOARD b, char *move)
     capture = 0;
     update_status_notify(NULL);
     srow = row = col = scol = promo = piece = 0;
+again:
     p = (move) + strlen(move);
 
     while (!isdigit(*--p) && *p != 'O') {
 	if (*p == '=') {
 	    promo = piece_to_int(i);
+	    i = 0;
 	    break;
 	}
 
 	i = *p;
 	*p = '\0';
+    }
+
+    // Old promotion text (e8Q). Convert to SAN.
+    if (piece_to_int(i) != -1) {
+	char buf[MAX_PGN_MOVE_LEN + 1] = {0};
+	strcpy(buf, move);
+	p = buf + strlen(move);
+	*p++ = '=';
+	*p++ = i;
+	*p = '\0';
+	strcpy(move, buf);
+	goto again;
     }
 
     if (strlen(move) < 2)
@@ -1114,7 +1128,7 @@ int parse_move_text(BOARD b, char *move)
 	    else {
 #ifdef DEBUG
 		if (debug)
-		    DUMP_F("Pawn (move: '%s'): %c\n", move, *p++);
+		    DUMP("Pawn (move: '%s'): %c\n", move, *p++);
 #else
 		p++;
 #endif

@@ -345,10 +345,12 @@ int move_text(FILE *fp)
     add_to_history(&game[gindex].history, &game[gindex].hindex,
 	    &game[gindex].htotal, p);
 
-    /*
-    DUMP_F("%s\n", p);
-    dump_board(1, pgnboard);
-    */
+#ifdef DEBUG
+    if (debug) {
+	DUMP("%s\n", p);
+	dump_board(0, pgnboard);
+    }
+#endif
 
     return 0;
 }
@@ -805,7 +807,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 	if (debug) {
 	    *p++ = c;
 
-	    DUMP_F("unparsed: '%s'\n", buf);
+	    DUMP("unparsed: '%s'\n", buf);
 
 	    if (strlen(buf) + 1 == sizeof(buf))
 		bzero(buf, sizeof(buf));
