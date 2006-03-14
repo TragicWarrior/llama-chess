@@ -131,7 +131,7 @@ enum {
 #define show_message(title, prompt, ehelp, func, arg, key, args...) \
     dump_message(title, prompt, 0, ehelp, func, arg, key, ##args)
 
-#define SEND_TO_ENGINE(fmt, args...)	(engine_initialized) ? \
+#define SEND_TO_ENGINE(fmt, args...)	(engine_initialized && !noengine) ? \
     send_to_engine(fmt, ##args) : 0
 
 #define get_input_str(title, init) \
@@ -259,6 +259,7 @@ int gindex, gtotal; /* Current game and total number of games. */
 int engine_initialized;
 int oldhistorytotal; /* This is a failsafe when resuming a game. */
 int movestep;
+int noengine;
 
 enum {
     FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
@@ -280,6 +281,7 @@ char *trim(char *);
 void write_debug_output(int, const char *, ...);
 void dump_board(int, BOARD);
 void dump_flags(int);
+int debug;
 #endif
 
 #ifdef WITH_DMALLOC

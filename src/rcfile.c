@@ -130,10 +130,9 @@ void copydatafile(const char *dst, const char *src)
 
     snprintf(buf, sizeof(buf), "%s/%s", DATA_PATH, src);
 
-    fprintf(stderr, "%s %s...\n", COPY_DATAFILE, buf);
-
     if ((fp = fopen(buf, "r")) == NULL) {
-	warn("%s", buf);
+	if (errno != ENOENT)
+	    warn("%s", buf);
 	return;
     }
 

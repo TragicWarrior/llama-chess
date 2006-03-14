@@ -458,16 +458,13 @@ void update_status_window()
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
 
-    status.notify = (status.notify) ? status.notify : GAME_HELP_PROMPT;
+    if (!status.notify)
+	status.notify = strdup(GAME_HELP_PROMPT);
 
-    if (status.notify) {
-	wattron(statusw, CP_STATUS_NOTIFY);
-	mvwprintw(statusw, STATUS_HEIGHT - 2,
-		CENTERX(STATUS_WIDTH, status.notify), "%s", status.notify);
-	wattroff(statusw, CP_STATUS_NOTIFY);
-    }
-	
-    return;
+    wattron(statusw, CP_STATUS_NOTIFY);
+    mvwprintw(statusw, STATUS_HEIGHT - 2,
+	    CENTERX(STATUS_WIDTH, status.notify), "%s", status.notify);
+    wattroff(statusw, CP_STATUS_NOTIFY);
 }
 
 void update_history_window()
@@ -1007,7 +1004,9 @@ void update_status_notify(char *fmt, ...)
 	if (status.notify) {
 	    free(status.notify);
 	    status.notify = NULL;
-	    update_status_window();
+
+	    if (curses_initialized)
+		update_status_window();
 	}
 
 	return;
@@ -1029,7 +1028,8 @@ void update_status_notify(char *fmt, ...)
 #ifdef HAVE_VASPRINTF
     free(line);
 #endif
-    update_status_window();
+    if (curses_initialized)
+	update_status_window();
 }
 
 void game_loop()
@@ -1587,9 +1587,10 @@ void game_loop()
 			    break;
 		    }
 
-		    wtimeout(boardw, 70);
+		    if (!noengine)
+			wtimeout(boardw, 70);
 
-		    if (!engine_initialized) {
+		    if (!noengine && !engine_initialized) {
 			if (start_chess_engine() < 0)
 			    break;
 
@@ -1745,8 +1746,8 @@ void game_loop()
 		crow = (status.side == WHITE) ? 2 : 7;
 		ccol = 4;
 
-		if (status.engine == ENGINE_OFFLINE ||
-			engine_initialized == 0) {
+		if (!noengine && (status.engine == ENGINE_OFFLINE ||
+			engine_initialized == 0)) {
 		    if (start_chess_engine() < 0)
 			break;
 		}
@@ -1938,8 +1939,8 @@ void game_loop()
 		    break;
 		}
 
-		if ((status.engine == ENGINE_OFFLINE || !engine_initialized)
-			&& !editmode) {
+		if (!noengine && (status.engine == ENGINE_OFFLINE ||
+			    !engine_initialized) && !editmode) {
 		    if (start_chess_engine() < 0) {
 			sp.icon = 0;
 			break;
@@ -2037,14 +2038,14 @@ void game_loop()
     return;
 }
 
-void usage(const char *pn)
+void usage(const char *pn, int ret)
 {
     int i;
 
     for (i = 0; cmdlinehelp[i]; i++)
 	fputs(cmdlinehelp[i], stderr);
 
-    exit(EXIT_FAILURE);
+    exit(ret);
 }
 
 void catch_signal(int which)
@@ -2083,6 +2084,8 @@ int main(int argc, char *argv[])
     struct stat st;
     char buf[FILENAME_MAX];
     char datadir[FILENAME_MAX];
+    int ret = EXIT_SUCCESS;
+    int validate = 0, validate_and_save = 0;
 
     if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
@@ -2122,11 +2125,23 @@ int main(int argc, char *argv[])
 
     set_defaults();
 
-    while ((opt = getopt(argc, argv, "hp:vu:e:f:i:")) != -1) {
+#ifdef DEBUG
+    while ((opt = getopt(argc, argv, "DNVShp:vu:e:f:i:")) != -1) {
+#else
+    while ((opt = getopt(argc, argv, "NVShp:vu:e:f:i:")) != -1) {
+#endif
 	char *tmp;
 	int i;
 
 	switch (opt) {
+	    case 'N':
+		noengine = 1;
+		break;
+	    case 'S':
+		validate_and_save = 1;
+	    case 'V':
+		validate = 1;
+		break;
 	    case 'u':
 		i = 0;
 
@@ -2139,7 +2154,7 @@ int main(int argc, char *argv[])
 			    config.ics_passwd = optarg;
 			    break;
 			default:
-			    usage(argv[0]);
+			    usage(argv[0], EXIT_FAILURE);
 		    }
 		}
 		break;
@@ -2154,12 +2169,12 @@ int main(int argc, char *argv[])
 			    break;
 			case 1:
 			    if (!isinteger(tmp))
-				usage(argv[0]);
+				usage(argv[0], EXIT_FAILURE);
 
 			    config.ics_port = atoi(tmp);
 			    break;
 			default:
-			    usage(argv[0]);
+			    usage(argv[0], EXIT_FAILURE);
 		    }
 		}
 		break;
@@ -2181,9 +2196,12 @@ int main(int argc, char *argv[])
 		break;
 	    case 'h':
 	    default:
-		usage(argv[0]);
+		usage(argv[0], EXIT_SUCCESS);
 	}
     }
+
+    if ((validate || validate_and_save) && !*loadfile)
+	usage(argv[0], EXIT_FAILURE);
 
     if (access(config.configfile, R_OK) == 0)
 	parse_rcfile(config.configfile);
@@ -2195,23 +2213,28 @@ int main(int argc, char *argv[])
 
     srandom(getpid());
 
-    /*
-#ifdef DEBUG
     switch (filetype) {
 	case PGN_FILE:
-	    if (parse_pgn_file(board, loadfile))
-		loadfile[0] = '\0';
+	    ret = parse_pgn_file(board, loadfile);
 	    break;
 	case FEN_FILE:
-	    if (parse_fen_file(board, loadfile))
-		loadfile[0] = '\0';
+	    ret = parse_fen_file(board, loadfile);
 	    break;
 	case EPD_FILE:
 	default:
 	    break;
     }
-#endif
-    */
+
+    if (validate || validate_and_save) {
+	if (validate_and_save) {
+	    int i;
+
+	    for (i = 0; i < gtotal; i++)
+		pgn_dumpgame(stdout, &game[i], i, 0);
+	}
+
+	exit(ret);
+    }
 
     if (initscr() == NULL)
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);

@@ -57,12 +57,22 @@ char **agony;
 int paused;
 
 const char *cmdlinehelp[] = {
-    "Usage: cboard [-hv] [-pf <file>] [-i hostname[:port]] "
+#ifdef DEBUG
+    "Usage: cboard [-hvND] [-VS] [-pf <file>] [-i hostname[:port]] "
+#else
+    "Usage: cboard [-hvN] [-VS] [-pf <file>] [-i hostname[:port]] "
+#endif
 	"[-u username[:passwd]]\n",
     "  -p  Load PGN file.\n",
     "  -f  Load FEN file.\n",
     "  -i  ICS hostname and optional port.\n",
     "  -u  ICS username and optional password.\n",
+    "  -V  Validate a game file.\n",
+    "  -S  Validate and output a PGN formatted game.\n",
+    "  -N  Don't enable the chess engine (two human players).\n",
+#ifdef DEBUG
+    "  -D  Enable debugging.\n",
+#endif
     "  -v  Version information.\n",
     "  -h  This help text.\n",
     NULL

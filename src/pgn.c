@@ -260,10 +260,10 @@ static void skip_leading_space(FILE *fp)
 static void invalid_move(const char *move)
 {
     if (curses_initialized)
-	cmessage(NULL, ANYKEY, "%s \"%s\" (#%i)", E_INVALID_MOVE, move,
+	cmessage(NULL, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, move,
 		gindex + 1);
     else
-	warnx("%s: %s \"%s\" (#%i)", loadfile, E_INVALID_MOVE, move,
+	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, move,
 		gindex + 1);
 
     return;
@@ -661,6 +661,7 @@ int parse_pgn_file(BOARD b, const char *filename)
     int parse_error = 0;
     int nulltags = 1;
     int done_fen_tag = 0;
+    int ret = 0;
 
     if (!*filename) {
 	reset_game_data();
@@ -708,6 +709,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
+	    ret = 1;
 	    if ((c == '\n' && nextchar == '\n')) {
 		parse_error = 0;
 		nulltags = 1;
@@ -800,12 +802,14 @@ int parse_pgn_file(BOARD b, const char *filename)
 	}
 
 #ifdef DEBUG
-	*p++ = c;
+	if (debug) {
+	    *p++ = c;
 
-	DUMP_F("unparsed: '%s'\n", buf);
+	    DUMP_F("unparsed: '%s'\n", buf);
 
-	if (strlen(buf) + 1 == sizeof(buf))
-	    bzero(buf, sizeof(buf));
+	    if (strlen(buf) + 1 == sizeof(buf))
+		bzero(buf, sizeof(buf));
+	}
 #endif
 
 	continue;
@@ -829,8 +833,7 @@ done:
 
     status.mode = MODE_HISTORY;
     switch_turn();
-//    exit(0);
-    return 0;
+    return ret;
 }
 
 static char *add_tag_escapes(const char *str)
@@ -904,7 +907,7 @@ static int dump_comments_and_nag(FILE *fp, HISTORY h, int *len)
     return annotated;
 }
 
-static void dumpgame(FILE *fp, GAME *gp, int index, int isfifo)
+void pgn_dumpgame(FILE *fp, GAME *gp, int index, int isfifo)
 {
     int i;
     int n, len = 0;
@@ -1155,10 +1158,10 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
     }
 
     if (isfifo)
-	dumpgame(fp, &game[saveindex], saveindex, isfifo);
+	pgn_dumpgame(fp, &game[saveindex], saveindex, isfifo);
     else {
 	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
-	    dumpgame(fp, &game[i], i, isfifo);
+	    pgn_dumpgame(fp, &game[i], i, isfifo);
     }
 
     if (command)

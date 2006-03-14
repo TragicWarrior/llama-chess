@@ -1111,12 +1111,14 @@ int parse_move_text(BOARD b, char *move)
 		*p = '\0';
 		break;
 	    }
-	    else
+	    else {
 #ifdef DEBUG
-		DUMP_F("Pawn (move: '%s'): %c\n", move, *p++);
+		if (debug)
+		    DUMP_F("Pawn (move: '%s'): %c\n", move, *p++);
 #else
-	        p++;
+		p++;
 #endif
+	    }
 	}
 
 	if (get_source_yx(b, PAWN, row, col, &srow, &scol))
