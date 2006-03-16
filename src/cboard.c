@@ -270,7 +270,7 @@ static char *board_to_san(BOARD b)
     }
 
     if (parse_move_text(t, p)) {
-	cmessage(ERROR, ANYKEY, "%s: %s", E_INVALID_MOVE, p);
+	invalid_move(p);
 	return NULL;
     }
 
@@ -362,6 +362,7 @@ void update_status_window()
 	    *p++ = '/';
 
 	*p++ = '!';
+	i++;
     }
 
     if (TEST_FLAG(game[gindex].flags, GF_MODIFIED)) {
@@ -371,6 +372,7 @@ void update_status_window()
 	    *p++ = '/';
 
 	*p++ = '*';
+	i++;
     }
 
     if (*tmp != '\0')
@@ -1036,26 +1038,6 @@ void game_loop()
     int markstart = -1, markend = -1;
     int editmode = 0;
 
-    /* This is to just initialize the default tags etc. */
-    parse_pgn_file(board, moveexp);
-    draw_board(board, crow, ccol);
-    update_tag_window();
-    update_all();
-
-    switch (filetype) {
-	case PGN_FILE:
-	    if (parse_pgn_file(board, loadfile))
-		loadfile[0] = '\0';
-	    break;
-	case FEN_FILE:
-	    if (parse_fen_file(board, loadfile))
-		loadfile[0] = '\0';
-	    break;
-	case EPD_FILE:
-	default:
-	    break;
-    }
-
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
 
@@ -1064,8 +1046,7 @@ void game_loop()
 
     update_status_notify("%s", GAME_HELP_PROMPT);
     movestep = 2;
-    paused = 1;
-
+    paused = 1; //FIXME clock
     flushinp();
     update_all();
     update_tag_window();
@@ -2122,14 +2103,17 @@ int main(int argc, char *argv[])
     set_defaults();
 
 #ifdef DEBUG
-    while ((opt = getopt(argc, argv, "DNVShp:vu:e:f:i:")) != -1) {
+    while ((opt = getopt(argc, argv, "EDNVShp:vu:e:f:i:")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "NVShp:vu:e:f:i:")) != -1) {
+    while ((opt = getopt(argc, argv, "ENVShp:vu:e:f:i:")) != -1) {
 #endif
 	char *tmp;
 	int i;
 
 	switch (opt) {
+	    case 'E':
+		config.stoponerror = 1;
+		break;
 	    case 'N':
 		noengine = 1;
 		break;

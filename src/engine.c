@@ -376,7 +376,7 @@ static void parse_crafty_line(BOARD b, char *line)
     /* Human m. */
     if (sscanf(line, "%[a-hxPRNBKQ1-8O+=#-]%n", m, &count) == 1) {
 	if (parse_move_text(b, m)) {
-	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, m);
+	    invalid_move(m);
 	    return;
 	}
 
@@ -399,7 +399,7 @@ static void parse_crafty_line(BOARD b, char *line)
 	tmp = line + 5;
 
 	if (parse_move_text(b, tmp)) {
-	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, tmp);
+	    invalid_move(tmp);
 	    return;
 	}
 
@@ -433,7 +433,7 @@ void parse_gnuchess_line(BOARD b, char *str)
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
 	if (parse_move_text(b, m)) {
-	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, m);
+	    invalid_move(m);
 	    return;
 	}
 
@@ -462,7 +462,7 @@ void parse_gnuchess_line(BOARD b, char *str)
 	    return;
 
 	if (parse_move_text(b, p)) {
-	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, p);
+	    invalid_move(p);
 	    return;
 	}
 

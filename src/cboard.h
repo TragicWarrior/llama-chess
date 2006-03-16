@@ -58,11 +58,11 @@ int paused;
 
 const char *cmdlinehelp[] = {
 #ifdef DEBUG
-    "Usage: cboard [-hvND] [-VS] [-pf <file>] [-i hostname[:port]] "
+    "Usage: cboard [-hvNED] [-VS] [-pf <file>] [-i hostname[:port]]\n"
 #else
-    "Usage: cboard [-hvN] [-VS] [-pf <file>] [-i hostname[:port]] "
+    "Usage: cboard [-hvNE] [-VS] [-pf <file>] [-i hostname[:port]]\n"
 #endif
-	"[-u username[:passwd]]\n",
+	"        [-u username[:passwd]]\n",
     "  -p  Load PGN file.\n",
     "  -f  Load FEN file.\n",
     "  -i  ICS hostname and optional port.\n",
@@ -70,6 +70,7 @@ const char *cmdlinehelp[] = {
     "  -V  Validate a game file.\n",
     "  -S  Validate and output a PGN formatted game.\n",
     "  -N  Don't enable the chess engine (two human players).\n",
+    "  -E  Stop processing on file parsing error (overrides config).\n",
 #ifdef DEBUG
     "  -D  Enable debugging.\n",
 #endif
@@ -199,5 +200,6 @@ void set_defaults(void);
 void add_to_history(HISTORY **, int *, int *, const char *);
 void update_all(void);
 void pgn_dumpgame(FILE *, GAME *, int, int);
+void invalid_move(const char *);
 
 #endif

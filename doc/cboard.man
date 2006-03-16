@@ -26,8 +26,8 @@
 .Sh SYNOPSIS
 .
 .Nm cboard
-.Op Fl hv
-.Op Fl p Ar pgnfile
+.Op Fl hvEN
+.Op Fl pVS Ar pgnfile
 .Op Fl i Ar server Op Ar :port
 .Op Fl u Ar user Op Ar :password
 .
@@ -51,6 +51,21 @@ automatically provided you have
 and
 .Xr zip 1
 installed.
+.It Fl E
+Stop processing a file when a parse error occurs. Overrides configuration
+parameter.
+.It Fl N
+Enable two human player mode and disable the chess engine.
+.It Fl V
+Validate the specified file only. If a parse error occurs
+.Nm cboard
+will return a nonzero exit status.
+.It Fl S
+Validate the specified file and output the PGN formatted game to stdout. If a
+parse error occurs 
+.Nm cboard
+will return a nonzero exit status.
+.
 .It Fl i Ar server Op Ar :port
 ICS server and option port.
 .It Fl u Ar user Op Ar :password
@@ -108,7 +123,7 @@ is disabled, then this will be disable also. The default is
 .Pp
 .It Cm pgntag Ar name Op Ar value
 Custom PGN tags to add to new games. This can also be used to overwrite
-default tag values.
+default tag values. It can also be used more than once.
 .Pp
 .It Cm line_graphics Ar on|off
 Enable or disable board line graphics. The default is
@@ -136,6 +151,10 @@ Compression level of compressed saved files compressed with
 .Xr bzip2 1
 and 
 .Xr gzip 1 .
+.Pp
+.It Cm stoponerror Ar on|off
+Stop processing a file when a parsing error occurs. Normally a game or round
+will be flagged and the rest of the file will still be parsed.
 .Pp
 .It Cm ics_server Ar hostname
 Internet chess server hostname used for network games. The default is

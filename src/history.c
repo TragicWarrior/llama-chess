@@ -445,7 +445,7 @@ void parse_history_move(BOARD b, int idx)
 	    break;
 	
 	if (parse_move_text(b, h.move)) {
-	    cmessage(NULL, ANYKEY, "%s \"%s\"", E_INVALID_MOVE, h.move);
+	    invalid_move(h.move);
 	    break;
 	}
 
@@ -526,6 +526,6 @@ void init_history(BOARD b)
 {
     status.mode = MODE_HISTORY;
     parse_history_move(b, game[gindex].hindex);
-    update_status_window();
+    //update_status_window();
     return;
 }

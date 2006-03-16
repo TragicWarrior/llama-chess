@@ -50,6 +50,11 @@ line_graphics	off
 # If on, show valid moves for the selected piece.
 valid_moves	on
 
+# If enabled and there is a parsing error when loading a file, stop processing
+# immediately. Normally a game or round will be flagged as having an error and
+# other games will be loaded.
+stoponerror	off
+
 # ICS server.
 ics_server	ics.freechess.org
 

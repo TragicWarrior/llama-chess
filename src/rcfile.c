@@ -114,10 +114,12 @@ static void parse_color(const char *filename, int line, const char *str,
 
 static int on_or_off(const char *filename, int lines, const char *str)
 {
-    if (strcmp(str, "on") == 0)
+    if (strcmp(str, "on") == 0 || strcmp(str, "1") == 0 || 
+	    strcmp(str, "yes") == 0)
 	return 1;
 
-    if (strcmp(str, "off") == 0)
+    if (strcmp(str, "off") == 0 || strcmp(str, "0") == 0 ||
+	    strcmp(str, "no") == 0)
 	return 0;
 
     errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, lines, str);
@@ -180,6 +182,7 @@ void set_defaults()
     config.saveprompt = 1;
     config.deleteprompt = 1;
     config.validmoves = 1;
+    config.stoponerror = 0;
     strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
     config.ics_port = DEFAULT_ICS_PORT;
     config.ics_user = DEFAULT_ICS_USER;
@@ -270,6 +273,8 @@ void parse_rcfile(const char *filename)
 	    config.historyagony = on_or_off(filename, lines, val);
 	else if (strcmp(var, "agony") == 0)
 	    config.agony = on_or_off(filename, lines, val);
+	else if (strcmp(var, "stoponerror") == 0)
+	    config.stoponerror = on_or_off(filename, lines, val);
 	else if (strcmp(var, "pgntag") == 0) {
 	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
 		    n > 2)

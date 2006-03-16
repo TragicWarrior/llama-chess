@@ -215,6 +215,7 @@ struct colors {
 };
 
 struct {
+    int stoponerror;
     int jumpcount;
     int book_method;
     int engine_depth;

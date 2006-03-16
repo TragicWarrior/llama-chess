@@ -257,11 +257,13 @@ static void skip_leading_space(FILE *fp)
     return;
 }
 
-static void invalid_move(const char *m)
+void invalid_move(const char *m)
 {
-    if (curses_initialized)
-	cmessage(NULL, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m,
+    if (curses_initialized) {
+	return;
+	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m,
 		gindex + 1);
+    }
     else
 	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m,
 		gindex + 1);
@@ -704,6 +706,9 @@ int parse_pgn_file(BOARD b, const char *filename)
 	    }
 	}
 
+	if (c == '\015')
+	    continue;
+
 	nextchar = fgetc(fp);
 	ungetc(nextchar, fp);
 
@@ -712,7 +717,11 @@ int parse_pgn_file(BOARD b, const char *filename)
 	 */
 	if (parse_error) {
 	    ret = 1;
-	    if ((c == '\n' && nextchar == '\n')) {
+	    
+	    if (config.stoponerror)
+		goto parse_error;
+
+	    if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
 		parse_error = 0;
 		nulltags = 1;
 		tag_section = 0;
@@ -721,7 +730,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 		continue;
 	}
 
-	if ((c == '\n' && nextchar == '\n')) {
+	if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
 	    nulltags = 1;
 	    tag_section = 0;
 	    continue;
@@ -817,6 +826,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 	continue;
     }
 
+parse_error:
     fclose(fp);
 
     if (gtotal < 1) {
@@ -1689,6 +1699,7 @@ cleanup:
     }
 
 done:
+
     if (!edit) {
 	free_tag_data(data, data_index);
 	free(data);
