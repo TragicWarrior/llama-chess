@@ -29,7 +29,7 @@
 
 void write_debug_output(int which, const char *format, ...)
 {
-    FILE *fp = stdout;
+    FILE *fp = stderr;
     va_list ap;
     char *buf;
 

@@ -108,6 +108,7 @@ typedef struct board_matrix {
     chtype icon;
     short valid;
     short movecount;
+    short enpassant;
 } BOARD[8][8];
 
 enum { 

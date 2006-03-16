@@ -444,6 +444,9 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
 		    if (!TEST_FLAG(game[gindex].flags, GF_ENPASSANT))
 			return 1;
 
+		    if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].enpassant)
+			return 1;
+
 		    r = (status.turn == WHITE) ? 6 : 3;
 
 		    if (row != r)
@@ -1043,6 +1046,16 @@ static int drawtest(BOARD b)
     return 0;
 }
 
+static void reset_enpassant(BOARD b)
+{
+    int r, c;
+
+    for (r = 0; r < 8; r++) {
+	for (c = 0; c < 8; c++)
+	    b[r][c].enpassant = 0;
+    }
+}
+
 int parse_move_text(BOARD b, char *m)
 {
     char *p;
@@ -1209,10 +1222,19 @@ again:
     dist = abs(srow - row);
 
     if (!validate_move) {
-	if (piece == PAWN && dist == 2)
+	reset_enpassant(b);
+
+	if (piece == PAWN && dist == 2) {
+	    if (status.turn == WHITE)
+		b[ROWTOBOARD(srow - 1)][COLTOBOARD(scol)].enpassant = 1;
+	    else
+		b[ROWTOBOARD(srow + 1)][COLTOBOARD(scol)].enpassant = 1;
+
 	    SET_FLAG(game[gindex].flags, GF_ENPASSANT);
-	else
+	}
+	else {
 	    CLEAR_FLAG(game[gindex].flags, GF_ENPASSANT);
+	}
     }
 
     if (piece == PAWN)

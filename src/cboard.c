@@ -269,15 +269,11 @@ static char *board_to_san(BOARD b)
 	return NULL;
     }
 
-    validate_move = 1;
-
     if (parse_move_text(t, p)) {
 	cmessage(ERROR, ANYKEY, "%s: %s", E_INVALID_MOVE, p);
-	validate_move = 0;
 	return NULL;
     }
 
-    validate_move = 0;
     memcpy(b, t, sizeof(BOARD));
     return p;
 }
