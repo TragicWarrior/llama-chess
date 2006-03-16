@@ -1,4 +1,4 @@
-.\" Copyright (C) 2002-2003  Ben Kibbey <bjk@arbornet.org>
+.\" Copyright (C) 2002-2006  Ben Kibbey <bjk@luxsci.net>
 .\" 
 .\" This program is free software; you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -246,4 +246,4 @@ Temporary file created and removed when reading compressed files.
 .
 .Sh AUTHORS
 .
-.An "Ben Kibbey" Aq bjk@arbornet.org
+.An "Ben Kibbey" Aq bjk@luxsci.net
