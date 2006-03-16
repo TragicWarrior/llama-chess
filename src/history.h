@@ -19,9 +19,9 @@
 #ifndef HISTORY_H
 #define HISTORY_H
 
-struct nags {
-    char line[80];
-} *nag;
+struct nag_s {
+    char *line;
+} *nags;
 
 const char *naghelp[] = {
     "    UP/DOWN - previous/next item",
@@ -46,5 +46,6 @@ int parse_move_text(BOARD, char *);
 void switch_turn(void);
 int parse_fen_line(BOARD, char *);
 void update_all(void);
+void update_status_notify(char *, ...);
 
 #endif

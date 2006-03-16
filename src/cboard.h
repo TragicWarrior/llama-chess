@@ -196,5 +196,8 @@ char *tilde_expand(char *);
 int parse_fen_file(BOARD, const char *);
 char *board_to_fen(BOARD, GAME);
 void set_defaults(void);
+void add_to_history(HISTORY **, int *, int *, const char *);
+void update_all(void);
+void pgn_dumpgame(FILE *, GAME *, int, int);
 
 #endif

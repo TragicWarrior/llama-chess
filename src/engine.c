@@ -143,7 +143,7 @@ static char **parseargs(char *str)
 {
     char **pptr, *s;
     char arg[255];
-    int index = 0;
+    int n = 0;
     int quote = 0;
     int lastchar = 0;
     int i;
@@ -162,8 +162,8 @@ static char **parseargs(char *str)
 
 	if (*s == ' ' && !quote) {
 	    arg[i] = 0;
-	    pptr = realloc(pptr, (index + 2) * sizeof(char *));
-	    pptr[index++] = strdup(arg);
+	    pptr = realloc(pptr, (n + 2) * sizeof(char *));
+	    pptr[n++] = strdup(arg);
 	    arg[0] = i = 0;
 	    continue;
 	}
@@ -177,11 +177,11 @@ static char **parseargs(char *str)
     arg[i] = 0;
 
     if (arg[0]) {
-	pptr = realloc(pptr, (index + 2) * sizeof(char *));
-	pptr[index++] = strdup(arg);
+	pptr = realloc(pptr, (n + 2) * sizeof(char *));
+	pptr[n++] = strdup(arg);
     }
 
-    pptr[index] = NULL;
+    pptr[n] = NULL;
     return pptr;
 }
 
@@ -190,9 +190,9 @@ pid_t init_chess_engine(char **args)
 {
     pid_t pid;
     int from[2], to[2];
+#ifndef UNIX98
     char pty[FILENAME_MAX];
 
-#ifndef UNIX98
     if ((to[1] = get_pty(pty)) == -1) {
 	errno = 0;
 	return -1;
@@ -329,15 +329,15 @@ static void parse_crafty_line(BOARD b, char *line)
 {
     char *tmp;
     int count;
-    char move[MAX_PGN_MOVE_LEN + 1];
+    char m[MAX_PGN_MOVE_LEN + 1];
 
     if (strcmp(line, "go") == 0) {
 	status.engine = ENGINE_THINKING;
 	return;
     }
 
-    /* Bad engine command or move. */
-    if (strncmp(line, "Illegal move: ", 14) == 0) {
+    /* Bad engine command or m. */
+    if (strncmp(line, "Illegal m: ", 14) == 0) {
 	update_status_notify("%s", E_INVALID_COMMAND);
 	sp.icon = 0;
 	RETURN;
@@ -373,10 +373,10 @@ static void parse_crafty_line(BOARD b, char *line)
 	RETURN;
     }
 
-    /* Human move. */
-    if (sscanf(line, "%[a-hxPRNBKQ1-8O+=#-]%n", move, &count) == 1) {
-	if (parse_move_text(b, move)) {
-	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, move);
+    /* Human m. */
+    if (sscanf(line, "%[a-hxPRNBKQ1-8O+=#-]%n", m, &count) == 1) {
+	if (parse_move_text(b, m)) {
+	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, m);
 	    return;
 	}
 
@@ -384,7 +384,7 @@ static void parse_crafty_line(BOARD b, char *line)
 	    game[gindex].openingside = BLACK;
 
 	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, move);
+		&game[gindex].htotal, m);
 
 	switch_turn();
 
@@ -394,8 +394,8 @@ static void parse_crafty_line(BOARD b, char *line)
 	RETURN;
     }
 
-    /* Engine move. */
-    if (strncmp(line, "move ", 5) == 0) {
+    /* Engine m. */
+    if (strncmp(line, "m ", 5) == 0) {
 	tmp = line + 5;
 
 	if (parse_move_text(b, tmp)) {
@@ -427,13 +427,13 @@ static void parse_crafty_line(BOARD b, char *line)
  */
 void parse_gnuchess_line(BOARD b, char *str)
 {
-    char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p = move;
+    char m[MAX_PGN_MOVE_LEN + 1] = {0}, *p = m;
     int count;
 
     /* Human move. Add it to the move history. */
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, &count) == 1) {
-	if (parse_move_text(b, move)) {
-	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, move);
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
+	if (parse_move_text(b, m)) {
+	    message(ERROR, ANYKEY, "BUG: %s: %s", E_INVALID_MOVE, m);
 	    return;
 	}
 
@@ -453,12 +453,12 @@ void parse_gnuchess_line(BOARD b, char *str)
     }
 
     /* Engine move. */
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", move, 
+    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, 
 		&count) == 1) {
 	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
 	 * need to convert them.
 	 */
-	if ((p = a2a4tosan(b, move)) == NULL)
+	if ((p = a2a4tosan(b, m)) == NULL)
 	    return;
 
 	if (parse_move_text(b, p)) {

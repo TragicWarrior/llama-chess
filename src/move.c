@@ -684,10 +684,10 @@ int get_source_yx(BOARD b, int piece, int row, int col, int *srow, int *scol)
  * are performed here. The real checks are in parse_move_text() after the
  * conversion.
  */
-char *a2a4tosan(BOARD b, char *move)
+char *a2a4tosan(BOARD b, char *m)
 {
     static char buf[MAX_PGN_MOVE_LEN + 1] = {0}, *cp = buf;
-    char *p = move;
+    char *p = m;
     int scol, srow, col, row;
     int piece, piecei, spiece;
     int trow, tcol;
@@ -698,7 +698,7 @@ char *a2a4tosan(BOARD b, char *move)
 
     if (!VALIDCOL(*p) || !VALIDROW(*(p + 1)) || !VALIDCOL(*(p + 2))
 	    || !VALIDROW(*(p + 3)))
-	return move;
+	return m;
 
     scol = COLTOINT(*p);
     srow = ROWTOINT(*(p + 1));
@@ -1043,7 +1043,7 @@ static int drawtest(BOARD b)
     return 0;
 }
 
-int parse_move_text(BOARD b, char *move)
+int parse_move_text(BOARD b, char *m)
 {
     char *p;
     int piece, dstpiece;
@@ -1051,17 +1051,17 @@ int parse_move_text(BOARD b, char *move)
     int srow = 0, scol = 0, row, col;
     int dist = 0;
     int promo = -1;
-    int kr, kc, okr, okc;
+    int kr = 0, kc = 0, okr = 0, okc = 0;
     int plyincr = 0;
 
-    if (strlen(move) < 2)
+    if (strlen(m) < 2)
 	return 1;
 
     capture = 0;
     update_status_notify(NULL);
     srow = row = col = scol = promo = piece = 0;
 again:
-    p = (move) + strlen(move);
+    p = (m) + strlen(m);
 
     while (!isdigit(*--p) && *p != 'O') {
 	if (*p == '=') {
@@ -1076,20 +1076,17 @@ again:
 
     // Old promotion text (e8Q). Convert to SAN.
     if (piece_to_int(i) != -1) {
-	char buf[MAX_PGN_MOVE_LEN + 1] = {0};
-	strcpy(buf, move);
-	p = buf + strlen(move);
+	p = (m) + strlen(m);
 	*p++ = '=';
 	*p++ = i;
 	*p = '\0';
-	strcpy(move, buf);
 	goto again;
     }
 
-    if (strlen(move) < 2)
+    if (strlen(m) < 2)
 	return 1;
 
-    p = move;
+    p = m;
 
     /* Skip 'P'. */
     if (piece_to_int(*p) == PAWN)
@@ -1128,7 +1125,7 @@ again:
 	    else {
 #ifdef DEBUG
 		if (debug)
-		    DUMP("Pawn (move: '%s'): %c\n", move, *p++);
+		    DUMP("Pawn (move: '%s'): %c\n", m, *p++);
 #else
 		p++;
 #endif
@@ -1140,17 +1137,17 @@ again:
     }
     /* Not a pawn. */
     else {
-	if (strcmp(move, "O-O") == 0)
+	if (strcmp(m, "O-O") == 0)
 	    game[gindex].castle = KINGSIDE;
-	else if (strcmp(move, "O-O-O") == 0)
+	else if (strcmp(m, "O-O-O") == 0)
 	    game[gindex].castle = QUEENSIDE;
 	else {
-	    p = move;
+	    p = m;
 
 	    if ((piece = piece_to_int(*p++)) == -1)
 		return 1;
 
-	    if (strlen(move) > 3) {
+	    if (strlen(m) > 3) {
 		if (isdigit(*p))
 		    srow = ROWTOINT(*p++);
 		else if (VALIDCOL(*p))
@@ -1242,7 +1239,7 @@ again:
 	    else
 		game[gindex].wcaptures++;
 
-	    update_status_notify("%s", random_agony());
+	    update_status_notify(random_agony());
 	}
     }
 
@@ -1279,7 +1276,7 @@ done:
     switch_turn();
 
     if (game[gindex].castle) {
-	p = move + strlen(move);
+	p = m + strlen(m);
 	game[gindex].castle = 0;
     }
 

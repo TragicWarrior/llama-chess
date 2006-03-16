@@ -97,7 +97,7 @@ int end_of_game(const char *str)
  */
 int add_tag(TAG **dst, int *n, char *name, char *value)
 {
-    int i, index = *n;
+    int i, idx = *n;
     TAG *tdata = *dst;
     int len = 0;
 
@@ -105,7 +105,7 @@ int add_tag(TAG **dst, int *n, char *name, char *value)
     value = trim(value);
 
     /* If a duplicate was found, update the existing one to the new value. */
-    for (i = 0; i < index; i++) {
+    for (i = 0; i < idx; i++) {
 	if (strcasecmp(tdata[i].name, name) == 0) {
 	    len = (value) ? strlen(value) + 1 : 1;
 	    tdata[i].value = Realloc(tdata[i].value, len);
@@ -115,20 +115,20 @@ int add_tag(TAG **dst, int *n, char *name, char *value)
 	}
     }
 
-    tdata = Realloc(tdata, (index + 2) * sizeof(TAG));
+    tdata = Realloc(tdata, (idx + 2) * sizeof(TAG));
 
     len = strlen(name) + 1;
-    tdata[index].name = Malloc(len);
-    strncpy(tdata[index].name, name, len);
+    tdata[idx].name = Malloc(len);
+    strncpy(tdata[idx].name, name, len);
 
     if (value) {
 	len = strlen(value) + 1;
-	tdata[index].value = Malloc(len);
-	strncpy(tdata[index].value, value, len);
+	tdata[idx].value = Malloc(len);
+	strncpy(tdata[idx].value, value, len);
     }
 
-    memset(&tdata[++index], '\0', sizeof(TAG));
-    *n = index;
+    memset(&tdata[++idx], '\0', sizeof(TAG));
+    *n = idx;
     *dst = tdata;
     return 0;
 }
@@ -257,13 +257,13 @@ static void skip_leading_space(FILE *fp)
     return;
 }
 
-static void invalid_move(const char *move)
+static void invalid_move(const char *m)
 {
     if (curses_initialized)
-	cmessage(NULL, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, move,
+	cmessage(NULL, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m,
 		gindex + 1);
     else
-	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, move,
+	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m,
 		gindex + 1);
 
     return;
@@ -271,7 +271,7 @@ static void invalid_move(const char *move)
 
 int move_text(FILE *fp)
 {
-    char move[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
+    char m[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
     int dots = 0;
@@ -315,11 +315,11 @@ int move_text(FILE *fp)
 
     ungetc(c, fp);
 
-    if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", move, &count) != 1)
+    if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
 
-    if ((p = a2a4tosan(pgnboard, move)) == NULL) {
-	invalid_move(move);
+    if ((p = a2a4tosan(pgnboard, m)) == NULL) {
+	invalid_move(m);
 	return 1;
     }
 
@@ -329,7 +329,7 @@ int move_text(FILE *fp)
 
 	    if (parse_move_text(pgnboard, p)) {
 		switch_turn();
-		invalid_move(move);
+		invalid_move(m);
 		return 1;
 	    }
 
@@ -337,7 +337,7 @@ int move_text(FILE *fp)
 	}
 	else {
 	    switch_turn();
-	    invalid_move(move);
+	    invalid_move(m);
 	    return 1;
 	}
     }
@@ -908,7 +908,7 @@ static int dump_comments_and_nag(FILE *fp, HISTORY h, int *len)
     return annotated;
 }
 
-void pgn_dumpgame(FILE *fp, GAME *gp, int index, int isfifo)
+void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
 {
     int i;
     int n, len = 0;
@@ -920,7 +920,7 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int index, int isfifo)
 
     if (!isfifo && g.hindex != g.htotal) {
 	snprintf(buf, sizeof(buf), "%s (#%i)", GAME_SAVE_FROM_HISTORY_TITLE,
-		index + 1);
+		idx + 1);
 	i = message(buf, GAME_SAVE_FROM_HISTORY_PROMPT, "%s", 
 			GAME_SAVE_FROM_HISTORY_TEXT);
 
@@ -932,16 +932,16 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int index, int isfifo)
 
     for (i = 0; g.tag[i].name; i++) {
 	struct tm tp;
-	char buf[MAX_TIME_LEN + 1];
+	char tbuf[MAX_TIME_LEN + 1];
 
 	if (isfifo && i == 7)
 	    break;
 
 	if (strcmp(g.tag[i].name, "Date") == 0) {
 	    if (strptime(g.tag[i].value, TIME_FORMAT, &tp) != NULL) {
-		len = strftime(buf, sizeof(buf), PGN_TIME_FORMAT, &tp) + 1;
+		len = strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, &tp) + 1;
 		g.tag[i].value = Realloc(g.tag[i].value, len);
-		strncpy(g.tag[i].value, buf, len);
+		strncpy(g.tag[i].value, tbuf, len);
 	    }
 	}
 	else if (strcmp(g.tag[i].name, "Event") == 0) {
@@ -1375,11 +1375,11 @@ done:
     return tmp;
 }
 
-void free_tag_data(TAG *data, int index)
+void free_tag_data(TAG *data, int n)
 {
     int i;
 
-    for (i = 0; i < index; i++) {
+    for (i = 0; i < n; i++) {
 	free(data[i].name);
 	free(data[i].value);
     }
@@ -1392,12 +1392,12 @@ TAG *edit_tags(BOARD b, TAG *old, int maxtags, int edit)
     TAG *data = NULL;
     struct tm tp;
     int data_index = 0;
-    int i, lastindex = 0;
+    int n, lastindex = 0;
     int len;
 
     /* Edit the backup copy, not the original in case the save fails. */
-    for (i = 0; i < maxtags; i++)
-	add_tag(&data, &data_index, old[i].name, old[i].value);
+    for (n = 0; n < maxtags; n++)
+	add_tag(&data, &data_index, old[n].name, old[n].value);
 
     while (1) {
 	WINDOW *win, *subw;
@@ -1462,7 +1462,6 @@ TAG *edit_tags(BOARD b, TAG *old, int maxtags, int edit)
 	    TAG *tmppgn = NULL;
 	    char *newtag = NULL;
 	    int tpgn_index = 0;
-	    char *tmp;
 
 	    if (set_current_item(menu, mitems[lastindex]) != E_OK) {
 		lastindex = item_count(menu) - 1;
@@ -1712,7 +1711,7 @@ static struct d_entries *get_directory_entries(const char *path)
     DIR *dp;
     struct dirent *entry;
     struct d_entries *entries = NULL;
-    int index = 0;
+    int n = 0;
 
     if ((dp = opendir(path)) == NULL)
 	return NULL;
@@ -1724,7 +1723,7 @@ static struct d_entries *get_directory_entries(const char *path)
 	struct tm *tp;
 	char buf[FILENAME_MAX];
 	char *tmp;
-	size_t n;
+	size_t size;
 
 	if (entry->d_name[0] == '.' && entry->d_name[1] == 0)
 	    continue;
@@ -1734,28 +1733,28 @@ static struct d_entries *get_directory_entries(const char *path)
 	if (stat(buf, &st) == -1)
 	    continue;
 
-	n = st.st_size ;
-	entries = Realloc(entries, (index + 2) * sizeof(struct d_entries));
-	entries[index].name = strdup(buf);
+	size = st.st_size ;
+	entries = Realloc(entries, (n + 2) * sizeof(struct d_entries));
+	entries[n].name = strdup(buf);
 	tmp = real_filename(buf);
 	len = strlen(tmp) + 2;
-	entries[index].fancy = Malloc(len);
-	strncpy(entries[index].fancy, tmp, len);
+	entries[n].fancy = Malloc(len);
+	strncpy(entries[n].fancy, tmp, len);
 
 	if (S_ISDIR(st.st_mode))
-	    entries[index].fancy[len - 2] = '/';
+	    entries[n].fancy[len - 2] = '/';
 
 	tp = localtime(&st.st_mtime);
 	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
 
-	snprintf(entries[index].desc, sizeof(entries[index].desc), "%-7i %s", 
-		n, tbuf);
+	snprintf(entries[n].desc, sizeof(entries[n].desc), "%-7i %s", 
+		size, tbuf);
 
-	memset(&entries[++index], '\0', sizeof(struct d_entries));
+	memset(&entries[++n], '\0', sizeof(struct d_entries));
     }
 
     closedir(dp);
-    qsort(entries, index, sizeof(struct d_entries), sort_entries);
+    qsort(entries, n, sizeof(struct d_entries), sort_entries);
     return entries;
 }
 
@@ -1767,7 +1766,7 @@ char *browse_directory(void *arg)
     char *oldwd = getcwd(NULL, 0);
     DIR *dp;
     char *inputstr = (char *)arg;
-    int initkey = inputstr[0];
+    int initkey = (inputstr) ? inputstr[0] : 0;
 
     if (config.savedirectory) {
 	if ((dp = opendir(config.savedirectory)) == NULL) {
@@ -1795,7 +1794,7 @@ again:
 	char *mbuf = NULL;
 	struct d_entries *entries = NULL;
 	struct stat st;
-	int index = 0;
+	int idx = 0;
 	int len = strlen(path);
 
 	/* /some/path/blah/../ */
@@ -1823,11 +1822,11 @@ again:
 	}
 
 	for (i = 0; entries[i].name; i++) {
-	    mitems = Realloc(mitems, (index + 2) * sizeof(ITEM));
-	    mitems[index++] = new_item(entries[i].fancy, entries[i].desc);
+	    mitems = Realloc(mitems, (idx + 2) * sizeof(ITEM));
+	    mitems[idx++] = new_item(entries[i].fancy, entries[i].desc);
 	}
 
-	mitems[index] = NULL;
+	mitems[idx] = NULL;
 	menu = new_menu(mitems);
 	scale_menu(menu, &rows, &cols);
 
@@ -1854,7 +1853,7 @@ again:
 	panel = new_panel(win);
 
 	draw_window_title(win, path, cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-	draw_prompt(win, rows + 2, cols + 2, HELP_PROMPT, CP_MESSAGE_PROMPT);
+	draw_prompt(win, rows + 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
 
 	cbreak();
 	noecho();

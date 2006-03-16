@@ -63,7 +63,7 @@ static bool validate_pgn_round(int c, const void *arg)
  * dynamically determined based on the init argument or INPUT_WIDTH if init is
  * NULL.
  *
- * The clear argument is whether pressing ESC returns the initial value or 
+ * The reset argument is whether pressing ESC returns the initial value or 
  * NULL. 
  *
  * The extra_help argument is an extra line of help prompt normally used with 
@@ -77,7 +77,7 @@ static bool validate_pgn_round(int c, const void *arg)
  *
  * FIXME form validation is buggy (integers).
  */
-char *get_input(const char *title, const char *init, int lines, int clear,
+char *get_input(const char *title, const char *init, int lines, int reset,
 	const char *extra_help, char *(*custom_func)(void *), void *arg, 
 	chtype ckey, int type, ...)
 {
@@ -88,14 +88,13 @@ char *get_input(const char *title, const char *init, int lines, int clear,
     int width, len;
     int y, x;
     int i, n;
-    static unsigned char dst[MAX_PGN_LINE_LEN];
+    static char dst[MAX_PGN_LINE_LEN];
     char *tmp;
     va_list ap;
     FIELDTYPE *TYPE_PGN_TAG_NAME;
     FIELDTYPE *TYPE_PGN_DATE;
     FIELDTYPE *TYPE_PGN_ROUND;
     int quit = 0;
-    int argnull = 0;
 
     bzero(dst, sizeof(dst));
 
@@ -199,11 +198,6 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 	if (c == ckey && custom_func) {
 	    form_driver(form, REQ_VALIDATION);
 
-	    if (arg == NULL || argnull) {
-		arg = field_buffer(fields[0], 0);
-		argnull = 1;
-	    }
-
 	    if ((tmp = custom_func(arg)) != NULL) {
 		set_field_buffer(fields[0], 0, tmp);
 		form_driver(form, REQ_END_LINE);
@@ -269,7 +263,7 @@ char *get_input(const char *title, const char *init, int lines, int clear,
 
 done:
     if (quit) {
-	if (clear) {
+	if (reset) {
 	    dst[0] = 0;
 	    goto cleanup;
 	}
@@ -312,5 +306,6 @@ cleanup:
     noecho();
     nonl();
     curs_set(0);
+    tmp = dst;
     return (dst[0]) ? dst : NULL;
 }

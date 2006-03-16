@@ -45,38 +45,38 @@
 
 char *random_agony()
 {
-    static int index;
+    static int n;
     FILE *fp;
     char line[LINE_MAX];
 
-    if (index == -1 || !config.agony || !curses_initialized ||
+    if (n == -1 || !config.agony || !curses_initialized ||
 	    (status.mode == MODE_HISTORY && !config.historyagony))
 	return NULL;
 
     if (!agony) {
 	if ((fp = fopen(config.agonyfile, "r")) == NULL) {
-	    index = -1;
+	    n = -1;
 	    cmessage(ERROR, ANYKEY, "%s: %s", config.agonyfile, strerror(errno));
 	    return NULL;
 	}
 
 	while (!feof(fp)) {
 	    if (fscanf(fp, " %[^\n] ", line) == 1) {
-		agony = Realloc(agony, (index + 2) * sizeof(char *));
-		agony[index++] = strdup(trim(line));
+		agony = Realloc(agony, (n + 2) * sizeof(char *));
+		agony[n++] = strdup(trim(line));
 	    }
 	}
 
-	agony[index] = NULL;
+	agony[n] = NULL;
 	fclose(fp);
 
-	if (agony[0] == NULL || !index) {
-	    index = -1;
+	if (agony[0] == NULL || !n) {
+	    n = -1;
 	    return NULL;
 	}
     }
 
-    return agony[random() % index];
+    return agony[random() % n];
 }
 
 void draw_board(BOARD b, int crow, int ccol)
@@ -467,9 +467,9 @@ void update_history_window()
 {
     char buf[HISTORY_WIDTH];
     HISTORY h = {{0},NULL,{0}};
-    int index, total;
+    int n, total;
 
-    index = (game[gindex].hindex + 1) / 2;
+   n = (game[gindex].hindex + 1) / 2;
 
     if ((game[gindex].htotal % 2))
 	total = (game[gindex].htotal + 1) / 2;
@@ -477,7 +477,7 @@ void update_history_window()
 	total = game[gindex].htotal / 2;
 
     if (game[gindex].htotal)
-	snprintf(buf, sizeof(buf), "%u %s %u%s", index, N_OF_N_STR, total,
+	snprintf(buf, sizeof(buf), "%u %s %u%s",n, N_OF_N_STR, total,
 		(movestep == 1) ? HISTORY_MOVE_STEP : "");
     else
 	strncpy(buf, UNAVAILABLE, sizeof(buf));
@@ -844,47 +844,47 @@ static int find_move_exp(const char *str, int init, int which, int count)
     return -1;
 }
 
-static int toggle_delete_flag(int index)
+static int toggle_delete_flag(int n)
 {
-    int i, n;
+    int i, x;
 
-    if (TEST_FLAG(game[index].flags, GF_DELETE))
-	CLEAR_FLAG(game[index].flags, GF_DELETE);
+    if (TEST_FLAG(game[n].flags, GF_DELETE))
+	CLEAR_FLAG(game[n].flags, GF_DELETE);
     else
-	SET_FLAG(game[index].flags, GF_DELETE);
+	SET_FLAG(game[n].flags, GF_DELETE);
 
 
-    for (i = n = 0; i < gtotal; i++) {
+    for (i = x = 0; i < gtotal; i++) {
 	if (TEST_FLAG(game[i].flags, GF_DELETE))
-	    n++;
+	    x++;
     }
 
-    if (n == gtotal) {
+    if (x == gtotal) {
 	cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
-	CLEAR_FLAG(game[index].flags, GF_DELETE);
+	CLEAR_FLAG(game[n].flags, GF_DELETE);
 	return 1;
     }
 
     return 0;
 }
 
-static void edit_save_tags(int index)
+static void edit_save_tags(int n)
 {
     int i;
     TAG *t;
 
-    if ((t = edit_tags(board, game[index].tag, game[index].tindex, 1)) == NULL)
+    if ((t = edit_tags(board, game[n].tag, game[n].tindex, 1)) == NULL)
 	return;
 
-    game[index].tindex = 0;
+    game[n].tindex = 0;
 
     for (i = 0; t[i].name; i++) {
-	add_tag(&game[index].tag, &game[index].tindex, t[i].name, t[i].value);
+	add_tag(&game[n].tag, &game[n].tindex, t[i].name, t[i].value);
     }
 
     free_tag_data(t, i);
     free(t);
-    SET_FLAG(game[index].flags, GF_MODIFIED);
+    SET_FLAG(game[n].flags, GF_MODIFIED);
     return;
 }
 
@@ -1173,6 +1173,9 @@ void game_loop()
 		continue;
 	}
 
+	if (!count && status.notify)
+	    update_status_notify(NULL);
+
 	switch (c) {
 	    int annotate;
 
@@ -1370,7 +1373,7 @@ void game_loop()
 		else
 		    i = count;
 
-		if (i > game[gindex].htotal || i < 0)
+		if (i > (game[gindex].htotal / 2) || i < 0)
 		    break;
 
 		game[gindex].hindex = i * 2;
@@ -1430,6 +1433,7 @@ void game_loop()
 		if (count && !delete_count) {
 		    markstart = gindex;
 		    delete_count = 1;
+		    update_status_notify("%s (delete)", status.notify);
 		    continue;
 		}
 

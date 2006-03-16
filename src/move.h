@@ -38,5 +38,6 @@ enum {
 char *random_agony(void);
 void copy_board(BOARD, BOARD);
 void update_tag_window();
+void update_status_notify(char *, ...);
 
 #endif

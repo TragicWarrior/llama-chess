@@ -39,5 +39,6 @@ char *a2a4tosan(BOARD, char *);
 void switch_turn(void);
 void init_history(BOARD);
 void free_historydata(HISTORY **, int, int);
+void update_status_notify(char *, ...);
 
 #endif
