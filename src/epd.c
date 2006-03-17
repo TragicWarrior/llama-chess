@@ -37,6 +37,7 @@ char *board_to_fen(BOARD b, GAME g)
     int i;
     static char buf[MAX_PGN_LINE_LEN], *p;
     int oldturn = status.turn;
+    char enpassant[3] = {0}, *e;
 
     for (i = g.htotal; i >= g.hindex - 1; i--)
 	switch_turn();
@@ -47,6 +48,14 @@ char *board_to_fen(BOARD b, GAME g)
 	int count = 0;
 
 	for (col = 0; col < 8; col++) {
+	    if (b[row][col].icon == 'x') {
+		e = enpassant;
+		b[row][col].icon = int_to_piece(OPEN_SQUARE);
+		*e++ = 'a' + col;
+		*e++ = ('0' + 8) - row;
+		*e = 0;
+	    }
+
 	    if (piece_to_int(b[row][col].icon) == OPEN_SQUARE) {
 		count++;
 		continue;
@@ -87,14 +96,10 @@ char *board_to_fen(BOARD b, GAME g)
 
     *p++ = ' ';
 
-    if (TEST_FLAG(g.flags, GF_ENPASSANT)) {
-	i = strlen(g.history[g.hindex - 1].move);
-
-	while (!isdigit(g.history[g.hindex - 1].move[i]))
-	    i--;
-
-	*p++ = g.history[g.hindex - 1].move[i - 1];
-	*p++ = (status.turn == WHITE) ? '0' + 3 : '0' + 6;
+    if (enpassant[0]) {
+	e = enpassant;
+	*p++ = *e++;
+	*p++ = *e++;
     }
     else
 	*p++ = '-';

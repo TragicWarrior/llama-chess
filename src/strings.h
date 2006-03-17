@@ -57,8 +57,8 @@
 #define GAME_SAVE_TITLE	"Save Game Filename"
 #define GAME_HELP_PROMPT	"Type CTRL-g for command keys"
 #define GAME_EDIT_TITLE		"Insert Piece"
-#define GAME_EDIT_PROMPT	"P = pawn, R = rook, N = knight, B = bishop, "\
-    "Q = queen, K = king"
+#define GAME_EDIT_PROMPT	"P=pawn, R=rook, N=knight, B=bishop, "\
+    "Q=queen, K=king, X=en passant"
 #define GAME_EDIT_TEXT		"Type the piece letter to insert. Lowercase " \
     "for a black piece, uppercase for a white piece."
 

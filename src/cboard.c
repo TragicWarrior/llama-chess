@@ -1026,6 +1026,14 @@ void update_status_notify(char *fmt, ...)
 	update_status_window();
 }
 
+static void switch_side()
+{
+    if (status.side == WHITE)
+	status.side = BLACK;
+    else
+	status.side = WHITE;
+}
+
 void game_loop()
 {  
     int error_recover = 0;
@@ -1171,6 +1179,8 @@ void game_loop()
 		    editmode = 0;
 		    add_tag(&game[gindex].tag, &game[gindex].tindex,
 			    "FEN", board_to_fen(board, game[gindex]));
+		    add_tag(&game[gindex].tag, &game[gindex].tindex,
+			    "SetUp", "1");
 		    status.mode = MODE_PLAY;
 		    game[gindex].fentag = game[gindex].tindex - 1;
 		}
@@ -1516,8 +1526,25 @@ void game_loop()
 		c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
 			GAME_EDIT_TEXT);
 
-		if (piece_to_int(c) == -1)
+		if (piece_to_int(c) == -1 && tolower(c) != 'x')
 		    break;
+
+		if (tolower(c) == 'x')
+		    c = tolower(c);
+
+		if (c == 'x' && (crow != 6 && crow != 3))
+		    break;
+
+		if (c == 'x') {
+		    for (i = 0; i < 8; i++) {
+			if (board[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
+			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = 
+				OPEN_SQUARE;
+			if (board[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
+			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = 
+				OPEN_SQUARE;
+		    }
+		}
 
 		board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
 		break;
@@ -1893,17 +1920,13 @@ void game_loop()
 		if (status.mode == MODE_HISTORY)
 		    break;
 
-		if (status.turn == BLACK && status.side == WHITE) {
-		    status.side = BLACK;
-		    break;
-		}
-		else if (status.turn == WHITE && status.side == BLACK) {
-		    status.side = WHITE;
-		    break;
-		}
+		if (status.mode == MODE_EDIT)
+		    switch_turn();
 
 		/* FIXME crafty. */
 		SEND_TO_ENGINE("\nswitch\n");
+		switch_side();
+		update_status_window();
 		break;
 	    case ' ':
 		if (!editmode && status.mode == MODE_HISTORY) {
