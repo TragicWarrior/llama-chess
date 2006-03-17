@@ -40,5 +40,6 @@ void switch_turn(void);
 void init_history(BOARD);
 void free_historydata(HISTORY **, int, int);
 void update_status_notify(char *, ...);
+void invalid_move(const char *);
 
 #endif

@@ -47,5 +47,6 @@ void switch_turn(void);
 int parse_fen_line(BOARD, char *);
 void update_all(void);
 void update_status_notify(char *, ...);
+void invalid_move(const char *);
 
 #endif
