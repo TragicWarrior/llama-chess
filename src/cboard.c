@@ -591,13 +591,8 @@ static void game_next_prev(GAME g, int n, int count)
 
 void free_game_data(GAME g)
 {
-    int i;
-
-    for (i = 0; i < gtotal; i++) {
-	free_history_data(g.history, 0);
-	free_tag_data(g.tag, g.tindex);
-    }
-
+    free_history_data(g.history, 0);
+    free_tag_data(g.tag, g.tindex);
     memset(&g, 0, sizeof(GAME));
 }
 
@@ -952,14 +947,14 @@ cleanup:
     return ret;
 }
 
-void edit_board(GAME g)
+void edit_board(GAME *g)
 {
     chtype p;
 
-    p = g.b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon;
-    g.b[ROWTOBOARD(g.sp.destrow)][COLTOBOARD(g.sp.destcol)].icon = p;
-    g.b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon = 
-	int_to_piece(g, OPEN_SQUARE);
+    p = (*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon;
+    (*g).b[ROWTOBOARD((*g).sp.destrow)][COLTOBOARD((*g).sp.destcol)].icon = p;
+    (*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon = 
+	int_to_piece(*g, OPEN_SQUARE);
 }
 
 // Updates the notification line in the status window then refreshes the
@@ -2004,7 +1999,7 @@ void game_loop()
 		game[gindex].sp.destcol = ccol;
 
 		if (editmode) {
-		    edit_board(game[gindex]);
+		    edit_board(&game[gindex]);
 		    game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		    break;
 		}
