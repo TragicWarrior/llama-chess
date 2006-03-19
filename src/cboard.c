@@ -284,7 +284,7 @@ static int move_to_engine(GAME g)
     g.sp.row = g.sp.col = g.sp.icon = 0;
 
     if (noengine) {
-	add_to_history(&g.hp, &g.htotal, p);
+	add_to_history(&g.hp, &g.hindex, &g.htotal, p);
 	switch_turn(&g);
 	SET_FLAG(g.flags, GF_MODIFIED);
 	update_all(g);
@@ -584,7 +584,7 @@ static void game_next_prev(GAME g, int n, int count)
 	    gindex -= count;
     }
 
-    init_history(g);
+    init_history(&g);
     update_all(g);
     update_tag_window(g.tag);
 }
@@ -850,22 +850,21 @@ static int toggle_delete_flag(int n)
     return 0;
 }
 
-static void edit_save_tags(GAME g)
+static void edit_save_tags(GAME *g)
 {
     int i;
     TAG *t;
 
-    if ((t = edit_tags(g, 1)) == NULL)
+    if ((t = edit_tags(*g, 1)) == NULL)
 	return;
 
-    g.tindex = 0;
+    (*g).tindex = 0;
 
     for (i = 0; t[i].name; i++)
-	add_tag(&g.tag, &g.tindex, t[i].name, t[i].value);
+	add_tag(&(*g).tag, &(*g).tindex, t[i].name, t[i].value);
 
     free_tag_data(t, i);
-    free(t);
-    SET_FLAG(g.flags, GF_MODIFIED);
+    SET_FLAG((*g).flags, GF_MODIFIED);
 }
 
 static int find_game_exp(char *str, int which, int count)
@@ -1042,7 +1041,7 @@ void game_loop()
     markstart = -1, markend = -1;
 
     if (loadfile[0])
-	init_history(game[gindex]);
+	init_history(&game[gindex]);
 
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
@@ -1140,7 +1139,6 @@ void game_loop()
 
 	error_recover = 0;
 	draw_board(game[gindex], crow, ccol);
-
 	wmove(boardw, ROWTOMATRIX(crow), COLTOMATRIX(ccol));
 
 	if (!paused) {
@@ -1209,7 +1207,7 @@ void game_loop()
 		    break;
 
 		gindex = n;
-		init_history(game[gindex]);
+		init_history(&game[gindex]);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1364,7 +1362,7 @@ void game_loop()
 		    break;
 
 		game[gindex].hindex = i * 2;
-		init_history(game[gindex]);
+		init_history(&game[gindex]);
 		update_all(game[gindex]);
 		break;
 	    case 'J':
@@ -1395,7 +1393,7 @@ void game_loop()
 		    break;
 
 		gindex = i;
-		init_history(game[gindex]);
+		init_history(&game[gindex]);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1473,7 +1471,7 @@ void game_loop()
 		}
 
 		delete_game((!n) ? gindex : -1);
-		init_history(game[gindex]);
+		init_history(&game[gindex]);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1514,7 +1512,7 @@ void game_loop()
 		update_all(game[gindex]);
 		break;
 	    case 't':
-		edit_save_tags(game[gindex]);
+		edit_save_tags(&game[gindex]);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1619,14 +1617,14 @@ void game_loop()
 		    break;
 
 		wtimeout(boardw, -1);
-		init_history(game[gindex]);
+		init_history(&game[gindex]);
 		break;
 	    case 'u':
 		/* FIXME dies reading FIFO sometimes. */
 		if (game[gindex].mode != MODE_PLAY || !game[gindex].htotal)
 		    break;
 
-		history_previous(game[gindex], (count) ? count * 2 : 2, &crow, &ccol);
+		history_previous(&game[gindex], (count) ? count * 2 : 2, &crow, &ccol);
 		oldhistorytotal = game[gindex].htotal;
 		game[gindex].htotal = game[gindex].hindex;
 
@@ -1650,7 +1648,7 @@ void game_loop()
 
 		gindex = gtotal - 1;
 		strncpy(loadfile, tmp, sizeof(loadfile));
-		init_history(game[gindex]);
+		init_history(&game[gindex]);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1804,7 +1802,7 @@ void game_loop()
 		continue;
 	    case KEY_UP:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_next(game[gindex], (count > 0) ?
+		    history_next(&game[gindex], (count > 0) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep, &crow, &ccol);
 		    update_all(game[gindex]);
@@ -1832,7 +1830,7 @@ void game_loop()
 		break;
 	    case KEY_DOWN:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_previous(game[gindex], (count) ?
+		    history_previous(&game[gindex], (count) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep, &crow, &ccol);
 		    update_all(game[gindex]);
@@ -1861,7 +1859,7 @@ void game_loop()
 		break;
 	    case KEY_LEFT:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_previous(game[gindex], (count) ?
+		    history_previous(&game[gindex], (count) ?
 			    count * movestep : movestep, &crow, &ccol);
 		    update_all(game[gindex]);
 		    break;
@@ -1888,7 +1886,7 @@ void game_loop()
 		break;
 	    case KEY_RIGHT:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_next(game[gindex], (count) ? count * movestep 
+		    history_next(&game[gindex], (count) ? count * movestep 
 			    : movestep, &crow, &ccol);
 		    update_all(game[gindex]);
 		    break;
@@ -2224,7 +2222,7 @@ int main(int argc, char *argv[])
 	case FEN_FILE:
 	    //ret = parse_fen_file(loadfile);
 	    break;
-	case EPD_FILE:
+	case EPD_FILE: // Not implemented.
 	case NO_FILE:
 	default:
 	    // No file specified. Empty game.
@@ -2240,8 +2238,11 @@ int main(int argc, char *argv[])
 		pgn_dumpgame(stdout, &game[i], i, 0);
 	}
 
+	free_all_games();
 	exit(ret);
     }
+    else if (ret)
+	exit(ret);
 
     if (initscr() == NULL)
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);

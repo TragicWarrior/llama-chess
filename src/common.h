@@ -157,7 +157,6 @@ typedef struct history {
     int nag[MAX_PGN_NAG];
     int n;
     struct history *rav;
-    int ravlevel;
 } HISTORY;
 
 struct selected_piece_s {
@@ -182,6 +181,7 @@ typedef struct games {
     HISTORY *hp;
     int hindex;
     int htotal;
+    int ravindex; // The original move of the RAV.
     int sockfd;
     int ply;
     int wcaptures;

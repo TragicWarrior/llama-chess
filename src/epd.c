@@ -135,7 +135,7 @@ char *board_to_fen(GAME g)
     return buf;
 }
 
-int parse_fen_line(GAME g, BOARD b, char *str)
+int parse_fen_line(GAME *g, BOARD b, char *str)
 {
     char *tmp;
     char line[LINE_MAX], *s;
@@ -163,7 +163,7 @@ int parse_fen_line(GAME g, BOARD b, char *str)
 
 		for (; n; --n, col++)
 		    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
-			int_to_piece(g, OPEN_SQUARE);
+			int_to_piece(*g, OPEN_SQUARE);
 	    } 
 	    else if (piece_to_int(*tmp) != -1)
 		b[ROWTOBOARD(row)][COLTOBOARD(col++)].icon = *tmp;
@@ -182,10 +182,10 @@ other:
 
     switch (*tmp) {
 	case 'b':
-	    g.turn = BLACK;
+	    (*g).turn = BLACK;
 	    break;
 	case 'w':
-	    g.turn = WHITE;
+	    (*g).turn = WHITE;
 	    break;
 	default:
 	    return 1;
@@ -196,16 +196,16 @@ other:
     while (*tmp && *tmp != ' ') {
 	switch (*tmp) {
 	    case 'K':
-		CLEAR_FLAG(g.flags, GF_WKR);
+		CLEAR_FLAG((*g).flags, GF_WKR);
 		break;
 	    case 'Q':
-		CLEAR_FLAG(g.flags, GF_WQR);
+		CLEAR_FLAG((*g).flags, GF_WQR);
 		break;
 	    case 'k':
-		CLEAR_FLAG(g.flags, GF_BKR);
+		CLEAR_FLAG((*g).flags, GF_BKR);
 		break;
 	    case 'q':
-		CLEAR_FLAG(g.flags, GF_BQR);
+		CLEAR_FLAG((*g).flags, GF_BQR);
 		break;
 	    default:
 		return -1;

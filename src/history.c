@@ -397,65 +397,67 @@ done:
     return NULL;
 }
 
-void add_to_history(HISTORY **h, int *t, const char *str)
+void add_to_history(HISTORY **h, int *n, int *total, const char *str)
 {
     HISTORY *history = *h;
+    int t = *total;
 
-    history = Realloc(history, (*t + 2) * sizeof(HISTORY));
-    memset(&history[*t], 0, sizeof(HISTORY));
-    strncpy(history[*t].move, str, sizeof(history[*t].move)); //FIXME dymanic
-    history[*t].n = *t;
-    *t++;
-    memset(&history[*t], 0, sizeof(HISTORY));
-    history[*t].n = -1;
+    history = Realloc(history, (t + 2) * sizeof(HISTORY));
+    memset(&history[t], 0, sizeof(HISTORY));
+    strncpy(history[t].move, str, sizeof(history[t].move)); //FIXME dymanic
+    history[t].n = t;
+    t++;
+    memset(&history[t], 0, sizeof(HISTORY));
+    history[t].n = -1;
     *h = history;
+    *total = *n = t;
 }
 
-void parse_history_move(GAME g, int idx)
+void parse_history_move(GAME *g, int idx)
 {
     int i = 0;
     int flags = 0;
 
-    g.bcaptures = g.wcaptures = 0;
-    g.turn = g.openingside;
+    (*g).bcaptures = (*g).wcaptures = 0;
+    (*g).turn = (*g).openingside;
 
-    if (TEST_FLAG(g.flags, GF_PERROR))
+    if (TEST_FLAG((*g).flags, GF_PERROR))
 	SET_FLAG(flags, GF_PERROR);
 
-    if (TEST_FLAG(g.flags, GF_MODIFIED))
+    if (TEST_FLAG((*g).flags, GF_MODIFIED))
 	SET_FLAG(flags, GF_MODIFIED);
 
-    if (TEST_FLAG(g.flags, GF_DELETE))
+    if (TEST_FLAG((*g).flags, GF_DELETE))
 	SET_FLAG(flags, GF_DELETE);
 
-    if (TEST_FLAG(g.flags, GF_GAMEOVER))
+    if (TEST_FLAG((*g).flags, GF_GAMEOVER))
 	SET_FLAG(flags, GF_GAMEOVER);
     
-    g.flags = flags;
-    g.ply = 0;
+    (*g).flags = flags;
+    (*g).ply = 0;
 
-    init_board(g.b);
+    init_board((*g).b);
 
     /* FIXME Move numbers and turns. */
-    if (g.fentag)
-	parse_fen_line(g, g.b, g.tag[g.fentag].value);
+    if ((*g).fentag)
+	parse_fen_line(g, (*g).b, (*g).tag[(*g).fentag].value);
 
     for (i = 0; i < idx; i++) {
 	HISTORY h;
 
-	if (history_by_index(g, i, &h))
+	if (history_by_index(*g, i, &h))
 	    break;
 	
-	if (parse_move_text(g, g.b, h.move)) {
-	    invalid_move(g.n, h.move);
+	if (parse_move_text(*g, (*g).b, h.move)) {
+	    invalid_move((*g).n, h.move);
 	    break;
 	}
 
-	switch_turn(&g);
+	switch_turn(&(*g));
     }
 
-    if (!status.notify && !g.mode == MODE_HISTORY)
-	update_status_notify(g, "%s", GAME_HELP_PROMPT);
+    if (!status.notify && !(*g).mode == MODE_HISTORY)
+	update_status_notify(*g, "%s", GAME_HELP_PROMPT);
 }
 
 /* FIXME castling */
@@ -487,39 +489,39 @@ static void cursor_from_history(GAME g, int idx, int *r, int *c)
     *c = COLTOINT(*p);
 }
 
-void history_previous(GAME g, int n, int *r, int *c)
+void history_previous(GAME *g, int n, int *r, int *c)
 {
-    if (g.hindex - n < 0) {
+    if ((*g).hindex - n < 0) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
-	    g.hindex = g.htotal;
+	    (*g).hindex = (*g).htotal;
 	else
-	    g.hindex = 0;
+	    (*g).hindex = 0;
     }
     else
-	g.hindex -= n;
+	(*g).hindex -= n;
 
-    cursor_from_history(g, g.hindex, r, c);
-    parse_history_move(g, g.hindex);
+    cursor_from_history(*g, (*g).hindex, r, c);
+    parse_history_move(g, (*g).hindex);
 }
 
-void history_next(GAME g, int n, int *r, int *c)
+void history_next(GAME *g, int n, int *r, int *c)
 {
-    if (g.hindex + n > g.htotal) {
+    if ((*g).hindex + n > (*g).htotal) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
-	    g.hindex = 0;
+	    (*g).hindex = 0;
 	else
-	    g.hindex = g.htotal;
+	    (*g).hindex = (*g).htotal;
     }
     else
-	g.hindex += n;
+	(*g).hindex += n;
 
-    cursor_from_history(g, game[gindex].hindex, r, c);
+    cursor_from_history(*g, game[gindex].hindex, r, c);
     parse_history_move(g, game[gindex].hindex);
 }
 
-void init_history(GAME g)
+void init_history(GAME *g)
 {
-    g.mode = MODE_HISTORY;
+    (*g).mode = MODE_HISTORY;
     parse_history_move(g, game[gindex].hindex);
     //update_status_window();
 }

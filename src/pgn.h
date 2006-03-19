@@ -110,7 +110,7 @@ int integer_len(int);
 void switch_turn(GAME *);
 FILE *open_file(const char *, int *);
 char *compression_cmd(const char *, int);
-int parse_fen_line(GAME, BOARD, char *);
+int parse_fen_line(GAME *, BOARD, char *);
 char *board_to_fen(GAME);
 void copy_board(BOARD, BOARD);
 void free_all_games(void);
