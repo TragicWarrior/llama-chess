@@ -110,22 +110,12 @@ char *itoa(long n)
     return buf;
 }
 
-int integer_len(int n)
+int integer_len(long n)
 {
-    int len = 1;
+    char buf[64];
 
-    if (n >= 10)
-	len++;
-    else if (n >= 100)
-	len++;
-    else if (n >= 1000)
-	len++;
-    else if (n >= 10000)
-	len++;
-    else if (n >= 100000)
-	len++;
-
-    return len;
+    snprintf(buf, sizeof(buf), "%li", n);
+    return strlen(buf);
 }
 
 int isinteger(const char *str)

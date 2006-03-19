@@ -94,8 +94,6 @@ const char *file_browser_help[] = {
     NULL
 };
 
-BOARD pgnboard;
-
 void *Malloc(size_t);
 void add_to_history(HISTORY **, int *, int *, const char *);
 void reset_history(void);
@@ -106,14 +104,15 @@ void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
-int parse_move_text(BOARD, char *);
-char *a2a4tosan(BOARD, char *);
+int parse_move_text(GAME, BOARD, char *);
+char *a2a4tosan(GAME, BOARD, char *);
 int integer_len(int);
-void switch_turn(void);
+void switch_turn(GAME *);
 FILE *open_file(const char *, int *);
 char *compression_cmd(const char *, int);
-int parse_fen_line(BOARD, char *);
-char *board_to_fen(BOARD, GAME);
+int parse_fen_line(GAME, BOARD, char *);
+char *board_to_fen(GAME);
 void copy_board(BOARD, BOARD);
+void free_all_games(void);
 
 #endif

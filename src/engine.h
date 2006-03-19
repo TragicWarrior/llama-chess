@@ -34,12 +34,12 @@ void move_piece(char *);
 int save_pgn(const char *, int, int);
 void update_status_window(void);
 char *book_method(int);
-int parse_move_text(BOARD, char *);
-char *a2a4tosan(BOARD, char *);
-void switch_turn(void);
-void init_history(BOARD);
-void free_historydata(HISTORY **, int, int);
-void update_status_notify(char *, ...);
-void invalid_move(const char *);
+int parse_move_text(GAME, BOARD, char *);
+char *a2a4tosan(GAME, BOARD, char *);
+void switch_turn(GAME *);
+void init_history(GAME);
+void free_history_data(HISTORY *, int);
+void update_status_notify(GAME, char *, ...);
+void invalid_move(int, const char *);
 
 #endif

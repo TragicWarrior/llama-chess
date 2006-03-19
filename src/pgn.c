@@ -44,7 +44,7 @@
 #include "colors.h"
 #include "pgn.h"
 
-static int find_tag(GAME g, const char *name)
+int find_tag(GAME g, const char *name)
 {
     int t;
 
@@ -64,15 +64,15 @@ static int tag_compare(const void *s1, const void *s2)
     return strcmp(ss1->name, ss2->name);
 }
 
+// The first seven tags are in standard order so don't sort'em.
 static void sort_tags(GAME g)
 {
     TAG *t = g.tag + 7;
 
     qsort(t, g.tindex - 7, sizeof(TAG), tag_compare);
-    return;
 }
 
-int end_of_game(const char *str)
+int end_of_game(GAME g, const char *str)
 {
     int i;
     int len;
@@ -80,11 +80,8 @@ int end_of_game(const char *str)
     for (i = 0; i < NARRAY(fancy_results); i++) {
 	if (strstr(str, fancy_results[i].pgn) != NULL) {
 	    len = strlen(fancy_results[i].pgn) + 1;
-	    game[gindex].tag[TAG_RESULT].value = 
-		Realloc(game[gindex].tag[TAG_RESULT].value, len);
-
-	    strncpy(game[gindex].tag[TAG_RESULT].value, fancy_results[i].pgn,
-		    len);
+	    g.tag[TAG_RESULT].value = Realloc(g.tag[TAG_RESULT].value, len);
+	    strncpy(g.tag[TAG_RESULT].value, fancy_results[i].pgn, len);
 	    return 1;
 	}
     }
@@ -92,8 +89,8 @@ int end_of_game(const char *str)
     return 0;
 }
 
-/* Returns 1 if a duplicate tag was found. 0 otherwise. The index argument is
- * a pointer to int, and incremented automatically.
+/* Returns 1 if a duplicate tag was found. 0 otherwise. The 'n' argument is
+ * a pointer to int, and incremented.
  */
 int add_tag(TAG **dst, int *n, char *name, char *value)
 {
@@ -196,11 +193,9 @@ void init_board(BOARD b)
 	    b[row][col].valid = b[row][col].movecount = 0;
 	}
     }
-
-    return;
 }
 
-void set_default_tags()
+void set_default_tags(GAME *g)
 {
     time_t now;
     char tbuf[MAX_TIME_LEN + 1] = {0};
@@ -212,36 +207,29 @@ void set_default_tags()
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "Event", "?");
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "Site", "?");
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "Date", tbuf);
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "Round", "-");
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "White", 
-	    config.pwd->pw_gecos);
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "Black", "?");
-    add_tag(&game[gindex].tag, &game[gindex].tindex, "Result", "*");
+    add_tag(&(*g).tag, &(*g).tindex, "Event", "?");
+    add_tag(&(*g).tag, &(*g).tindex, "Site", "?");
+    add_tag(&(*g).tag, &(*g).tindex, "Date", tbuf);
+    add_tag(&(*g).tag, &(*g).tindex, "Round", "-");
+    add_tag(&(*g).tag, &(*g).tindex, "White", config.pwd->pw_gecos);
+    add_tag(&(*g).tag, &(*g).tindex, "Black", "?");
+    add_tag(&(*g).tag, &(*g).tindex, "Result", "*");
 
     /* Add custom tags from the configuration file. */
     if (newgameinit) {
 	for (n = 0; n < config.tindex; n++)
-	    add_tag(&game[gindex].tag, &game[gindex].tindex, 
-		    config.tag[n].name, config.tag[n].value);
+	    add_tag(&(*g).tag, &(*g).tindex, config.tag[n].name, 
+		    config.tag[n].value);
 
-	sort_tags(game[gindex]);
+	sort_tags(*g);
 	newgameinit = 0;
     }
-
-    return;
 }
 
 static void reset_game_data()
 {
-    if (gtotal)
-	free_game_data();
-
+    free_all_games();
     gtotal = gindex = 0;
-    status.side = status.turn = WHITE;
-    return;
 }
 
 static void skip_leading_space(FILE *fp)
@@ -254,24 +242,19 @@ static void skip_leading_space(FILE *fp)
     }
 
     ungetc(c, fp);
-    return;
 }
 
-void invalid_move(const char *m)
+void invalid_move(int n, const char *m)
 {
     if (curses_initialized) {
 	return;
-	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m,
-		gindex + 1);
+	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m, n);
     }
     else
-	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m,
-		gindex + 1);
-
-    return;
+	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m, n);
 }
 
-int move_text(FILE *fp)
+int move_text(GAME g, FILE *fp)
 {
     char m[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
     int c;
@@ -298,21 +281,21 @@ int move_text(FILE *fp)
 
     if (digit) {
 	if (dots > 1) {
-	    status.turn = BLACK;
+	    g.turn = BLACK;
 
-	    if (game[gindex].hindex == 0)
-		game[gindex].openingside = BLACK;
+	    if (g.hindex == 0)
+		g.openingside = BLACK;
 	}
 	else {
-	    status.turn = WHITE;
+	    g.turn = WHITE;
 
-	    if (game[gindex].hindex == 0)
-		game[gindex].openingside = WHITE;
+	    if (g.hindex == 0)
+		g.openingside = WHITE;
 	}
     }
     else {
-	if (game[gindex].hindex > 0)
-	    switch_turn();
+	if (g.hindex > 0)
+	    switch_turn(&g);
     }
 
     ungetc(c, fp);
@@ -320,44 +303,43 @@ int move_text(FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
 
-    if ((p = a2a4tosan(pgnboard, m)) == NULL) {
-	invalid_move(m);
+    if ((p = a2a4tosan(g, g.b, m)) == NULL) {
+	invalid_move(g.n, m);
 	return 1;
     }
 
-    if (parse_move_text(pgnboard, p)) {
-	if (game[gindex].hindex == 0) {
-	    switch_turn();
+    if (parse_move_text(g, g.b, p)) {
+	if (g.hindex == 0) {
+	    switch_turn(&g);
 
-	    if (parse_move_text(pgnboard, p)) {
-		switch_turn();
-		invalid_move(m);
+	    if (parse_move_text(g, g.b, p)) {
+		switch_turn(&g);
+		invalid_move(g.n, m);
 		return 1;
 	    }
 
-	    game[gindex].openingside = BLACK;
+	    g.openingside = BLACK;
 	}
 	else {
-	    switch_turn();
-	    invalid_move(m);
+	    switch_turn(&g);
+	    invalid_move(g.n, m);
 	    return 1;
 	}
     }
 
-    add_to_history(&game[gindex].history, &game[gindex].hindex,
-	    &game[gindex].htotal, p);
+    add_to_history(&g.hp, &g.hindex, &g.htotal, p);
 
 #ifdef DEBUG
     if (debug) {
 	DUMP("%s\n", p);
-	dump_board(0, pgnboard);
+	dump_board(0, g.b);
     }
 #endif
 
     return 0;
 }
 
-static void nag_text(FILE *fp)
+static void nag_text(GAME g, FILE *fp)
 {
     int c, i, t;
     char nags[5], *n = nags;
@@ -452,22 +434,21 @@ static void nag_text(FILE *fp)
 	return;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (game[gindex].history[game[gindex].hindex - 1].nag[i])
+	if (g.hp[g.hindex - 1].nag[i])
 	    continue;
 
-	game[gindex].history[game[gindex].hindex - 1].nag[i] = nag;
+	g.hp[g.hindex - 1].nag[i] = nag;
 	break;
     }
 
     skip_leading_space(fp);
-    return;
 }
 
-static void move_annotation(FILE *fp, int terminator)
+static void move_annotation(GAME g, FILE *fp, int terminator)
 {
     int c, lastchar = 0;
     int len = 0;
-    int hindex = game[gindex].hindex - 1;
+    int hindex = g.hindex - 1;
     char buf[MAX_PGN_LINE_LEN], *a = buf;
 
     skip_leading_space(fp);
@@ -487,16 +468,11 @@ static void move_annotation(FILE *fp, int terminator)
     }
 
     *a = '\0';
-
-    game[gindex].history[hindex].comment = 
-	Realloc(game[gindex].history[hindex].comment, ++len);
-
-    strncpy(game[gindex].history[hindex].comment, buf, len);
-
-    return;
+    g.hp[hindex].comment = Realloc(g.hp[hindex].comment, ++len);
+    strncpy(g.hp[hindex].comment, buf, len);
 }
 
-static void pgn_tag(FILE *fp)
+static void pgn_tag(GAME g, FILE *fp)
 {
     char name[LINE_MAX], *n = name;
     char value[LINE_MAX], *v = value;
@@ -549,13 +525,11 @@ static void pgn_tag(FILE *fp)
     }
 
     strncpy(value, remove_tag_escapes(value), sizeof(value));
-    add_tag(&game[gindex].tag, &game[gindex].tindex, name, value);
-
+    add_tag(&g.tag, &g.tindex, name, value);
     skip_leading_space(fp);
-    return;
 }
 
-static int eog_marker(FILE *fp)
+static int eog_marker(GAME g, FILE *fp)
 {
     int c, i = 0;
     char buf[8], *p = buf;
@@ -568,10 +542,8 @@ static int eog_marker(FILE *fp)
 
 	if (strcmp(buf, fancy_results[i].pgn) == 0) {
 	    len = strlen(fancy_results[i].pgn) + 1;
-	    game[gindex].tag[TAG_RESULT].value = 
-		Realloc(game[gindex].tag[TAG_RESULT].value, len);
-	    strncpy(game[gindex].tag[TAG_RESULT].value, fancy_results[i].pgn,
-		    len);
+	    g.tag[TAG_RESULT].value = Realloc(g.tag[TAG_RESULT].value, len);
+	    strncpy(g.tag[TAG_RESULT].value, fancy_results[i].pgn, len);
 	    break;
 	}
     }
@@ -580,11 +552,9 @@ static int eog_marker(FILE *fp)
     return 1;
 }
 
-void new_game(BOARD b)
+void new_game()
 {
     static int firstrun;
-
-    status.side = status.turn = WHITE;
 
     if (gtotal == 0)
 	firstrun = 1;
@@ -605,72 +575,73 @@ void new_game(BOARD b)
     }
 
     gtotal = gindex + 1;
-    set_default_tags();
-    init_board(b);
-
-    return;
+    game[gindex].hp = game[gindex].history;
+    game[gindex].side = game[gindex].turn = WHITE;
+    init_board(game[gindex].b);
+    set_default_tags(&game[gindex]);
 }
 
-/* Skip RAV text section for now as it's unsupported. */
-static void rav_text(FILE *fp, int which)
+// This function updates a games move history pointer to a new history
+// instance for the current move.
+static int rav_text(GAME g, FILE *fp, int which)
 {
-    int c;
-
-    while ((c = fgetc(fp)) != EOF) {
-	if (c == '(')
-	    rav_text(fp, c);
-	else if (c == ')')
-	    break;
+    if (which == '(') {
+	ravlevel++;
+	g.hp[g.hindex].rav = Calloc(1, sizeof(HISTORY));
+	g.hp = g.hp[g.hindex].rav;
+	g.hindex = g.htotal = 0;
+    }
+    else if (which == ')') {
+	ravlevel--;
     }
 
-    return;
+    if (ravlevel < 0)
+	return 1;
+
+    return 0;
 }
 
 /* This is called at the EOG marker and the beginning of the move text
  * section. So at least a move or EOG marker has to exist. It initializes the
  * board (b) to the FEN tag. */
-static void fen_tag(BOARD b)
+static void fen_tag(GAME g)
 {
     int n, i;
     BOARD tmpboard;
 
     init_board(tmpboard);
+    n = find_tag(g, "Setup");
+    i = find_tag(g, "FEN");
 
-    n = find_tag(game[gindex], "Setup");
-    i = find_tag(game[gindex], "FEN");
-
-    if ((n > -1 && i > -1 && atoi(game[gindex].tag[n].value) == 1) 
+    if ((n > -1 && i > -1 && atoi(g.tag[n].value) == 1) 
 	    || (i != -1 && n == -1)) {
-	if ((n = parse_fen_line(tmpboard,
-			game[gindex].tag[i].value)) == -1)
+	if ((n = parse_fen_line(g, tmpboard, g.tag[i].value)) == -1)
 	    cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
 	else {
-	    memcpy(b, pgnboard, sizeof(BOARD));
-	    game[gindex].fentag = i;
+	    memcpy(g.b, tmpboard, sizeof(BOARD));
+	    g.fentag = i;
 	}
     }
-
-    return;
 }
 
-int parse_pgn_file(BOARD b, const char *filename)
+int parse_pgn_file(const char *filename)
 {
     FILE *fp;
 #ifdef DEBUG
     char buf[LINE_MAX] = {0}, *p = buf;
 #endif
     int compressed = 0;
-    int c;
+    int c = 0;
     int tag_section = 0;
     int parse_error = 0;
     int nulltags = 1;
     int done_fen_tag = 0;
     int ret = 0;
 
-    if (!*filename) {
+    if (!filename) {
 	reset_game_data();
 	newgameinit = 1;
-	new_game(b);
+	new_game();
 	return 0;
     }
 
@@ -690,6 +661,7 @@ int parse_pgn_file(BOARD b, const char *filename)
 
     while (1) {
 	int nextchar = 0;
+	int lastchar = c;
 
 	if ((c = fgetc(fp)) == EOF) {
 	    if (feof(fp))
@@ -730,81 +702,104 @@ int parse_pgn_file(BOARD b, const char *filename)
 		continue;
 	}
 
+	// New game reached.
 	if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
 	    nulltags = 1;
 	    tag_section = 0;
 	    continue;
 	}
 
-	if (c == '%') {
-	    while ((c = fgetc(fp)) != EOF && c != '\n');
-	    continue;
+	// PGN: Application comment. The '%' must be on the first column of
+	// the line. The comment continues until the end of the current line.
+	if (c == '%') { 
+	    if (lastchar == '\n' || lastchar == 0) {
+		while ((c = fgetc(fp)) != EOF && c != '\n');
+		continue;
+	    }
+
+	    // Not sure what to do here.
 	}
 
 	if (isspace(c))
 	    continue;
 
+	// PGN: Reserved.
 	if (c == '<' || c == '>')
 	    continue;
 
+	// PGN: Recurrsive Annotation Variation. Read rav_text() for more
+	// info.
 	if (c == '(' || c == ')') {
-	    rav_text(fp, c);
+	    rav_text(game[gindex], fp, c);
 	    continue;
 	}
 
+	// PGN: Numeric Annotation Glyph.
 	if (c == '$' || c == '!' || c == '?' || c == '+' || c == '-' || 
 		c == '~' || c == '=') {
 	    ungetc(c, fp);
-	    nag_text(fp);
+	    nag_text(game[gindex], fp);
 	    continue;
 	}
 
+	// PGN: Annotation. The ';' comment continues until the end of the
+	// current line. The '{' type comment continues until a '}' is
+	// reached.
 	if (c == '{' || c == ';') {
-	    move_annotation(fp, (c == '{') ? '}' : '\n');
+	    move_annotation(game[gindex], fp, (c == '{') ? '}' : '\n');
 	    continue;
 	}
 
+	// PGN: Roster tag.
 	if (c == '[') {
+	    // First roster tag found. Initialize the data structures.
 	    if (!tag_section) {
 		nulltags = 0;
 		tag_section = 1;
-		new_game(pgnboard);
+		new_game();
 	    }
 
-	    pgn_tag(fp);
+	    pgn_tag(game[gindex], fp);
 	    continue;
 	}
 
-	/* EOG markers. */
+	// PGN: End-of-game markers.
 	if ((isdigit(c) && (nextchar == '-' || nextchar == '/')) || c == '*') {
 	    ungetc(c, fp);
-	    eog_marker(fp);
+	    eog_marker(game[gindex], fp);
 	    nulltags = 1;
 	    tag_section = 0;
 
 	    if (!done_fen_tag)
-		fen_tag(pgnboard);
+		fen_tag(game[gindex]);
 
 	    done_fen_tag = 0;
 	    continue;
 	}
 
+	// PGN: Move text.
 	if (isdigit(c) || VALIDCOL(c) || c == 'N' || c == 'K' || c == 'Q' || 
 		c == 'B' || c == 'R' || c == 'P' || c == 'O') {
 	    ungetc(c, fp);
 
+	    // PGN: If a FEN tag exists, initialize the board to the value
+	    // but only if the SetUp tag is found and set to 1.
 	    if (tag_section) {
-		fen_tag(pgnboard);
+		fen_tag(game[gindex]);
 		done_fen_tag = 1;
 		tag_section = 0;
 	    }
 
+	    // PGN: Import format doesn't require a roster tag section. We've
+	    // arrived to the move text section without any tags so we
+	    // initialize a new game which set's the default tags and any tags
+	    // from the configuration file.
 	    if (nulltags) {
-		new_game(pgnboard);
+		new_game();
 		nulltags = 0;
 	    }
 
-	    if (move_text(fp)) {
+	    if (move_text(game[gindex], fp)) {
 		SET_FLAG(game[gindex].flags, GF_PERROR);
 		parse_error = 1;
 	    }
@@ -830,20 +825,18 @@ parse_error:
     fclose(fp);
 
     if (gtotal < 1) {
-	new_game(b);
+	new_game();
 	goto done;
     }
 
     sort_tags(game[gindex]);
     gtotal = gindex + 1;
-    memcpy(b, pgnboard, sizeof(BOARD));
 
 done:
     if (compressed)
 	unlink(config.tmpfile);
 
-    status.mode = MODE_HISTORY;
-    switch_turn();
+    switch_turn(&game[gindex]);
     return ret;
 }
 
@@ -1025,6 +1018,7 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
     /* Move text section. If it's dumping to the FIFO, dont dump comments and
      * NAG data.
      */
+    // FIXME RAV
     for (i = len = 0, n = 1; i < g.htotal; i++) {
 	int mlen = strlen(g.history[i].move);
 
@@ -1128,6 +1122,7 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
     /* This is a hack to resume an existing game when more than one game is
      * available. Also resuming a saved game and a game from history.
      */
+    // FIXME: may not need this when a FEN tag is supported (by the engine).
     if (isfifo)
 	mode = "w";
     else {
@@ -1394,10 +1389,10 @@ void free_tag_data(TAG *data, int n)
 	free(data[i].value);
     }
 
-    return;
+    free(data);
 }
 
-TAG *edit_tags(BOARD b, TAG *old, int maxtags, int edit)
+TAG *edit_tags(GAME g, int edit)
 {
     TAG *data = NULL;
     struct tm tp;
@@ -1406,8 +1401,8 @@ TAG *edit_tags(BOARD b, TAG *old, int maxtags, int edit)
     int len;
 
     /* Edit the backup copy, not the original in case the save fails. */
-    for (n = 0; n < maxtags; n++)
-	add_tag(&data, &data_index, old[n].name, old[n].value);
+    for (n = 0; n < g.tindex; n++)
+	add_tag(&data, &data_index, g.tag[n].name, g.tag[n].value);
 
     while (1) {
 	WINDOW *win, *subw;
@@ -1565,7 +1560,7 @@ TAG *edit_tags(BOARD b, TAG *old, int maxtags, int edit)
 			break;
 
 		    add_tag(&data, &data_index, "FEN",
-			    board_to_fen(b, game[gindex]));
+			    board_to_fen(g));
 
 		    selected = data_index - 1;
 		    goto gotitem;
@@ -1699,7 +1694,6 @@ cleanup:
     }
 
 done:
-
     if (!edit) {
 	free_tag_data(data, data_index);
 	free(data);

@@ -21,8 +21,8 @@
 
 FILE *open_file(const char *, int *);
 char *compression_cmd(const char *, int);
-int int_to_piece(int);
+int int_to_piece(GAME, int);
 int piece_to_int(int);
-void switch_turn(void);
+void switch_turn(GAME *);
 
 #endif

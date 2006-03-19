@@ -35,9 +35,9 @@ enum {
     KINGSIDE = 1, QUEENSIDE
 };
 
-char *random_agony(void);
+char *random_agony(GAME);
 void copy_board(BOARD, BOARD);
-void update_tag_window();
-void update_status_notify(char *, ...);
+void update_tag_window(TAG *);
+void update_status_notify(GAME, char *, ...);
 
 #endif

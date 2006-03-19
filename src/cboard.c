@@ -43,14 +43,14 @@
 #include "colors.h"
 #include "cboard.h"
 
-char *random_agony()
+char *random_agony(GAME g)
 {
     static int n;
     FILE *fp;
     char line[LINE_MAX];
 
     if (n == -1 || !config.agony || !curses_initialized ||
-	    (status.mode == MODE_HISTORY && !config.historyagony))
+	    (g.mode == MODE_HISTORY && !config.historyagony))
 	return NULL;
 
     if (!agony) {
@@ -79,7 +79,7 @@ char *random_agony()
     return agony[random() % n];
 }
 
-void draw_board(BOARD b, int crow, int ccol)
+void draw_board(GAME g, int crow, int ccol)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -166,13 +166,13 @@ void draw_board(BOARD b, int crow, int ccol)
 		    else
 			attrwhich = WHITE;
 
-		    if (config.validmoves && b[brow][bcol].valid) {
+		    if (config.validmoves && g.b[brow][bcol].valid) {
 			attrs = (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE :
 			    CP_BOARD_MOVES_BLACK;
 
-			if (b[brow][bcol].movecount) {
+			if (g.b[brow][bcol].movecount) {
 			    if (brow + 1 != crow && bcol + 1 != ccol)
-				movecount = (b[brow][bcol].movecount + '0');
+				movecount = (g.b[brow][bcol].movecount + '0');
 			}
 		    }
 		    else
@@ -183,8 +183,8 @@ void draw_board(BOARD b, int crow, int ccol)
 			attrs = CP_BOARD_CURSOR;
 		    }
 
-		    if (row == ROWTOMATRIX(sp.row) && 
-			    col == COLTOMATRIX(sp.col)) {
+		    if (row == ROWTOMATRIX(g.sp.row) && 
+			    col == COLTOMATRIX(g.sp.col)) {
 			attrs = CP_BOARD_SELECTED;
 		    }
 
@@ -196,19 +196,17 @@ void draw_board(BOARD b, int crow, int ccol)
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			piece = b[row / 2][bcol].icon;
+			piece = g.b[row / 2][bcol].icon;
 
 			if (attrs & A_BOLD)
 			    bold = 1;
 
-			if (status.side == WHITE && isupper(piece))
+			if (g.side == WHITE && isupper(piece))
 			    attrs |= A_BOLD;
-			else if (status.side == BLACK && islower(piece))
+			else if (g.side == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
-			waddch(boardw,
-				(piece && piece != int_to_piece(OPEN_SQUARE)) ?
-				piece | attrs : ' ' | attrs);
+			waddch(boardw, (piece && piece != int_to_piece(g, OPEN_SQUARE)) ? piece | attrs : ' ' | attrs);
 
 			if (!bold)
 			    attrs &= ~(A_BOLD);
@@ -232,26 +230,24 @@ void draw_board(BOARD b, int crow, int ccol)
 
 	brow = row / 2;
     }
-
-    return;
 }
 
 /* Convert the selected piece to SAN format and validate it. */
-static char *board_to_san(BOARD b)
+static char *board_to_san(GAME g)
 {
     static char str[MAX_PGN_MOVE_LEN + 1], *p;
     int piece;
     int promo;
     BOARD t;
 
-    snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[sp.col - 1], sp.row,
-	    x_grid_chars[sp.destcol - 1], sp.destrow);
+    snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[g.sp.col - 1], g.sp.row,
+	    x_grid_chars[g.sp.destcol - 1], g.sp.destrow);
 
     p = str;
-    piece = piece_to_int(b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon);
+    piece = piece_to_int(g.b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon);
 
-    if (piece == PAWN && ((sp.destrow == 8 && status.turn == WHITE) ||
-		    (sp.destrow == 1 && status.turn == BLACK))) {
+    if (piece == PAWN && ((g.sp.destrow == 8 && g.turn == WHITE) ||
+		    (g.sp.destrow == 1 && g.turn == BLACK))) {
 	promo = cmessage(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
 	
 	if (piece_to_int(promo) == -1)
@@ -262,37 +258,36 @@ static char *board_to_san(BOARD b)
 	*p = '\0';
     }
 
-    memcpy(t, b, sizeof(BOARD));
+    memcpy(t, g.b, sizeof(BOARD));
 
-    if ((p = a2a4tosan(t, str)) == NULL) {
+    if ((p = a2a4tosan(g, t, str)) == NULL) {
 	cmessage(p, ANYKEY, "%s", E_A2A4_PARSE);
 	return NULL;
     }
 
-    if (parse_move_text(t, p)) {
-	invalid_move(p);
+    if (parse_move_text(g, t, p)) {
+	invalid_move(g.n, p);
 	return NULL;
     }
 
-    memcpy(b, t, sizeof(BOARD));
+    memcpy(g.b, t, sizeof(BOARD));
     return p;
 }
 
-static int move_to_engine(BOARD b)
+static int move_to_engine(GAME g)
 {
     char *p;
 
-    if ((p = board_to_san(b)) == NULL)
+    if ((p = board_to_san(g)) == NULL)
 	return 0;
 
-    sp.row = sp.col = sp.icon = 0;
+    g.sp.row = g.sp.col = g.sp.icon = 0;
 
     if (noengine) {
-	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, p);
-	switch_turn();
-	SET_FLAG(game[gindex].flags, GF_MODIFIED);
-	update_all();
+	add_to_history(&g.hp, &g.htotal, p);
+	switch_turn(&g);
+	SET_FLAG(g.flags, GF_MODIFIED);
+	update_all(g);
 	return 1;
     }
 
@@ -337,7 +332,7 @@ static void update_clock(int n, int *h, int *m, int *s)
     return;
 }
 
-void update_status_window()
+void update_status_window(GAME g)
 {
     int i = 0;
     char buf[STATUS_WIDTH - 7];
@@ -349,13 +344,13 @@ void update_status_window()
     *tmp = '\0';
     p = tmp;
 
-    if (TEST_FLAG(game[gindex].flags, GF_DELETE)) {
+    if (TEST_FLAG(g.flags, GF_DELETE)) {
 	*p++ = '(';
 	*p++ = 'x';
 	i++;
     }
 
-    if (TEST_FLAG(game[gindex].flags, GF_PERROR)) {
+    if (TEST_FLAG(g.flags, GF_PERROR)) {
 	if (!i)
 	    *p++ = '(';
 	else
@@ -365,7 +360,7 @@ void update_status_window()
 	i++;
     }
 
-    if (TEST_FLAG(game[gindex].flags, GF_MODIFIED)) {
+    if (TEST_FLAG(g.flags, GF_MODIFIED)) {
 	if (!i)
 	    *p++ = '(';
 	else
@@ -386,7 +381,7 @@ void update_status_window()
 	    (*tmp) ? tmp : "");
     mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
 
-    switch (status.mode) {
+    switch (g.mode) {
 	case MODE_HISTORY:
 	    mode = MODE_HISTORY_STR;
 	    break;
@@ -433,20 +428,18 @@ void update_status_window()
 	    book_method(config.book_method));
 
     mvwprintw(statusw, 8, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
-	    (status.turn == WHITE) ? WHITE_STR : BLACK_STR);
+	    (g.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    update_clock(game[gindex].moveclock, &h, &m, &s);
-    snprintf(buf, sizeof(buf), "c/%-2i %.2i:%.2i:%.2i", game[gindex].wcaptures, 
-	    h, m, s);
+    update_clock(g.moveclock, &h, &m, &s);
+    snprintf(buf, sizeof(buf), "c/%-2i %.2i:%.2i:%.2i", g.wcaptures, h, m, s);
     mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    update_clock(game[gindex].moveclock, &h, &m, &s);
-    snprintf(buf, sizeof(buf), "c/%-2i %.2i:%.2i:%.2i", game[gindex].bcaptures, 
-	    h, m, s);
+    update_clock(g.moveclock, &h, &m, &s);
+    snprintf(buf, sizeof(buf), "c/%-2i %.2i:%.2i:%.2i", g.bcaptures, h, m, s);
     mvwprintw(statusw, 10, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
@@ -461,20 +454,21 @@ void update_status_window()
     wattroff(statusw, CP_STATUS_NOTIFY);
 }
 
-void update_history_window()
+void update_history_window(GAME g)
 {
     char buf[HISTORY_WIDTH];
-    HISTORY h = {{0},NULL,{0}};
+    HISTORY h;
     int n, total;
 
-   n = (game[gindex].hindex + 1) / 2;
+    memset(&h, 0, sizeof(HISTORY));
+    n = (g.hindex + 1) / 2;
 
-    if ((game[gindex].htotal % 2))
-	total = (game[gindex].htotal + 1) / 2;
+    if ((g.htotal % 2))
+	total = (g.htotal + 1) / 2;
     else
-	total = game[gindex].htotal / 2;
+	total = g.htotal / 2;
 
-    if (game[gindex].htotal)
+    if (g.htotal)
 	snprintf(buf, sizeof(buf), "%u %s %u%s",n, N_OF_N_STR, total,
 		(movestep == 1) ? HISTORY_MOVE_STEP : "");
     else
@@ -483,7 +477,7 @@ void update_history_window()
     mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    if (get_history_by_index(game[gindex].hindex, &h))
+    if (history_by_index(g, g.hindex, &h))
 	memset(&h, 0, sizeof(HISTORY));
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
@@ -491,28 +485,27 @@ void update_history_window()
     mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    if (get_history_by_index(game[gindex].hindex - 1, &h))
+    if (history_by_index(g, game[gindex].hindex - 1, &h))
 	memset(&h, 0, sizeof(HISTORY));
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
 	    ((h.comment && h.comment[0]) || h.nag[0]) ? HISTORY_ANNO_PREV : "");
     mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
 	    HISTORY_WIDTH - 13, buf);
-    return;
 }
 
-void update_tag_window()
+void update_tag_window(TAG *t)
 {
     int i;
     int w = TAG_WIDTH - 10;
 
     for (i = 0; i < 7; i++) {
-	char *value = game[gindex].tag[i].value;
+	char *value = t[i].value;
 	int n;
 
 	if ((*value == '?' || *value == '-') && value[1] == '\0')
 	    value = UNAVAILABLE;
-	else if (strcmp(game[gindex].tag[i].name, "Result") == 0) {
+	else if (strcmp(t[i].name, "Result") == 0) {
 	    for (n = 0; n < NARRAY(fancy_results); n++) {
 		if (strcmp(value, fancy_results[n].pgn) == 0) {
 		    value = fancy_results[n].fancy;
@@ -522,12 +515,8 @@ void update_tag_window()
 	}
 
 	value = str_etc(value, w, 0);
-
-	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, game[gindex].tag[i].name,
-		w, value);
+	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i].name, w, value);
     }
-
-    return;
 }
 
 void draw_prompt(WINDOW *win, int y, int width, const char *str, chtype attr)
@@ -540,9 +529,7 @@ void draw_prompt(WINDOW *win, int y, int width, const char *str, chtype attr)
 	mvwaddch(win, y, i, ' ');
 
     mvwprintw(win, y, CENTERX(width, str), "%s", str);
-
     wattroff(win, attr);
-    return;
 }
 
 void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
@@ -563,18 +550,15 @@ void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
     wattron(win, battr);
     box(win, ACS_VLINE, ACS_HLINE);
     wattroff(win, battr);
-
-    return;
 }
 
-void update_all()
+void update_all(GAME g)
 {
-    update_status_window();
-    update_history_window();
-    return;
+    update_status_window(g);
+    update_history_window(g);
 }
 
-static void game_next_prev(int n, int count)
+static void game_next_prev(GAME g, int n, int count)
 {
     if (gtotal < 2)
 	return;
@@ -600,27 +584,33 @@ static void game_next_prev(int n, int count)
 	    gindex -= count;
     }
 
-    init_history(board);
-    update_all();
-    update_tag_window();
-    return;
+    init_history(g);
+    update_all(g);
+    update_tag_window(g.tag);
 }
 
-void free_game_data()
+void free_game_data(GAME g)
 {
     int i;
 
-    if (!gtotal)
-	return;
-
     for (i = 0; i < gtotal; i++) {
-	free_historydata(&game[i].history, 0, game[i].htotal);
-	free(game[i].history);
-	free_tag_data(game[i].tag, game[i].tindex);
-	free(game[i].tag);
+	free_history_data(g.history, 0);
+	free_tag_data(g.tag, g.tindex);
     }
 
-    return;
+    memset(&g, 0, sizeof(GAME));
+}
+
+void free_all_games()
+{
+    int i;
+
+    for (i = 0; i < gtotal; i++)
+	free_game_data(game[i]);
+
+    if (game)
+	free(game);
+    game = NULL;
 }
 
 static void delete_game(int which)
@@ -628,22 +618,18 @@ static void delete_game(int which)
     GAME *g = NULL;
     int gi = 0;
     int i;
-    
+
     for (i = 0; i < gtotal; i++) {
 	if (i == which || TEST_FLAG(game[i].flags, GF_DELETE)) {
-	    free_historydata(&game[i].history, 0, game[i].htotal);
-	    free(game[i].history);
-	    free_tag_data(game[i].tag, game[i].tindex);
-	    free(game[i].tag);
+	    free_game_data(game[i]);
 	    continue;
 	}
 
-	g = Realloc(g, (gi + 2) * sizeof(GAME));
-
+	g = Realloc(g, (gi + 1) * sizeof(GAME));
 	memcpy(&g[gi], &game[i], sizeof(GAME));
-
 	g[gi].tag = game[i].tag;
 	g[gi].history = game[i].history;
+	g[gi].hp = game[i].hp;
 	gi++;
     }
 
@@ -659,7 +645,7 @@ static void delete_game(int which)
     else
 	gindex = gtotal - 1;
 
-    return;
+    game[gindex].hp = game[gindex].history;
 }
 
 /* FIXME dont show out of reach counts. Diagonals. */
@@ -789,7 +775,8 @@ done:
 }
 */
 
-static int find_move_exp(const char *str, int init, int which, int count)
+static int find_move_exp(GAME g, const char *str, int init, int which,
+	int count)
 {
     int i;
     int ret;
@@ -814,16 +801,17 @@ static int find_move_exp(const char *str, int init, int which, int count)
 
     incr = (which == 0) ? -(1) : 1;
 
-    for (i = game[gindex].hindex + incr - 1, found = 0; ; i += incr) {
-	if (i == game[gindex].hindex - 1)
+    for (i = g.hindex + incr - 1, found = 0; ; i += incr) {
+	if (i == g.hindex - 1)
 	    break;
 
-	if (i > game[gindex].htotal)
+	if (i > g.htotal)
 	    i = 0;
 	else if (i < 0)
-	    i = game[gindex].htotal;
+	    i = g.htotal;
 
-	ret = regexec(&r, game[gindex].history[i].move, 0, 0, 0);
+	// FIXME RAV
+	ret = regexec(&r, g.hp[i].move, 0, 0, 0);
 
 	if (ret == 0) {
 	    if (count == ++found) {
@@ -846,11 +834,7 @@ static int toggle_delete_flag(int n)
 {
     int i, x;
 
-    if (TEST_FLAG(game[n].flags, GF_DELETE))
-	CLEAR_FLAG(game[n].flags, GF_DELETE);
-    else
-	SET_FLAG(game[n].flags, GF_DELETE);
-
+    TOGGLE_FLAG(game[n].flags, GF_DELETE);
 
     for (i = x = 0; i < gtotal; i++) {
 	if (TEST_FLAG(game[i].flags, GF_DELETE))
@@ -866,24 +850,22 @@ static int toggle_delete_flag(int n)
     return 0;
 }
 
-static void edit_save_tags(int n)
+static void edit_save_tags(GAME g)
 {
     int i;
     TAG *t;
 
-    if ((t = edit_tags(board, game[n].tag, game[n].tindex, 1)) == NULL)
+    if ((t = edit_tags(g, 1)) == NULL)
 	return;
 
-    game[n].tindex = 0;
+    g.tindex = 0;
 
-    for (i = 0; t[i].name; i++) {
-	add_tag(&game[n].tag, &game[n].tindex, t[i].name, t[i].value);
-    }
+    for (i = 0; t[i].name; i++)
+	add_tag(&g.tag, &g.tindex, t[i].name, t[i].value);
 
     free_tag_data(t, i);
     free(t);
-    SET_FLAG(game[n].flags, GF_MODIFIED);
-    return;
+    SET_FLAG(g.flags, GF_MODIFIED);
 }
 
 static int find_game_exp(char *str, int which, int count)
@@ -971,21 +953,19 @@ cleanup:
     return ret;
 }
 
-void edit_board(BOARD b)
+void edit_board(GAME g)
 {
     chtype p;
 
-    p = b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon;
-    b[ROWTOBOARD(sp.destrow)][COLTOBOARD(sp.destcol)].icon = p;
-    b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = 
-	int_to_piece(OPEN_SQUARE);
-
-    return;
+    p = g.b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon;
+    g.b[ROWTOBOARD(g.sp.destrow)][COLTOBOARD(g.sp.destcol)].icon = p;
+    g.b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon = 
+	int_to_piece(g, OPEN_SQUARE);
 }
 
 // Updates the notification line in the status window then refreshes the
 // status window.
-void update_status_notify(char *fmt, ...)
+void update_status_notify(GAME g, char *fmt, ...)
 {
     va_list ap;
 #ifdef HAVE_VASPRINTF
@@ -1000,7 +980,7 @@ void update_status_notify(char *fmt, ...)
 	    status.notify = NULL;
 
 	    if (curses_initialized)
-		update_status_window();
+		update_status_window(g);
 	}
 
 	return;
@@ -1023,15 +1003,27 @@ void update_status_notify(char *fmt, ...)
     free(line);
 #endif
     if (curses_initialized)
-	update_status_window();
+	update_status_window(g);
 }
 
-static void switch_side()
+static void switch_side(GAME *g)
 {
-    if (status.side == WHITE)
-	status.side = BLACK;
+    if ((*g).side == WHITE)
+	(*g).side = BLACK;
     else
-	status.side = WHITE;
+	(*g).side = WHITE;
+}
+
+static struct annotation_edit_s *init_annotation_edit(int g, int n, HISTORY h)
+{
+    struct annotation_edit_s *a;
+
+    a = Malloc(sizeof(struct annotation_edit_s));
+    a->game = g;
+    a->n = n;
+    memcpy(&a->h, &h, sizeof(HISTORY));
+    a->h.comment = h.comment;
+    return a;
 }
 
 void game_loop()
@@ -1050,14 +1042,14 @@ void game_loop()
     markstart = -1, markend = -1;
 
     if (loadfile[0])
-	init_history(board);
+	init_history(game[gindex]);
 
-    update_status_notify("%s", GAME_HELP_PROMPT);
+    update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
     paused = 1; //FIXME clock
     flushinp();
-    update_all();
-    update_tag_window();
+    update_all(game[gindex]);
+    update_tag_window(game[gindex].tag);
 
     while (!quit) {
 	int c = 0;
@@ -1069,7 +1061,10 @@ void game_loop()
 	char buf[78];
 	char tfile[FILENAME_MAX];
 	int minr, maxr, minc, maxc;
+	struct annotation_edit_s *anno = NULL;
 
+	// FIXME game.fds
+#if 0
 	if (engine_initialized) {
 	    tv.tv_sec = 0;
 	    tv.tv_usec = 0;
@@ -1101,8 +1096,10 @@ void game_loop()
 		    }
 		    else {
 			if (len) {
-			    parse_engine_output(board, fdbuf);
-			    update_all();
+			    // FIXME engine may be associated with another
+			    // selected game.
+			    parse_engine_output(game[gindex].b, fdbuf);
+			    update_all(game[gindex]);
 			}
 		    }
 		}
@@ -1126,7 +1123,7 @@ void game_loop()
 			    if (len)
 				parse_ics_output(fdbuf);
 
-			    update_all();
+			    update_all(game[gindex]);
 			}
 		    }
 		}
@@ -1139,9 +1136,10 @@ void game_loop()
 		}
 	    }
 	}
+#endif
 
 	error_recover = 0;
-	draw_board(board, crow, ccol);
+	draw_board(game[gindex], crow, ccol);
 
 	wmove(boardw, ROWTOMATRIX(crow), COLTOMATRIX(ccol));
 
@@ -1159,7 +1157,7 @@ void game_loop()
 	}
 
 	if (!count && status.notify)
-	    update_status_notify(NULL);
+	    update_status_notify(game[gindex], NULL);
 
 	switch (c) {
 	    int annotate;
@@ -1178,18 +1176,18 @@ void game_loop()
 	        if (editmode) {
 		    editmode = 0;
 		    add_tag(&game[gindex].tag, &game[gindex].tindex,
-			    "FEN", board_to_fen(board, game[gindex]));
+			    "FEN", board_to_fen(game[gindex]));
 		    add_tag(&game[gindex].tag, &game[gindex].tindex,
 			    "SetUp", "1");
-		    status.mode = MODE_PLAY;
-		    game[gindex].fentag = game[gindex].tindex - 1;
+		    game[gindex].mode = MODE_PLAY;
+		    game[gindex].fentag = find_tag(game[gindex], "FEN");
 		}
 		else {
-		    status.mode = MODE_EDIT;
+		    game[gindex].mode = MODE_EDIT;
 		    editmode = 1;
 		}
 
-		update_all();
+		update_all(game[gindex]);
 		break;
 	    case '}':
 	    case '{':
@@ -1211,9 +1209,9 @@ void game_loop()
 		    break;
 
 		gindex = n;
-		init_history(board);
-		update_all();
-		update_tag_window();
+		init_history(game[gindex]);
+		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case '!':
 	        crow = 1;
@@ -1298,22 +1296,23 @@ void game_loop()
 		    n = 1;
 		}
 
-		if ((n = find_move_exp(moveexp, n, (c == '[') ? 0 : 1,
-				(count) ? count : 1)) == -1)
+		if ((n = find_move_exp(game[gindex], moveexp, n, 
+				(c == '[') ? 0 : 1, (count) ? count : 1)) == -1)
 		    break;
 
 		game[gindex].hindex = n;
-		parse_history_move(board, game[gindex].hindex);
-		update_all();
+		parse_history_move(game[gindex], game[gindex].hindex);
+		update_all(game[gindex]);
 		break;
 	    case 'v':
-	        view_annotation(game[gindex].hindex);
+	        view_annotation(game[gindex].hp[game[gindex].hindex]);
 		break;
 	    case 'V':
-	        view_annotation(game[gindex].hindex - 1);
+		if (game[gindex].hindex - 1 >= 0)
+		    view_annotation(game[gindex].hp[game[gindex].hindex - 1]);
 		break;
 	    case '>':
-		game_next_prev(1, (count) ? count : 1);
+		game_next_prev(game[gindex], 1, (count) ? count : 1);
 
 		if (delete_count) {
 		    markend = gindex;
@@ -1321,11 +1320,11 @@ void game_loop()
 		    delete_count = 0;
 		}
 
-		status.mode = MODE_HISTORY;
+		game[gindex].mode = MODE_HISTORY;
 		editmode = 0;
 		break;
 	    case '<':
-		game_next_prev(0, (count) ? count : 1);
+		game_next_prev(game[gindex], 0, (count) ? count : 1);
 
 		if (delete_count) {
 		    markend = gindex;
@@ -1333,11 +1332,12 @@ void game_loop()
 		    delete_count = 0;
 		}
 
-		status.mode = MODE_HISTORY;
+		game[gindex].mode = MODE_HISTORY;
 		editmode = 0;
 		break;
 	    case 'j':
-		if (status.mode != MODE_HISTORY || game[gindex].htotal < 2)
+		if (game[gindex].mode != MODE_HISTORY || 
+			game[gindex].htotal < 2)
 		    break;
 
 		/*
@@ -1364,8 +1364,8 @@ void game_loop()
 		    break;
 
 		game[gindex].hindex = i * 2;
-		init_history(board);
-		update_all();
+		init_history(game[gindex]);
+		update_all(game[gindex]);
 		break;
 	    case 'J':
 		if (gtotal < 2)
@@ -1395,22 +1395,20 @@ void game_loop()
 		    break;
 
 		gindex = i;
-		init_history(board);
-		update_all();
-		update_tag_window();
+		init_history(game[gindex]);
+		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case 'x':
 		pushkey = 0;
 
 		if (editmode) {
-		    if (sp.icon)
-			board[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon =
-			    int_to_piece(OPEN_SQUARE);
+		    if (game[gindex].sp.icon)
+			game[gindex].b[ROWTOBOARD(game[gindex].sp.row)][COLTOBOARD(game[gindex].sp.col)].icon = int_to_piece(game[gindex], OPEN_SQUARE);
 		    else
-			board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon =
-			    int_to_piece(OPEN_SQUARE);
+			game[gindex].b[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = int_to_piece(game[gindex], OPEN_SQUARE);
 
-		    sp.icon = sp.row = sp.col = 0;
+		    game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		    break;
 		}
 
@@ -1420,7 +1418,8 @@ void game_loop()
 		if (count && !delete_count) {
 		    markstart = gindex;
 		    delete_count = 1;
-		    update_status_notify("%s (delete)", status.notify);
+		    update_status_notify(game[gindex], "%s (delete)",
+			    status.notify);
 		    continue;
 		}
 
@@ -1442,7 +1441,7 @@ void game_loop()
 		}
 
 		markstart = markend = -1;
-		update_status_window();
+		update_status_window(game[gindex]);
 		break;
 	    case 'X':
 		if (gtotal < 2) {
@@ -1474,50 +1473,50 @@ void game_loop()
 		}
 
 		delete_game((!n) ? gindex : -1);
-		init_history(board);
-		update_all();
-		update_tag_window();
+		init_history(game[gindex]);
+		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case 'a':
 	        annotate = game[gindex].hindex;
 
-		if (annotate && game[gindex].history[annotate - 1].move[0])
+		if (annotate && game[gindex].hp[annotate - 1].move[0])
 		    annotate--;
 		else
 		    break;
 
 		snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_EDIT_TITLE,
-			game[gindex].history[annotate].move);
+			game[gindex].hp[annotate].move);
 
-		tmp = get_input(buf, game[gindex].history[annotate].comment, 
-			0, 0, NAG_PROMPT, history_edit_nag, (void *)annotate,
+		anno = init_annotation_edit(gindex, annotate, 
+			game[gindex].hp[annotate]);
+		tmp = get_input(buf, game[gindex].hp[annotate].comment, 
+			0, 0, NAG_PROMPT, history_edit_nag, (void *)anno, 
 			CTRL('T'), -1);
 
-		if (!tmp && (!game[gindex].history[annotate].comment ||
-			    !*game[gindex].history[annotate].comment))
+		if (!tmp && (!game[gindex].hp[annotate].comment ||
+			    !*game[gindex].hp[annotate].comment))
 		    break;
-		else if (tmp && game[gindex].history[annotate].comment) {
-		    if (strcmp(tmp, game[gindex].history[annotate].comment)
-			    == 0)
+		else if (tmp && game[gindex].hp[annotate].comment) {
+		    if (strcmp(tmp, game[gindex].hp[annotate].comment) == 0)
 			break;
 		}
 		    
 		len = (tmp) ? strlen(tmp) + 1 : 1;
 
-		game[gindex].history[annotate].comment = 
-		    Realloc(game[gindex].history[annotate].comment, len);
+		game[gindex].hp[annotate].comment = 
+		    Realloc(game[gindex].hp[annotate].comment, len);
 
-		strncpy(game[gindex].history[annotate].comment,
+		strncpy(game[gindex].hp[annotate].comment,
 			(tmp) ? tmp : "", len);
 
 		SET_FLAG(game[gindex].flags, GF_MODIFIED);
-
-		update_all();
+		update_all(game[gindex]);
 		break;
 	    case 't':
-		edit_save_tags(gindex);
-		update_all();
-		update_tag_window();
+		edit_save_tags(game[gindex]);
+		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case 'I':
 		if (!editmode)
@@ -1537,27 +1536,25 @@ void game_loop()
 
 		if (c == 'x') {
 		    for (i = 0; i < 8; i++) {
-			if (board[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = 
-				OPEN_SQUARE;
-			if (board[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = 
-				OPEN_SQUARE;
+			if (game[gindex].b[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
+			    game[gindex].b[ROWTOBOARD(3)][COLTOBOARD(i)].icon = OPEN_SQUARE;
+			if (game[gindex].b[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
+			    game[gindex].b[ROWTOBOARD(6)][COLTOBOARD(i)].icon = OPEN_SQUARE;
 		    }
 		}
 
-		board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
+		game[gindex].b[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
 		break;
 	    case 'i':
-		edit_tags(board, game[gindex].tag, game[gindex].tindex, 0);
+		edit_tags(game[gindex], 0);
 		break;
 	    case 'g':
-		if (status.mode == MODE_HISTORY || 
+		if (game[gindex].mode == MODE_HISTORY || 
 			status.engine == ENGINE_THINKING)
 		    break;
 
 		status.engine = ENGINE_THINKING;
-		update_status_window();
+		update_status_window(game[gindex]);
 		SEND_TO_ENGINE("go\n");
 		break;
 	    case 'b':
@@ -1573,7 +1570,7 @@ void game_loop()
 		SEND_TO_ENGINE("book %s\n", book_methods[n]);
 		break;
 	    case 'h':
-		if (status.mode == MODE_HISTORY) {
+		if (game[gindex].mode == MODE_HISTORY) {
 		    if (game[gindex].openingside == BLACK) {
 			cmessage(NULL, ANYKEY, "%s", E_RESUME_BLACK);
 			break;
@@ -1605,7 +1602,7 @@ void game_loop()
 		    pushkey = 0;
 		    oldhistorytotal = game[gindex].htotal;
 		    game[gindex].htotal = game[gindex].hindex;
-		    status.mode = MODE_PLAY;
+		    game[gindex].mode = MODE_PLAY;
 		    status.engine = ENGINE_READY;
 
 		    /* FIXME crafty */
@@ -1614,7 +1611,7 @@ void game_loop()
 		    else
 			SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
 
-		    update_all();
+		    update_all(game[gindex]);
 		    break;
 		}
 
@@ -1622,14 +1619,14 @@ void game_loop()
 		    break;
 
 		wtimeout(boardw, -1);
-		init_history(board);
+		init_history(game[gindex]);
 		break;
 	    case 'u':
 		/* FIXME dies reading FIFO sometimes. */
-		if (status.mode != MODE_PLAY || !game[gindex].htotal)
+		if (game[gindex].mode != MODE_PLAY || !game[gindex].htotal)
 		    break;
 
-		history_previous(board, (count) ? count * 2 : 2, &crow, &ccol);
+		history_previous(game[gindex], (count) ? count * 2 : 2, &crow, &ccol);
 		oldhistorytotal = game[gindex].htotal;
 		game[gindex].htotal = game[gindex].hindex;
 
@@ -1638,7 +1635,7 @@ void game_loop()
 		else
 		    SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
 
-		update_history_window();
+		update_history_window(game[gindex]);
 		break;
 	    case 'r':
 		if ((tmp = get_input(GAME_LOAD_TITLE, NULL, 1, 1,
@@ -1648,14 +1645,14 @@ void game_loop()
 
 		tmp = tilde_expand(tmp);
 
-		if (parse_pgn_file(board, tmp))
+		if (parse_pgn_file(tmp))
 		    break;
 
 		gindex = gtotal - 1;
 		strncpy(loadfile, tmp, sizeof(loadfile));
-		init_history(board);
-		update_all();
-		update_tag_window();
+		init_history(game[gindex]);
+		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case 'S':
 	    case 's':
@@ -1670,7 +1667,7 @@ void game_loop()
 		    else if (n == 'a')
 			x = -1;
 		    else {
-			update_status_notify("%s", NOTIFY_SAVE_ABORTED);
+			update_status_notify(game[gindex], "%s", NOTIFY_SAVE_ABORTED);
 			break;
 		    }
 		}
@@ -1678,7 +1675,7 @@ void game_loop()
 		if ((tmp = get_input(GAME_SAVE_TITLE, loadfile, 1, 1,
 				BROWSER_PROMPT, browse_directory, NULL, 
 				'\t', -1)) == NULL) {
-		    update_status_notify("%s", NOTIFY_SAVE_ABORTED);
+		    update_status_notify(game[gindex], "%s", NOTIFY_SAVE_ABORTED);
 		    break;
 		}
 
@@ -1691,12 +1688,12 @@ void game_loop()
 		}
 
 		if (save_pgn(tmp, 0, x)) {
-		    update_status_notify("%s", NOTIFY_SAVE_FAILED);
+		    update_status_notify(game[gindex], "%s", NOTIFY_SAVE_FAILED);
 		    break;
 		}
 
-		update_status_notify("%s", NOTIFY_SAVED);
-		update_all();
+		update_status_notify(game[gindex], "%s", NOTIFY_SAVED);
+		update_all(game[gindex]);
 		break;
 	    case CTRL('G'):
 		n = 0;
@@ -1732,22 +1729,22 @@ void game_loop()
 			break;
 		}
 
-		status.mode = MODE_PLAY;
+		game[gindex].mode = MODE_PLAY;
 		editmode = 0;
-		sp.icon = 0;
+		game[gindex].sp.icon = 0;
 
 		if (c == 'n') {
 		    newgameinit = 1;
-		    new_game(board);
+		    new_game();
 		}
 		else {
-		    reset_history();
+		    reset_history(game[gindex]);
 		    loadfile[0] = '\0';
-		    parse_pgn_file(board, loadfile);
+		    parse_pgn_file(loadfile);
 		}
 
 		game[gindex].wcaptures = game[gindex].bcaptures = 0;
-		crow = (status.side == WHITE) ? 2 : 7;
+		crow = (game[gindex].side == WHITE) ? 2 : 7;
 		ccol = 4;
 
 		if (!noengine && (status.engine == ENGINE_OFFLINE ||
@@ -1759,9 +1756,9 @@ void game_loop()
 		SEND_TO_ENGINE("\nnew\n");
 		set_engine_defaults();
 		status.engine = ENGINE_READY;
-		update_status_notify(NULL);
-		update_all();
-		update_tag_window();
+		update_status_notify(game[gindex], NULL);
+		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case CTRL('L'):
 	    case 'R':
@@ -1783,16 +1780,16 @@ void game_loop()
 		}
 		break;
 	    case KEY_ESCAPE:
-		sp.icon = sp.row = sp.col = 0;
+		game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		markend = markstart = 0;
 
 		if (count) {
 		    count = 0;
-		    update_status_notify(NULL);
+		    update_status_notify(game[gindex], NULL);
 		}
 
 		if (config.validmoves)
-		    reset_valid_moves(board);
+		    reset_valid_moves(game[gindex].b);
 
 		break;
 	    case '0' ... '9':
@@ -1803,14 +1800,14 @@ void game_loop()
 		else
 		    count = n;
 
-		update_status_notify("Repeat %i", count);
+		update_status_notify(game[gindex], "Repeat %i", count);
 		continue;
 	    case KEY_UP:
-		if (status.mode == MODE_HISTORY) {
-		    history_next(board, (count > 0) ?
+		if (game[gindex].mode == MODE_HISTORY) {
+		    history_next(game[gindex], (count > 0) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep, &crow, &ccol);
-		    update_all();
+		    update_all(game[gindex]);
 		    break;
 		}
 
@@ -1834,11 +1831,11 @@ void game_loop()
 
 		break;
 	    case KEY_DOWN:
-		if (status.mode == MODE_HISTORY) {
-		    history_previous(board, (count) ?
+		if (game[gindex].mode == MODE_HISTORY) {
+		    history_previous(game[gindex], (count) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep, &crow, &ccol);
-		    update_all();
+		    update_all(game[gindex]);
 		    break;
 		}
 
@@ -1853,7 +1850,7 @@ void game_loop()
 		if (count) {
 		    crow -= count;
 		    pushkey = '\n';
-		    update_status_notify(NULL);
+		    update_status_notify(game[gindex], NULL);
 		}
 		else
 		    crow--;
@@ -1863,10 +1860,10 @@ void game_loop()
 
 		break;
 	    case KEY_LEFT:
-		if (status.mode == MODE_HISTORY) {
-		    history_previous(board, (count) ?
+		if (game[gindex].mode == MODE_HISTORY) {
+		    history_previous(game[gindex], (count) ?
 			    count * movestep : movestep, &crow, &ccol);
-		    update_all();
+		    update_all(game[gindex]);
 		    break;
 		}
 
@@ -1890,10 +1887,10 @@ void game_loop()
 
 		break;
 	    case KEY_RIGHT:
-		if (status.mode == MODE_HISTORY) {
-		    history_next(board, (count) ? count * movestep : movestep,
-			    &crow, &ccol);
-		    update_all();
+		if (game[gindex].mode == MODE_HISTORY) {
+		    history_next(game[gindex], (count) ? count * movestep 
+			    : movestep, &crow, &ccol);
+		    update_all(game[gindex]);
 		    break;
 		}
 
@@ -1917,32 +1914,32 @@ void game_loop()
 
 		break;
 	    case 'w':
-		if (status.mode == MODE_HISTORY)
+		if (game[gindex].mode == MODE_HISTORY)
 		    break;
 
-		if (status.mode == MODE_EDIT)
-		    switch_turn();
+		if (game[gindex].mode == MODE_EDIT)
+		    switch_turn(&game[gindex]);
 
 		/* FIXME crafty. */
 		SEND_TO_ENGINE("\nswitch\n");
-		switch_side();
-		update_status_window();
+		switch_side(&game[gindex]);
+		update_status_window(game[gindex]);
 		break;
 	    case ' ':
-		if (!editmode && status.mode == MODE_HISTORY) {
+		if (!editmode && game[gindex].mode == MODE_HISTORY) {
 		    if (movestep == 1)
 			movestep = 2;
 		    else
 			movestep = 1;
 
-		    update_history_window();
+		    update_history_window(game[gindex]);
 		    break;
 		}
 
 		if (!noengine && (status.engine == ENGINE_OFFLINE ||
 			    !engine_initialized) && !editmode) {
 		    if (start_chess_engine() < 0) {
-			sp.icon = 0;
+			game[gindex].sp.icon = 0;
 			break;
 		    }
 
@@ -1951,47 +1948,50 @@ void game_loop()
 		if (!editmode)
 		    wtimeout(boardw, 70);
 
-		if (sp.icon || (!editmode && status.engine == ENGINE_THINKING)) {
+		if (game[gindex].sp.icon || (!editmode && status.engine == ENGINE_THINKING)) {
 		    beep();
 		    break;
 		}
 
-		sp.icon = mvwinch(boardw, ROWTOMATRIX(crow), 
+		game[gindex].sp.icon = mvwinch(boardw, ROWTOMATRIX(crow), 
 			COLTOMATRIX(ccol)+1) & A_CHARTEXT;
 
-		if (sp.icon == ' ') {
-		    sp.icon = 0;
+		if (game[gindex].sp.icon == ' ') {
+		    game[gindex].sp.icon = 0;
 		    break;
 		}
 
-		if (!editmode && ((islower(sp.icon) && status.turn != BLACK) ||
-			(isupper(sp.icon) && status.turn != WHITE))) {
+		if (!editmode && ((islower(game[gindex].sp.icon) &&
+				game[gindex].turn != BLACK) ||
+			    (isupper(game[gindex].sp.icon) &&
+			     game[gindex].turn != WHITE))) {
 		    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
-		    sp.icon = 0;
+		    game[gindex].sp.icon = 0;
 		    break;
 		}
 
-		sp.row = crow;
-		sp.col = ccol;
+		game[gindex].sp.row = crow;
+		game[gindex].sp.col = ccol;
 
 		if (!editmode && config.validmoves) {
-		    get_valid_moves(board, piece_to_int(sp.icon), sp.row, 
-			    sp.col, &minr, &maxr, &minc, &maxc);
+		    get_valid_moves(game[gindex], game[gindex].b, 
+			    piece_to_int(game[gindex].sp.icon),
+			    game[gindex].sp.row, game[gindex].sp.col, &minr,
+			    &maxr, &minc, &maxc);
 		    /*
 		    number_valid_moves(board, sp.row, sp.col);
 		    */
 		}
 
-		if (status.mode == MODE_PLAY)
+		if (game[gindex].mode == MODE_PLAY)
 		    paused = 0;
-
 		break;
 	    case '\015':
 	    case '\n':
 		pushkey = count = 0;
-		update_status_notify(NULL);
+		update_status_notify(game[gindex], NULL);
 
-		if (!editmode && status.mode == MODE_HISTORY)
+		if (!editmode && game[gindex].mode == MODE_HISTORY)
 		    break;
 
 		if (status.engine == ENGINE_THINKING) {
@@ -1999,21 +1999,21 @@ void game_loop()
 		    break;
 		}
 
-		if (!sp.icon)
+		if (!game[gindex].sp.icon)
 		    break;
 
-		sp.destrow = crow;
-		sp.destcol = ccol;
+		game[gindex].sp.destrow = crow;
+		game[gindex].sp.destcol = ccol;
 
 		if (editmode) {
-		    edit_board(board);
-		    sp.icon = sp.row = sp.col = 0;
+		    edit_board(game[gindex]);
+		    game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		    break;
 		}
 
-		if (move_to_engine(board)) {
+		if (move_to_engine(game[gindex])) {
 		    if (config.validmoves)
-			reset_valid_moves(board);
+			reset_valid_moves(game[gindex].b);
 
 		    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
 			CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
@@ -2034,8 +2034,6 @@ void game_loop()
 
 	count = 0;
     }
-
-    return;
 }
 
 void usage(const char *pn, int ret)
@@ -2074,8 +2072,6 @@ void catch_signal(int which)
 	default:
 	    break;
     }
-
-    return;
 }
 
 int main(int argc, char *argv[])
@@ -2223,13 +2219,16 @@ int main(int argc, char *argv[])
 
     switch (filetype) {
 	case PGN_FILE:
-	    ret = parse_pgn_file(board, loadfile);
+	    ret = parse_pgn_file(loadfile);
 	    break;
 	case FEN_FILE:
-	    ret = parse_fen_file(board, loadfile);
+	    //ret = parse_fen_file(loadfile);
 	    break;
 	case EPD_FILE:
+	case NO_FILE:
 	default:
+	    // No file specified. Empty game.
+	    ret = parse_pgn_file(NULL);
 	    break;
     }
 
@@ -2285,8 +2284,7 @@ int main(int argc, char *argv[])
     stop_engine();
 
     endwin();
-    free_game_data();
-    free(game);
+    free_all_games();
     del_panel(boardp);
     del_panel(historyp);
     del_panel(statusp);

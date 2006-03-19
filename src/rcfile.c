@@ -156,8 +156,7 @@ void set_defaults()
 {
     struct stat st;
 
-    status.mode = MODE_PLAY;
-    filetype = PGN_FILE;
+    filetype = NO_FILE;
 
     fancy_results[0].pgn = "1-0";
     fancy_results[1].pgn = "0-1";
@@ -209,8 +208,6 @@ void set_defaults()
 	else
 	    warn("%s", config.ccfile);
     }
-
-    return;
 }
 
 void parse_rcfile(const char *filename)

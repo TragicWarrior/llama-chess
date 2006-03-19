@@ -31,16 +31,16 @@
 #include "common.h"
 #include "epd.h"
 
-char *board_to_fen(BOARD b, GAME g)
+char *board_to_fen(GAME g)
 {
     int row, col;
     int i;
     static char buf[MAX_PGN_LINE_LEN], *p;
-    int oldturn = status.turn;
+    int oldturn = g.turn;
     char enpassant[3] = {0}, *e;
 
     for (i = g.htotal; i >= g.hindex - 1; i--)
-	switch_turn();
+	switch_turn(&g);
 
     p = buf;
 
@@ -48,15 +48,15 @@ char *board_to_fen(BOARD b, GAME g)
 	int count = 0;
 
 	for (col = 0; col < 8; col++) {
-	    if (b[row][col].icon == 'x') {
+	    if (g.b[row][col].icon == 'x') {
 		e = enpassant;
-		b[row][col].icon = int_to_piece(OPEN_SQUARE);
+		g.b[row][col].icon = int_to_piece(g, OPEN_SQUARE);
 		*e++ = 'a' + col;
 		*e++ = ('0' + 8) - row;
 		*e = 0;
 	    }
 
-	    if (piece_to_int(b[row][col].icon) == OPEN_SQUARE) {
+	    if (piece_to_int(g.b[row][col].icon) == OPEN_SQUARE) {
 		count++;
 		continue;
 	    }
@@ -66,7 +66,7 @@ char *board_to_fen(BOARD b, GAME g)
 		count = 0;
 	    }
 
-	    *p++ = b[row][col].icon;
+	    *p++ = g.b[row][col].icon;
 	}
 
 	if (count) {
@@ -79,7 +79,7 @@ char *board_to_fen(BOARD b, GAME g)
 
     --p;
     *p++ = ' ';
-    *p++ = (status.turn == WHITE) ? 'w' : 'b';
+    *p++ = (g.turn == WHITE) ? 'w' : 'b';
     *p++ = ' ';
 
     if (!TEST_FLAG(g.flags, GF_WK) && !TEST_FLAG(g.flags, GF_WKR))
@@ -131,11 +131,11 @@ char *board_to_fen(BOARD b, GAME g)
 
     *p = '\0';
 
-    status.turn = oldturn;
+    g.turn = oldturn;
     return buf;
 }
 
-int parse_fen_line(BOARD b, char *str)
+int parse_fen_line(GAME g, BOARD b, char *str)
 {
     char *tmp;
     char line[LINE_MAX], *s;
@@ -163,7 +163,7 @@ int parse_fen_line(BOARD b, char *str)
 
 		for (; n; --n, col++)
 		    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
-			int_to_piece(OPEN_SQUARE);
+			int_to_piece(g, OPEN_SQUARE);
 	    } 
 	    else if (piece_to_int(*tmp) != -1)
 		b[ROWTOBOARD(row)][COLTOBOARD(col++)].icon = *tmp;
@@ -182,10 +182,10 @@ other:
 
     switch (*tmp) {
 	case 'b':
-	    status.turn = BLACK;
+	    g.turn = BLACK;
 	    break;
 	case 'w':
-	    status.turn = WHITE;
+	    g.turn = WHITE;
 	    break;
 	default:
 	    return 1;
@@ -196,16 +196,16 @@ other:
     while (*tmp && *tmp != ' ') {
 	switch (*tmp) {
 	    case 'K':
-		CLEAR_FLAG(game[gindex].flags, GF_WKR);
+		CLEAR_FLAG(g.flags, GF_WKR);
 		break;
 	    case 'Q':
-		CLEAR_FLAG(game[gindex].flags, GF_WQR);
+		CLEAR_FLAG(g.flags, GF_WQR);
 		break;
 	    case 'k':
-		CLEAR_FLAG(game[gindex].flags, GF_BKR);
+		CLEAR_FLAG(g.flags, GF_BKR);
 		break;
 	    case 'q':
-		CLEAR_FLAG(game[gindex].flags, GF_BQR);
+		CLEAR_FLAG(g.flags, GF_BQR);
 		break;
 	    default:
 		return -1;
@@ -222,7 +222,9 @@ other:
     return moven;
 }
 
-int parse_fen_file(BOARD b, const char *filename)
+// FIXME
+#if 0
+int parse_fen_file(const char *filename)
 {
     FILE *fp;
     int compressed = 0;
@@ -265,3 +267,4 @@ int parse_fen_file(BOARD b, const char *filename)
 
     return ret;
 }
+#endif

@@ -79,7 +79,7 @@ void send_to_engine(const char *format, ...)
 				"Process no longer exists.");
 			engine_initialized = 0;
 			status.engine = ENGINE_OFFLINE;
-			update_status_window();
+			//update_status_window(NULL);
 			return;
 		    }
 
@@ -248,13 +248,10 @@ pid_t init_chess_engine(char **args)
 
     close(to[0]);
     close(from[1]);
-
     enginefd[0] = from[0];
     enginefd[1] = to[1];
-
     fcntl(enginefd[0], F_SETFL, O_NONBLOCK | O_DIRECT);
     fcntl(enginefd[1], F_SETFL, O_NONBLOCK | O_DIRECT);
-
     engine_initialized = 1;
     return pid;
 }
@@ -265,7 +262,6 @@ void set_engine_defaults()
 	SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
 
     SEND_TO_ENGINE("depth %i\n", config.engine_depth);
-    return;
 }
 
 void stop_engine()
@@ -290,7 +286,7 @@ int start_chess_engine()
     int i;
 
     status.engine = ENGINE_INITIALIZING;
-    update_status_window();
+    //update_status_window();
     update_panels();
     doupdate();
 
@@ -321,132 +317,32 @@ int start_chess_engine()
     if (enginepid > 0)
 	set_engine_defaults();
 
-    update_status_window();
+    //update_status_window();
     return enginepid;
-}
-
-static void parse_crafty_line(BOARD b, char *line)
-{
-    char *tmp;
-    int count;
-    char m[MAX_PGN_MOVE_LEN + 1];
-
-    if (strcmp(line, "go") == 0) {
-	status.engine = ENGINE_THINKING;
-	return;
-    }
-
-    /* Bad engine command or m. */
-    if (strncmp(line, "Illegal m: ", 14) == 0) {
-	update_status_notify("%s", E_INVALID_COMMAND);
-	sp.icon = 0;
-	RETURN;
-    }
-
-    if (strncmp(line, "book ", 5) == 0) {
-	line += 5;
-	RETURN;
-    }
-
-    if (strncmp(line, "depth ", 6) == 0) {
-	line += 6;
-	config.engine_depth = atoi(line);
-	RETURN;
-    }
-
-    if (strncmp(line, "feature ", 8) == 0) {
-	line += 8;
-	RETURN;
-    }
-
-    if (strncmp(line, "read ", 5) == 0) {
-	if (save_pgn(config.fifo, 1, gindex)) {
-	    game[gindex].htotal = oldhistorytotal;
-	    oldhistorytotal = 0;
-	    return;
-	}
-	else
-	    free_historydata(&game[gindex].history, game[gindex].hindex + 1,
-		    oldhistorytotal);
-
-	set_engine_defaults();
-	RETURN;
-    }
-
-    /* Human m. */
-    if (sscanf(line, "%[a-hxPRNBKQ1-8O+=#-]%n", m, &count) == 1) {
-	if (parse_move_text(b, m)) {
-	    invalid_move(m);
-	    return;
-	}
-
-	if (game[gindex].htotal == 0 && status.side == BLACK)                   
-	    game[gindex].openingside = BLACK;
-
-	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, m);
-
-	switch_turn();
-
-	sp.icon = 0;
-	line += count;
-	status.engine = ENGINE_THINKING;
-	RETURN;
-    }
-
-    /* Engine m. */
-    if (strncmp(line, "m ", 5) == 0) {
-	tmp = line + 5;
-
-	if (parse_move_text(b, tmp)) {
-	    invalid_move(tmp);
-	    return;
-	}
-
-	if (game[gindex].htotal == 0 && status.side == BLACK)                   
-	    game[gindex].openingside = BLACK;
-
-	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, tmp);
-
-	switch_turn();
-
-	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
-	    init_history(b);
-	    RETURN;
-	}
-
-	RETURN;
-    }
-
-    return;
 }
 
 /* Once the PGN parser has been well tested, parse_move_text() from the human
  * move can disappear.
  */
-void parse_gnuchess_line(BOARD b, char *str)
+void parse_gnuchess_line(GAME g, char *str)
 {
     char m[MAX_PGN_MOVE_LEN + 1] = {0}, *p = m;
     int count;
 
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
-	if (parse_move_text(b, m)) {
-	    invalid_move(m);
+	if (parse_move_text(g, g.b, m)) {
+	    invalid_move(g.n, m);
 	    return;
 	}
 
-        if (game[gindex].htotal == 0 && status.side == BLACK)                   
-	    game[gindex].openingside = BLACK;
+        if (g.htotal == 0 && g.side == BLACK)                   
+	    g.openingside = BLACK;
 
-	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, p);
-
-	SET_FLAG(game[gindex].flags, GF_MODIFIED);
-	switch_turn();
-
-	sp.icon = 0;
+	add_to_history(&g.hp, &g.hindex, &g.htotal, p);
+	SET_FLAG(g.flags, GF_MODIFIED);
+	switch_turn(&g);
+	g.sp.icon = 0;
 	str += count;
 	status.engine = ENGINE_THINKING;
 	return;
@@ -458,53 +354,49 @@ void parse_gnuchess_line(BOARD b, char *str)
 	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
 	 * need to convert them.
 	 */
-	if ((p = a2a4tosan(b, m)) == NULL)
+	if ((p = a2a4tosan(g, g.b, m)) == NULL)
 	    return;
 
-	if (parse_move_text(b, p)) {
-	    invalid_move(p);
+	if (parse_move_text(g, g.b, p)) {
+	    invalid_move(g.n, p);
 	    return;
 	}
 
-        if (game[gindex].htotal == 0 && status.side == BLACK)                   
-	    game[gindex].openingside = BLACK;
+        if (g.htotal == 0 && g.side == BLACK)                   
+	    g.openingside = BLACK;
 
-	add_to_history(&game[gindex].history, &game[gindex].hindex, 
-		&game[gindex].htotal, p);
-
-	SET_FLAG(game[gindex].flags, GF_MODIFIED);
-	switch_turn();
-
+	add_to_history(&g.hp, &g.hindex, &g.htotal, p);
+	SET_FLAG(g.flags, GF_MODIFIED);
+	switch_turn(&g);
 	str += count;
 
-	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
-	    init_history(b);
+	if (TEST_FLAG(g.flags, GF_GAMEOVER)) {
+	    init_history(g);
 	    RETURN;
 	}
 
 	RETURN;
     }
 
-    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
-	init_history(b);
+    if (TEST_FLAG(g.flags, GF_GAMEOVER)) {
+	init_history(g);
 	RETURN;
     }
 
     /* Miscellaneous one-liners. */
 
     /* The engine is now reading a FIFO. Dump what we need to it. */
+    // FIXME FEN
     if (strncmp(str, "pgnload ", 8) == 0) {
 	if (save_pgn(config.fifo, 1, gindex)) {
-	    game[gindex].htotal = oldhistorytotal;
+	    g.htotal = oldhistorytotal;
 	    oldhistorytotal = 0;
 	    return;
 	}
 	else {
-	    free_historydata(&game[gindex].history, game[gindex].hindex + 1,
-		    oldhistorytotal);
-
-	    CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
-	    SET_FLAG(game[gindex].flags, GF_MODIFIED);
+	    free_history_data(g.hp, g.hindex + 1);
+	    CLEAR_FLAG(g.flags, GF_GAMEOVER);
+	    SET_FLAG(g.flags, GF_MODIFIED);
 	}
 
 	set_engine_defaults();
@@ -520,18 +412,18 @@ void parse_gnuchess_line(BOARD b, char *str)
 
     /* 'switch' command. */
     if (strncmp(str, "White to move", 13) == 0) {
-	status.side = status.turn = WHITE;
+	g.side = g.turn = WHITE;
 	RETURN;
     }
     else if (strncmp(str, "Black to move", 13) == 0) {
-	status.side = status.turn = BLACK;
+	g.side = g.turn = BLACK;
 	RETURN;
     }
 
     /* Bad engine command or move. */
     if (strncmp(str, "Illegal move: ", 14) == 0) {
-	update_status_notify("%s", E_INVALID_COMMAND);
-	sp.icon = 0;
+	update_status_notify(g, "%s", E_INVALID_COMMAND);
+	g.sp.icon = 0;
 	RETURN;
     }
 
@@ -547,11 +439,9 @@ void parse_gnuchess_line(BOARD b, char *str)
 	config.book_method = BOOK_WORST;
     else if (strcmp(str, "book now random.") == 0)
 	config.book_method = BOOK_RANDOM;
-
-    return;
 }
 
-static void parse_engine_line(BOARD b, char *line)
+static void parse_engine_line(GAME g, char *line)
 {
     line = trim(line);
 
@@ -560,19 +450,14 @@ static void parse_engine_line(BOARD b, char *line)
 
     switch (config.engine) {
 	case GNUCHESS:
-	    parse_gnuchess_line(b, line);
-	    break;
-	case CRAFTY:
-	    parse_crafty_line(b, line);
+	    parse_gnuchess_line(g, line);
 	    break;
 	default:
 	    break;
     }
-
-    return;
 }
 
-void parse_engine_output(BOARD b, char *str)
+void parse_engine_output(GAME g, char *str)
 {
     char buf[LINE_MAX], *p = buf;
 
@@ -589,7 +474,7 @@ void parse_engine_output(BOARD b, char *str)
 
 	if (*str == '\n') {
 	    *p = '\0';
-	    parse_engine_line(b, buf);
+	    parse_engine_line(g, buf);
 	    str++;
 	    p = buf;
 	    continue;
@@ -597,6 +482,4 @@ void parse_engine_output(BOARD b, char *str)
 
 	*p++ = *str++;
     }
-
-    return;
 }

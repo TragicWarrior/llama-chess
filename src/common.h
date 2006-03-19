@@ -143,10 +143,7 @@ enum {
 
 struct {
     int engine;
-    int side;
     char *notify;
-    int turn;
-    int mode;
 } status;
 
 typedef struct tags {
@@ -158,16 +155,31 @@ typedef struct history {
     char move[MAX_PGN_MOVE_LEN + 1];
     char *comment;
     int nag[MAX_PGN_NAG];
+    int n;
+    struct history *rav;
+    int ravlevel;
 } HISTORY;
+
+struct selected_piece_s {
+    chtype icon;
+    int row;
+    int col;
+    int destrow;
+    int destcol;
+};
 
 /* This is an array of 'games' structures. One for each game in a file, or
  * the current game.
  */
 typedef struct games {
+    fd_set fds;   // The file descriptors associated with this game.
+    BOARD b;
+    struct selected_piece_s sp;
     TAG *tag;
     int tindex;
     int fentag;
     HISTORY *history;
+    HISTORY *hp;
     int hindex;
     int htotal;
     int sockfd;
@@ -178,18 +190,13 @@ typedef struct games {
     int flags;
     int openingside;
     int castle;
+    int side;
+    int turn;
+    int mode;
+    int n;
 } GAME;
 
 GAME *game;
-
-/* This holds the selected piece info. */
-struct {
-    chtype icon;
-    int row;
-    int col;
-    int destrow;
-    int destcol;
-} sp;
 
 struct {
     char *pgn;
@@ -245,8 +252,14 @@ struct {
     int tindex;
 } config;
 
+struct annotation_edit_s {
+    HISTORY h;
+    int game;
+    int n;
+};
+
 enum {
-    PGN_FILE, FEN_FILE, EPD_FILE
+    NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
 };
 
 /* Chess engine file descriptors. 0 = from, 1 = to. */
@@ -262,6 +275,7 @@ int engine_initialized;
 int oldhistorytotal; /* This is a failsafe when resuming a game. */
 int movestep;
 int noengine;
+int ravlevel;
 
 enum {
     FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,

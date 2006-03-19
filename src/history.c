@@ -35,23 +35,35 @@
 #include "colors.h"
 #include "history.h"
 
-void free_historydata(HISTORY **history, int idx, int total)
+int history_total(HISTORY *h)
 {
     int i;
-    HISTORY *h = *history;
 
-    if (total) {
-	for (i = idx; i < total; i++) {
-	    if (h[i].comment)
-		free(h[i].comment);
+    if (!h)
+	return 0;
+
+    for (i = 0; h[i].n != -1; i++);
+    return i;
+}
+
+// 'start' is for truncating the move history from some move.
+void free_history_data(HISTORY *h, int start)
+{
+    int t = history_total(h);
+    int i;
+
+    for (i = start; i < t; i++) {
+	if (h[i].comment)
+	    free(h[i].comment);
+
+	if (h[i].rav) {
+	    free_history_data(h[i].rav, 0);
+	    free(h[i].rav);
 	}
     }
 
-    if (idx)
-	h = Realloc(h, (idx) * sizeof(HISTORY));
-
-    *history = h;
-    return;
+    if (h)
+	free(h);
 }
 
 static int init_nag()
@@ -80,13 +92,12 @@ static int init_nag()
 
 static void view_nag(void *arg)
 {
-    int idx = (int)arg;
+    HISTORY *h = (HISTORY *)arg;
     char buf[80];
     char line[LINE_MAX] = {0};
     int i = 0;
 
-    snprintf(buf, sizeof(buf), "Viewing NAG for \"%s\"", 
-	    game[gindex].history[idx].move);
+    snprintf(buf, sizeof(buf), "Viewing NAG for \"%s\"", h->move);
 
     if (!nags) {
 	if (init_nag())
@@ -94,66 +105,56 @@ static void view_nag(void *arg)
     }
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (!game[gindex].history[idx].nag[i])
+	if (!h->nag[i])
 	    break;
 
-	strncat(line, nags[game[gindex].history[idx].nag[i] - 1].line,
-		sizeof(line));
+	strncat(line, nags[h->nag[i] - 1].line, sizeof(line));
 	strncat(line, "\n", sizeof(line));
     }
 
     line[strlen(line) - 1] = 0;
     message(buf, ANYKEY, "%s", line);
-    return;
 }
 
-void view_annotation(int idx)
+void view_annotation(HISTORY h)
 {
     char buf[MAX_PGN_MOVE_LEN + strlen(ANNOTATION_VIEW_TITLE) + 4];
     int nag = 0, comment = 0;
 
-    if (idx < 0 || idx > game[gindex].htotal)
-	return;
-
-    if (game[gindex].history[idx].comment &&
-	    game[gindex].history[idx].comment[0])
+    if (h.comment && h.comment[0])
         comment++;
  
-    if (game[gindex].history[idx].nag[0])
+    if (h.nag[0])
  	nag++;
 
     if (!nag && !comment)
 	return;
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_VIEW_TITLE,
-	    game[gindex].history[idx].move);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_VIEW_TITLE, h.move);
 
     if (comment)
 	show_message(buf, (nag) ? "Any other key to continue" : ANYKEY,
 		(nag) ? "Press 'n' to view NAG" : NULL, 
-		(nag) ? view_nag : NULL, (nag) ? (void *)idx : NULL,
-		(nag) ? 'n' : 0, "%s", game[gindex].history[idx].comment);
+		(nag) ? view_nag : NULL, (nag) ? (void *)&h : NULL,
+		(nag) ? 'n' : 0, "%s", h.comment);
     else
 	show_message(buf, "Any other key to continue", "Press 'n' to view NAG",
-		view_nag, (void *)idx, 'n', "%s", 
-		"No annotations for this move");
-
-    return;
+		view_nag, (void *)&h, 'n', "%s", "No annotations for this move");
 }
 
-int get_history_by_index(int n, HISTORY *h)
+int history_by_index(GAME g, int n, HISTORY *h)
 {
-    if (n < 0 || n > game[gindex].htotal - 1)
+    if (n < 0 || n > g.htotal - 1)
 	return 1;
 
-    *h = game[gindex].history[n];
+    *h = g.hp[n];
     return 0;
 }
 
-void reset_history()
+void reset_history(GAME g)
 {
-    game[gindex].hindex = game[gindex].htotal = 0;
-    return;
+    g.hindex = g.htotal = 0;
+    g.hp = g.history;
 }
 
 char *history_edit_nag(void *arg)
@@ -166,11 +167,13 @@ char *history_edit_nag(void *arg)
     int itemcount = 0;
     int rows, cols;
     char *mbuf = NULL;
-    int idx = (int)arg;
+    struct annotation_edit_s *anno = (struct annotation_edit_s *)arg;
 
     if (!nags) {
-	if (init_nag())
+	if (init_nag()) {
+	    free(anno);
 	    return NULL;
+	}
     }
 
     i = 0;
@@ -206,10 +209,9 @@ char *history_edit_nag(void *arg)
 	    CP_HISTORY_BORDER);
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (game[gindex].history[idx].nag[i] && 
-		game[gindex].history[idx].nag[i] <= item_count(menu)) {
-	    set_item_value(mitems[game[gindex].history[idx].nag[i]], TRUE);
-	    set_current_item(menu, mitems[game[gindex].history[idx].nag[i]]);
+	if (anno->h.nag[i] && anno->h.nag[i] <= item_count(menu)) {
+	    set_item_value(mitems[anno->h.nag[i]], TRUE);
+	    set_current_item(menu, mitems[anno->h.nag[i]]);
 	    itemcount++;
 	}
     }
@@ -371,14 +373,12 @@ char *history_edit_nag(void *arg)
 
 gotitem:
     for (i = 0; i < MAX_PGN_NAG; i++)
-	game[gindex].history[idx].nag[i] = 0;
+	anno->h.nag[i] = 0;
 
     for (i = 0, n = 0; mitems[i] && n < MAX_PGN_NAG; i++) {
 	if (item_value(mitems[i]) == TRUE)
-	    game[gindex].history[idx].nag[n++] = i;
+	    anno->h.nag[n++] = i;
     }
-
-    update_all();
 
 done:
     unpost_menu(menu);
@@ -391,84 +391,83 @@ done:
     del_panel(panel);
     delwin(subw);
     delwin(win);
+    memcpy(&game[anno->game].hp[anno->n], &anno->h, sizeof(HISTORY));
+    game[anno->game].hp[anno->n].comment = anno->h.comment;
+    free(anno);
     return NULL;
 }
 
-void add_to_history(HISTORY **h, int *n, int *t, const char *str)
+void add_to_history(HISTORY **h, int *t, const char *str)
 {
     HISTORY *history = *h;
-    int idx = *n;
 
-    history = Realloc(history, (idx + 2) * sizeof(HISTORY));
-    memset(&history[idx], 0, sizeof(HISTORY));
-    strncpy(history[idx].move, str, sizeof(history[idx].move));
-    memset(&history[++idx], 0, sizeof(HISTORY));
-
-    *n = *t = idx;
+    history = Realloc(history, (*t + 2) * sizeof(HISTORY));
+    memset(&history[*t], 0, sizeof(HISTORY));
+    strncpy(history[*t].move, str, sizeof(history[*t].move)); //FIXME dymanic
+    history[*t].n = *t;
+    *t++;
+    memset(&history[*t], 0, sizeof(HISTORY));
+    history[*t].n = -1;
     *h = history;
-    return;
 }
 
-void parse_history_move(BOARD b, int idx)
+void parse_history_move(GAME g, int idx)
 {
     int i = 0;
     int flags = 0;
 
-    game[gindex].bcaptures = game[gindex].wcaptures = 0;
-    status.turn = game[gindex].openingside;
+    g.bcaptures = g.wcaptures = 0;
+    g.turn = g.openingside;
 
-    if (TEST_FLAG(game[gindex].flags, GF_PERROR))
+    if (TEST_FLAG(g.flags, GF_PERROR))
 	SET_FLAG(flags, GF_PERROR);
 
-    if (TEST_FLAG(game[gindex].flags, GF_MODIFIED))
+    if (TEST_FLAG(g.flags, GF_MODIFIED))
 	SET_FLAG(flags, GF_MODIFIED);
 
-    if (TEST_FLAG(game[gindex].flags, GF_DELETE))
+    if (TEST_FLAG(g.flags, GF_DELETE))
 	SET_FLAG(flags, GF_DELETE);
 
-    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
+    if (TEST_FLAG(g.flags, GF_GAMEOVER))
 	SET_FLAG(flags, GF_GAMEOVER);
     
-    game[gindex].flags = flags;
-    game[gindex].ply = 0;
+    g.flags = flags;
+    g.ply = 0;
 
-    init_board(b);
+    init_board(g.b);
 
     /* FIXME Move numbers and turns. */
-    if (game[gindex].fentag)
-	parse_fen_line(b, game[gindex].tag[game[gindex].fentag].value);
+    if (g.fentag)
+	parse_fen_line(g, g.b, g.tag[g.fentag].value);
 
     for (i = 0; i < idx; i++) {
 	HISTORY h;
 
-	if (get_history_by_index(i, &h))
+	if (history_by_index(g, i, &h))
 	    break;
 	
-	if (parse_move_text(b, h.move)) {
-	    invalid_move(h.move);
+	if (parse_move_text(g, g.b, h.move)) {
+	    invalid_move(g.n, h.move);
 	    break;
 	}
 
-	switch_turn();
+	switch_turn(&g);
     }
 
-    if (!status.notify && !status.mode == MODE_HISTORY)
-	update_status_notify("%s", GAME_HELP_PROMPT);
-
-    return;
+    if (!status.notify && !g.mode == MODE_HISTORY)
+	update_status_notify(g, "%s", GAME_HELP_PROMPT);
 }
 
 /* FIXME castling */
-static void cursor_from_history(int idx, int *r, int *c)
+static void cursor_from_history(GAME g, int idx, int *r, int *c)
 {
     char *p;
     int len;
 
-    p = game[gindex].history[idx].move;
-
-    if (!p)
+    if (idx > g.htotal || idx < 0)
 	return;
 
+    p = g.hp[idx].move;
     len = strlen(p);
 
     if (*p == 'O') {
@@ -477,7 +476,7 @@ static void cursor_from_history(int idx, int *r, int *c)
 	else
 	    *c = 3;
 
-	*r = (status.turn == WHITE) ? 8 : 1;
+	*r = (g.turn == WHITE) ? 8 : 1;
 	return;
     }
 
@@ -486,46 +485,41 @@ static void cursor_from_history(int idx, int *r, int *c)
 
     *r = ROWTOINT(*p--);
     *c = COLTOINT(*p);
-
-    return;
 }
 
-void history_previous(BOARD b, int n, int *r, int *c)
+void history_previous(GAME g, int n, int *r, int *c)
 {
-    if (game[gindex].hindex - n < 0) {
+    if (g.hindex - n < 0) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
-	    game[gindex].hindex = game[gindex].htotal;
+	    g.hindex = g.htotal;
 	else
-	    game[gindex].hindex = 0;
+	    g.hindex = 0;
     }
     else
-	game[gindex].hindex -= n;
+	g.hindex -= n;
 
-    cursor_from_history(game[gindex].hindex, r, c);
-    parse_history_move(b, game[gindex].hindex);
-    return;
+    cursor_from_history(g, g.hindex, r, c);
+    parse_history_move(g, g.hindex);
 }
 
-void history_next(BOARD b, int n, int *r, int *c)
+void history_next(GAME g, int n, int *r, int *c)
 {
-    if (game[gindex].hindex + n > game[gindex].htotal) {
+    if (g.hindex + n > g.htotal) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
-	    game[gindex].hindex = 0;
+	    g.hindex = 0;
 	else
-	    game[gindex].hindex = game[gindex].htotal;
+	    g.hindex = g.htotal;
     }
     else
-	game[gindex].hindex += n;
+	g.hindex += n;
 
-    cursor_from_history(game[gindex].hindex, r, c);
-    parse_history_move(b, game[gindex].hindex);
-    return;
+    cursor_from_history(g, game[gindex].hindex, r, c);
+    parse_history_move(g, game[gindex].hindex);
 }
 
-void init_history(BOARD b)
+void init_history(GAME g)
 {
-    status.mode = MODE_HISTORY;
-    parse_history_move(b, game[gindex].hindex);
+    g.mode = MODE_HISTORY;
+    parse_history_move(g, game[gindex].hindex);
     //update_status_window();
-    return;
 }
