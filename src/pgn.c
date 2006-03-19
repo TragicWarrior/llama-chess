@@ -305,7 +305,7 @@ int move_text(GAME *g, FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
 
-    if ((p = a2a4tosan(*g, (*g).b, m)) == NULL) {
+    if ((p = a2a4tosan(g, m)) == NULL) {
 	invalid_move((*g).n, m);
 	return 1;
     }

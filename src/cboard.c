@@ -233,21 +233,21 @@ void draw_board(GAME g, int crow, int ccol)
 }
 
 /* Convert the selected piece to SAN format and validate it. */
-static char *board_to_san(GAME g)
+static char *board_to_san(GAME *g)
 {
     static char str[MAX_PGN_MOVE_LEN + 1], *p;
     int piece;
     int promo;
-    BOARD t;
+    BOARD oldboard;
 
-    snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[g.sp.col - 1], g.sp.row,
-	    x_grid_chars[g.sp.destcol - 1], g.sp.destrow);
+    snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[(*g).sp.col - 1], 
+	    (*g).sp.row, x_grid_chars[(*g).sp.destcol - 1], (*g).sp.destrow);
 
     p = str;
-    piece = piece_to_int(g.b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon);
+    piece = piece_to_int((*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon);
 
-    if (piece == PAWN && ((g.sp.destrow == 8 && g.turn == WHITE) ||
-		    (g.sp.destrow == 1 && g.turn == BLACK))) {
+    if (piece == PAWN && (((*g).sp.destrow == 8 && (*g).turn == WHITE) ||
+		    ((*g).sp.destrow == 1 && (*g).turn == BLACK))) {
 	promo = cmessage(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
 	
 	if (piece_to_int(promo) == -1)
@@ -258,36 +258,37 @@ static char *board_to_san(GAME g)
 	*p = '\0';
     }
 
-    memcpy(t, g.b, sizeof(BOARD));
+    memcpy(oldboard, (*g).b, sizeof(BOARD));
 
-    if ((p = a2a4tosan(g, t, str)) == NULL) {
+    if ((p = a2a4tosan(g, str)) == NULL) {
 	cmessage(p, ANYKEY, "%s", E_A2A4_PARSE);
+	memcpy((*g).b, oldboard, sizeof(BOARD));
 	return NULL;
     }
 
-    if (parse_move_text(g, t, p)) {
-	invalid_move(g.n, p);
+    if (parse_move_text(g, p)) {
+	invalid_move((*g).n, p);
+	memcpy((*g).b, oldboard, sizeof(BOARD));
 	return NULL;
     }
 
-    memcpy(g.b, t, sizeof(BOARD));
     return p;
 }
 
-static int move_to_engine(GAME g)
+static int move_to_engine(GAME *g)
 {
     char *p;
 
     if ((p = board_to_san(g)) == NULL)
 	return 0;
 
-    g.sp.row = g.sp.col = g.sp.icon = 0;
+    (*g).sp.row = (*g).sp.col = (*g).sp.icon = 0;
 
     if (noengine) {
-	add_to_history(&g.hp, &g.hindex, &g.htotal, p);
-	switch_turn(&g);
-	SET_FLAG(g.flags, GF_MODIFIED);
-	update_all(g);
+	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	switch_turn(&(*g));
+	SET_FLAG((*g).flags, GF_MODIFIED);
+	update_all(*g);
 	return 1;
     }
 
@@ -1092,7 +1093,7 @@ void game_loop()
 			if (len) {
 			    // FIXME engine may be associated with another
 			    // selected game.
-			    parse_engine_output(game[gindex].b, fdbuf);
+			    parse_engine_output(&game[gindex], fdbuf);
 			    update_all(game[gindex]);
 			}
 		    }
@@ -2004,7 +2005,7 @@ void game_loop()
 		    break;
 		}
 
-		if (move_to_engine(game[gindex])) {
+		if (move_to_engine(&game[gindex])) {
 		    if (config.validmoves)
 			reset_valid_moves(game[gindex].b);
 

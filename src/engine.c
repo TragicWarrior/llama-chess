@@ -324,25 +324,25 @@ int start_chess_engine()
 /* Once the PGN parser has been well tested, parse_move_text() from the human
  * move can disappear.
  */
-void parse_gnuchess_line(GAME g, char *str)
+void parse_gnuchess_line(GAME *g, char *str)
 {
     char m[MAX_PGN_MOVE_LEN + 1] = {0}, *p = m;
     int count;
 
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
-	if (parse_move_text(g, g.b, m)) {
-	    invalid_move(g.n, m);
+	if (parse_move_text(g, m)) {
+	    invalid_move((*g).n, m);
 	    return;
 	}
 
-        if (g.htotal == 0 && g.side == BLACK)                   
-	    g.openingside = BLACK;
+        if ((*g).htotal == 0 && (*g).side == BLACK)                   
+	    (*g).openingside = BLACK;
 
-	add_to_history(&g.hp, &g.hindex, &g.htotal, p);
-	SET_FLAG(g.flags, GF_MODIFIED);
-	switch_turn(&g);
-	g.sp.icon = 0;
+	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	SET_FLAG((*g).flags, GF_MODIFIED);
+	switch_turn(&(*g));
+	(*g).sp.icon = 0;
 	str += count;
 	status.engine = ENGINE_THINKING;
 	return;
@@ -354,23 +354,23 @@ void parse_gnuchess_line(GAME g, char *str)
 	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
 	 * need to convert them.
 	 */
-	if ((p = a2a4tosan(g, g.b, m)) == NULL)
+	if ((p = a2a4tosan(g, m)) == NULL)
 	    return;
 
-	if (parse_move_text(g, g.b, p)) {
-	    invalid_move(g.n, p);
+	if (parse_move_text(g, p)) {
+	    invalid_move((*g).n, p);
 	    return;
 	}
 
-        if (g.htotal == 0 && g.side == BLACK)                   
-	    g.openingside = BLACK;
+        if ((*g).htotal == 0 && (*g).side == BLACK)                   
+	    (*g).openingside = BLACK;
 
-	add_to_history(&g.hp, &g.hindex, &g.htotal, p);
-	SET_FLAG(g.flags, GF_MODIFIED);
-	switch_turn(&g);
+	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	SET_FLAG((*g).flags, GF_MODIFIED);
+	switch_turn(&(*g));
 	str += count;
 
-	if (TEST_FLAG(g.flags, GF_GAMEOVER)) {
+	if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {
 	    init_history(g);
 	    RETURN;
 	}
@@ -378,7 +378,7 @@ void parse_gnuchess_line(GAME g, char *str)
 	RETURN;
     }
 
-    if (TEST_FLAG(g.flags, GF_GAMEOVER)) {
+    if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {
 	init_history(g);
 	RETURN;
     }
@@ -389,14 +389,14 @@ void parse_gnuchess_line(GAME g, char *str)
     // FIXME FEN
     if (strncmp(str, "pgnload ", 8) == 0) {
 	if (save_pgn(config.fifo, 1, gindex)) {
-	    g.htotal = oldhistorytotal;
+	    (*g).htotal = oldhistorytotal;
 	    oldhistorytotal = 0;
 	    return;
 	}
 	else {
-	    free_history_data(g.hp, g.hindex + 1);
-	    CLEAR_FLAG(g.flags, GF_GAMEOVER);
-	    SET_FLAG(g.flags, GF_MODIFIED);
+	    free_history_data((*g).hp, (*g).hindex + 1);
+	    CLEAR_FLAG((*g).flags, GF_GAMEOVER);
+	    SET_FLAG((*g).flags, GF_MODIFIED);
 	}
 
 	set_engine_defaults();
@@ -412,18 +412,18 @@ void parse_gnuchess_line(GAME g, char *str)
 
     /* 'switch' command. */
     if (strncmp(str, "White to move", 13) == 0) {
-	g.side = g.turn = WHITE;
+	(*g).side = (*g).turn = WHITE;
 	RETURN;
     }
     else if (strncmp(str, "Black to move", 13) == 0) {
-	g.side = g.turn = BLACK;
+	(*g).side = (*g).turn = BLACK;
 	RETURN;
     }
 
     /* Bad engine command or move. */
     if (strncmp(str, "Illegal move: ", 14) == 0) {
-	update_status_notify(g, "%s", E_INVALID_COMMAND);
-	g.sp.icon = 0;
+	update_status_notify(*g, "%s", E_INVALID_COMMAND);
+	(*g).sp.icon = 0;
 	RETURN;
     }
 
@@ -441,7 +441,7 @@ void parse_gnuchess_line(GAME g, char *str)
 	config.book_method = BOOK_RANDOM;
 }
 
-static void parse_engine_line(GAME g, char *line)
+static void parse_engine_line(GAME *g, char *line)
 {
     line = trim(line);
 
@@ -457,7 +457,7 @@ static void parse_engine_line(GAME g, char *line)
     }
 }
 
-void parse_engine_output(GAME g, char *str)
+void parse_engine_output(GAME *g, char *str)
 {
     char buf[LINE_MAX], *p = buf;
 

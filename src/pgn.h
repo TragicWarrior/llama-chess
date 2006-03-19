@@ -105,7 +105,7 @@ void help(const char *, const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
 int parse_move_text(GAME, BOARD, char *);
-char *a2a4tosan(GAME, BOARD, char *);
+char *a2a4tosan(GAME *, char *);
 int integer_len(int);
 void switch_turn(GAME *);
 FILE *open_file(const char *, int *);
