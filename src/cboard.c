@@ -1734,8 +1734,7 @@ void game_loop()
 		}
 		else {
 		    reset_history(game[gindex]);
-		    loadfile[0] = '\0';
-		    parse_pgn_file(loadfile);
+		    parse_pgn_file(NULL);
 		}
 
 		game[gindex].wcaptures = game[gindex].bcaptures = 0;
