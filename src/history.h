@@ -42,7 +42,7 @@ void update_status_window(void);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char *, const char **);
-int parse_move_text(GAME, BOARD, char *);
+int parse_move_text(GAME *, char *);
 void switch_turn(GAME *);
 int parse_fen_line(GAME *, BOARD, char *);
 void update_all(GAME);

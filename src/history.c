@@ -448,7 +448,7 @@ void parse_history_move(GAME *g, int idx)
 	if (history_by_index(*g, i, &h))
 	    break;
 	
-	if (parse_move_text(*g, (*g).b, h.move)) {
+	if (parse_move_text(g, h.move)) {
 	    invalid_move((*g).n, h.move);
 	    break;
 	}

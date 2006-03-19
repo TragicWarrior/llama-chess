@@ -64,4 +64,21 @@ void dump_board(int which, BOARD b)
 
     return;
 }
+
+char *get_board(BOARD b)
+{
+    static char buf[64 + 8 + 1];
+    char *p = buf;
+    int row, col;
+
+    for (row = 0; row < 8; row++) {
+	for (col = 0; col < 8; col++)
+	    *p++ = b[row][col].icon & A_CHARTEXT;
+
+	*p++ = '\n';
+    }
+
+    *p = 0;
+    return buf;
+}
 #endif

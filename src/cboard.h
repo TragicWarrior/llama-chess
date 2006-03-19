@@ -57,9 +57,9 @@ int paused;
 
 const char *cmdlinehelp[] = {
 #ifdef DEBUG
-    "Usage: cboard [-hvNED] [-VS] [-pf <file>] [-i hostname[:port]]\n"
+    "Usage: cboard [-hvNED] [-VtS] [-pf <file>] [-i hostname[:port]]\n"
 #else
-    "Usage: cboard [-hvNE] [-VS] [-pf <file>] [-i hostname[:port]]\n"
+    "Usage: cboard [-hvNE] [-VtS] [-pf <file>] [-i hostname[:port]]\n"
 #endif
 	"        [-u username[:passwd]]\n",
     "  -p  Load PGN file.\n",
@@ -68,6 +68,7 @@ const char *cmdlinehelp[] = {
     "  -u  ICS username and optional password.\n",
     "  -V  Validate a game file.\n",
     "  -S  Validate and output a PGN formatted game.\n",
+    "  -t  When outputting include custom PGN tags from config file.\n",
     "  -N  Don't enable the chess engine (two human players).\n",
     "  -E  Stop processing on file parsing error (overrides config).\n",
 #ifdef DEBUG
@@ -200,6 +201,6 @@ void add_to_history(HISTORY **, int *, int *, const char *);
 void update_all(GAME);
 void pgn_dumpgame(FILE *, GAME *, int, int);
 void invalid_move(int, const char *);
-int find_tag(GAME, const char *);
+int find_tag(TAG *, int, const char *);
 
 #endif

@@ -44,13 +44,13 @@
 #include "colors.h"
 #include "pgn.h"
 
-int find_tag(GAME g, const char *name)
+int find_tag(TAG *t, int total, const char *name)
 {
-    int t;
+    int i;
 
-    for (t = 0; t < g.tindex; t++) {
-	if (strcasecmp(g.tag[t].name, name) == 0)
-	    return t;
+    for (i = 0; i < total; i++) {
+	if (strcasecmp(t[i].name, name) == 0)
+	    return i;
     }
 
     return -1;
@@ -310,11 +310,11 @@ int move_text(GAME *g, FILE *fp)
 	return 1;
     }
 
-    if (parse_move_text(*g, (*g).b, p)) {
+    if (parse_move_text(g, p)) {
 	if ((*g).hindex == 0) {
 	    switch_turn(&(*g));
 
-	    if (parse_move_text(*g, (*g).b, p)) {
+	    if (parse_move_text(g, p)) {
 		switch_turn(&(*g));
 		invalid_move((*g).n, m);
 		return 1;
@@ -639,8 +639,8 @@ static void fen_tag(GAME *g)
     BOARD tmpboard;
 
     init_board(tmpboard);
-    n = find_tag(*g, "Setup");
-    i = find_tag(*g, "FEN");
+    n = find_tag((*g).tag, (*g).tindex, "Setup");
+    i = find_tag((*g).tag, (*g).tindex, "FEN");
 
     if ((n > -1 && i > -1 && atoi((*g).tag[n].value) == 1) 
 	    || (i != -1 && n == -1)) {
@@ -1054,6 +1054,17 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
 	fprintf(fp, "[%s \"%s\"]\n", g.tag[i].name, 
 		(g.tag[i].value && g.tag[i].value[0]) ? 
 		add_tag_escapes(g.tag[i].value) : "");
+    }
+
+    if (save_custom_tags) {
+	for (i = 0; i < config.tindex; i++) {
+	    if (find_tag(g.tag, g.tindex, config.tag[i].name) >= 0)
+		continue;
+
+	    fprintf(fp, "[%s \"%s\"]\n", config.tag[i].name, 
+		    (config.tag[i].value && config.tag[i].value[0]) ? 
+		    add_tag_escapes(config.tag[i].value) : "");
+	}
     }
 
     fprintf(fp, "\n");

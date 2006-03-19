@@ -1174,7 +1174,8 @@ void game_loop()
 		    add_tag(&game[gindex].tag, &game[gindex].tindex,
 			    "SetUp", "1");
 		    game[gindex].mode = MODE_PLAY;
-		    game[gindex].fentag = find_tag(game[gindex], "FEN");
+		    game[gindex].fentag = find_tag(game[gindex].tag, 
+			    game[gindex].tindex, "FEN");
 		}
 		else {
 		    game[gindex].mode = MODE_EDIT;
@@ -2116,14 +2117,17 @@ int main(int argc, char *argv[])
     set_defaults();
 
 #ifdef DEBUG
-    while ((opt = getopt(argc, argv, "EDNVShp:vu:e:f:i:")) != -1) {
+    while ((opt = getopt(argc, argv, "EDNVtShp:vu:e:f:i:")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "ENVShp:vu:e:f:i:")) != -1) {
+    while ((opt = getopt(argc, argv, "ENVtShp:vu:e:f:i:")) != -1) {
 #endif
 	char *tmp;
 	int i;
 
 	switch (opt) {
+	    case 't':
+		save_custom_tags = 1;
+		break;
 	    case 'E':
 		config.stoponerror = 1;
 		break;

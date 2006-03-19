@@ -265,6 +265,7 @@ enum {
 /* Chess engine file descriptors. 0 = from, 1 = to. */
 int enginefd[2];
 
+int save_custom_tags;
 int validate_move;
 int newgameinit;
 int curses_initialized;
