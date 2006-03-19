@@ -79,7 +79,7 @@ char *board_to_fen(GAME g)
 
     --p;
     *p++ = ' ';
-    *p++ = (g.turn == WHITE) ? 'w' : 'b';
+    *p++ = (g.side == WHITE) ? 'w' : 'b';
     *p++ = ' ';
 
     if (TEST_FLAG(g.flags, GF_WK_CASTLE))
