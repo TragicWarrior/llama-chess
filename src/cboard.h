@@ -186,7 +186,7 @@ int piece_to_int(int);
 int int_to_piece(GAME, int);
 void free_tag_data(TAG *, int);
 void free_history_data(HISTORY *, int);
-void get_valid_moves(GAME, BOARD, int, int, int, int *, int *, int *, int *);
+void get_valid_moves(GAME *, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
 int parse_move_text(GAME, BOARD, char *);
 void parse_history_move(GAME, int);

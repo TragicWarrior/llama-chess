@@ -1967,7 +1967,7 @@ void game_loop()
 		game[gindex].sp.col = ccol;
 
 		if (!editmode && config.validmoves) {
-		    get_valid_moves(game[gindex], game[gindex].b, 
+		    get_valid_moves(&game[gindex],
 			    piece_to_int(game[gindex].sp.icon),
 			    game[gindex].sp.row, game[gindex].sp.col, &minr,
 			    &maxr, &minc, &maxc);

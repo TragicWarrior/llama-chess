@@ -224,6 +224,7 @@ void parse_rcfile(const char *filename)
 	int n;
 	char var[30], val[50];
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
+	char *p;
 
 	lines++;
 	line = trim(line);
@@ -280,6 +281,10 @@ void parse_rcfile(const char *filename)
 
 	    if (n == 1)
 		value[0] = 0;
+	    else {
+		p = val + strlen(token);
+		strncpy(value, p, sizeof(value));
+	    }
 
 	    for (n = 0; n < strlen(token); n++) {
 		if (!isalnum(token[n]) && token[n] != '_')

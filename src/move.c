@@ -863,8 +863,8 @@ void reset_valid_moves(BOARD b)
     }
 }
 
-void get_valid_moves(GAME g, BOARD b, int p, int srow, int scol, int *minr,
-	int *maxr, int *minc, int *maxc)
+void get_valid_moves(GAME *g, int p, int srow, int scol, int *minr, int *maxr,
+	int *minc, int *maxc)
 {
     int row, col;
 
@@ -875,15 +875,15 @@ void get_valid_moves(GAME g, BOARD b, int p, int srow, int scol, int *minr,
 	for (col = 1; VALIDFILE(col); col++) {
 	    int sr = 0, sc = 0;
 
-	    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
+	    if (get_source_yx(*g, (*g).b, p, row, col, &sr, &sc)) {
 		sr = 0;
 		sc = scol;
 
-		if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
+		if (get_source_yx(*g, (*g).b, p, row, col, &sr, &sc)) {
 		    sc = 0;
 		    sr = srow;
 
-		    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
+		    if (get_source_yx(*g, (*g).b, p, row, col, &sr, &sc)) {
 			continue;
 		    }
 		}
@@ -892,7 +892,7 @@ void get_valid_moves(GAME g, BOARD b, int p, int srow, int scol, int *minr,
 	    if (sr != srow || sc != scol)
 		continue;
 
-	    b[ROWTOBOARD(row)][COLTOBOARD(col)].valid = 1;
+	    (*g).b[ROWTOBOARD(row)][COLTOBOARD(col)].valid = 1;
 
 	    /*
 	    if (row < *minr)

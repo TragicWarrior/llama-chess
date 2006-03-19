@@ -72,6 +72,7 @@ static void sort_tags(GAME g)
     qsort(t, g.tindex - 7, sizeof(TAG), tag_compare);
 }
 
+// FIXME ???
 int end_of_game(GAME g, const char *str)
 {
     int i;
@@ -155,6 +156,8 @@ void init_board(BOARD b)
 {
     int row, col;
 
+    memset(b, 0, sizeof(BOARD));
+
     for (row = 0; row < 8; row++) {
 	for (col = 0; col < 8; col++) {
 	    int c = '.';
@@ -190,7 +193,6 @@ void init_board(BOARD b)
 	    }
 
 	    b[row][col].icon = (row < 2) ? c : toupper(c);
-	    b[row][col].valid = b[row][col].movecount = 0;
 	}
     }
 }
