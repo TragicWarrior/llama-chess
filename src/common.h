@@ -81,12 +81,10 @@ extern int vasprintf(char **, const char *, va_list);
 #define GF_MODIFIED	0x0004 /* Modified tags or history. */
 #define GF_ENPASSANT	0x0008 /* For En Passant validation. */
 #define GF_GAMEOVER	0x0010 /* End of game. */
-#define GF_WK		0x0020 /* For castling validation ... */
-#define GF_BK		0x0040
-#define GF_WKR		0x0080
-#define GF_WQR		0x0100
-#define GF_BKR		0x0200
-#define GF_BQR		0x0400
+#define GF_WK_CASTLE	0x0020
+#define GF_WQ_CASTLE	0x0040
+#define GF_BK_CASTLE	0x0080
+#define GF_BQ_CASTLE	0x0100
 
 enum {
     OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING, MAX_PIECES

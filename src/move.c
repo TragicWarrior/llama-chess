@@ -302,10 +302,8 @@ int castle_move(GAME *g, int which)
     n = COLTOINT('e');
 
     if (which == KINGSIDE) {
-	if (((*g).turn == WHITE && (TEST_FLAG((*g).flags, GF_WK) ||
-			TEST_FLAG((*g).flags, GF_WKR))) || 
-		((*g).turn == BLACK && (TEST_FLAG((*g).flags, GF_BK) 
-		    || TEST_FLAG((*g).flags, GF_BKR))))
+	if (((*g).turn == WHITE && (!TEST_FLAG((*g).flags, GF_WK_CASTLE))) ||
+		((*g).turn == BLACK && (!TEST_FLAG((*g).flags, GF_BK_CASTLE)))) 
 	    return 1;
 
 	p = (*g).b[ROWTOBOARD(row)][COLTOBOARD((n + 1))].icon;
@@ -324,22 +322,18 @@ int castle_move(GAME *g, int which)
 	    (*g).b[ROWTOBOARD(row)][COLTOBOARD(8)].icon = int_to_piece(*g, OPEN_SQUARE);
 
 	    if ((*g).turn == WHITE) {
-		SET_FLAG((*g).flags, GF_WK);
-		SET_FLAG((*g).flags, GF_WKR);
+		CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
 		update_status_notify(*g, "%s", NOTIFY_WCASTLEK);
 	    }
 	    else if ((*g).turn == BLACK) {
-		SET_FLAG((*g).flags, GF_BK);
-		SET_FLAG((*g).flags, GF_BKR);
+		CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
 		update_status_notify(*g, "%s", NOTIFY_BCASTLEK);
 	    }
 	}
     }
     else {
-	if (((*g).turn == WHITE && (TEST_FLAG((*g).flags, GF_WK) ||
-			TEST_FLAG((*g).flags, GF_WQR))) || 
-		((*g).turn == BLACK && (TEST_FLAG((*g).flags, GF_BK) 
-		    || TEST_FLAG((*g).flags, GF_BQR))))
+	if (((*g).turn == WHITE && (!TEST_FLAG((*g).flags, GF_WQ_CASTLE))) ||
+		((*g).turn == BLACK && (!TEST_FLAG((*g).flags, GF_BQ_CASTLE)))) 
 	    return 1;
 
 	p = (*g).b[ROWTOBOARD(row)][COLTOBOARD((n - 1))].icon;
@@ -360,13 +354,11 @@ int castle_move(GAME *g, int which)
 	    (*g).b[ROWTOBOARD(row)][COLTOBOARD(4)].icon = int_to_piece(*g, ROOK);
 
 	    if ((*g).turn == WHITE) {
-		SET_FLAG((*g).flags, GF_WK);
-		SET_FLAG((*g).flags, GF_WQR);
+		CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
 		update_status_notify(*g, "%s", NOTIFY_WCASTLEQ);
 	    }
 	    else if ((*g).turn == BLACK) {
-		SET_FLAG((*g).flags, GF_BK);
-		SET_FLAG((*g).flags, GF_BQR);
+		CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
 		update_status_notify(*g, "%s", NOTIFY_BCASTLEQ);
 	    }
 	}
@@ -469,15 +461,15 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    if (!validate_move && *scol == 1) {
 		if ((*g).turn == WHITE)
-		    SET_FLAG((*g).flags, GF_WQR);
+		    CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
 		else
-		    SET_FLAG((*g).flags, GF_BQR);
+		    CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
 	    }
 	    else if (!validate_move && *scol == 8) {
 		if ((*g).turn == WHITE)
-		    SET_FLAG((*g).flags, GF_WKR);
+		    CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
 		else
-		    SET_FLAG((*g).flags, GF_BKR);
+		    CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
 	    }
 	    break;
 	case KNIGHT:
@@ -667,10 +659,14 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
     if (piece == KING) {
 	if (!validate_move) {
-	    if ((*g).turn == WHITE)
-		SET_FLAG((*g).flags, GF_WK);
-	    else
-		SET_FLAG((*g).flags, GF_BK);
+	    if ((*g).turn == WHITE) {
+		CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
+		CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
+	    }
+	    else {
+		CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
+		CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
+	    }
 	}
     }
 
@@ -693,6 +689,7 @@ char *a2a4tosan(GAME *g, char *m)
     int tenpassant = 0;
     int n;
 
+    // Not in a2a4 format. Probably already in SAN format.
     if (!VALIDCOL(*p) || !VALIDROW(*(p + 1)) || !VALIDCOL(*(p + 2))
 	    || !VALIDROW(*(p + 3)))
 	return m;
@@ -1271,13 +1268,13 @@ again:
 done:
     if (!validate_move && capture && piece_to_int(dstpiece) == ROOK) {
 	if (row == 1 && col == 1)
-	    SET_FLAG((*g).flags, GF_WQR);
+	    CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
 	else if (row == 8 && col == 1)
-	    SET_FLAG((*g).flags, GF_BQR);
+	    CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
 	else if (row == 1 && col == 8)
-	    SET_FLAG((*g).flags, GF_WKR);
+	    CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
 	else if (row == 8 && col == 8)
-	    SET_FLAG((*g).flags, GF_BKR);
+	    CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
     }
 
     kingsquare(*g, &kr, &kc, &okr, &okc);

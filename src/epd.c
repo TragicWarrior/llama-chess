@@ -82,16 +82,16 @@ char *board_to_fen(GAME g)
     *p++ = (g.turn == WHITE) ? 'w' : 'b';
     *p++ = ' ';
 
-    if (!TEST_FLAG(g.flags, GF_WK) && !TEST_FLAG(g.flags, GF_WKR))
+    if (TEST_FLAG(g.flags, GF_WK_CASTLE))
 	*p++ = 'K';
 
-    if (!TEST_FLAG(g.flags, GF_WK) && !TEST_FLAG(g.flags, GF_WQR))
+    if (TEST_FLAG(g.flags, GF_WQ_CASTLE))
 	*p++ = 'Q';
 
-    if (!TEST_FLAG(g.flags, GF_BK) && !TEST_FLAG(g.flags, GF_BKR))
+    if (TEST_FLAG(g.flags, GF_BK_CASTLE))
 	*p++ = 'k';
 
-    if (!TEST_FLAG(g.flags, GF_BK) && !TEST_FLAG(g.flags, GF_BQR))
+    if (TEST_FLAG(g.flags, GF_BQ_CASTLE))
 	*p++ = 'q';
 
     *p++ = ' ';
@@ -180,7 +180,7 @@ int parse_fen_line(GAME *g, BOARD b, char *str)
 other:
     tmp++;
 
-    switch (*tmp) {
+    switch (*tmp++) {
 	case 'b':
 	    (*g).turn = BLACK;
 	    break;
@@ -192,20 +192,24 @@ other:
     }
 
     tmp++;
+    CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
+    CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
+    CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
+    CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
 
     while (*tmp && *tmp != ' ') {
-	switch (*tmp) {
+	switch (*tmp++) {
 	    case 'K':
-		CLEAR_FLAG((*g).flags, GF_WKR);
+		SET_FLAG((*g).flags, GF_WK_CASTLE);
 		break;
 	    case 'Q':
-		CLEAR_FLAG((*g).flags, GF_WQR);
+		SET_FLAG((*g).flags, GF_WQ_CASTLE);
 		break;
 	    case 'k':
-		CLEAR_FLAG((*g).flags, GF_BKR);
+		SET_FLAG((*g).flags, GF_BK_CASTLE);
 		break;
 	    case 'q':
-		CLEAR_FLAG((*g).flags, GF_BQR);
+		SET_FLAG((*g).flags, GF_BQ_CASTLE);
 		break;
 	    default:
 		return -1;

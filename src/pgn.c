@@ -305,16 +305,19 @@ int move_text(GAME *g, FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
 
+    // In case the file is in a2a4 format, convert this move to SAN format.
     if ((p = a2a4tosan(g, m)) == NULL) {
 	invalid_move((*g).n, m);
 	return 1;
     }
 
     if (parse_move_text(g, p)) {
+	// Black opening move?
 	if ((*g).hindex == 0) {
 	    switch_turn(&(*g));
 
 	    if (parse_move_text(g, p)) {
+		// Nope. Parse error.
 		switch_turn(&(*g));
 		invalid_move((*g).n, m);
 		return 1;
@@ -323,13 +326,12 @@ int move_text(GAME *g, FILE *fp)
 	    (*g).openingside = BLACK;
 	}
 	else {
+	    // Parse error (not an opening move).
 	    switch_turn(&(*g));
 	    invalid_move((*g).n, m);
 	    return 1;
 	}
     }
-
-    add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
 
 #ifdef DEBUG
     if (debug) {
@@ -338,6 +340,7 @@ int move_text(GAME *g, FILE *fp)
     }
 #endif
 
+    add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
     return 0;
 }
 
@@ -490,7 +493,6 @@ static void pgn_tag(GAME *g, FILE *fp)
 
     *n = '\0';
     *name = toupper(*name);
-	
     skip_leading_space(fp);
 
     /* The value is until the first closing bracket. */
@@ -581,6 +583,10 @@ void new_game()
     game[gindex].hp = game[gindex].history;
     game[gindex].side = game[gindex].turn = WHITE;
     game[gindex].mode = MODE_PLAY;
+    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
     init_board(game[gindex].b);
     set_default_tags(&game[gindex]);
 }
@@ -644,8 +650,12 @@ static void fen_tag(GAME *g)
 
     if ((n > -1 && i > -1 && atoi((*g).tag[n].value) == 1) 
 	    || (i != -1 && n == -1)) {
-	if ((n = parse_fen_line(g, tmpboard, (*g).tag[i].value)) == -1)
-	    cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
+	if ((n = parse_fen_line(g, tmpboard, (*g).tag[i].value)) == -1) {
+	    if (curses_initialized)
+		cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
+	    else
+		warnx("round #%i: %s", (*g).n, E_FEN_PARSE);
+	}
 	else {
 	    memcpy((*g).b, tmpboard, sizeof(BOARD));
 	    (*g).fentag = i;
