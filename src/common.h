@@ -203,7 +203,6 @@ typedef struct games {
     char mode;			// Game mode: MODE_[PLAY/HISTORY/EDIT].
     char side;			// This playing side. BLACK or WHITE.
     char turn;			// BLACK or WHITE.
-    unsigned n;			// This game or round number.
 } GAME;
 
 GAME *game;

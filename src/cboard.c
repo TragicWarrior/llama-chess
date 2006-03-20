@@ -267,7 +267,7 @@ static char *board_to_san(GAME *g)
     }
 
     if (parse_move_text(g, p)) {
-	invalid_move((*g).n, p);
+	invalid_move(gindex + 1, p);
 	memcpy((*g).b, oldboard, sizeof(BOARD));
 	return NULL;
     }

@@ -332,7 +332,7 @@ void parse_gnuchess_line(GAME *g, char *str)
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
 	if (parse_move_text(g, m)) {
-	    invalid_move((*g).n, m);
+	    invalid_move(0, m);
 	    return;
 	}
 
@@ -358,7 +358,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    return;
 
 	if (parse_move_text(g, p)) {
-	    invalid_move((*g).n, p);
+	    invalid_move(0, p);
 	    return;
 	}
 

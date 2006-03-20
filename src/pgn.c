@@ -307,7 +307,7 @@ int move_text(GAME *g, FILE *fp)
 
     // In case the file is in a2a4 format, convert this move to SAN format.
     if ((p = a2a4tosan(g, m)) == NULL) {
-	invalid_move((*g).n, m);
+	invalid_move(gcurrent, m);
 	return 1;
     }
 
@@ -319,7 +319,7 @@ int move_text(GAME *g, FILE *fp)
 	    if (parse_move_text(g, p)) {
 		// Nope. Parse error.
 		switch_turn(&(*g));
-		invalid_move((*g).n, m);
+		invalid_move(gcurrent, m);
 		return 1;
 	    }
 
@@ -328,7 +328,7 @@ int move_text(GAME *g, FILE *fp)
 	else {
 	    // Parse error (not an opening move).
 	    switch_turn(&(*g));
-	    invalid_move((*g).n, m);
+	    invalid_move(gcurrent, m);
 	    return 1;
 	}
     }
@@ -579,7 +579,7 @@ void new_game()
 	firstrun = 0;
     }
 
-    gtotal = gindex + 1;
+    gcurrent = gtotal = gindex + 1;
     game[gindex].hp = game[gindex].history;
     game[gindex].side = game[gindex].turn = WHITE;
     game[gindex].mode = MODE_PLAY;
@@ -593,7 +593,7 @@ void new_game()
 
 static HISTORY *ravlevel_history(HISTORY h, int level)
 {
-    int i, l = 0;
+    int l = 0;
     HISTORY *hp = NULL;
 
     while (1) {
@@ -657,7 +657,7 @@ static void fen_tag(GAME *g)
 	    if (curses_initialized)
 		cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
 	    else
-		warnx("round #%i: %s", (*g).n, E_FEN_PARSE);
+		warnx("round #%i: %s", gcurrent, E_FEN_PARSE);
 	}
 	else {
 	    memcpy((*g).b, tmpboard, sizeof(BOARD));
