@@ -261,7 +261,7 @@ void invalid_move(int n, const char *m)
 
 int move_text(GAME *g, FILE *fp)
 {
-    char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p;
+    char m[MAX_SAN_MOVE_LEN + 1] = {0};
     int c;
     int count;
     int dots = 0;
@@ -562,27 +562,10 @@ static int eog_marker(GAME *g, FILE *fp)
 
 void new_game()
 {
-    static int firstrun;
-
-    if (gtotal == 0)
-	firstrun = 1;
-    else
-	gindex = gtotal - 1;
-
-    if (!firstrun) {
-	game = Realloc(game, (gindex + 2) * sizeof(GAME));
-	memset(&game[gindex + 1], '\0', sizeof(GAME));
-	memset(&game[gindex + 1].tag, '\0', sizeof(TAG));
-	memset(&game[gindex + 1].history, '\0', sizeof(HISTORY));
-	sort_tags(game[gindex]);
-	gindex++;
-    }
-    else {
-	game = Calloc(1, sizeof(GAME));
-	firstrun = 0;
-    }
-
-    gcurrent = gtotal = gindex + 1;
+    gindex = ++gtotal - 1;
+    gcurrent = gtotal;
+    game = Realloc(game, gtotal * sizeof(GAME));
+    memset(&game[gindex], '\0', sizeof(GAME));
     game[gindex].hp = game[gindex].history;
     game[gindex].side = game[gindex].turn = WHITE;
     game[gindex].mode = MODE_PLAY;
