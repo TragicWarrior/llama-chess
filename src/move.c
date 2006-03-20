@@ -27,6 +27,9 @@
 
 #include "common.h"
 #include "move.h"
+#ifdef DEBUG
+#include "debug.h"
+#endif
 
 int int_to_piece(char turn, int which)
 {

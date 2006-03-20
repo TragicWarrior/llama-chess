@@ -43,6 +43,9 @@
 #include "common.h"
 #include "colors.h"
 #include "pgn.h"
+#ifdef DEBUG
+#include "debug.h"
+#endif
 
 int find_tag(TAG *t, int total, const char *name)
 {
@@ -306,17 +309,17 @@ int move_text(GAME *g, FILE *fp)
 	return 1;
 
     // In case the file is in a2a4 format, convert this move to SAN format.
-    if ((p = a2a4tosan(g, m)) == NULL) {
+    if (a2a4tosan(g, m) == NULL) {
 	invalid_move(gcurrent, m);
 	return 1;
     }
 
-    if (parse_move_text(g, p)) {
+    if (parse_move_text(g, m)) {
 	// Black opening move?
 	if ((*g).hindex == 0) {
 	    switch_turn(&(*g));
 
-	    if (parse_move_text(g, p)) {
+	    if (parse_move_text(g, m)) {
 		// Nope. Parse error.
 		switch_turn(&(*g));
 		invalid_move(gcurrent, m);
@@ -335,12 +338,12 @@ int move_text(GAME *g, FILE *fp)
 
 #ifdef DEBUG
     if (debug) {
-	DUMP("%s\n", p);
+	DUMP("%s\n", m);
 	dump_board(0, (*g).b);
     }
 #endif
 
-    add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+    add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, m);
     return 0;
 }
 

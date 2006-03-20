@@ -30,8 +30,10 @@ extern char *strptime(const char *, const char *, struct tm *);
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 #define MAX_VALUE_WIDTH	(COLS - 8)
 
+#ifndef DEBUG
 // The current game or round being parsed.
 unsigned gcurrent;
+#endif
 
 struct country_codes {
     char code[4];
