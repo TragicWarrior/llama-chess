@@ -70,7 +70,7 @@ AH_TOP([/* Maximum line length in a PGN file. */
 #define MAX_PGN_LINE_LEN 255])
 
 AH_TOP([/* Maximum SAN move length without terminating NULL. */
-#define MAX_PGN_MOVE_LEN 7])
+#define MAX_SAN_MOVE_LEN 7])
 
 AH_TOP([/* Maximum number of NAG entries per move. */
 #define MAX_PGN_NAG 5])

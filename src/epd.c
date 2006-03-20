@@ -50,7 +50,7 @@ char *board_to_fen(GAME g)
 	for (col = 0; col < 8; col++) {
 	    if (g.b[row][col].icon == 'x') {
 		e = enpassant;
-		g.b[row][col].icon = int_to_piece(g, OPEN_SQUARE);
+		g.b[row][col].icon = int_to_piece(WHITE, OPEN_SQUARE);
 		*e++ = 'a' + col;
 		*e++ = ('0' + 8) - row;
 		*e = 0;
@@ -135,7 +135,7 @@ char *board_to_fen(GAME g)
     return buf;
 }
 
-int parse_fen_line(GAME *g, BOARD b, char *str)
+int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *str)
 {
     char *tmp;
     char line[LINE_MAX], *s;
@@ -163,7 +163,7 @@ int parse_fen_line(GAME *g, BOARD b, char *str)
 
 		for (; n; --n, col++)
 		    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
-			int_to_piece(*g, OPEN_SQUARE);
+			int_to_piece(WHITE, OPEN_SQUARE);
 	    } 
 	    else if (piece_to_int(*tmp) != -1)
 		b[ROWTOBOARD(row)][COLTOBOARD(col++)].icon = *tmp;
@@ -182,38 +182,48 @@ other:
 
     switch (*tmp++) {
 	case 'b':
-	    (*g).turn = BLACK;
+	    *turn = BLACK;
 	    break;
 	case 'w':
-	    (*g).turn = WHITE;
+	    *turn = WHITE;
 	    break;
 	default:
 	    return 1;
     }
 
     tmp++;
-    CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
-    CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
-    CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
-    CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
 
     while (*tmp && *tmp != ' ') {
 	switch (*tmp++) {
 	    case 'K':
-		SET_FLAG((*g).flags, GF_WK_CASTLE);
+		SET_FLAG(*flags, GF_WK_CASTLE);
 		break;
 	    case 'Q':
-		SET_FLAG((*g).flags, GF_WQ_CASTLE);
+		SET_FLAG(*flags, GF_WQ_CASTLE);
 		break;
 	    case 'k':
-		SET_FLAG((*g).flags, GF_BK_CASTLE);
+		SET_FLAG(*flags, GF_BK_CASTLE);
 		break;
 	    case 'q':
-		SET_FLAG((*g).flags, GF_BQ_CASTLE);
+		SET_FLAG(*flags, GF_BQ_CASTLE);
 		break;
 	    default:
 		return -1;
 	}
+    }
+
+    // En passant.
+    if (*++tmp != '-') {
+	if (!VALIDCOL(*tmp))
+	    return -1;
+
+	col = *tmp++ - 'a';
+
+	if (!VALIDROW(*tmp))
+	    return -1;
+
+	row = 8 - atoi(tmp++);
+	b[row][col].enpassant = 1;
     }
 
     while (*tmp)

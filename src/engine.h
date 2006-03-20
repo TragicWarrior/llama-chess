@@ -28,7 +28,7 @@ enum {
 
 pid_t enginepid;
 
-void add_to_history(HISTORY **, int *, int *, const char *);
+void add_to_history(HISTORY **, unsigned char *, unsigned char *, const char *);
 char *parse_piece(char *);
 void move_piece(char *);
 int save_pgn(const char *, int, int);

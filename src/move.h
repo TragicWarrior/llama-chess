@@ -19,8 +19,6 @@
 #ifndef MOVE_H
 #define MOVE_H
 
-#define VALIDROW(r)	((r >= '1' && r <= '8') ? 1 : 0)
-#define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
 #define INTTOROW(r)	(r + '0')
 #define INTTOCOL(c)	(c + ('a' - 1))
 

@@ -95,7 +95,7 @@ const char *file_browser_help[] = {
 };
 
 void *Malloc(size_t);
-void add_to_history(HISTORY **, int *, int *, const char *);
+void add_to_history(HISTORY **, unsigned char *, unsigned char *, const char *);
 void reset_history(void);
 void free_game_data(void);
 void send_to_engine(const char *, ...);
@@ -110,7 +110,7 @@ int integer_len(int);
 void switch_turn(GAME *);
 FILE *open_file(const char *, int *);
 char *compression_cmd(const char *, int);
-int parse_fen_line(GAME *, BOARD, char *);
+int parse_fen_line(BOARD, unsigned *, char *, char *);
 char *board_to_fen(GAME);
 void copy_board(BOARD, BOARD);
 void free_all_games(void);

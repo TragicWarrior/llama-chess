@@ -51,34 +51,29 @@ void write_debug_output(int which, const char *format, ...)
     return;
 }
 
-void dump_board(int which, BOARD b)
+char *debug_board(BOARD b)
 {
-    int row, col;
-
-    for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++)
-	    write_debug_output(which, "%c ", (char)b[row][col].icon);
-
-	write_debug_output(which, "%c", '\n');
-    }
-
-    return;
-}
-
-char *get_board(BOARD b)
-{
-    static char buf[64 + 8 + 1];
+    static char buf[64 + 8 + 16 + 1];
     char *p = buf;
     int row, col;
 
     for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++)
-	    *p++ = b[row][col].icon & A_CHARTEXT;
+	for (col = 0; col < 8; col++) {
+	    *p++ = (b[row][col].enpassant) ? 'x' : b[row][col].icon & A_CHARTEXT;
+	    if (col < 7)
+		*p++ = ' ';
+	}
 
-	*p++ = '\n';
+	if (row < 7)
+	    *p++ = '\n';
     }
 
     *p = 0;
     return buf;
+}
+
+void dump_board(int which, BOARD b)
+{
+    write_debug_output(which, "%s", debug_board(b));
 }
 #endif

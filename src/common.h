@@ -56,7 +56,9 @@ extern int vasprintf(char **, const char *, va_list);
 #define ACK2			message("ack2", "ack2", "ack2")
 #endif
 
+// Famous organization.
 #define NARRAY(arr)		(sizeof(arr) / sizeof(arr[0]))
+
 #define CTRL(x)			((x) & 0x1f)
 #define KEY_ESCAPE		CTRL('[')
 
@@ -69,6 +71,8 @@ extern int vasprintf(char **, const char *, va_list);
 #define COLTOBOARD(c)	(c - 1)
 #define ROWTOINT(r)	(r - '0')
 #define COLTOINT(c)	(c - ('a' - 1))
+#define VALIDROW(r)	((r >= '1' && r <= '8') ? 1 : 0)
+#define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
 
 #define SET_FLAG(var, f)	(var |= f)
 #define CLEAR_FLAG(var, f)	(var &= ~(f))
@@ -85,6 +89,7 @@ extern int vasprintf(char **, const char *, va_list);
 #define GF_WQ_CASTLE	0x0040
 #define GF_BK_CASTLE	0x0080
 #define GF_BQ_CASTLE	0x0100
+#define GF_BLACK_OPENING	0x0200
 
 enum {
     OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING, MAX_PIECES
@@ -102,11 +107,13 @@ enum {
     GNUCHESS, CRAFTY, MAX_ENGINES
 };
 
+// The chess board.
 typedef struct board_matrix {
-    chtype icon;
-    short valid;
-    short movecount;
-    short enpassant;
+    chtype icon;		// The piece.
+    char valid;			// != 0 if this square is a valid move for the
+    				// selected piece.
+    unsigned char movecount;	// Distance from the selected piece. FIXME
+    char enpassant;		// This square is an en passant one.
 } BOARD[8][8];
 
 enum { 
@@ -139,68 +146,78 @@ enum {
 #define get_input_str_clear(title, init) \
     get_input(title, init, 1, 1, NULL, NULL, NULL, 0, -1, 20)
 
+// Status window.
 struct {
-    int engine;
-    char *notify;
+    char engine;	// Chess engine status: ENGINE_[READY/OFFLINE].
+    char *notify;	// The status window notification line buffer.
 } status;
 
+// Roster tags.
 typedef struct tags {
-    char *name;
-    char *value;
+    char *name;		// Tag name.
+    char *value;	// Tag value.
 } TAG;
 
 typedef struct history {
-    char move[MAX_PGN_MOVE_LEN + 1];
-    char *comment;
-    int nag[MAX_PGN_NAG];
-    int n;
-    struct history *rav;
+    char *move;				// The SAN move text. FIXME
+    char *comment;			// Annotation for this move.
+    unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph. FIXME
+    short n;				// Current move number.
+    struct history *rav;		// Variation of the current move.
 } HISTORY;
 
+// The selected piece from the board.
 struct selected_piece_s {
-    chtype icon;
-    int row;
-    int col;
-    int destrow;
-    int destcol;
+    chtype icon;		// The piece.
+    char row;			// The source rank.
+    char col;			// The source file.
+    char destrow;		// Destination rank.
+    char destcol;		// Destination file.
 };
 
 /* This is an array of 'games' structures. One for each game in a file, or
  * the current game.
  */
 typedef struct games {
-    fd_set fds;   // The file descriptors associated with this game.
+    fd_set fds;   		// The file descriptors associated with this
+    				// game.
     BOARD b;
-    struct selected_piece_s sp;
-    TAG *tag;
-    int tindex;
-    int fentag;
-    HISTORY *history;
-    HISTORY *hp;
-    int hindex;
-    int htotal;
-    int ravindex; // The original move of the RAV.
-    int sockfd;
-    int ply;
-    int wcaptures;
-    int bcaptures;
-    double moveclock;
-    int flags;
-    int openingside;
-    int castle;
-    int side;
-    int turn;
-    int mode;
-    int n;
+    struct selected_piece_s sp; // The selected piece on the board for this
+    				// game or ground.
+    TAG *tag;			// Roster tags.
+    unsigned char tindex;	// Total number of roster tags.
+    unsigned char fentag;	// Location of the FEN tag in *tag.
+    HISTORY *history;		// Move history for this game.
+    HISTORY *hp; 		// History pointer pointing to the location 
+    				// in *history used mainly for RAV.
+    unsigned char hindex;	// Current move in *hp.
+    unsigned char htotal;	// Total number of moves in *hp.
+    unsigned char ravindex;	// The original move of *history before *hp
+    				// was updated.
+    unsigned short ply;		// Move count. FIXME
+    unsigned char wcaptures;	// White capture count.
+    unsigned char bcaptures;	// Black capture count.
+    double moveclock;		// Move clock. FIXME
+    unsigned flags;		// Game flags from above.
+    char castle;		// The current move is a castling move. FIXME
+    char mode;			// Game mode: MODE_[PLAY/HISTORY/EDIT].
+    char side;			// This playing side. BLACK or WHITE.
+    char turn;			// BLACK or WHITE.
+    unsigned n;			// This game or round number.
 } GAME;
 
 GAME *game;
 
+// The current game or round and the total.
+int gindex, gtotal;
+
+// "white wins" not "1-0"
 struct {
-    char *pgn;
-    char *fancy;
+    char *pgn;		// The formal PGN tag.
+    char *fancy;	// The human readable tag.
 } fancy_results[4];
 
+// See init_color_pairs() in colors.c.
 enum { 
     CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,
     CONF_BCOORDS, CONF_BMOVESW, CONF_BMOVESB, CONF_BCOUNT, CONF_BDWINDOW,
@@ -213,49 +230,59 @@ enum {
 };
 
 struct colors {
-    short fg;
-    short bg;
-    int attrs; /* Attributes for a color terminal. */
-    int nattrs; /* Attributes for a non-color terminal. */
+    short fg;		// Foreground color.
+    short bg;		// Background color.
+    int attrs;		// Attributes for a color terminal.
+    int nattrs;		// Attributes for a non-color terminal.
 };
 
 struct {
-    int stoponerror;
-    int jumpcount;
-    int book_method;
-    int engine_depth;
-    int historyagony;
-    int agony;
-    int linegraphics;
-    int saveprompt;
-    int deleteprompt;
-    int clevel;
-    int validmoves;
-    char ics_server[MAXHOSTNAMELEN];
-    int ics_port;
-    struct passwd *pwd;
-    char *ics_user;
-    char *ics_passwd;
-    char *nagfile;
-    char *agonyfile;
-    char *configfile;
-    char *ccfile;
-    char *fifo;
-    char *tmpfile;
-    char *savedirectory;
-    char *engine_cmd;
-    int engine;
-    struct colors color[CONF_MAX_COLORS];
-    TAG *tag;
-    int tindex;
+    int stoponerror;	// Stop processing when a parse error occurs.
+    int jumpcount;	// KEY_UP and KEY_DOWN in history mode.
+    int book_method;	// FIXME
+    int engine_depth;	// FIXME
+    int historyagony;	// Whether to display agony strings on capture when in 
+    			// history mode.
+    int agony;		// Whether to display agony anywhere.
+    int linegraphics;	// Board line graphics.
+    int saveprompt;	// Prompt to save modified games on quit. FIXME
+    int deleteprompt;	// Prompt when deleting a game.
+    int clevel;		// Compression level for compressed files.
+    int validmoves;	// Display valid squares a selected piece can move to.
+    char ics_server[MAXHOSTNAMELEN]; // ICS hostname. FIXME
+    int ics_port;	// ICS port. FIXME
+    char *ics_user;	// ICS username. FIXME
+    char *ics_passwd;	// ICS password. FIXME
+    struct passwd *pwd;	// Used throughout (tags/home directory).
+    char *nagfile;	// The pathname to the NAG data file.
+    char *agonyfile;	// The pathname to the agony data file.
+    char *configfile;	// The pathname to the configuration file (default or
+    			// from the command line).
+    char *ccfile;	// The pathname to the Country Code data file.
+    char *fifo;		// The pathname to the FIFO used for resuming games
+    			// with a chess engine.
+    char *tmpfile;	// Temporary file used for decompression of files.
+    char *savedirectory; // Directory where saved games are stored.
+    char *engine_cmd;	// Alternate chess engine command. FIXME
+    int engine;		// FIXME
+    struct colors color[CONF_MAX_COLORS]; // Color configuration.
+    TAG *tag;		// Custom PGN tags.
+    int tindex;		// Total number of custom PGN tags.
 } config;
 
+// This is used to pass to get_input() as an argument for a function pointer.
+// Used for NAG editing.
 struct annotation_edit_s {
-    HISTORY h;
-    int game;
-    int n;
+    HISTORY h;		// The move.
+    int game;		// The game number the move belongs to.
+    unsigned char n;	// The history number from game.hp the move belongs to.
 };
 
+// Loaded filename from the command line or from the file input dialog.
+char loadfile[FILENAME_MAX];
+
+// Loaded file type.
+int filetype;
 enum {
     NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
 };
@@ -263,18 +290,29 @@ enum {
 /* Chess engine file descriptors. 0 = from, 1 = to. */
 int enginefd[2];
 
+// When outputting formatted PGN data (-S), include custom tags from the
+// configuration file.
 int save_custom_tags;
-int validate_move;
+
+// When in history mode a full step is to the next move of the same playing
+// side. Half stepping is alternating sides.
+int movestep;
+
+// Two human players. FIXME
+int noengine;
+int engine_initialized;
+
+// Where in game.hp are we? heh.
+int ravlevel;
+
+// When set, validate_move() won't update any GAME elements.
+int validate;
+
+// This is a failsafe when resuming a game.
+int oldhistorytotal;
+
 int newgameinit;
 int curses_initialized;
-char loadfile[FILENAME_MAX];
-int filetype;
-int gindex, gtotal; /* Current game and total number of games. */
-int engine_initialized;
-int oldhistorytotal; /* This is a failsafe when resuming a game. */
-int movestep;
-int noengine;
-int ravlevel;
 
 enum {
     FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
@@ -297,6 +335,7 @@ void write_debug_output(int, const char *, ...);
 void dump_board(int, BOARD);
 void dump_flags(int);
 int debug;
+char *debug_board(BOARD);
 #endif
 
 #ifdef WITH_DMALLOC

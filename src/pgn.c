@@ -93,7 +93,7 @@ int end_of_game(GAME g, const char *str)
 /* Returns 1 if a duplicate tag was found. 0 otherwise. The 'n' argument is
  * a pointer to int, and incremented.
  */
-int add_tag(TAG **dst, int *n, char *name, char *value)
+int add_tag(TAG **dst, unsigned char *n, char *name, char *value)
 {
     int i, idx = *n;
     TAG *tdata = *dst;
@@ -258,7 +258,7 @@ void invalid_move(int n, const char *m)
 
 int move_text(GAME *g, FILE *fp)
 {
-    char m[MAX_PGN_MOVE_LEN + 1] = {0}, *p;
+    char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
     int dots = 0;
@@ -286,13 +286,13 @@ int move_text(GAME *g, FILE *fp)
 	    (*g).turn = BLACK;
 
 	    if ((*g).hindex == 0)
-		(*g).openingside = BLACK;
+		SET_FLAG((*g).flags, GF_BLACK_OPENING);
 	}
 	else {
 	    (*g).turn = WHITE;
 
 	    if ((*g).hindex == 0)
-		(*g).openingside = WHITE;
+		CLEAR_FLAG((*g).flags, GF_BLACK_OPENING);
 	}
     }
     else {
@@ -323,7 +323,7 @@ int move_text(GAME *g, FILE *fp)
 		return 1;
 	    }
 
-	    (*g).openingside = BLACK;
+	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 	}
 	else {
 	    // Parse error (not an opening move).
@@ -643,6 +643,8 @@ static void fen_tag(GAME *g)
 {
     int n, i;
     BOARD tmpboard;
+    unsigned flags = 0;
+    char turn = (*g).turn;
 
     init_board(tmpboard);
     n = find_tag((*g).tag, (*g).tindex, "Setup");
@@ -650,7 +652,8 @@ static void fen_tag(GAME *g)
 
     if ((n > -1 && i > -1 && atoi((*g).tag[n].value) == 1) 
 	    || (i != -1 && n == -1)) {
-	if ((n = parse_fen_line(g, tmpboard, (*g).tag[i].value)) == -1) {
+	if ((n = parse_fen_line(tmpboard, &flags, &turn, (*g).tag[i].value))
+		== -1) {
 	    if (curses_initialized)
 		cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
 	    else
@@ -659,6 +662,8 @@ static void fen_tag(GAME *g)
 	else {
 	    memcpy((*g).b, tmpboard, sizeof(BOARD));
 	    (*g).fentag = i;
+	    (*g).flags |= flags;
+	    (*g).turn = turn;
 	}
     }
 }
@@ -796,13 +801,12 @@ int parse_pgn_file(const char *filename)
 		nulltags = 0;
 		tag_section = 1;
 
-		if (gtotal) {
+		if (gtotal && game[gindex].htotal) {
 		    game[gindex].hindex = game[gindex].htotal - 1;
 		    game[gindex].history = game[gindex].hp;
 		}
 
-		new_game();
-		game[gindex].mode = MODE_HISTORY;
+		new_game(); // gindex and gtotal has just been incremented.
 	    }
 
 	    pgn_tag(&game[gindex], fp);
@@ -847,7 +851,6 @@ int parse_pgn_file(const char *filename)
 		}
 
 		new_game();
-		game[gindex].mode = MODE_HISTORY;
 		nulltags = 0;
 	    }
 
@@ -1089,7 +1092,7 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
 	if ((i % 2) == x) {
 	    len += 2;
 
-	    if (i == 0 && g.openingside == BLACK) {
+	    if (i == 0 && TEST_FLAG(g.flags, GF_BLACK_OPENING)) {
 		len += 3;
 		x = 1;
 		fprintf(fp, "%u... ", n++);
@@ -1460,7 +1463,7 @@ TAG *edit_tags(GAME g, int edit)
 {
     TAG *data = NULL;
     struct tm tp;
-    int data_index = 0;
+    unsigned char data_index = 0;
     int n, lastindex = 0;
     int len;
 
@@ -1530,7 +1533,7 @@ TAG *edit_tags(GAME g, int edit)
 	    int c;
 	    TAG *tmppgn = NULL;
 	    char *newtag = NULL;
-	    int tpgn_index = 0;
+	    unsigned char tpgn_index = 0;
 
 	    if (set_current_item(menu, mitems[lastindex]) != E_OK) {
 		lastindex = item_count(menu) - 1;

@@ -326,7 +326,7 @@ int start_chess_engine()
  */
 void parse_gnuchess_line(GAME *g, char *str)
 {
-    char m[MAX_PGN_MOVE_LEN + 1] = {0}, *p = m;
+    char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
     int count;
 
     /* Human move. Add it to the move history. */
@@ -337,7 +337,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 	}
 
         if ((*g).htotal == 0 && (*g).side == BLACK)                   
-	    (*g).openingside = BLACK;
+	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
 	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
@@ -363,7 +363,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 	}
 
         if ((*g).htotal == 0 && (*g).side == BLACK)                   
-	    (*g).openingside = BLACK;
+	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
 	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);

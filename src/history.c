@@ -37,7 +37,7 @@
 
 int history_total(HISTORY *h)
 {
-    int i;
+    short i;
 
     if (!h)
 	return 0;
@@ -60,10 +60,10 @@ void free_history_data(HISTORY *h, int start)
 	    free_history_data(h[i].rav, 0);
 	    free(h[i].rav);
 	}
-    }
 
-    if (h)
-	free(h);
+	if (h[i].move)
+	    free(h[i].move);
+    }
 }
 
 static int init_nag()
@@ -118,7 +118,7 @@ static void view_nag(void *arg)
 
 void view_annotation(HISTORY h)
 {
-    char buf[MAX_PGN_MOVE_LEN + strlen(ANNOTATION_VIEW_TITLE) + 4];
+    char buf[MAX_SAN_MOVE_LEN + strlen(ANNOTATION_VIEW_TITLE) + 4];
     int nag = 0, comment = 0;
 
     if (h.comment && h.comment[0])
@@ -397,14 +397,15 @@ done:
     return NULL;
 }
 
-void add_to_history(HISTORY **h, int *n, int *total, const char *str)
+void add_to_history(HISTORY **h, unsigned char *n, unsigned char *total, 
+	const char *str)
 {
     HISTORY *history = *h;
     int t = *total;
 
     history = Realloc(history, (t + 2) * sizeof(HISTORY));
     memset(&history[t], 0, sizeof(HISTORY));
-    strncpy(history[t].move, str, sizeof(history[t].move)); //FIXME dymanic
+    history[t].move = strdup(str);
     history[t].n = t;
     t++;
     memset(&history[t], 0, sizeof(HISTORY));
@@ -419,7 +420,9 @@ void parse_history_move(GAME *g, int idx)
     int flags = 0;
 
     (*g).bcaptures = (*g).wcaptures = 0;
-    (*g).turn = (*g).openingside;
+
+    if (TEST_FLAG((*g).flags, GF_BLACK_OPENING))
+	(*g).turn = BLACK;
 
     if (TEST_FLAG((*g).flags, GF_PERROR))
 	SET_FLAG(flags, GF_PERROR);
@@ -440,7 +443,8 @@ void parse_history_move(GAME *g, int idx)
 
     /* FIXME Move numbers and turns. */
     if ((*g).fentag)
-	parse_fen_line(g, (*g).b, (*g).tag[(*g).fentag].value);
+	parse_fen_line((*g).b, &(*g).flags, &(*g).turn, 
+		(*g).tag[(*g).fentag].value);
 
     for (i = 0; i < idx; i++) {
 	HISTORY h;
@@ -466,7 +470,7 @@ static void cursor_from_history(GAME g, int idx, int *r, int *c)
     char *p;
     int len;
 
-    if (idx > g.htotal || idx < 0)
+    if (idx > g.htotal || idx < 0 || !g.htotal || !g.hp[idx].move)
 	return;
 
     p = g.hp[idx].move;
@@ -521,7 +525,9 @@ void history_next(GAME *g, int n, int *r, int *c)
 
 void init_history(GAME *g)
 {
-    (*g).mode = MODE_HISTORY;
+    if ((*g).htotal)
+	(*g).mode = MODE_HISTORY;
+
     parse_history_move(g, game[gindex].hindex);
     //update_status_window();
 }

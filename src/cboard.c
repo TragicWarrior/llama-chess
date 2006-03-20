@@ -206,7 +206,7 @@ void draw_board(GAME g, int crow, int ccol)
 			else if (g.side == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
-			waddch(boardw, (piece && piece != int_to_piece(g, OPEN_SQUARE)) ? piece | attrs : ' ' | attrs);
+			waddch(boardw, (piece && piece != int_to_piece(g.turn, OPEN_SQUARE)) ? piece | attrs : ' ' | attrs);
 
 			if (!bold)
 			    attrs &= ~(A_BOLD);
@@ -235,7 +235,7 @@ void draw_board(GAME g, int crow, int ccol)
 /* Convert the selected piece to SAN format and validate it. */
 static char *board_to_san(GAME *g)
 {
-    static char str[MAX_PGN_MOVE_LEN + 1], *p;
+    static char str[MAX_SAN_MOVE_LEN + 1], *p;
     int piece;
     int promo;
     BOARD oldboard;
@@ -481,7 +481,7 @@ void update_history_window(GAME g)
     if (history_by_index(g, g.hindex, &h))
 	memset(&h, 0, sizeof(HISTORY));
 
-    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
+    snprintf(buf, sizeof(buf), "%s %s", (h.move) ? h.move : UNAVAILABLE,
 	    ((h.comment && h.comment[0]) || h.nag[0]) ? HISTORY_ANNO_NEXT : "");
     mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
 	    HISTORY_WIDTH - 13, buf);
@@ -489,7 +489,7 @@ void update_history_window(GAME g)
     if (history_by_index(g, game[gindex].hindex - 1, &h))
 	memset(&h, 0, sizeof(HISTORY));
 
-    snprintf(buf, sizeof(buf), "%s %s", (h.move[0]) ? h.move : UNAVAILABLE,
+    snprintf(buf, sizeof(buf), "%s %s", (h.move) ? h.move : UNAVAILABLE,
 	    ((h.comment && h.comment[0]) || h.nag[0]) ? HISTORY_ANNO_PREV : "");
     mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
 	    HISTORY_WIDTH - 13, buf);
@@ -955,7 +955,7 @@ void edit_board(GAME *g)
     p = (*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon;
     (*g).b[ROWTOBOARD((*g).sp.destrow)][COLTOBOARD((*g).sp.destcol)].icon = p;
     (*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon = 
-	int_to_piece(*g, OPEN_SQUARE);
+	int_to_piece((*g).turn, OPEN_SQUARE);
 }
 
 // Updates the notification line in the status window then refreshes the
@@ -1036,8 +1036,8 @@ void game_loop()
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
 
-    if (loadfile[0])
-	init_history(&game[gindex]);
+    if (loadfile[0] && game[gindex].htotal)
+	game[gindex].mode = MODE_HISTORY;
 
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
@@ -1156,6 +1156,11 @@ void game_loop()
 	switch (c) {
 	    int annotate;
 
+#ifdef DEBUG
+	    case 'O':
+	        message("DEBUG BOARD", ANYKEY, "%s", debug_board(game[gindex].b));
+		break;
+#endif
 	    case 'p':
 		if (paused)
 		    paused = 0;
@@ -1399,9 +1404,9 @@ void game_loop()
 
 		if (editmode) {
 		    if (game[gindex].sp.icon)
-			game[gindex].b[ROWTOBOARD(game[gindex].sp.row)][COLTOBOARD(game[gindex].sp.col)].icon = int_to_piece(game[gindex], OPEN_SQUARE);
+			game[gindex].b[ROWTOBOARD(game[gindex].sp.row)][COLTOBOARD(game[gindex].sp.col)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
 		    else
-			game[gindex].b[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = int_to_piece(game[gindex], OPEN_SQUARE);
+			game[gindex].b[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
 
 		    game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		    break;
@@ -1475,7 +1480,7 @@ void game_loop()
 	    case 'a':
 	        annotate = game[gindex].hindex;
 
-		if (annotate && game[gindex].hp[annotate - 1].move[0])
+		if (annotate && game[gindex].hp[annotate - 1].move)
 		    annotate--;
 		else
 		    break;
@@ -1566,7 +1571,7 @@ void game_loop()
 		break;
 	    case 'h':
 		if (game[gindex].mode == MODE_HISTORY) {
-		    if (game[gindex].openingside == BLACK) {
+		    if (TEST_FLAG(game[gindex].flags, GF_BLACK_OPENING)) {
 			cmessage(NULL, ANYKEY, "%s", E_RESUME_BLACK);
 			break;
 		    }
@@ -2075,7 +2080,7 @@ int main(int argc, char *argv[])
     char buf[FILENAME_MAX];
     char datadir[FILENAME_MAX];
     int ret = EXIT_SUCCESS;
-    int validate = 0, validate_and_save = 0;
+    int validate_only = 0, validate_and_save = 0;
 
     if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
@@ -2136,7 +2141,7 @@ int main(int argc, char *argv[])
 	    case 'S':
 		validate_and_save = 1;
 	    case 'V':
-		validate = 1;
+		validate_only = 1;
 		break;
 #ifdef DEBUG
 	    case 'D':
@@ -2201,7 +2206,7 @@ int main(int argc, char *argv[])
 	}
     }
 
-    if ((validate || validate_and_save) && !*loadfile)
+    if ((validate_only || validate_and_save) && !*loadfile)
 	usage(argv[0], EXIT_FAILURE);
 
     if (access(config.configfile, R_OK) == 0)
@@ -2229,7 +2234,7 @@ int main(int argc, char *argv[])
 	    break;
     }
 
-    if (validate || validate_and_save) {
+    if (validate_only || validate_and_save) {
 	if (validate_and_save) {
 	    int i;
 
