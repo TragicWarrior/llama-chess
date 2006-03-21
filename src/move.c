@@ -75,10 +75,10 @@ int piece_side(GAME g, int c)
     return (isupper(c)) ? WHITE : BLACK;
 }
 
-int val_piece_side(GAME g, int c)
+int val_piece_side(char turn, int c)
 {
-    if ((isupper(c) && g.turn == WHITE) ||
-	    (islower(c) && g.turn == BLACK))
+    if ((isupper(c) && turn == WHITE) ||
+	    (islower(c) && turn == BLACK))
 	return 1;
 
     return 0;
@@ -128,7 +128,7 @@ int piece_by_col(GAME g, int piece, int row, int col, int *r, int *c)
 	int n = g.b[ROWTOBOARD(row)][COLTOBOARD(i)].icon;
 
 	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g, n)) {
+	    if (piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*c = i;
 		*r = row;
 		count++;
@@ -142,7 +142,7 @@ int piece_by_col(GAME g, int piece, int row, int col, int *r, int *c)
 	int n = g.b[ROWTOBOARD(row)][COLTOBOARD(i)].icon;
 
 	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g, n)) {
+	    if (piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*c = i;
 		*r = row;
 		count++;
@@ -164,7 +164,7 @@ int piece_by_row(GAME g, int piece, int row, int col, int *r, int *c)
 	int n = g.b[ROWTOBOARD(i)][COLTOBOARD(col)].icon;
 
 	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g, n)) {
+	    if (piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*r = i;
 		*c = col;
 		count++;
@@ -178,7 +178,7 @@ int piece_by_row(GAME g, int piece, int row, int col, int *r, int *c)
 	int n = g.b[ROWTOBOARD(i)][COLTOBOARD(col)].icon;
 
 	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g, n)) {
+	    if (piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*r = i;
 		*c = col;
 		count++;
@@ -210,7 +210,7 @@ int piece_test(GAME g, int piece, int row, int col, int *dstr, int *dstc)
     p = g.b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
     if (piece_to_int(p) != OPEN_SQUARE) {
-	if (piece_to_int(p) == piece && val_piece_side(g, p)) {
+	if (piece_to_int(p) == piece && val_piece_side(g.turn, p)) {
 	    *dstr = row;
 	    *dstc = col;
 	    return 1;
@@ -314,7 +314,7 @@ int castle_move(GAME *g, char which)
 	p3 = (*g).b[ROWTOBOARD(row)][COLTOBOARD((n + 3))].icon;
 
 	if (piece_to_int(p) != OPEN_SQUARE || piece_to_int(p2) != OPEN_SQUARE
-		|| (piece_to_int(p3) != ROOK && val_piece_side(*g, p3)))
+		|| (piece_to_int(p3) != ROOK && val_piece_side((*g).turn, p3)))
 	    return 1;
 
 	if (!validate) {
@@ -346,7 +346,7 @@ int castle_move(GAME *g, char which)
 
 	if (piece_to_int(p) != OPEN_SQUARE || piece_to_int(p2) != OPEN_SQUARE
 		|| piece_to_int(p3) != OPEN_SQUARE ||
-		(piece_to_int(p4) != ROOK && val_piece_side(*g, p4)))
+		(piece_to_int(p4) != ROOK && val_piece_side((*g).turn, p4)))
 	    return 1;
 
 	if (!validate) {
@@ -390,7 +390,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 		    p = piece_to_int(n);
 
-		    if (p == PAWN && val_piece_side(*g, n))
+		    if (p == PAWN && val_piece_side((*g).turn, n))
 			break;
 		}
 
@@ -481,7 +481,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -497,7 +497,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -512,7 +512,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -527,7 +527,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -542,7 +542,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -557,7 +557,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -572,7 +572,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -587,7 +587,7 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
-		if (piece_to_int(p) == KNIGHT && val_piece_side(*g, p)) {
+		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -791,7 +791,7 @@ static void kingsquare(GAME g, int *kr, int *kc, int *okr, int *okc)
 	    int p = g.b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
 	    if (piece_to_int(p) == KING) {
-		if (val_piece_side(g, p)) {
+		if (val_piece_side(g.turn, p)) {
 		    *kr = row;
 		    *kc = col;
 		}
@@ -1168,7 +1168,7 @@ again:
 			int fpiece = (*g).b[ROWTOBOARD(i)][COLTOBOARD(scol)].icon;
 
 			if (piece == piece_to_int(fpiece) && 
-				val_piece_side(*g, fpiece)) {
+				val_piece_side((*g).turn, fpiece)) {
 			    srow = i;
 			    break;
 			}
@@ -1238,7 +1238,7 @@ again:
     }
 
     if (piece_to_int(piece) != OPEN_SQUARE) {
-	if (val_piece_side(*g, piece))
+	if (val_piece_side((*g).turn, piece))
 	    return 2;
 
 	if (!validate) {

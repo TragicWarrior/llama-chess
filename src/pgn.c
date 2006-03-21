@@ -792,7 +792,7 @@ int parse_pgn_file(const char *filename)
 		    game[gindex].history = game[gindex].hp;
 		}
 
-		new_game(); // gindex and gtotal has just been incremented.
+		new_game(); // gindex and gtotal have just been incremented.
 	    }
 
 	    pgn_tag(&game[gindex], fp);
