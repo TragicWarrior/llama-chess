@@ -478,9 +478,10 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 	case KNIGHT:
 	    r = row - 2;
 	    c = col - 1;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
@@ -493,9 +494,9 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    r = row - 2;
 	    c = col + 1;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
@@ -509,9 +510,10 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    r = row + 2;
 	    c = col - 1;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
@@ -524,9 +526,10 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    r = row + 2;
 	    c = col + 1;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
@@ -539,9 +542,10 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    r = row - 1;
 	    c = col - 2;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
@@ -554,9 +558,10 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    r = row - 1;
 	    c = col + 2;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
@@ -569,9 +574,10 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    r = row + 1;
 	    c = col + 2;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
@@ -584,9 +590,10 @@ int get_source_yx(GAME *g, int piece, int row, int col, int *srow, int *scol)
 
 	    r = row + 1;
 	    c = col - 2;
-	    p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
+		p = (*g).b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
+
 		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
