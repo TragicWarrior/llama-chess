@@ -40,7 +40,7 @@ char *board_to_fen(GAME g)
     char enpassant[3] = {0}, *e;
 
     for (i = g.htotal; i >= g.hindex - 1; i--)
-	switch_turn(&g);
+	switch_turn(&g.turn);
 
     p = buf;
 

@@ -112,7 +112,7 @@ char *real_filename(char *);
 int parse_move_text(GAME *, char *);
 char *a2a4tosan(GAME *, char *);
 int integer_len(int);
-void switch_turn(GAME *);
+void switch_turn(char *);
 FILE *open_file(const char *, int *);
 char *compression_cmd(const char *, int);
 int parse_fen_line(BOARD, unsigned *, char *, char *);

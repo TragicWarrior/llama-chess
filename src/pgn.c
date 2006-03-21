@@ -300,7 +300,7 @@ int move_text(GAME *g, FILE *fp)
     }
     else {
 	if ((*g).hindex > 0)
-	    switch_turn(&(*g));
+	    switch_turn(&(*g).turn);
     }
 
     ungetc(c, fp);
@@ -317,11 +317,11 @@ int move_text(GAME *g, FILE *fp)
     if (parse_move_text(g, m)) {
 	// Black opening move?
 	if ((*g).hindex == 0) {
-	    switch_turn(&(*g));
+	    switch_turn(&(*g).turn);
 
 	    if (parse_move_text(g, m)) {
 		// Nope. Parse error.
-		switch_turn(&(*g));
+		switch_turn(&(*g).turn);
 		invalid_move(gcurrent, m);
 		return 1;
 	    }
@@ -330,7 +330,7 @@ int move_text(GAME *g, FILE *fp)
 	}
 	else {
 	    // Parse error (not an opening move).
-	    switch_turn(&(*g));
+	    switch_turn(&(*g).turn);
 	    invalid_move(gcurrent, m);
 	    return 1;
 	}
@@ -878,7 +878,7 @@ done:
     if (compressed)
 	unlink(config.tmpfile);
 
-    switch_turn(&game[gindex]);
+    switch_turn(&game[gindex].turn);
     return ret;
 }
 

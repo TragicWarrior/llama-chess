@@ -341,7 +341,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
-	switch_turn(&(*g));
+	switch_turn(&(*g).turn);
 	(*g).sp.icon = 0;
 	str += count;
 	status.engine = ENGINE_THINKING;
@@ -367,7 +367,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
-	switch_turn(&(*g));
+	switch_turn(&(*g).turn);
 	str += count;
 
 	if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {

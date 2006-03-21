@@ -191,7 +191,7 @@ void get_valid_moves(GAME *, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
 int parse_move_text(GAME *, char *);
 void parse_history_move(GAME, int);
-void switch_turn(GAME *);
+void switch_turn(char *);
 char *str_etc(const char *, int, int);
 char *tilde_expand(char *);
 int parse_fen_file(BOARD, const char *);

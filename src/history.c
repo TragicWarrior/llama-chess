@@ -457,7 +457,7 @@ void parse_history_move(GAME *g, int idx)
 	    break;
 	}
 
-	switch_turn(&(*g));
+	switch_turn(&(*g).turn);
     }
 
     if (!status.notify && !(*g).mode == MODE_HISTORY)

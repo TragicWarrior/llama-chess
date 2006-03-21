@@ -781,12 +781,12 @@ char *a2a4tosan(GAME *g, char *m)
     return buf;
 }
 
-void switch_turn(GAME *g)
+void switch_turn(char *turn)
 {
-    if ((*g).turn == WHITE)
-	(*g).turn = BLACK;
+    if (*turn == WHITE)
+	*turn = BLACK;
     else
-	(*g).turn = WHITE;
+	*turn = WHITE;
 }
 
 static void kingsquare(GAME g, int *kr, int *kc, int *okr, int *okc)
@@ -816,7 +816,7 @@ int checktest(GAME *g, int kr, int kc, int okr, int okc, int matetest)
 {
     int row, col;
 
-    switch_turn(&(*g));
+    switch_turn(&(*g).turn);
 
     /* See if the move would put our opponent in check. */
     for (row = 1; VALIDFILE(row); row++) {
@@ -833,22 +833,22 @@ int checktest(GAME *g, int kr, int kc, int okr, int okc, int matetest)
 
 	    /* See if the move would leave ourselves in check. */
 	    if (!matetest) {
-		switch_turn(&(*g));
+		switch_turn(&(*g).turn);
 
 		if (get_source_yx(g, pi, kr, kc, &srow, &scol) == 0)
 		    return -1;
 
-		switch_turn(&(*g));
+		switch_turn(&(*g).turn);
 	    }
 
 	    if (get_source_yx(g, pi, okr, okc, &srow, &scol) == 0) {
-		switch_turn(&(*g));
+		switch_turn(&(*g).turn);
 		return 1;
 	    }
 	}
     }
 
-    switch_turn(&(*g));
+    switch_turn(&(*g).turn);
     return 0;
 }
 
@@ -1288,7 +1288,7 @@ done:
     }
 
     kingsquare(*g, &kr, &kc, &okr, &okc);
-    switch_turn(&(*g));
+    switch_turn(&(*g).turn);
 
     if ((*g).castle) {
 	p = m + strlen(m);
@@ -1320,7 +1320,7 @@ done:
 		break;
 	    case -1:
 		validate = i;
-		switch_turn(&(*g));
+		switch_turn(&(*g).turn);
 		return 1;
 	    default:
 		if (checkmatetest(g, kr, kc, okr, okc)) {
@@ -1355,7 +1355,7 @@ done:
 	}
     }
 
-    switch_turn(&(*g));
+    switch_turn(&(*g).turn);
     validate = i;
     return 0;
 }

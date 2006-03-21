@@ -286,7 +286,7 @@ static int move_to_engine(GAME *g)
 
     if (noengine) {
 	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
-	switch_turn(&(*g));
+	switch_turn(&(*g).turn);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	update_all(*g);
 	return 1;
@@ -1917,7 +1917,7 @@ void game_loop()
 		    break;
 
 		if (game[gindex].mode == MODE_EDIT)
-		    switch_turn(&game[gindex]);
+		    switch_turn(&game[gindex].turn);
 
 		/* FIXME crafty. */
 		SEND_TO_ENGINE("\nswitch\n");

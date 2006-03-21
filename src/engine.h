@@ -36,7 +36,7 @@ void update_status_window(void);
 char *book_method(int);
 int parse_move_text(GAME *, char *);
 char *a2a4tosan(GAME *, char *);
-void switch_turn(GAME *);
+void switch_turn(char *);
 void init_history(GAME *);
 void free_history_data(HISTORY *, int);
 void update_status_notify(GAME, char *, ...);
