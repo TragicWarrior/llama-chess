@@ -38,6 +38,7 @@ char *board_to_fen(GAME g, BOARD b)
     static char buf[MAX_PGN_LINE_LEN], *p;
     int oldturn = g.turn;
     char enpassant[3] = {0}, *e;
+    int castle = 0;
 
     for (i = g.htotal; i >= g.hindex - 1; i--)
 	switch_turn(&g.turn);
@@ -49,8 +50,8 @@ char *board_to_fen(GAME g, BOARD b)
 
 	for (col = 0; col < 8; col++) {
 	    if (b[row][col].icon == 'x') {
-		e = enpassant;
 		b[row][col].icon = int_to_piece(WHITE, OPEN_SQUARE);
+		e = enpassant;
 		*e++ = 'a' + col;
 		*e++ = ('0' + 8) - row;
 		*e = 0;
@@ -67,6 +68,7 @@ char *board_to_fen(GAME g, BOARD b)
 	    }
 
 	    *p++ = b[row][col].icon;
+	    *p = 0;
 	}
 
 	if (count) {
@@ -82,17 +84,28 @@ char *board_to_fen(GAME g, BOARD b)
     *p++ = (g.side == WHITE) ? 'w' : 'b';
     *p++ = ' ';
 
-    if (TEST_FLAG(g.flags, GF_WK_CASTLE))
+    if (TEST_FLAG(g.flags, GF_WK_CASTLE)) {
 	*p++ = 'K';
+	castle = 1;
+    }
 
-    if (TEST_FLAG(g.flags, GF_WQ_CASTLE))
+    if (TEST_FLAG(g.flags, GF_WQ_CASTLE)) {
 	*p++ = 'Q';
+	castle = 1;
+    }
 
-    if (TEST_FLAG(g.flags, GF_BK_CASTLE))
+    if (TEST_FLAG(g.flags, GF_BK_CASTLE)) {
 	*p++ = 'k';
+	castle = 1;
+    }
 
-    if (TEST_FLAG(g.flags, GF_BQ_CASTLE))
+    if (TEST_FLAG(g.flags, GF_BQ_CASTLE)) {
 	*p++ = 'q';
+	castle = 1;
+    }
+
+    if (!castle)
+	*p++ = '-';
 
     *p++ = ' ';
 
@@ -106,13 +119,16 @@ char *board_to_fen(GAME g, BOARD b)
 
     *p++ = ' ';
 
+    /*
     if (g.ply >= 10) {
 	*p++ = '0' + (g.ply / 10);
 	*p++ = '0' + g.ply % 10;
     }
     else
 	*p++ = '0' + g.ply;
+	*/
 
+    *p++ = '0';
     *p++ = ' ';
 
     i = (g.hindex + 1) / 2;
@@ -144,6 +160,7 @@ int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *str)
 
     strncpy(line, str, sizeof(line));
     s = line;
+    reset_enpassant(b);
 
     while ((tmp = strsep(&s, "/")) != NULL) {
 	int n;

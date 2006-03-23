@@ -945,7 +945,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 }
 
 /* This function converts a2a4 formatted moves to SAN format. Minimal checks
- * are performed here. The real checks are in parse_move_text() after the
+ * are performed here. The real checks are in validate_move() after the
  * conversion.
  */
 char *a2a4tosan(GAME *g, BOARD b, char *m)
@@ -1300,7 +1300,7 @@ static int drawtest(BOARD b)
     return 0;
 }
 
-static void reset_enpassant(BOARD b)
+void reset_enpassant(BOARD b)
 {
     int r, c;
 
@@ -1310,7 +1310,7 @@ static void reset_enpassant(BOARD b)
     }
 }
 
-int parse_move_text(GAME *g, BOARD b, char *m)
+int validate_move(GAME *g, BOARD b, char *m)
 {
     char *p;
     int piece, dstpiece;
@@ -1508,14 +1508,8 @@ again:
 	if (val_piece_side((*g).turn, piece))
 	    return 2;
 
-	if (!validate) {
-	    if (piece_side(*g, piece) == WHITE)
-		(*g).bcaptures++;
-	    else
-		(*g).wcaptures++;
-
+	if (!validate)
 	    update_status_notify(*g, random_agony(*g));
-	}
     }
 
     if (!validate) {
@@ -1558,11 +1552,6 @@ done:
     CLEAR_FLAG((*g).flags, GF_GAMEOVER);
     i = validate;
     validate = 1;
-
-    if (!plyincr)
-	(*g).ply++;
-    else
-	(*g).ply = 0;
 
     if (drawtest(b)) {
 	(*g).tag[TAG_RESULT].value = Realloc((*g).tag[TAG_RESULT].value, 8);

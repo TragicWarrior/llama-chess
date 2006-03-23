@@ -294,7 +294,7 @@ void parse_rcfile(const char *filename)
 	    }
 
 	    token[0] = toupper(token[0]);
-	    add_tag(&config.tag, &config.tindex, token, value);
+	    pgn_add_tag(&config.tag, &config.tindex, token, value);
 	}
 	else if (strcmp(var, "board_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BDWINDOW]);

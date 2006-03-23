@@ -321,7 +321,7 @@ int start_chess_engine()
     return enginepid;
 }
 
-/* Once the PGN parser has been well tested, parse_move_text() from the human
+/* Once the PGN parser has been well tested, validate_move() from the human
  * move can disappear.
  */
 void parse_gnuchess_line(GAME *g, char *str)
@@ -331,7 +331,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
-	if (parse_move_text(g, m)) {
+	if (validate_move(g, m)) {
 	    invalid_move(0, m);
 	    return;
 	}
@@ -357,7 +357,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 	if ((p = a2a4tosan(g, m)) == NULL)
 	    return;
 
-	if (parse_move_text(g, p)) {
+	if (validate_move(g, p)) {
 	    invalid_move(0, p);
 	    return;
 	}

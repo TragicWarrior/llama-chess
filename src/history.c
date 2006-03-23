@@ -425,8 +425,7 @@ void parse_history_move(GAME *g, BOARD b, int idx)
     int flags = 0;
     BOARD tb;
     int ret = 0;
-
-    (*g).bcaptures = (*g).wcaptures = 0;
+    int fen;
 
     if (TEST_FLAG((*g).flags, GF_BLACK_OPENING))
 	(*g).turn = BLACK;
@@ -446,14 +445,11 @@ void parse_history_move(GAME *g, BOARD b, int idx)
 	SET_FLAG(flags, GF_GAMEOVER);
     
     (*g).flags = flags;
-    (*g).ply = 0;
-
     init_board(tb);
 
     /* FIXME Move numbers and turns. */
-    if ((*g).fentag)
-	parse_fen_line(tb, &(*g).flags, &(*g).turn, 
-		(*g).tag[(*g).fentag].value);
+    if ((fen = pgn_find_tag((*g).tag, (*g).tindex, "FEN")) >= 0)
+	parse_fen_line(tb, &(*g).flags, &(*g).turn, (*g).tag[fen].value);
 
     for (i = 0; i < idx; i++) {
 	HISTORY h;
@@ -461,7 +457,7 @@ void parse_history_move(GAME *g, BOARD b, int idx)
 	if (history_by_index(*g, i, &h))
 	    break;
 	
-	if (parse_move_text(g, tb, h.move)) {
+	if (validate_move(g, tb, h.move)) {
 	    invalid_move(0, h.move);
 	    ret = 1;
 	    break;

@@ -34,7 +34,7 @@ void move_piece(char *);
 int save_pgn(const char *, int, int);
 void update_status_window(void);
 char *book_method(int);
-int parse_move_text(GAME *, char *);
+int validate_move(GAME *, char *);
 char *a2a4tosan(GAME *, char *);
 void switch_turn(char *);
 void init_history(GAME *);

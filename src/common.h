@@ -160,7 +160,7 @@ typedef struct tags {
 } TAG;
 
 typedef struct history {
-    char *move;				// The SAN move text. FIXME
+    char *move;				// The SAN move text.
     char *comment;			// Annotation for this move.
     unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph. FIXME
     short n;				// Current move number.
@@ -186,7 +186,6 @@ typedef struct games {
     				// game or ground.
     TAG *tag;			// Roster tags.
     unsigned char tindex;	// Total number of roster tags.
-    unsigned char fentag;	// Location of the FEN tag in *tag.
     HISTORY *history;		// Move history for this game.
     HISTORY *hp; 		// History pointer pointing to the location 
     				// in *history used mainly for RAV.
@@ -194,9 +193,6 @@ typedef struct games {
     unsigned char htotal;	// Total number of moves in *hp.
     unsigned char ravindex;	// The original move of *history before *hp
     				// was updated.
-    unsigned short ply;		// Move count. FIXME
-    unsigned char wcaptures;	// White capture count.
-    unsigned char bcaptures;	// Black capture count.
     double moveclock;		// Move clock. FIXME
     unsigned flags;		// Game flags from above.
     char castle;		// The current move is a castling move. FIXME
@@ -224,7 +220,7 @@ enum {
     CONF_SWINDOW, CONF_STITLE, CONF_SBORDER, CONF_SNOTIFY, CONF_SENGINE,
     CONF_HWINDOW, CONF_HTITLE, CONF_HBORDER,
     CONF_MWINDOW, CONF_MTITLE, CONF_MBORDER, CONF_MPROMPT,
-    CONF_IWINDOW, CONF_ITITLE, CONF_IBORDER, CONF_IPROMPT,
+    CONF_IWINDOW, CONF_ITITLE, CONF_IBORDER, CONF_IPROMPT, CONF_CASTLE,
     CONF_MAX_COLORS
 };
 

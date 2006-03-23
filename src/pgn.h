@@ -110,7 +110,7 @@ void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
-int parse_move_text(GAME *, BOARD, char *);
+int validate_move(GAME *, BOARD, char *);
 char *a2a4tosan(GAME *, BOARD, char *);
 int integer_len(int);
 void switch_turn(char *);
@@ -119,5 +119,6 @@ char *compression_cmd(const char *, int);
 int parse_fen_line(BOARD, unsigned *, char *, char *);
 char *board_to_fen(GAME, BOARD);
 void free_all_games(void);
+void new_game(BOARD);
 
 #endif

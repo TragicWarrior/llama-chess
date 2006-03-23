@@ -27,7 +27,7 @@ char *enginecmd[] = {
 };
 
 int isinteger(const char *);
-int add_tag(TAG **, int *, const char *, const char *);
+int pgn_add_tag(TAG **, int *, const char *, const char *);
 char *tilde_expand(char *);
 void set_default_colors(void);
 

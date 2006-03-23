@@ -79,7 +79,85 @@ char *random_agony(GAME g)
     return agony[random() % n];
 }
 
-void draw_board(GAME g, int crow, int ccol)
+static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod)
+{
+    if (piece_to_int(piece) == ROOK && col == 7
+	    && row == 7 &&
+	    (TEST_FLAG((*g).flags, GF_WK_CASTLE) || mod) &&
+	    piece_to_int(board[7][4].icon) == KING) {
+	if (mod)
+	    TOGGLE_FLAG((*g).flags, GF_WK_CASTLE);
+	return 1;
+    }
+    else if (piece_to_int(piece) == ROOK && col == 0
+	    && row == 7 &&
+	    (TEST_FLAG((*g).flags, GF_WQ_CASTLE) || mod) &&
+	    piece_to_int(board[7][4].icon) == KING) {
+	if (mod)
+	    TOGGLE_FLAG((*g).flags, GF_WQ_CASTLE);
+	return 1;
+    }
+    else if (piece_to_int(piece) == ROOK && col == 7
+	    && row == 0 &&
+	    (TEST_FLAG((*g).flags, GF_BK_CASTLE) || mod) &&
+	    piece_to_int(board[0][4].icon) == KING) {
+	if (mod)
+	    TOGGLE_FLAG((*g).flags, GF_BK_CASTLE);
+	return 1;
+    }
+    else if (piece_to_int(piece) == ROOK && col == 0
+	    && row == 0 &&
+	    (TEST_FLAG((*g).flags, GF_BQ_CASTLE) || mod) &&
+	    piece_to_int(board[0][4].icon) == KING) {
+	if (mod)
+	    TOGGLE_FLAG((*g).flags, GF_BQ_CASTLE);
+	return 1;
+    }
+    else if (piece_to_int(piece) == KING && col == 4
+	    && row == 7 && 
+	    (mod || (piece_to_int(board[7][7].icon) == ROOK &&
+	      TEST_FLAG((*g).flags, GF_WK_CASTLE))
+	      ||
+	     (piece_to_int(board[7][0].icon) == ROOK &&
+	      TEST_FLAG((*g).flags, GF_WQ_CASTLE)))) {
+	if (mod) {
+	    if (TEST_FLAG((*g).flags, GF_WK_CASTLE) ||
+		    TEST_FLAG((*g).flags, GF_WQ_CASTLE)) {
+		CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
+		CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
+	    }
+	    else {
+		SET_FLAG((*g).flags, GF_WK_CASTLE);
+		SET_FLAG((*g).flags, GF_WQ_CASTLE);
+	    }
+	}
+	return 1;
+    }
+    else if (piece_to_int(piece) == KING && col == 4
+	    && row == 0 &&
+	    (mod || (piece_to_int(board[0][7].icon) == ROOK &&
+	      TEST_FLAG((*g).flags, GF_BK_CASTLE))
+	      ||
+	     (piece_to_int(board[0][0].icon) == ROOK &&
+	      TEST_FLAG((*g).flags, GF_BQ_CASTLE)))) {
+	if (mod) {
+	    if (TEST_FLAG((*g).flags, GF_BK_CASTLE) ||
+		    TEST_FLAG((*g).flags, GF_BQ_CASTLE)) {
+		CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
+		CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
+	    }
+	    else {
+		SET_FLAG((*g).flags, GF_BK_CASTLE);
+		SET_FLAG((*g).flags, GF_BQ_CASTLE);
+	    }
+	}
+	return 1;
+    }
+
+    return 0;
+}
+
+void draw_board(GAME *g, int crow, int ccol)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -92,9 +170,8 @@ void draw_board(GAME g, int crow, int ccol)
 
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
-	    int attrs = 0;
+	    chtype attrs = 0;
 	    chtype piece, movecount = 0;
-	    int bold = 0;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -183,8 +260,8 @@ void draw_board(GAME g, int crow, int ccol)
 			attrs = CP_BOARD_CURSOR;
 		    }
 
-		    if (row == ROWTOMATRIX(g.sp.row) && 
-			    col == COLTOMATRIX(g.sp.col)) {
+		    if (row == ROWTOMATRIX((*g).sp.row) && 
+			    col == COLTOMATRIX((*g).sp.col)) {
 			attrs = CP_BOARD_SELECTED;
 		    }
 
@@ -198,18 +275,19 @@ void draw_board(GAME g, int crow, int ccol)
 		    else {
 			piece = board[row / 2][bcol].icon;
 
-			if (attrs & A_BOLD)
-			    bold = 1;
+			if ((*g).mode == MODE_EDIT && castling_state(g, board, 
+				    brow, bcol, piece, 0))
+			    attrs |= A_REVERSE;
 
-			if (g.side == WHITE && isupper(piece))
+			if ((*g).side == WHITE && isupper(piece))
 			    attrs |= A_BOLD;
-			else if (g.side == BLACK && islower(piece))
+			else if ((*g).side == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
-			waddch(boardw, (piece && piece != int_to_piece(g.turn, OPEN_SQUARE)) ? piece | attrs : ' ' | attrs);
+			waddch(boardw, (piece_to_int(piece) != OPEN_SQUARE) ? piece | attrs : ' ' | attrs);
 
-			if (!bold)
-			    attrs &= ~(A_BOLD);
+			CLEAR_FLAG(attrs, A_BOLD);
+			CLEAR_FLAG(attrs, A_REVERSE);
 		    }
 
 		    if (movecount && row != maxy -1)
@@ -266,7 +344,7 @@ static char *board_to_san(GAME *g, BOARD b)
 	return NULL;
     }
 
-    if (parse_move_text(g, b, p)) {
+    if (validate_move(g, b, p)) {
 	invalid_move(gindex + 1, p);
 	memcpy(b, oldboard, sizeof(BOARD));
 	return NULL;
@@ -434,13 +512,13 @@ void update_status_window(GAME g)
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
-    snprintf(buf, sizeof(buf), "c/%-2i %.2i:%.2i:%.2i", g.wcaptures, h, m, s);
+    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
     mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
-    snprintf(buf, sizeof(buf), "c/%-2i %.2i:%.2i:%.2i", g.bcaptures, h, m, s);
+    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
     mvwprintw(statusw, 10, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
@@ -853,7 +931,7 @@ static void edit_save_tags(GAME *g)
     (*g).tindex = 0;
 
     for (i = 0; t[i].name; i++)
-	add_tag(&(*g).tag, &(*g).tindex, t[i].name, t[i].value);
+	pgn_add_tag(&(*g).tag, &(*g).tindex, t[i].name, t[i].value);
 
     free_tag_data(t, i);
     SET_FLAG((*g).flags, GF_MODIFIED);
@@ -1016,6 +1094,35 @@ static struct annotation_edit_s *init_annotation_edit(int g, int n, HISTORY h)
     return a;
 }
 
+static void show_enpassant(BOARD b)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+	if (b[2][i].enpassant)
+	    b[2][i].icon = 'x';
+
+	if (b[5][i].enpassant)
+	    b[5][i].icon = 'x';
+    }
+}
+
+void new_game(BOARD b)
+{
+    gindex = ++gtotal - 1;
+    game = Realloc(game, gtotal * sizeof(GAME));
+    memset(&game[gindex], '\0', sizeof(GAME));
+    game[gindex].hp = game[gindex].history;
+    game[gindex].side = game[gindex].turn = WHITE;
+    game[gindex].mode = MODE_PLAY;
+    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
+    init_board(b);
+    pgn_set_default_tags(&game[gindex]);
+}
+
 void game_loop()
 {  
     int error_recover = 0;
@@ -1040,10 +1147,12 @@ void game_loop()
 
     while (!quit) {
 	int c = 0;
-	fd_set fds;
 	int i, x, n = 0, len = 0;
+	/*
+	fd_set fds;
 	char fdbuf[8192] = {0};
 	struct timeval tv;
+	*/
 	char *tmp = NULL;
 	char buf[78];
 	char tfile[FILENAME_MAX];
@@ -1126,7 +1235,7 @@ void game_loop()
 #endif
 
 	error_recover = 0;
-	draw_board(game[gindex], crow, ccol);
+	draw_board(&game[gindex], crow, ccol);
 	wmove(boardw, ROWTOMATRIX(crow), COLTOMATRIX(ccol));
 
 	if (!paused) {
@@ -1154,6 +1263,21 @@ void game_loop()
 		break;
 #endif
 	    case 'p':
+		if (game[gindex].mode == MODE_EDIT) {
+		    if (crow != 6 && crow != 3)
+			break;
+
+		    for (i = 1; VALIDFILE(i); i++) {
+			if (board[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
+			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = int_to_piece(WHITE, OPEN_SQUARE);
+			if (board[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
+			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = int_to_piece(WHITE, OPEN_SQUARE);
+		    }
+
+		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = 'x';
+		    break;
+		}
+
 		if (paused)
 		    paused = 0;
 		else
@@ -1166,17 +1290,45 @@ void game_loop()
 
 	        if (editmode) {
 		    editmode = 0;
-		    add_tag(&game[gindex].tag, &game[gindex].tindex,
-			    "FEN", board_to_fen(game[gindex]));
-		    add_tag(&game[gindex].tag, &game[gindex].tindex,
+		    pgn_add_tag(&game[gindex].tag, &game[gindex].tindex,
+			    "FEN", board_to_fen(game[gindex], board));
+		    pgn_add_tag(&game[gindex].tag, &game[gindex].tindex,
 			    "SetUp", "1");
 		    game[gindex].mode = MODE_PLAY;
-		    game[gindex].fentag = find_tag(game[gindex].tag, 
-			    game[gindex].tindex, "FEN");
+		    pgn_sort_tags(game[gindex]);
 		}
 		else {
+		    int fen;
+
 		    game[gindex].mode = MODE_EDIT;
 		    editmode = 1;
+
+		    if ((fen = pgn_find_tag(game[gindex].tag,
+				    game[gindex].tindex, "FEN")) != -1) {
+			unsigned f = 0;
+
+			parse_fen_line(board, &f, &game[gindex].turn,
+				game[gindex].tag[fen].value);
+
+			if (f)
+			    game[gindex].flags |= f;
+			else {
+			    // Reset castling availability.
+			    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
+			    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
+			    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
+			    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
+			}
+
+			show_enpassant(board);
+		    }
+		    else {
+			// Reset castling availability.
+			SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
+			SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
+			SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
+			SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
+		    }
 		}
 
 		update_all(game[gindex]);
@@ -1499,37 +1651,22 @@ void game_loop()
 		break;
 	    case 't':
 		edit_save_tags(&game[gindex]);
+		pgn_sort_tags(game[gindex]);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
-	    case 'I':
-		if (!editmode)
+	    case 'i':
+		if (game[gindex].mode == MODE_EDIT) {
+		    c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
+			    GAME_EDIT_TEXT);
+
+		    if (piece_to_int(c) == -1)
+			break;
+
+		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
 		    break;
-
-		c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
-			GAME_EDIT_TEXT);
-
-		if (piece_to_int(c) == -1 && tolower(c) != 'x')
-		    break;
-
-		if (tolower(c) == 'x')
-		    c = tolower(c);
-
-		if (c == 'x' && (crow != 6 && crow != 3))
-		    break;
-
-		if (c == 'x') {
-		    for (i = 0; i < 8; i++) {
-			if (board[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = OPEN_SQUARE;
-			if (board[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = OPEN_SQUARE;
-		    }
 		}
 
-		board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
-		break;
-	    case 'i':
 		edit_tags(game[gindex], board, 0);
 		break;
 	    case 'g':
@@ -1629,7 +1766,7 @@ void game_loop()
 
 		tmp = tilde_expand(tmp);
 
-		if (parse_pgn_file(tmp))
+		if (pgn_parse_file(tmp))
 		    break;
 
 		gindex = gtotal - 1;
@@ -1723,10 +1860,10 @@ void game_loop()
 		}
 		else {
 		    reset_history(game[gindex]);
-		    parse_pgn_file(NULL);
+		    pgn_parse_file(NULL);
+		    init_board(board);
 		}
 
-		game[gindex].wcaptures = game[gindex].bcaptures = 0;
 		crow = (game[gindex].side == WHITE) ? 2 : 7;
 		ccol = 4;
 
@@ -1751,6 +1888,13 @@ void game_loop()
 		doupdate();
 		break;
 	    case 'c':
+		if (game[gindex].mode == MODE_EDIT) {
+		    castling_state(&game[gindex], board, ROWTOBOARD(crow), 
+			    COLTOBOARD(ccol),
+			    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon, 1);
+		    break;
+		}
+
 		if (status.engine == ENGINE_THINKING)
 		    break;
 
@@ -2205,7 +2349,7 @@ int main(int argc, char *argv[])
 
     switch (filetype) {
 	case PGN_FILE:
-	    ret = parse_pgn_file(loadfile);
+	    ret = pgn_parse_file(loadfile);
 	    break;
 	case FEN_FILE:
 	    //ret = parse_fen_file(loadfile);
@@ -2214,7 +2358,7 @@ int main(int argc, char *argv[])
 	case NO_FILE:
 	default:
 	    // No file specified. Empty game.
-	    ret = parse_pgn_file(NULL);
+	    ret = pgn_parse_file(NULL);
 	    break;
     }
 
@@ -2223,7 +2367,7 @@ int main(int argc, char *argv[])
 	    int i;
 
 	    for (i = 0; i < gtotal; i++)
-		pgn_dumpgame(stdout, &game[i], i, 0);
+		pgn_write(stdout, &game[i], i, 0);
 	}
 
 	free_all_games();

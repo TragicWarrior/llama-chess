@@ -24,5 +24,6 @@ char *compression_cmd(const char *, int);
 int int_to_piece(char, int);
 int piece_to_int(int);
 void switch_turn(char *);
+void reset_enpassant(BOARD);
 
 #endif

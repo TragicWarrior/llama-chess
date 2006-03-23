@@ -135,4 +135,8 @@
 	COLOR_PAIR(29) | config.color[CONF_BDWINDOW].attrs : \
 	config.color[CONF_BDWINDOW].nattrs)
 
+#define CP_CASTLE	((COLORS) ? \
+	COLOR_PAIR(30) | config.color[CONF_CASTLE].attrs : \
+	config.color[CONF_CASTLE].nattrs)
+
 #endif

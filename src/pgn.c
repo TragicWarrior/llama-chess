@@ -47,7 +47,7 @@
 #include "debug.h"
 #endif
 
-int find_tag(TAG *t, int total, const char *name)
+int pgn_find_tag(TAG *t, int total, const char *name)
 {
     int i;
 
@@ -68,7 +68,7 @@ static int tag_compare(const void *s1, const void *s2)
 }
 
 // The first seven tags are in standard order so don't sort'em.
-static void sort_tags(GAME g)
+void pgn_sort_tags(GAME g)
 {
     TAG *t = g.tag + 7;
 
@@ -76,7 +76,7 @@ static void sort_tags(GAME g)
 }
 
 // FIXME ???
-int end_of_game(GAME g, const char *str)
+static int end_of_game(GAME g, const char *str)
 {
     int i;
     int len;
@@ -96,7 +96,7 @@ int end_of_game(GAME g, const char *str)
 /* Returns 1 if a duplicate tag was found. 0 otherwise. The 'n' argument is
  * a pointer to int, and incremented.
  */
-int add_tag(TAG **dst, unsigned char *n, char *name, char *value)
+int pgn_add_tag(TAG **dst, unsigned char *n, char *name, char *value)
 {
     int i, idx = *n;
     TAG *tdata = *dst;
@@ -200,7 +200,7 @@ void init_board(BOARD b)
     }
 }
 
-void set_default_tags(GAME *g)
+void pgn_set_default_tags(GAME *g)
 {
     time_t now;
     char tbuf[MAX_TIME_LEN + 1] = {0};
@@ -212,21 +212,21 @@ void set_default_tags(GAME *g)
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    add_tag(&(*g).tag, &(*g).tindex, "Event", "?");
-    add_tag(&(*g).tag, &(*g).tindex, "Site", "?");
-    add_tag(&(*g).tag, &(*g).tindex, "Date", tbuf);
-    add_tag(&(*g).tag, &(*g).tindex, "Round", "-");
-    add_tag(&(*g).tag, &(*g).tindex, "White", config.pwd->pw_gecos);
-    add_tag(&(*g).tag, &(*g).tindex, "Black", "?");
-    add_tag(&(*g).tag, &(*g).tindex, "Result", "*");
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "Event", "?");
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "Site", "?");
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "Date", tbuf);
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "Round", "-");
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "White", config.pwd->pw_gecos);
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "Black", "?");
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "Result", "*");
 
     /* Add custom tags from the configuration file. */
     if (newgameinit) {
 	for (n = 0; n < config.tindex; n++)
-	    add_tag(&(*g).tag, &(*g).tindex, config.tag[n].name, 
+	    pgn_add_tag(&(*g).tag, &(*g).tindex, config.tag[n].name, 
 		    config.tag[n].value);
 
-	sort_tags(*g);
+	pgn_sort_tags(*g);
 	newgameinit = 0;
     }
 }
@@ -258,7 +258,7 @@ void invalid_move(int n, const char *m)
 	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m, n);
 }
 
-int move_text(GAME *g, FILE *fp)
+static int move_text(GAME *g, FILE *fp)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0};
     int c;
@@ -313,12 +313,12 @@ int move_text(GAME *g, FILE *fp)
 	return 1;
     }
 
-    if (parse_move_text(g, pgnboard, m)) {
+    if (validate_move(g, pgnboard, m)) {
 	// Black opening move?
 	if ((*g).hindex == 0) {
 	    switch_turn(&(*g).turn);
 
-	    if (parse_move_text(g, pgnboard, m)) {
+	    if (validate_move(g, pgnboard, m)) {
 		// Nope. Parse error.
 		switch_turn(&(*g).turn);
 		invalid_move(gcurrent, m);
@@ -479,7 +479,7 @@ static void move_annotation(GAME *g, FILE *fp, int terminator)
     strncpy((*g).hp[hindex].comment, buf, len);
 }
 
-static void pgn_tag(GAME *g, FILE *fp)
+static void tag_text(GAME *g, FILE *fp)
 {
     char name[LINE_MAX], *n = name;
     char value[LINE_MAX], *v = value;
@@ -531,7 +531,7 @@ static void pgn_tag(GAME *g, FILE *fp)
     }
 
     strncpy(value, remove_tag_escapes(value), sizeof(value));
-    add_tag(&(*g).tag, &(*g).tindex, name, value);
+    pgn_add_tag(&(*g).tag, &(*g).tindex, name, value);
     skip_leading_space(fp);
 }
 
@@ -557,23 +557,6 @@ static int eog_marker(GAME *g, FILE *fp)
 
     skip_leading_space(fp);
     return 1;
-}
-
-void new_game(BOARD b)
-{
-    gindex = ++gtotal - 1;
-    gcurrent = gtotal;
-    game = Realloc(game, gtotal * sizeof(GAME));
-    memset(&game[gindex], '\0', sizeof(GAME));
-    game[gindex].hp = game[gindex].history;
-    game[gindex].side = game[gindex].turn = WHITE;
-    game[gindex].mode = MODE_PLAY;
-    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
-    init_board(b);
-    set_default_tags(&game[gindex]);
 }
 
 static HISTORY *ravlevel_history(HISTORY h, int level)
@@ -632,8 +615,8 @@ static void fen_tag(GAME *g)
     char turn = (*g).turn;
 
     init_board(tmpboard);
-    n = find_tag((*g).tag, (*g).tindex, "Setup");
-    i = find_tag((*g).tag, (*g).tindex, "FEN");
+    n = pgn_find_tag((*g).tag, (*g).tindex, "Setup");
+    i = pgn_find_tag((*g).tag, (*g).tindex, "FEN");
 
     if ((n > -1 && i > -1 && atoi((*g).tag[n].value) == 1) 
 	    || (i != -1 && n == -1)) {
@@ -646,14 +629,13 @@ static void fen_tag(GAME *g)
 	}
 	else {
 	    memcpy(pgnboard, tmpboard, sizeof(BOARD));
-	    (*g).fentag = i;
 	    (*g).flags |= flags;
 	    (*g).turn = turn;
 	}
     }
 }
 
-int parse_pgn_file(const char *filename)
+int pgn_parse_file(const char *filename)
 {
     FILE *fp;
 #ifdef DEBUG
@@ -687,6 +669,7 @@ int parse_pgn_file(const char *filename)
 	return 1;
 
     reset_game_data();
+    gcurrent = gtotal;
 
     while (1) {
 	int nextchar = 0;
@@ -792,9 +775,10 @@ int parse_pgn_file(const char *filename)
 		}
 
 		new_game(pgnboard); // gindex and gtotal have just been incremented.
+		gcurrent = gtotal;
 	    }
 
-	    pgn_tag(&game[gindex], fp);
+	    tag_text(&game[gindex], fp);
 	    continue;
 	}
 
@@ -836,6 +820,7 @@ int parse_pgn_file(const char *filename)
 		}
 
 		new_game(pgnboard);
+		gcurrent = gtotal;
 		nulltags = 0;
 	    }
 
@@ -869,7 +854,7 @@ parse_error:
 	goto done;
     }
 
-    sort_tags(game[gindex]);
+    pgn_sort_tags(game[gindex]);
     gtotal = gindex + 1;
     game[gindex].history = game[gindex].hp;
 
@@ -881,7 +866,7 @@ done:
     return ret;
 }
 
-static char *add_tag_escapes(const char *str)
+static char *pgn_add_tag_escapes(const char *str)
 {
     int i, n;
     int len = strlen(str);
@@ -952,7 +937,7 @@ static int dump_comments_and_nag(FILE *fp, HISTORY h, int *len)
     return annotated;
 }
 
-void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
+void pgn_write(FILE *fp, GAME *gp, int idx, int isfifo)
 {
     int i;
     int n, len = 0;
@@ -972,7 +957,7 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
 	    g.htotal = g.hindex;
     }
 
-    sort_tags(g);
+    pgn_sort_tags(g);
 
     for (i = 0; g.tag[i].name; i++) {
 	struct tm tp;
@@ -1051,17 +1036,17 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
 
 	fprintf(fp, "[%s \"%s\"]\n", g.tag[i].name, 
 		(g.tag[i].value && g.tag[i].value[0]) ? 
-		add_tag_escapes(g.tag[i].value) : "");
+		pgn_add_tag_escapes(g.tag[i].value) : "");
     }
 
     if (save_custom_tags) {
 	for (i = 0; i < config.tindex; i++) {
-	    if (find_tag(g.tag, g.tindex, config.tag[i].name) >= 0)
+	    if (pgn_find_tag(g.tag, g.tindex, config.tag[i].name) >= 0)
 		continue;
 
 	    fprintf(fp, "[%s \"%s\"]\n", config.tag[i].name, 
 		    (config.tag[i].value && config.tag[i].value[0]) ? 
-		    add_tag_escapes(config.tag[i].value) : "");
+		    pgn_add_tag_escapes(config.tag[i].value) : "");
 	}
     }
 
@@ -1115,7 +1100,7 @@ void pgn_dumpgame(FILE *fp, GAME *gp, int idx, int isfifo)
     if (strlen(g.tag[TAG_RESULT].value) + len + 1 >= 80)
 	fprintf(fp, "\n");
 
-    fprintf(fp, "%s\n\n", add_tag_escapes(g.tag[TAG_RESULT].value));
+    fprintf(fp, "%s\n\n", pgn_add_tag_escapes(g.tag[TAG_RESULT].value));
     g.htotal = oldtotal;
 
     if (!isfifo) {
@@ -1216,10 +1201,10 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
     }
 
     if (isfifo)
-	pgn_dumpgame(fp, &game[saveindex], saveindex, isfifo);
+	pgn_write(fp, &game[saveindex], saveindex, isfifo);
     else {
 	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
-	    pgn_dumpgame(fp, &game[i], i, isfifo);
+	    pgn_write(fp, &game[i], i, isfifo);
     }
 
     if (command)
@@ -1454,7 +1439,7 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 
     /* Edit the backup copy, not the original in case the save fails. */
     for (n = 0; n < g.tindex; n++)
-	add_tag(&data, &data_index, g.tag[n].name, g.tag[n].value);
+	pgn_add_tag(&data, &data_index, g.tag[n].name, g.tag[n].value);
 
     while (1) {
 	WINDOW *win, *subw;
@@ -1557,7 +1542,7 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 			if (i == selected)
 			    continue;
 
-			add_tag(&tmppgn, &tpgn_index, data[i].name,
+			pgn_add_tag(&tmppgn, &tpgn_index, data[i].name,
 				data[i].value);
 		    }
 
@@ -1565,7 +1550,7 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 		    data = NULL;
 
 		    for (i = data_index = 0; i < tpgn_index; i++) {
-			add_tag(&data, &data_index, tmppgn[i].name,
+			pgn_add_tag(&data, &data_index, tmppgn[i].name,
 				tmppgn[i].value);
 		    }
 
@@ -1596,7 +1581,7 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 			}
 		    }
 
-		    add_tag(&data, &data_index, newtag, NULL);
+		    pgn_add_tag(&data, &data_index, newtag, NULL);
 
 		    selected = data_index - 1;
 		    goto gotitem;
@@ -1611,7 +1596,7 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 		    if (!edit)
 			break;
 
-		    add_tag(&data, &data_index, "FEN",
+		    pgn_add_tag(&data, &data_index, "FEN",
 			    board_to_fen(g, b));
 
 		    selected = data_index - 1;

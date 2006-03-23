@@ -111,7 +111,9 @@ const char *edithelp[] = {
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
     "                 x - delete the piece under the cursor",
-    "                 I - insert a new piece",
+    "                 i - insert a new piece",
+    "                 c - toggle castling availability",
+    "                 p - this square is the en passant one",
     "                 e - toggle board edit mode",
     NULL,
 };
@@ -155,7 +157,7 @@ const char *playhelp[] = {
 };
 
 pid_t init_chess_engine(void);
-int parse_pgn_file(const char *);
+int pgn_parse_file(const char *);
 void update_history(void);
 void reset_history(GAME);
 TAG *edit_tags(GAME, BOARD, int);
@@ -178,7 +180,7 @@ void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void init_color_pairs(void);
 char *browse_directory(void *);
 char *a2a4tosan(GAME *, BOARD, char *);
-int add_tag(TAG **, unsigned char *, const char *, const char *);
+int pgn_add_tag(TAG **, unsigned char *, const char *, const char *);
 void new_game(BOARD);
 void *Malloc(size_t);
 int isinteger(const char *);
@@ -190,18 +192,22 @@ void free_tag_data(TAG *, int);
 void free_history_data(HISTORY *, int);
 void get_valid_moves(GAME *, BOARD, int, int, int, int *, int *, int *, int *);
 void reset_valid_moves(BOARD);
-int parse_move_text(GAME *, BOARD, char *);
+int validate_move(GAME *, BOARD, char *);
 void parse_history_move(GAME, int);
 void switch_turn(char *);
 char *str_etc(const char *, int, int);
 char *tilde_expand(char *);
 int parse_fen_file(BOARD, const char *);
-char *board_to_fen(GAME);
+char *board_to_fen(GAME, BOARD);
 void set_defaults(void);
 void add_to_history(HISTORY **, unsigned char *, unsigned char *, const char *);
 void update_all(GAME);
-void pgn_dumpgame(FILE *, GAME *, int, int);
+void pgn_write(FILE *, GAME *, int, int);
 void invalid_move(int, const char *);
-int find_tag(TAG *, int, const char *);
+int pgn_find_tag(TAG *, int, const char *);
+int parse_fen_line(BOARD b, unsigned *, char *, char *);
+void init_board(BOARD);
+void pgn_sort_tags(GAME);
+void pgn_set_default_tags(GAME *);
 
 #endif

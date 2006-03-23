@@ -42,11 +42,12 @@ void update_status_window(void);
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char *, const char **);
-int parse_move_text(GAME *, BOARD, char *);
+int validate_move(GAME *, BOARD, char *);
 void switch_turn(char *);
 int parse_fen_line(BOARD, unsigned *, char *, char *);
 void update_all(GAME);
 void update_status_notify(GAME, char *, ...);
 void invalid_move(int, const char *);
+int pgn_find_tag(TAG *, int, const char *);
 
 #endif
