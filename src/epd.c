@@ -31,7 +31,7 @@
 #include "common.h"
 #include "epd.h"
 
-char *board_to_fen(GAME g)
+char *board_to_fen(GAME g, BOARD b)
 {
     int row, col;
     int i;
@@ -48,15 +48,15 @@ char *board_to_fen(GAME g)
 	int count = 0;
 
 	for (col = 0; col < 8; col++) {
-	    if (g.b[row][col].icon == 'x') {
+	    if (b[row][col].icon == 'x') {
 		e = enpassant;
-		g.b[row][col].icon = int_to_piece(WHITE, OPEN_SQUARE);
+		b[row][col].icon = int_to_piece(WHITE, OPEN_SQUARE);
 		*e++ = 'a' + col;
 		*e++ = ('0' + 8) - row;
 		*e = 0;
 	    }
 
-	    if (piece_to_int(g.b[row][col].icon) == OPEN_SQUARE) {
+	    if (piece_to_int(b[row][col].icon) == OPEN_SQUARE) {
 		count++;
 		continue;
 	    }
@@ -66,7 +66,7 @@ char *board_to_fen(GAME g)
 		count = 0;
 	    }
 
-	    *p++ = g.b[row][col].icon;
+	    *p++ = b[row][col].icon;
 	}
 
 	if (count) {

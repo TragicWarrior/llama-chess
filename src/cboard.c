@@ -166,13 +166,13 @@ void draw_board(GAME g, int crow, int ccol)
 		    else
 			attrwhich = WHITE;
 
-		    if (config.validmoves && g.b[brow][bcol].valid) {
+		    if (config.validmoves && board[brow][bcol].valid) {
 			attrs = (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE :
 			    CP_BOARD_MOVES_BLACK;
 
-			if (g.b[brow][bcol].movecount) {
+			if (board[brow][bcol].movecount) {
 			    if (brow + 1 != crow && bcol + 1 != ccol)
-				movecount = (g.b[brow][bcol].movecount + '0');
+				movecount = (board[brow][bcol].movecount + '0');
 			}
 		    }
 		    else
@@ -196,7 +196,7 @@ void draw_board(GAME g, int crow, int ccol)
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			piece = g.b[row / 2][bcol].icon;
+			piece = board[row / 2][bcol].icon;
 
 			if (attrs & A_BOLD)
 			    bold = 1;
@@ -233,7 +233,7 @@ void draw_board(GAME g, int crow, int ccol)
 }
 
 /* Convert the selected piece to SAN format and validate it. */
-static char *board_to_san(GAME *g)
+static char *board_to_san(GAME *g, BOARD b)
 {
     static char str[MAX_SAN_MOVE_LEN + 1], *p;
     int piece;
@@ -244,7 +244,7 @@ static char *board_to_san(GAME *g)
 	    (*g).sp.row, x_grid_chars[(*g).sp.destcol - 1], (*g).sp.destrow);
 
     p = str;
-    piece = piece_to_int((*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon);
+    piece = piece_to_int(b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon);
 
     if (piece == PAWN && (((*g).sp.destrow == 8 && (*g).turn == WHITE) ||
 		    ((*g).sp.destrow == 1 && (*g).turn == BLACK))) {
@@ -258,28 +258,28 @@ static char *board_to_san(GAME *g)
 	*p = '\0';
     }
 
-    memcpy(oldboard, (*g).b, sizeof(BOARD));
+    memcpy(oldboard, b, sizeof(BOARD));
 
-    if ((p = a2a4tosan(g, str)) == NULL) {
+    if ((p = a2a4tosan(g, b, str)) == NULL) {
 	cmessage(p, ANYKEY, "%s", E_A2A4_PARSE);
-	memcpy((*g).b, oldboard, sizeof(BOARD));
+	memcpy(b, oldboard, sizeof(BOARD));
 	return NULL;
     }
 
-    if (parse_move_text(g, p)) {
+    if (parse_move_text(g, b, p)) {
 	invalid_move(gindex + 1, p);
-	memcpy((*g).b, oldboard, sizeof(BOARD));
+	memcpy(b, oldboard, sizeof(BOARD));
 	return NULL;
     }
 
     return p;
 }
 
-static int move_to_engine(GAME *g)
+static int move_to_engine(GAME *g, BOARD b)
 {
     char *p;
 
-    if ((p = board_to_san(g)) == NULL)
+    if ((p = board_to_san(g, b)) == NULL)
 	return 0;
 
     (*g).sp.row = (*g).sp.col = (*g).sp.icon = 0;
@@ -559,7 +559,7 @@ void update_all(GAME g)
     update_history_window(g);
 }
 
-static void game_next_prev(GAME g, int n, int count)
+static void game_next_prev(GAME *g, int n, int count)
 {
     if (gtotal < 2)
 	return;
@@ -585,9 +585,9 @@ static void game_next_prev(GAME g, int n, int count)
 	    gindex -= count;
     }
 
-    init_history(&g);
-    update_all(g);
-    update_tag_window(g.tag);
+    init_history(g, board);
+    update_all(*g);
+    update_tag_window((*g).tag);
 }
 
 void free_game_data(GAME g)
@@ -851,7 +851,7 @@ static void edit_save_tags(GAME *g)
     int i;
     TAG *t;
 
-    if ((t = edit_tags(*g, 1)) == NULL)
+    if ((t = edit_tags(*g, board, 1)) == NULL)
 	return;
 
     (*g).tindex = 0;
@@ -948,14 +948,13 @@ cleanup:
     return ret;
 }
 
-void edit_board(GAME *g)
+void edit_board(GAME g, BOARD b)
 {
     chtype p;
 
-    p = (*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon;
-    (*g).b[ROWTOBOARD((*g).sp.destrow)][COLTOBOARD((*g).sp.destcol)].icon = p;
-    (*g).b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon = 
-	int_to_piece((*g).turn, OPEN_SQUARE);
+    p = b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon;
+    b[ROWTOBOARD(g.sp.destrow)][COLTOBOARD(g.sp.destcol)].icon = p;
+    b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon = int_to_piece(g.turn, OPEN_SQUARE);
 }
 
 // Updates the notification line in the status window then refreshes the
@@ -1035,10 +1034,7 @@ void game_loop()
 
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
-
-    if (loadfile[0] && game[gindex].htotal)
-	game[gindex].mode = MODE_HISTORY;
-
+    init_history(&game[gindex], board);
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
     paused = 1; //FIXME clock
@@ -1158,7 +1154,7 @@ void game_loop()
 
 #ifdef DEBUG
 	    case 'O':
-	        message("DEBUG BOARD", ANYKEY, "%s", debug_board(game[gindex].b));
+	        message("DEBUG BOARD", ANYKEY, "%s", debug_board(board));
 		break;
 #endif
 	    case 'p':
@@ -1209,7 +1205,7 @@ void game_loop()
 		    break;
 
 		gindex = n;
-		init_history(&game[gindex]);
+		init_history(&game[gindex], board);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1312,7 +1308,7 @@ void game_loop()
 		    view_annotation(game[gindex].hp[game[gindex].hindex - 1]);
 		break;
 	    case '>':
-		game_next_prev(game[gindex], 1, (count) ? count : 1);
+		game_next_prev(&game[gindex], 1, (count) ? count : 1);
 
 		if (delete_count) {
 		    markend = gindex;
@@ -1324,7 +1320,7 @@ void game_loop()
 		editmode = 0;
 		break;
 	    case '<':
-		game_next_prev(game[gindex], 0, (count) ? count : 1);
+		game_next_prev(&game[gindex], 0, (count) ? count : 1);
 
 		if (delete_count) {
 		    markend = gindex;
@@ -1364,7 +1360,7 @@ void game_loop()
 		    break;
 
 		game[gindex].hindex = i * 2;
-		init_history(&game[gindex]);
+		init_history(&game[gindex], board);
 		update_all(game[gindex]);
 		break;
 	    case 'J':
@@ -1395,7 +1391,7 @@ void game_loop()
 		    break;
 
 		gindex = i;
-		init_history(&game[gindex]);
+		init_history(&game[gindex], board);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1404,9 +1400,9 @@ void game_loop()
 
 		if (editmode) {
 		    if (game[gindex].sp.icon)
-			game[gindex].b[ROWTOBOARD(game[gindex].sp.row)][COLTOBOARD(game[gindex].sp.col)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
+			board[ROWTOBOARD(game[gindex].sp.row)][COLTOBOARD(game[gindex].sp.col)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
 		    else
-			game[gindex].b[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
+			board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
 
 		    game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		    break;
@@ -1473,7 +1469,7 @@ void game_loop()
 		}
 
 		delete_game((!n) ? gindex : -1);
-		init_history(&game[gindex]);
+		init_history(&game[gindex], board);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1536,17 +1532,17 @@ void game_loop()
 
 		if (c == 'x') {
 		    for (i = 0; i < 8; i++) {
-			if (game[gindex].b[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
-			    game[gindex].b[ROWTOBOARD(3)][COLTOBOARD(i)].icon = OPEN_SQUARE;
-			if (game[gindex].b[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
-			    game[gindex].b[ROWTOBOARD(6)][COLTOBOARD(i)].icon = OPEN_SQUARE;
+			if (board[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
+			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = OPEN_SQUARE;
+			if (board[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
+			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = OPEN_SQUARE;
 		    }
 		}
 
-		game[gindex].b[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
+		board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
 		break;
 	    case 'i':
-		edit_tags(game[gindex], 0);
+		edit_tags(game[gindex], board, 0);
 		break;
 	    case 'g':
 		if (game[gindex].mode == MODE_HISTORY || 
@@ -1619,14 +1615,14 @@ void game_loop()
 		    break;
 
 		wtimeout(boardw, -1);
-		init_history(&game[gindex]);
+		init_history(&game[gindex], board);
 		break;
 	    case 'u':
 		/* FIXME dies reading FIFO sometimes. */
 		if (game[gindex].mode != MODE_PLAY || !game[gindex].htotal)
 		    break;
 
-		history_previous(&game[gindex], (count) ? count * 2 : 2, &crow, &ccol);
+		history_previous(&game[gindex], board, (count) ? count * 2 : 2, &crow, &ccol);
 		oldhistorytotal = game[gindex].htotal;
 		game[gindex].htotal = game[gindex].hindex;
 
@@ -1650,7 +1646,7 @@ void game_loop()
 
 		gindex = gtotal - 1;
 		strncpy(loadfile, tmp, sizeof(loadfile));
-		init_history(&game[gindex]);
+		init_history(&game[gindex], board);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1735,7 +1731,7 @@ void game_loop()
 
 		if (c == 'n') {
 		    newgameinit = 1;
-		    new_game();
+		    new_game(board);
 		}
 		else {
 		    reset_history(game[gindex]);
@@ -1788,7 +1784,7 @@ void game_loop()
 		}
 
 		if (config.validmoves)
-		    reset_valid_moves(game[gindex].b);
+		    reset_valid_moves(board);
 
 		break;
 	    case '0' ... '9':
@@ -1803,7 +1799,7 @@ void game_loop()
 		continue;
 	    case KEY_UP:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_next(&game[gindex], (count > 0) ?
+		    history_next(&game[gindex], board, (count > 0) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep, &crow, &ccol);
 		    update_all(game[gindex]);
@@ -1831,7 +1827,7 @@ void game_loop()
 		break;
 	    case KEY_DOWN:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_previous(&game[gindex], (count) ?
+		    history_previous(&game[gindex], board, (count) ?
 			    config.jumpcount * count * movestep : 
 			    config.jumpcount * movestep, &crow, &ccol);
 		    update_all(game[gindex]);
@@ -1860,7 +1856,7 @@ void game_loop()
 		break;
 	    case KEY_LEFT:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_previous(&game[gindex], (count) ?
+		    history_previous(&game[gindex], board, (count) ?
 			    count * movestep : movestep, &crow, &ccol);
 		    update_all(game[gindex]);
 		    break;
@@ -1887,8 +1883,8 @@ void game_loop()
 		break;
 	    case KEY_RIGHT:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_next(&game[gindex], (count) ? count * movestep 
-			    : movestep, &crow, &ccol);
+		    history_next(&game[gindex], board, (count) ? 
+			    count * movestep : movestep, &crow, &ccol);
 		    update_all(game[gindex]);
 		    break;
 		}
@@ -1973,7 +1969,7 @@ void game_loop()
 		game[gindex].sp.col = ccol;
 
 		if (!editmode && config.validmoves) {
-		    get_valid_moves(&game[gindex],
+		    get_valid_moves(&game[gindex], board,
 			    piece_to_int(game[gindex].sp.icon),
 			    game[gindex].sp.row, game[gindex].sp.col, &minr,
 			    &maxr, &minc, &maxc);
@@ -2005,14 +2001,14 @@ void game_loop()
 		game[gindex].sp.destcol = ccol;
 
 		if (editmode) {
-		    edit_board(&game[gindex]);
+		    edit_board(game[gindex], board);
 		    game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		    break;
 		}
 
-		if (move_to_engine(&game[gindex])) {
+		if (move_to_engine(&game[gindex], board)) {
 		    if (config.validmoves)
-			reset_valid_moves(game[gindex].b);
+			reset_valid_moves(board);
 
 		    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
 			CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);

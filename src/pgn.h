@@ -23,7 +23,6 @@
 extern char *strptime(const char *, const char *, struct tm *);
 #endif
 
-#define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
 #define BROWSE_HEIGHT	12
 #define MAX_TIME_LEN	18
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
@@ -34,6 +33,8 @@ extern char *strptime(const char *, const char *, struct tm *);
 // The current game or round being parsed.
 unsigned gcurrent;
 #endif
+
+BOARD pgnboard;		// Board to use when validating/parsing.
 
 struct country_codes {
     char code[4];
@@ -109,15 +110,14 @@ void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 void help(const char *, const char *, const char **);
 char *tilde_expand(char *);
 char *real_filename(char *);
-int parse_move_text(GAME *, char *);
-char *a2a4tosan(GAME *, char *);
+int parse_move_text(GAME *, BOARD, char *);
+char *a2a4tosan(GAME *, BOARD, char *);
 int integer_len(int);
 void switch_turn(char *);
 FILE *open_file(const char *, int *);
 char *compression_cmd(const char *, int);
 int parse_fen_line(BOARD, unsigned *, char *, char *);
-char *board_to_fen(GAME);
-void copy_board(BOARD, BOARD);
+char *board_to_fen(GAME, BOARD);
 void free_all_games(void);
 
 #endif

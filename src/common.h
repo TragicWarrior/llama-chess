@@ -66,13 +66,14 @@ extern int vasprintf(char **, const char *, va_list);
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
 #define CENTERX(x, str)		(x / 2 - strlen(str) / 2)
 
-#define VALIDFILE(f)	((f >= 1 && f <= 8) ? 1 : 0)
+#define VALIDRANK	VALIDFILE
+#define VALIDFILE(f)	(f >= 1 && f <= 8)
 #define ROWTOBOARD(r)	(8 - r)
 #define COLTOBOARD(c)	(c - 1)
 #define ROWTOINT(r)	(r - '0')
 #define COLTOINT(c)	(c - ('a' - 1))
-#define VALIDROW(r)	((r >= '1' && r <= '8') ? 1 : 0)
-#define VALIDCOL(c)	((c >= 'a' && c <= 'h') ? 1 : 0)
+#define VALIDROW(r)	(r >= '1' && r <= '8')
+#define VALIDCOL(c)	(c >= 'a' && c <= 'h')
 
 #define SET_FLAG(var, f)	(var |= f)
 #define CLEAR_FLAG(var, f)	(var &= ~(f))
@@ -181,7 +182,6 @@ struct selected_piece_s {
 typedef struct games {
     fd_set fds;   		// The file descriptors associated with this
     				// game.
-    BOARD b;
     struct selected_piece_s sp; // The selected piece on the board for this
     				// game or ground.
     TAG *tag;			// Roster tags.

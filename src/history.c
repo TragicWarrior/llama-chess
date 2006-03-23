@@ -52,7 +52,7 @@ void free_history_data(HISTORY *h, int start)
     int t = history_total(h);
     int i;
 
-    for (i = start; i < t; i++) {
+    for (i = start; i <= t; i++) {
 	if (h[i].comment)
 	    free(h[i].comment);
 
@@ -64,6 +64,9 @@ void free_history_data(HISTORY *h, int start)
 	if (h[i].move)
 	    free(h[i].move);
     }
+
+    if (h)
+	free(h);
 }
 
 static int init_nag()
@@ -414,15 +417,19 @@ void add_to_history(HISTORY **h, unsigned char *n, unsigned char *total,
     *total = *n = t;
 }
 
-void parse_history_move(GAME *g, int idx)
+void parse_history_move(GAME *g, BOARD b, int idx)
 {
     int i = 0;
     int flags = 0;
+    BOARD tb;
+    int ret = 0;
 
     (*g).bcaptures = (*g).wcaptures = 0;
 
     if (TEST_FLAG((*g).flags, GF_BLACK_OPENING))
 	(*g).turn = BLACK;
+    else
+	(*g).turn = WHITE;
 
     if (TEST_FLAG((*g).flags, GF_PERROR))
 	SET_FLAG(flags, GF_PERROR);
@@ -439,11 +446,11 @@ void parse_history_move(GAME *g, int idx)
     (*g).flags = flags;
     (*g).ply = 0;
 
-    init_board((*g).b);
+    init_board(tb);
 
     /* FIXME Move numbers and turns. */
     if ((*g).fentag)
-	parse_fen_line((*g).b, &(*g).flags, &(*g).turn, 
+	parse_fen_line(tb, &(*g).flags, &(*g).turn, 
 		(*g).tag[(*g).fentag].value);
 
     for (i = 0; i < idx; i++) {
@@ -452,13 +459,17 @@ void parse_history_move(GAME *g, int idx)
 	if (history_by_index(*g, i, &h))
 	    break;
 	
-	if (parse_move_text(g, h.move)) {
+	if (parse_move_text(g, tb, h.move)) {
 	    invalid_move(0, h.move);
+	    ret = 1;
 	    break;
 	}
 
 	switch_turn(&(*g).turn);
     }
+
+    if (ret == 0)
+	memcpy(b, tb, sizeof(BOARD));
 
     if (!status.notify && !(*g).mode == MODE_HISTORY)
 	update_status_notify(*g, "%s", GAME_HELP_PROMPT);
@@ -493,7 +504,7 @@ static void cursor_from_history(GAME g, int idx, int *r, int *c)
     *c = COLTOINT(*p);
 }
 
-void history_previous(GAME *g, int n, int *r, int *c)
+void history_previous(GAME *g, BOARD b, int n, int *r, int *c)
 {
     if ((*g).hindex - n < 0) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
@@ -505,10 +516,10 @@ void history_previous(GAME *g, int n, int *r, int *c)
 	(*g).hindex -= n;
 
     cursor_from_history(*g, (*g).hindex, r, c);
-    parse_history_move(g, (*g).hindex);
+    parse_history_move(g, b, (*g).hindex);
 }
 
-void history_next(GAME *g, int n, int *r, int *c)
+void history_next(GAME *g, BOARD b, int n, int *r, int *c)
 {
     if ((*g).hindex + n > (*g).htotal) {
 	if ((n == 2 && movestep == 2) || (n == 1 && movestep == 1))
@@ -520,14 +531,14 @@ void history_next(GAME *g, int n, int *r, int *c)
 	(*g).hindex += n;
 
     cursor_from_history(*g, game[gindex].hindex, r, c);
-    parse_history_move(g, game[gindex].hindex);
+    parse_history_move(g, b, game[gindex].hindex);
 }
 
-void init_history(GAME *g)
+void init_history(GAME *g, BOARD b)
 {
     if ((*g).htotal)
 	(*g).mode = MODE_HISTORY;
 
-    parse_history_move(g, game[gindex].hindex);
+    parse_history_move(g, b, game[gindex].hindex);
     //update_status_window();
 }

@@ -235,6 +235,7 @@ static void reset_game_data()
 {
     free_all_games();
     gtotal = gindex = 0;
+    init_board(pgnboard);
 }
 
 static void skip_leading_space(FILE *fp)
@@ -251,10 +252,8 @@ static void skip_leading_space(FILE *fp)
 
 void invalid_move(int n, const char *m)
 {
-    if (curses_initialized) {
-	return;
+    if (curses_initialized)
 	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m, n);
-    }
     else
 	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m, n);
 }
@@ -309,17 +308,17 @@ int move_text(GAME *g, FILE *fp)
 	return 1;
 
     // In case the file is in a2a4 format, convert this move to SAN format.
-    if (a2a4tosan(g, m) == NULL) {
+    if (a2a4tosan(g, pgnboard, m) == NULL) {
 	invalid_move(gcurrent, m);
 	return 1;
     }
 
-    if (parse_move_text(g, m)) {
+    if (parse_move_text(g, pgnboard, m)) {
 	// Black opening move?
 	if ((*g).hindex == 0) {
 	    switch_turn(&(*g).turn);
 
-	    if (parse_move_text(g, m)) {
+	    if (parse_move_text(g, pgnboard, m)) {
 		// Nope. Parse error.
 		switch_turn(&(*g).turn);
 		invalid_move(gcurrent, m);
@@ -339,7 +338,7 @@ int move_text(GAME *g, FILE *fp)
 #ifdef DEBUG
     if (debug) {
 	DUMP("%s\n", m);
-	dump_board(0, (*g).b);
+	dump_board(0, pgnboard);
     }
 #endif
 
@@ -560,7 +559,7 @@ static int eog_marker(GAME *g, FILE *fp)
     return 1;
 }
 
-void new_game()
+void new_game(BOARD b)
 {
     gindex = ++gtotal - 1;
     gcurrent = gtotal;
@@ -573,7 +572,7 @@ void new_game()
     SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
     SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
     SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
-    init_board(game[gindex].b);
+    init_board(b);
     set_default_tags(&game[gindex]);
 }
 
@@ -646,7 +645,7 @@ static void fen_tag(GAME *g)
 		warnx("round #%i: %s", gcurrent, E_FEN_PARSE);
 	}
 	else {
-	    memcpy((*g).b, tmpboard, sizeof(BOARD));
+	    memcpy(pgnboard, tmpboard, sizeof(BOARD));
 	    (*g).fentag = i;
 	    (*g).flags |= flags;
 	    (*g).turn = turn;
@@ -671,7 +670,7 @@ int parse_pgn_file(const char *filename)
     if (!filename) {
 	reset_game_data();
 	newgameinit = 1;
-	new_game();
+	new_game(pgnboard);
 	return 0;
     }
 
@@ -792,7 +791,7 @@ int parse_pgn_file(const char *filename)
 		    game[gindex].history = game[gindex].hp;
 		}
 
-		new_game(); // gindex and gtotal have just been incremented.
+		new_game(pgnboard); // gindex and gtotal have just been incremented.
 	    }
 
 	    pgn_tag(&game[gindex], fp);
@@ -836,7 +835,7 @@ int parse_pgn_file(const char *filename)
 		    game[gindex].history = game[gindex].hp;
 		}
 
-		new_game();
+		new_game(pgnboard);
 		nulltags = 0;
 	    }
 
@@ -866,7 +865,7 @@ parse_error:
     fclose(fp);
 
     if (gtotal < 1) {
-	new_game();
+	new_game(pgnboard);
 	goto done;
     }
 
@@ -1445,7 +1444,7 @@ void free_tag_data(TAG *data, int n)
     free(data);
 }
 
-TAG *edit_tags(GAME g, int edit)
+TAG *edit_tags(GAME g, BOARD b, int edit)
 {
     TAG *data = NULL;
     struct tm tp;
@@ -1613,7 +1612,7 @@ TAG *edit_tags(GAME g, int edit)
 			break;
 
 		    add_tag(&data, &data_index, "FEN",
-			    board_to_fen(g));
+			    board_to_fen(g, b));
 
 		    selected = data_index - 1;
 		    goto gotitem;

@@ -64,8 +64,7 @@ char *debug_board(BOARD b)
 		*p++ = ' ';
 	}
 
-	if (row < 7)
-	    *p++ = '\n';
+	*p++ = '\n';
     }
 
     *p = 0;
