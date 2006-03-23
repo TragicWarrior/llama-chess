@@ -559,7 +559,7 @@ void update_all(GAME g)
     update_history_window(g);
 }
 
-static void game_next_prev(GAME *g, int n, int count)
+static void game_next_prev(GAME g, int n, int count)
 {
     if (gtotal < 2)
 	return;
@@ -584,10 +584,6 @@ static void game_next_prev(GAME *g, int n, int count)
 	else
 	    gindex -= count;
     }
-
-    init_history(g, board);
-    update_all(*g);
-    update_tag_window((*g).tag);
 }
 
 void free_game_data(GAME g)
@@ -1308,19 +1304,8 @@ void game_loop()
 		    view_annotation(game[gindex].hp[game[gindex].hindex - 1]);
 		break;
 	    case '>':
-		game_next_prev(&game[gindex], 1, (count) ? count : 1);
-
-		if (delete_count) {
-		    markend = gindex;
-		    pushkey = 'x';
-		    delete_count = 0;
-		}
-
-		game[gindex].mode = MODE_HISTORY;
-		editmode = 0;
-		break;
 	    case '<':
-		game_next_prev(&game[gindex], 0, (count) ? count : 1);
+		game_next_prev(game[gindex], (c == '>') ? 1 : 0, (count) ? count : 1);
 
 		if (delete_count) {
 		    markend = gindex;
@@ -1330,6 +1315,9 @@ void game_loop()
 
 		game[gindex].mode = MODE_HISTORY;
 		editmode = 0;
+		init_history(&game[gindex], board);
+		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case 'j':
 		if (game[gindex].mode != MODE_HISTORY || 

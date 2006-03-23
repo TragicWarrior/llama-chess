@@ -43,7 +43,7 @@ int history_total(HISTORY *h)
 	return 0;
 
     for (i = 0; h[i].n != -1; i++);
-    return i;
+    return i + 1;
 }
 
 // 'start' is for truncating the move history from some move.
@@ -52,7 +52,10 @@ void free_history_data(HISTORY *h, int start)
     int t = history_total(h);
     int i;
 
-    for (i = start; i <= t; i++) {
+    if (!h)
+	return;
+
+    for (i = start; i < t; i++) {
 	if (h[i].comment)
 	    free(h[i].comment);
 
@@ -65,8 +68,7 @@ void free_history_data(HISTORY *h, int start)
 	    free(h[i].move);
     }
 
-    if (h)
-	free(h);
+    free(h);
 }
 
 static int init_nag()
