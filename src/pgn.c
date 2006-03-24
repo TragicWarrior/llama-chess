@@ -997,15 +997,8 @@ static int rav_text(GAME *g, FILE *fp, int which)
 	pgn_init_fen_board(g, pgnboard, fen);
 	free(fen);
     }
-    else if (which == ')') {
-	ravlevel--;
-
-	// Parse error.
-	if (ravlevel < 0)
-	    return 1;
-
+    else if (which == ')')
 	return -1;
-    }
 
     return 0;
 }
@@ -1172,6 +1165,7 @@ void pgn_new_game(BOARD b)
     gindex = ++gtotal - 1;
     game = Realloc(game, gtotal * sizeof(GAME));
     memset(&game[gindex], '\0', sizeof(GAME));
+    game[gindex].history = Calloc(1, sizeof(HISTORY));
     game[gindex].hp = game[gindex].history;
     game[gindex].side = game[gindex].turn = WHITE;
     SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
@@ -1188,10 +1182,7 @@ static int read_file(FILE *fp)
     char buf[LINE_MAX] = {0}, *p = buf;
 #endif
     int c = 0;
-    int tag_section = 0;
     int parse_error = 0;
-    int nulltags = 1;
-    int done_fen_tag = 0;
     int ret = 0;
 
     while (1) {
@@ -1385,6 +1376,7 @@ static int read_file(FILE *fp)
 	continue;
     }
 
+    game[gindex].hp = game[gindex].history;
     return ret;
 }
 
@@ -1415,6 +1407,7 @@ int pgn_parse_file(const char *filename)
 	return -1;
 
     reset_game_data();
+    nulltags = 1;
     ret = read_file(fp);
     fclose(fp);
 
