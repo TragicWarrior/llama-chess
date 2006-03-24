@@ -139,4 +139,6 @@
 	COLOR_PAIR(30) | config.color[CONF_CASTLE].attrs : \
 	config.color[CONF_CASTLE].nattrs)
 
+void init_color_pairs();
+
 #endif

@@ -28,7 +28,12 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#include "chess.h"
+#include "conf.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 void *Malloc(size_t size)
 {
@@ -58,32 +63,6 @@ void *Calloc(size_t n, size_t size)
 	err(EXIT_FAILURE, "calloc()");
 
     return p;
-}
-
-char *real_filename(char *path)
-{
-    char *tmp;
-    static char buf[FILENAME_MAX];
-    int slash = 0;
-
-    if (!path[0])
-	return NULL;
-
-    strncpy(buf, path, sizeof(buf));
-    tmp = buf;
-
-    if (tmp[strlen(tmp) - 1] == '/') {
-	tmp[strlen(tmp) - 1] = 0;
-	slash = 1;
-    }
-
-    if ((tmp = strrchr(tmp, '/')) == NULL)
-	return path;
-
-    if (slash)
-	buf[strlen(tmp)] = '/';
-
-    return ++tmp;
 }
 
 char *trim(char *str)
@@ -143,37 +122,6 @@ char *tilde_expand(char *str)
     }
     else
 	return str;
-
-    return buf;
-}
-
-char *str_etc(const char *str, int maxlen, int rev)
-{
-    int len = strlen(str);
-    static char buf[80], *p = buf;
-    int i;
-
-    strncpy(buf, str, sizeof(buf));
-
-    if (len > maxlen) {
-	if (rev) {
-	    p = buf;
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p++ = '.';
-
-	    for (i = 0; i < maxlen + 3; i++)
-		*p++ = buf[(len - maxlen) + i + 3]; 
-	}
-	else {
-	    p = buf + maxlen - 4;
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p++ = '.';
-	}
-
-	*p = '\0';
-    }
 
     return buf;
 }
@@ -242,24 +190,11 @@ FILE *open_file(const char *filename, int *compressed)
     if ((command = compression_cmd(filename, 1)) != NULL) {
 	snprintf(tfile, sizeof(tfile), "%s", config.tmpfile);
 
-	if ((ofp = fopen(tfile, "w+")) == NULL) {
-	    if (curses_initialized)
-		cmessage(ERROR, ANYKEY, "%s: %s", tfile, strerror(errno));
-	    else
-		warn("%s", tfile);
-
+	if ((ofp = fopen(tfile, "w+")) == NULL)
 	    return NULL;
-	}
 
-	if ((fp = popen(command, "r")) == NULL) {
-	    if (curses_initialized)
-		cmessage(ERROR, ANYKEY, "%s: %s", command, strerror(errno));
-	    else
-		warn("%s", command);
-
-	    fclose(ofp);
+	if ((fp = popen(command, "r")) == NULL)
 	    return NULL;
-	}
 
 	while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
 	    fprintf(ofp, "%s", p);
@@ -271,14 +206,8 @@ FILE *open_file(const char *filename, int *compressed)
 	*compressed = 1;
     }
 
-    if ((fp = fopen(filename, "r")) == NULL) {
-	if (curses_initialized)
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	else
-	    warn("%s", filename);
-
+    if ((fp = fopen(filename, "r")) == NULL)
 	return NULL;
-    }
 
     return fp;
 }

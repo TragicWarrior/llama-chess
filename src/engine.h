@@ -19,8 +19,18 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+#if 0
 #define RETURN		status.engine = ENGINE_READY; \
 			return
+#endif
+#define RETURN return
+
+#define SEND_TO_ENGINE(fmt, args...)	(engine_initialized) ? \
+    send_to_engine(fmt, ##args) : 0
+
+enum {
+    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
+};
 
 enum { 
     HUMAN, ENGINE
@@ -28,18 +38,17 @@ enum {
 
 pid_t enginepid;
 
-void add_to_history(HISTORY **, unsigned char *, unsigned char *, const char *);
-char *parse_piece(char *);
-void move_piece(char *);
-int save_pgn(const char *, int, int);
-void update_status_window(void);
-char *book_method(int);
-int validate_move(GAME *, char *);
-char *a2a4tosan(GAME *, char *);
-void switch_turn(char *);
-void init_history(GAME *);
-void free_history_data(HISTORY *, int);
-void update_status_notify(GAME, char *, ...);
-void invalid_move(int, const char *);
+/* Chess engine file descriptors. 0 = from, 1 = to. */
+int enginefd[2];
+int engine_initialized;
+
+// This is a failsafe when resuming a game.
+int oldhistorytotal;
+
+void send_to_engine(const char *format, ...);
+int start_chess_engine();
+void set_engine_defaults();
+void stop_engine();
+int save_pgn(const char *filename, int isfifo, int saveindex);
 
 #endif

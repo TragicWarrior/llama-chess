@@ -30,18 +30,1339 @@
 #include <ctype.h>
 #include <pwd.h>
 #include <signal.h>
+#include <time.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
+#endif
+
+#ifdef HAVE_MENU_H
+#include <menu.h>
 #endif
 
 #ifdef HAVE_REGEX_H
 #include <regex.h>
 #endif
 
-#include "common.h"
+#include "chess.h"
+#include "conf.h"
+#include "window.h"
 #include "colors.h"
+#include "input.h"
+#include "misc.h"
+#include "engine.h"
+#include "rcfile.h"
+#include "strings.h"
 #include "cboard.h"
+
+#ifdef DEBUG
+#include "debug.h"
+#endif
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
+
+static char *str_etc(const char *str, int maxlen, int rev)
+{
+    int len = strlen(str);
+    static char buf[80], *p = buf;
+    int i;
+
+    strncpy(buf, str, sizeof(buf));
+
+    if (len > maxlen) {
+	if (rev) {
+	    p = buf;
+	    *p++ = '.';
+	    *p++ = '.';
+	    *p++ = '.';
+
+	    for (i = 0; i < maxlen + 3; i++)
+		*p++ = buf[(len - maxlen) + i + 3]; 
+	}
+	else {
+	    p = buf + maxlen - 4;
+	    *p++ = '.';
+	    *p++ = '.';
+	    *p++ = '.';
+	}
+
+	*p = '\0';
+    }
+
+    return buf;
+}
+
+static char *real_filename(char *path)
+{
+    char *tmp;
+    static char buf[FILENAME_MAX];
+    int slash = 0;
+
+    if (!path[0])
+	return NULL;
+
+    strncpy(buf, path, sizeof(buf));
+    tmp = buf;
+
+    if (tmp[strlen(tmp) - 1] == '/') {
+	tmp[strlen(tmp) - 1] = 0;
+	slash = 1;
+    }
+
+    if ((tmp = strrchr(tmp, '/')) == NULL)
+	return path;
+
+    if (slash)
+	buf[strlen(tmp)] = '/';
+
+    return ++tmp;
+}
+
+/* FIXME castling */
+static void update_cursor(GAME g, int idx, int *r, int *c)
+{
+    char *p;
+    int len;
+
+    /*
+     * If not deincremented then r and c would be the next move.
+     */
+    idx--;
+
+    if (idx > g.htotal || idx < 0 || !g.htotal || !g.hp[idx].move) {
+	*r = *c = 0;
+	return;
+    }
+
+    p = g.hp[idx].move;
+    len = strlen(p);
+
+    if (*p == 'O') {
+	if (len <= 4)
+	    *c = 7;
+	else
+	    *c = 3;
+
+	*r = (g.turn == WHITE) ? 8 : 1;
+	return;
+    }
+
+    p += len;
+
+    while (!isdigit(*p))
+	p--;
+
+    *r = ROWTOINT(*p--);
+    *c = COLTOINT(*p);
+}
+
+static int init_nag()
+{
+    FILE *fp;
+    char line[LINE_MAX];
+    int i = 0;
+
+    if ((fp = fopen(config.nagfile, "r")) == NULL) {
+	cmessage(ERROR, ANYKEY, "%s: %s", config.nagfile, strerror(errno));
+	return 1;
+    }
+
+    while (!feof(fp)) {
+	if (fscanf(fp, " %[^\n] ", line) == 1) {
+	    nags = Realloc(nags, (i + 2) * sizeof(struct nag_s));
+	    nags[i].line = strdup(line);
+	    i++;
+	}
+    }
+
+    if (nags)
+	nags[i].line = NULL;
+    return 0;
+}
+
+char *history_edit_nag(void *arg)
+{
+    WINDOW *win, *subw;
+    PANEL *panel;
+    ITEM **mitems = NULL;
+    MENU *menu;
+    int i = 0, n;
+    int itemcount = 0;
+    int rows, cols;
+    char *mbuf = NULL;
+    struct annotation_edit_s *anno = (struct annotation_edit_s *)arg;
+
+    if (!nags) {
+	if (init_nag()) {
+	    free(anno);
+	    return NULL;
+	}
+    }
+
+    i = 0;
+    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+    mitems[i++] = new_item(NONE, NULL);
+
+    for (n = 0; nags[n].line; n++, i++) {
+	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+	mitems[i] = new_item(nags[n].line, NULL);
+    }
+
+    mitems[i] = NULL;
+    menu = new_menu(mitems);
+    scale_menu(menu, &rows, &cols);
+
+    win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
+    set_menu_win(menu, win);
+    subw = derwin(win, rows, cols, 2, 1);
+    set_menu_sub(menu, subw);
+    set_menu_fore(menu, A_REVERSE);
+    set_menu_grey(menu, A_NORMAL);
+    set_menu_mark(menu, NULL);
+    set_menu_spacing(menu, 0, 0, 0);
+    menu_opts_off(menu, O_NONCYCLIC|O_SHOWDESC|O_ONEVALUE);
+    post_menu(menu);
+    panel = new_panel(win);
+    cbreak();
+    noecho();
+    keypad(win, TRUE);
+    set_menu_pattern(menu, mbuf);
+    wbkgd(win, CP_MESSAGE_WINDOW);
+    draw_window_title(win, NAG_EDIT_TITLE, cols + 2, CP_HISTORY_TITLE,
+	    CP_HISTORY_BORDER);
+
+    for (i = 0; i < MAX_PGN_NAG; i++) {
+	if (anno->h.nag[i] && anno->h.nag[i] <= item_count(menu)) {
+	    set_item_value(mitems[anno->h.nag[i]], TRUE);
+	    set_current_item(menu, mitems[anno->h.nag[i]]);
+	    itemcount++;
+	}
+    }
+
+    while (1) {
+	int c;
+	char *tmp;
+	char buf[cols - 4];
+
+	wattron(win, A_REVERSE);
+
+	for (c = 1; c < (cols + 2) - 1; c++)
+	    mvwprintw(win, rows + 2, c, " ");
+
+	c = item_index(current_item(menu)) + 1;
+
+	snprintf(buf, sizeof(buf), "Item %i of %i (%i of %i selected) %s", c, 
+		item_count(menu), itemcount, MAX_PGN_NAG, NAG_EDIT_PROMPT);
+	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
+
+	wattroff(win, A_REVERSE);
+
+	if (!itemcount) {
+	    for (i = 0; mitems[i]; i++)
+		set_item_value(mitems[i], FALSE);
+
+	    set_item_value(mitems[0], TRUE);
+	}
+	else
+	    set_item_value(mitems[0], FALSE);
+
+	/* This nl() statement needs to be here because NL is recognized
+	 * for some reason after the first selection.
+	 */
+	nl();
+	update_panels();
+	doupdate();
+
+	c = wgetch(win);
+
+	switch (c) {
+	    int found;
+
+	    case CTRL('G'):
+		help(NAG_EDIT_HELP, ANYKEY, naghelp);
+		break;
+	    case KEY_RIGHT:
+		if (!itemcount)
+		    break;
+
+		found = 0;
+
+		for (i = item_index(current_item(menu)) + 1; mitems[i]; i++) {
+		    if (item_value(mitems[i]) == TRUE) {
+			found = i;
+			break;
+		    }
+		}
+
+		if (!found) {
+		    for (i = 0; mitems[i]; i++) {
+			if (item_value(mitems[i]) == TRUE) {
+			    found = i;
+			    break;
+			}
+		    }
+		}
+
+		set_current_item(menu, mitems[found]);
+		break;
+	    case KEY_LEFT:
+		if (!itemcount)
+		    break;
+
+		found = 0;
+
+		for (i = item_index(current_item(menu)) - 1; i > 0; i--) {
+		    if (item_value(mitems[i]) == TRUE) {
+			found = i;
+			break;
+		    }
+		}
+
+		if (!found) {
+		    for (i = item_count(menu) - 1; i > 0; i--) {
+			if (item_value(mitems[i]) == TRUE) {
+			    found = i;
+			    break;
+			}
+		    }
+		}
+
+		set_current_item(menu, mitems[found]);
+		break;
+	    case KEY_HOME:
+		menu_driver(menu, REQ_FIRST_ITEM);
+		break;
+	    case KEY_END:
+		menu_driver(menu, REQ_LAST_ITEM);
+		break;
+	    case KEY_UP:
+		menu_driver(menu, REQ_UP_ITEM);
+		break;
+	    case KEY_DOWN:
+		menu_driver(menu, REQ_DOWN_ITEM);
+		break;
+	    case KEY_PPAGE:
+	    case CTRL('P'):
+		if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_FIRST_ITEM);
+		break;
+	    case KEY_NPAGE:
+	    case CTRL('N'):
+		if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_LAST_ITEM);
+		break;
+	    case ' ':
+		if (item_index(current_item(menu)) == 0 && 
+			item_value(current_item(menu)) == FALSE) {
+		    itemcount = 0;
+		    break;
+		}
+
+		if (item_value(current_item(menu)) == TRUE) {
+		    set_item_value(current_item(menu), FALSE);
+		    itemcount--;
+		}
+		else {
+		    if (itemcount + 1 > MAX_PGN_NAG)
+			break;
+
+		    set_item_value(current_item(menu), TRUE);
+		    itemcount++;
+		}
+
+		SET_FLAG(game[gindex].flags, GF_MODIFIED);
+		break;
+	    case '\n':
+		goto gotitem;
+		break;
+	    case KEY_ESCAPE:
+		goto done;
+		break;
+	    default:
+		tmp = menu_pattern(menu);
+
+		if (tmp && tmp[strlen(tmp) - 1] != c) {
+		    menu_driver(menu, REQ_CLEAR_PATTERN);
+		    menu_driver(menu, c);
+		}
+		else {
+		    if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			menu_driver(menu, c);
+		}
+
+		break;
+	}
+    }
+
+gotitem:
+    for (i = 0; i < MAX_PGN_NAG; i++)
+	anno->h.nag[i] = 0;
+
+    for (i = 0, n = 0; mitems[i] && n < MAX_PGN_NAG; i++) {
+	if (item_value(mitems[i]) == TRUE)
+	    anno->h.nag[n++] = i;
+    }
+
+done:
+    unpost_menu(menu);
+    free_menu(menu);
+
+    for (i = 0; mitems[i]; i++)
+	free_item(mitems[i]);
+
+    free(mitems);
+    del_panel(panel);
+    delwin(subw);
+    delwin(win);
+    memcpy(&game[anno->game].hp[anno->n], &anno->h, sizeof(HISTORY));
+    game[anno->game].hp[anno->n].comment = anno->h.comment;
+    free(anno);
+    return NULL;
+}
+
+static void view_nag(void *arg)
+{
+    HISTORY *h = (HISTORY *)arg;
+    char buf[80];
+    char line[LINE_MAX] = {0};
+    int i = 0;
+
+    snprintf(buf, sizeof(buf), "Viewing NAG for \"%s\"", h->move);
+
+    if (!nags) {
+	if (init_nag())
+	    return;
+    }
+
+    for (i = 0; i < MAX_PGN_NAG; i++) {
+	if (!h->nag[i])
+	    break;
+
+	strncat(line, nags[h->nag[i] - 1].line, sizeof(line));
+	strncat(line, "\n", sizeof(line));
+    }
+
+    line[strlen(line) - 1] = 0;
+    message(buf, ANYKEY, "%s", line);
+}
+
+void view_annotation(HISTORY h)
+{
+    char buf[MAX_SAN_MOVE_LEN + strlen(ANNOTATION_VIEW_TITLE) + 4];
+    int nag = 0, comment = 0;
+
+    if (h.comment && h.comment[0])
+        comment++;
+ 
+    if (h.nag[0])
+ 	nag++;
+
+    if (!nag && !comment)
+	return;
+
+    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_VIEW_TITLE, h.move);
+
+    if (comment)
+	show_message(buf, (nag) ? "Any other key to continue" : ANYKEY,
+		(nag) ? "Press 'n' to view NAG" : NULL, 
+		(nag) ? view_nag : NULL, (nag) ? (void *)&h : NULL,
+		(nag) ? 'n' : 0, "%s", h.comment);
+    else
+	show_message(buf, "Any other key to continue", "Press 'n' to view NAG",
+		view_nag, (void *)&h, 'n', "%s", "No annotations for this move");
+}
+
+static void cleanup(WINDOW *win, WINDOW *subw, PANEL *panel, MENU *menu, 
+	ITEM **items, struct d_entries *entries)
+{
+    int i;
+
+    unpost_menu(menu);
+    free_menu(menu);
+
+    for (i = 0; items[i]; i++)
+	free_item(items[i]);
+
+    free(items);
+
+    if (entries) {
+	for (i = 0; entries[i].name; i++) {
+	    free(entries[i].name);
+	    free(entries[i].fancy);
+	}
+
+	free(entries);
+    }
+
+    del_panel(panel);
+    delwin(subw);
+    delwin(win);
+}
+
+static int sort_entries(const void *s1, const void *s2)
+{
+    const struct d_entries *ss1 = s1;
+    const struct d_entries *ss2 = s2;
+
+    return strcmp(ss1->name, ss2->name);
+}
+
+static struct d_entries *get_directory_entries(const char *path)
+{
+    DIR *dp;
+    struct dirent *entry;
+    struct d_entries *entries = NULL;
+    int n = 0;
+
+    if ((dp = opendir(path)) == NULL)
+	return NULL;
+
+    while ((entry = readdir(dp)) != NULL) {
+	struct stat st;
+	int len;
+	char tbuf[64 + 1] = {0}; //FIXME
+	struct tm *tp;
+	char buf[FILENAME_MAX];
+	char *tmp;
+	size_t size;
+
+	if (entry->d_name[0] == '.' && entry->d_name[1] == 0)
+	    continue;
+
+	snprintf(buf, sizeof(buf), "%s/%s", path, entry->d_name);
+
+	if (stat(buf, &st) == -1)
+	    continue;
+
+	size = st.st_size ;
+	entries = Realloc(entries, (n + 2) * sizeof(struct d_entries));
+	entries[n].name = strdup(buf);
+	tmp = real_filename(buf);
+	len = strlen(tmp) + 2;
+	entries[n].fancy = Malloc(len);
+	strncpy(entries[n].fancy, tmp, len);
+
+	if (S_ISDIR(st.st_mode))
+	    entries[n].fancy[len - 2] = '/';
+
+	tp = localtime(&st.st_mtime);
+	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
+
+	snprintf(entries[n].desc, sizeof(entries[n].desc), "%-7i %s", 
+		size, tbuf);
+
+	memset(&entries[++n], '\0', sizeof(struct d_entries));
+    }
+
+    closedir(dp);
+    qsort(entries, n, sizeof(struct d_entries), sort_entries);
+    return entries;
+}
+
+char *browse_directory(void *arg)
+{
+    int i;
+    char path[FILENAME_MAX] = {0};
+    static char file[FILENAME_MAX];
+    char *oldwd = getcwd(NULL, 0);
+    DIR *dp;
+    char *inputstr = (char *)arg;
+    int initkey = (inputstr) ? inputstr[0] : 0;
+
+    if (config.savedirectory) {
+	if ((dp = opendir(config.savedirectory)) == NULL) {
+	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+		    strerror(errno));
+	    getcwd(path, sizeof(path));
+	}
+	else {
+	    closedir(dp);
+	    strncpy(path, config.savedirectory, sizeof(path));
+	}
+    }
+    else
+	getcwd(path, sizeof(path));
+
+again:
+    while (1) {
+	WINDOW *win, *subw;
+	PANEL *panel;
+	ITEM **mitems = NULL;
+	MENU *menu;
+	char *tmp = NULL;
+	int rows, cols;
+	int selected = -1;
+	char *mbuf = NULL;
+	struct d_entries *entries = NULL;
+	struct stat st;
+	int idx = 0;
+	int len = strlen(path);
+
+	/* /some/path/blah/../ */
+	if (path[len - 1] == '.' && path[len - 2] == '.' &&
+		path[len - 3] == '/') {
+	    tmp = path;
+	    tmp += strlen(path) - 5;
+
+	    /* /some/path/ */
+	    while (*--tmp != '/')
+		*tmp = '\0';
+
+	    if (!*path) {
+		path[0] = '/';
+		path[1] = '\0';
+	    }
+	}
+
+	if (path[1] && path[strlen(path) - 1] == '/')
+	    path[strlen(path) - 1] = '\0';
+
+	if ((entries = get_directory_entries(path)) == NULL) {
+	    cmessage(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
+	    return NULL;
+	}
+
+	for (i = 0; entries[i].name; i++) {
+	    mitems = Realloc(mitems, (idx + 2) * sizeof(ITEM));
+	    mitems[idx++] = new_item(entries[i].fancy, entries[i].desc);
+	}
+
+	mitems[idx] = NULL;
+	menu = new_menu(mitems);
+	scale_menu(menu, &rows, &cols);
+
+	if (cols < strlen(path))
+	    cols = strlen(path);
+
+	if (cols < strlen(HELP_PROMPT))
+	    cols = strlen(HELP_PROMPT);
+
+	rows = (LINES / 5) * 4;
+	cols += 2;
+
+	win = newwin(rows + 4, cols, CALCPOSY(rows) - 2, CALCPOSX(cols));
+	set_menu_format(menu, rows, 0);
+	set_menu_win(menu, win);
+	subw = derwin(win, rows, cols - 2, 2, 1);
+	set_menu_sub(menu, subw);
+	set_menu_fore(menu, A_REVERSE);
+	set_menu_grey(menu, A_NORMAL);
+	set_menu_mark(menu, NULL);
+	set_menu_spacing(menu, 2, 0, 0);
+	menu_opts_off(menu, O_NONCYCLIC);
+	post_menu(menu);
+	panel = new_panel(win);
+
+	draw_window_title(win, path, cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+	draw_prompt(win, rows + 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
+
+	cbreak();
+	noecho();
+	keypad(win, TRUE);
+	set_menu_pattern(menu, mbuf);
+
+	if (isgraph(initkey)) {
+	    menu_driver(menu, initkey);
+	    initkey = '\0';
+	}
+
+	while (1) {
+	    int c;
+
+	    /* This nl() statement needs to be here because NL is recognized
+	     * for some reason after the first selection.
+	     */
+	    nl();
+	    update_panels();
+	    doupdate();
+
+	    c = wgetch(win);
+
+	    switch (c) {
+		case CTRL('P'):
+		case KEY_PPAGE:
+		    menu_driver(menu, REQ_SCR_UPAGE);
+		    break;
+		case ' ':
+		case CTRL('N'):
+		case KEY_NPAGE:
+		    menu_driver(menu, REQ_SCR_DPAGE);
+		    break;
+		case KEY_UP:
+		    menu_driver(menu, REQ_UP_ITEM);
+		    break;
+		case KEY_DOWN:
+		    menu_driver(menu, REQ_DOWN_ITEM);
+		    break;
+		case '\n':
+		    selected = item_index(current_item(menu));
+		    goto gotitem;
+		    break;
+		case KEY_ESCAPE:
+		    cleanup(win, subw, panel, menu, mitems, entries);
+		    file[0] = '\0';
+		    goto done;
+		    break;
+		case CTRL('G'):
+		    help(BROWSER_HELP, ANYKEY, file_browser_help);
+		    break;
+		case '~':
+		    if ((tmp = getenv("HOME")) == NULL) {
+			cmessage(ERROR, ANYKEY, "%s", E_HOME_ENV);
+			break;
+		    }
+
+		    strncpy(path, tmp, sizeof(path));
+		    cleanup(win, subw, panel, menu, mitems, entries);
+		    goto again;
+		    break;
+		case CTRL('X'):
+		    if ((tmp = get_input_str_clear(BROWSER_CHDIR_TITLE, NULL)) 
+			    == NULL)
+			break;
+
+		    tmp = tilde_expand(tmp);
+		    strncpy(path, tmp, sizeof(path));
+		    cleanup(win, subw, panel, menu, mitems, entries);
+		    goto again;
+		    break;
+		default:
+		    tmp = menu_pattern(menu);
+
+		    if (tmp && tmp[strlen(tmp) - 1] != c) {
+			menu_driver(menu, REQ_CLEAR_PATTERN);
+			menu_driver(menu, c);
+		    }
+		    else {
+			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			    menu_driver(menu, c);
+		    }
+
+		    break;
+	    }
+	}
+
+gotitem:
+	snprintf(file, sizeof(file), "%s", entries[selected].name);
+
+	if (stat(file, &st) == -1) {
+	    cmessage(ERROR, ANYKEY, "%s", strerror(errno));
+	    cleanup(win, subw, panel, menu, mitems, entries);
+	    continue;
+	}
+
+	cleanup(win, subw, panel, menu, mitems, entries);
+
+	if (S_ISDIR(st.st_mode)) {
+	    strncpy(path, file, sizeof(path));
+	    continue;
+	}
+
+	if (S_ISREG(st.st_mode))
+	    break;
+
+	cmessage(ERROR, ANYKEY, "%s", E_NOTAREGFILE);
+    }
+
+done:
+    chdir(oldwd);
+    free(oldwd);
+    return (*file) ? file : NULL;
+}
+static int init_country_codes()
+{
+    FILE *fp;
+    char line[LINE_MAX], *s;
+    int cindex = 0;
+
+    if ((fp = fopen(config.ccfile, "r")) == NULL) {
+	cmessage(ERROR, ANYKEY, "%s: %s", config.ccfile, strerror(errno));
+	return 1;
+    }
+
+    while ((s = fgets(line, sizeof(line), fp)) != NULL) {
+	char *tmp;
+
+	if ((tmp = strsep(&s, " ")) == NULL)
+	    continue;
+
+	s = trim(s);
+	tmp = trim(tmp);
+
+	if (!s || !tmp)
+	    continue;
+
+	ccodes = Realloc(ccodes, (cindex + 2) * sizeof(struct country_codes));
+	strncpy(ccodes[cindex].code, tmp, sizeof(ccodes[cindex].code));
+	strncpy(ccodes[cindex].country, s, sizeof(ccodes[cindex].country));
+	cindex++;
+    }
+
+    memset(&ccodes[cindex], '\0', sizeof(struct country_codes));
+    fclose(fp);
+
+    return 0;
+}
+
+char *country_codes(void *arg)
+{
+    WINDOW *win, *subw;
+    PANEL *panel;
+    ITEM **mitems = NULL;
+    MENU *menu;
+    int i = 0, n;
+    int rows, cols;
+    char *mbuf = NULL;
+    char *tmp = NULL;
+
+    if (!ccodes) {
+	if (init_country_codes())
+	    return NULL;
+    }
+
+    for (n = i = 0; ccodes[n].code[0]; n++, i++) {
+	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+	mitems[i] = new_item(ccodes[n].country, ccodes[n].code);
+    }
+
+    mitems[i] = NULL;
+    menu = new_menu(mitems);
+    scale_menu(menu, &rows, &cols);
+
+    if (cols < strlen(HELP_PROMPT) + 21)
+	cols = strlen(HELP_PROMPT) + 21;
+
+    win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
+    set_menu_win(menu, win);
+    subw = derwin(win, rows, cols + 2, 2, 1);
+    set_menu_sub(menu, subw);
+    set_menu_fore(menu, A_REVERSE);
+    set_menu_grey(menu, A_NORMAL);
+    set_menu_mark(menu, NULL);
+    set_menu_spacing(menu, 0, 0, 0);
+    menu_opts_off(menu, O_NONCYCLIC);
+    post_menu(menu);
+    panel = new_panel(win);
+    cbreak();
+    noecho();
+    keypad(win, TRUE);
+    set_menu_pattern(menu, mbuf);
+    wbkgd(win, CP_MESSAGE_WINDOW);
+    draw_window_title(win, CC_TITLE, cols + 4, CP_MESSAGE_TITLE,
+	    CP_MESSAGE_BORDER);
+
+    while (1) {
+	int c;
+	char buf[cols - 4];
+
+	wattron(win, A_REVERSE);
+
+	for (c = 1; c < (cols + 2) - 1; c++)
+	    mvwprintw(win, rows + 2, c, " ");
+
+	c = item_index(current_item(menu)) + 1;
+
+	snprintf(buf, sizeof(buf), "%s %i %s %i %s", MENU_ITEM_STR, c, 
+		N_OF_N_STR, item_count(menu), HELP_PROMPT);
+	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
+
+	wattroff(win, A_REVERSE);
+
+	/* This nl() statement needs to be here because NL is recognized
+	 * for some reason after the first selection.
+	 */
+	nl();
+	update_panels();
+	doupdate();
+
+	c = wgetch(win);
+
+	switch (c) {
+	    case CTRL('G'):
+		help(CC_KEY_HELP, ANYKEY, cc_help);
+		break;
+	    case KEY_HOME:
+		menu_driver(menu, REQ_FIRST_ITEM);
+		break;
+	    case KEY_END:
+		menu_driver(menu, REQ_LAST_ITEM);
+		break;
+	    case KEY_UP:
+		menu_driver(menu, REQ_UP_ITEM);
+		break;
+	    case KEY_DOWN:
+		menu_driver(menu, REQ_DOWN_ITEM);
+		break;
+	    case KEY_PPAGE:
+	    case CTRL('P'):
+		if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_FIRST_ITEM);
+		break;
+	    case ' ':
+	    case KEY_NPAGE:
+	    case CTRL('N'):
+		if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
+		    menu_driver(menu, REQ_LAST_ITEM);
+		break;
+	    case '\n':
+		tmp = (char *)item_description(current_item(menu));
+		goto done;
+		break;
+	    case KEY_ESCAPE:
+		tmp = NULL;
+		goto done;
+		break;
+	    default:
+		tmp = menu_pattern(menu);
+
+		if (tmp && tmp[strlen(tmp) - 1] != c) {
+		    menu_driver(menu, REQ_CLEAR_PATTERN);
+		    menu_driver(menu, c);
+		}
+		else {
+		    if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			menu_driver(menu, c);
+		}
+
+		break;
+	}
+    }
+
+done:
+    unpost_menu(menu);
+    free_menu(menu);
+
+    for (i = 0; mitems[i]; i++)
+	free_item(mitems[i]);
+
+    del_panel(panel);
+    delwin(subw);
+    delwin(win);
+    return tmp;
+}
+
+static void add_custom_tags(TAG **t, unsigned char *n)
+{
+    int i;
+
+    for (i = 0; i < config.tindex; i++)
+	pgn_add_tag(&(*t), &(*n), config.tag[i].name, 
+		config.tag[i].value);
+}
+
+TAG *edit_tags(GAME g, BOARD b, int edit)
+{
+    TAG *data = NULL;
+    struct tm tp;
+    unsigned char data_index = 0;
+    int n, lastindex = 0;
+    int len;
+
+    /* Edit the backup copy, not the original in case the save fails. */
+    for (n = 0; n < g.tindex; n++)
+	pgn_add_tag(&data, &data_index, g.tag[n].name, g.tag[n].value);
+
+    while (1) {
+	WINDOW *win, *subw;
+	PANEL *panel;
+	ITEM **mitems = NULL;
+	MENU *menu;
+	int i;
+	char buf[76] = {0};
+	char *tmp = NULL;
+	int rows, cols;
+	int selected = -1;
+	char *mbuf = NULL;
+	int nlen = 0, vlen = 0;
+
+	for (i = 0; i < data_index; i++) {
+	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+
+	    if (data[i].value[0]) {
+		nlen = strlen(data[i].name);
+		vlen = strlen(data[i].value);
+
+		/* The +6 is for the menu padding. */
+		mitems[i] = new_item(data[i].name,
+			(nlen + vlen + 6 >= MAX_VALUE_WIDTH)
+			? PRESS_ENTER : data[i].value);
+	    }
+	    else
+		mitems[i] = new_item(data[i].name, UNKNOWN);
+	}
+
+	mitems[i] = NULL;
+	menu = new_menu(mitems);
+	scale_menu(menu, &rows, &cols);
+
+	/* +14 for the extra prompt info. */
+	if (cols < strlen(HELP_PROMPT) + 14)
+	    cols = strlen(HELP_PROMPT) + 14;
+
+	win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
+	set_menu_win(menu, win);
+	subw = derwin(win, rows, cols + 2, 2, 1);
+	set_menu_sub(menu, subw);
+	set_menu_fore(menu, A_REVERSE);
+	set_menu_grey(menu, A_NORMAL);
+	set_menu_mark(menu, NULL);
+	set_menu_pad(menu, '-');
+	set_menu_spacing(menu, 3, 0, 0);
+	menu_opts_off(menu, O_NONCYCLIC);
+	post_menu(menu);
+	panel = new_panel(win);
+	cbreak();
+	noecho();
+	nl();
+	keypad(win, TRUE);
+	set_menu_pattern(menu, mbuf);
+	wbkgd(win, CP_MESSAGE_WINDOW);
+	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
+		cols + 4, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+
+	while (1) {
+	    int c;
+	    TAG *tmppgn = NULL;
+	    char *newtag = NULL;
+	    unsigned char tpgn_index = 0;
+
+	    if (set_current_item(menu, mitems[lastindex]) != E_OK) {
+		lastindex = item_count(menu) - 1;
+		continue;
+	    }
+
+	    snprintf(buf, sizeof(buf), "%s %i %s %i  %s", MENU_TAG_STR,
+		    item_index(current_item(menu)) + 1, N_OF_N_STR,
+		    item_count(menu), HELP_PROMPT);
+	    draw_prompt(win, rows + 2, cols + 4, buf, CP_MESSAGE_PROMPT);
+
+	    update_panels();
+	    doupdate();
+
+	    c = wgetch(win);
+
+	    switch (c) {
+		case CTRL('T'):
+		    add_custom_tags(&data, &data_index);
+		    goto cleanup;
+		    break;
+		case CTRL('G'):
+		    if (edit)
+			help(TAG_EDIT_HELP, ANYKEY, pgn_edit_help);
+		    else
+			help(TAG_VIEW_HELP, ANYKEY, pgn_info_help);
+		    break;
+		case CTRL('R'):
+		    if (!edit)
+			break;
+
+		    selected = item_index(current_item(menu));
+
+		    if (selected <= 6) {
+			cmessage(NULL, ANYKEY, "%s", E_REMOVE_STR);
+			goto cleanup;
+		    }
+
+		    for (i = 0; i < data_index; i++) {
+			if (i == selected)
+			    continue;
+
+			pgn_add_tag(&tmppgn, &tpgn_index, data[i].name,
+				data[i].value);
+		    }
+
+		    pgn_tag_free(data, data_index);
+		    data = NULL;
+
+		    for (i = data_index = 0; i < tpgn_index; i++) {
+			pgn_add_tag(&data, &data_index, tmppgn[i].name,
+				tmppgn[i].value);
+		    }
+
+		    pgn_tag_free(tmppgn, tpgn_index);
+		    goto cleanup;
+		    break;
+		case CTRL('A'):
+		    if (!edit)
+			break;
+
+		    if ((newtag = get_input(TAG_NEW_TITLE, NULL, 1, 1, NULL,
+				    NULL, NULL, 0, FIELD_TYPE_PGN_TAG_NAME))
+			    == NULL)
+			break;
+
+		    newtag[0] = toupper(newtag[0]);
+
+		    if (strlen(newtag) > MAX_VALUE_WIDTH - 6 - 
+			    strlen(PRESS_ENTER)) {
+			cmessage(ERROR, ANYKEY, "%s", E_TAG_NAMETOOLONG);
+			break;
+		    }
+
+		    for (i = 0; i < data_index; i++) {
+			if (strcasecmp(data[i].name, newtag) == 0) {
+			    selected = i;
+			    goto gotitem;
+			}
+		    }
+
+		    pgn_add_tag(&data, &data_index, newtag, NULL);
+
+		    selected = data_index - 1;
+		    goto gotitem;
+		    break;
+		case KEY_HOME:
+		    menu_driver(menu, REQ_FIRST_ITEM);
+		    break;
+		case KEY_END:
+		    menu_driver(menu, REQ_LAST_ITEM);
+		    break;
+		case CTRL('F'):
+		    if (!edit)
+			break;
+
+		    pgn_add_tag(&data, &data_index, "FEN", pgn_game_to_fen(g, b));
+		    selected = data_index - 1;
+		    goto gotitem;
+		    break;
+		case KEY_NPAGE:
+		case CTRL('N'):
+		    if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
+			menu_driver(menu, REQ_LAST_ITEM);
+		    break;
+		case KEY_PPAGE:
+		case CTRL('P'):
+		    if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
+			menu_driver(menu, REQ_FIRST_ITEM);
+		    break;
+		case KEY_UP:
+		    menu_driver(menu, REQ_UP_ITEM);
+		    break;
+		case KEY_DOWN:
+		    menu_driver(menu, REQ_DOWN_ITEM);
+		    break;
+		case '\n':
+		    selected = item_index(current_item(menu));
+		    goto gotitem;
+		    break;
+		case KEY_ESCAPE:
+		    cleanup(win, subw, panel, menu, mitems, NULL);
+		    goto done;
+		    break;
+		default:
+		    tmp = menu_pattern(menu);
+
+		    if (tmp && tmp[strlen(tmp) - 1] != c) {
+			menu_driver(menu, REQ_CLEAR_PATTERN);
+			menu_driver(menu, c);
+		    }
+		    else {
+			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
+			    menu_driver(menu, c);
+		    }
+
+		    break;
+	    }
+
+	    lastindex = item_index(current_item(menu));
+	}
+
+gotitem:
+	lastindex = selected;
+	nlen = strlen(data[selected].name) + 3;
+	nlen += (edit) ? strlen(TAG_EDIT_TAG_TITLE) : strlen(TAG_VIEW_TAG_TITLE);
+
+	if (nlen > MAX_VALUE_WIDTH)
+	    snprintf(buf, sizeof(buf), "%s", data[selected].name);
+	else
+	    snprintf(buf, sizeof(buf), "%s \"%s\"",
+		    (edit) ? TAG_EDIT_TAG_TITLE : TAG_VIEW_TAG_TITLE,
+		    data[selected].name);
+
+	if (!edit) {
+	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
+		goto cleanup;
+
+	    cmessage(buf, ANYKEY, "%s", data[selected].value);
+	    goto cleanup;
+	}
+
+	if (strcmp(data[selected].name, "Date") == 0) {
+	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, NULL,
+		    0, FIELD_TYPE_PGN_DATE);
+
+	    if (tmp) {
+		if (strptime(tmp, PGN_TIME_FORMAT, &tp) == NULL) {
+		    cmessage(ERROR, ANYKEY, "%s", E_TAG_DATE_FMT);
+		    goto cleanup;
+		}
+	    }
+	    else
+		goto cleanup;
+	}
+	else if (strcmp(data[selected].name, "Site") == 0) {
+	    tmp = get_input(buf, data[selected].value, 1, 1, CC_PROMPT,
+		    country_codes, NULL, CTRL('t'), -1);
+
+	    if (!tmp)
+		tmp = "?";
+	}
+	else if (strcmp(data[selected].name, "Round") == 0) {
+	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL, 0,
+		    FIELD_TYPE_PGN_ROUND);
+
+	    if (!tmp) {
+		if (gtotal > 1)
+		    tmp = "?";
+		else
+		    tmp = "-";
+	    }
+	}
+	else if (strcmp(data[selected].name, "Result") == 0) {
+	    tmp = get_input(buf, data[selected].value, 1, 1, NULL, NULL, NULL, 
+		    0, -1);
+
+	    if (!tmp)
+		tmp = "*";
+	}
+	else {
+	    if (item_description(mitems[selected]) && 
+		    strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
+		tmp = NULL;
+	    else
+		tmp = data[selected].value;
+
+	    tmp = get_input(buf, tmp, 0, 0, NULL, NULL, NULL, 0, -1);
+	}
+
+	len = (tmp) ? strlen(tmp) + 1 : 1;
+	data[selected].value = Realloc(data[selected].value, len);
+	strncpy(data[selected].value, (tmp) ? tmp : "", len);
+
+cleanup:
+	cleanup(win, subw, panel, menu, mitems, NULL);
+    }
+
+done:
+    if (!edit) {
+	pgn_tag_free(data, data_index);
+	return NULL;
+    }
+
+    return data;
+}
+
+/* If the saveindex argument is -1, all games will be saved. Otherwise it's a
+ * game index number.
+ */
+int save_pgn(const char *filename, int isfifo, int saveindex)
+{
+    FILE *fp;
+    char *mode = NULL;
+    int c;
+    char buf[FILENAME_MAX];
+    struct stat st;
+    int i;
+    char *command = NULL;
+    int saveindex_max = (saveindex == -1) ? gtotal : saveindex + 1;
+
+    if (filename[0] != '/' && config.savedirectory && !isfifo) {
+	if (stat(config.savedirectory, &st) == -1) {
+	    if (errno == ENOENT) {
+		if (mkdir(config.savedirectory, 0755) == -1) {
+		    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+			    strerror(errno));
+		    return 1;
+		}
+	    }
+	    else {
+		cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+			strerror(errno));
+		return 1;
+	    }
+	}
+
+	stat(config.savedirectory, &st);
+
+	if (!S_ISDIR(st.st_mode)) {
+	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory, E_NOTADIR);
+	    return 1;
+	}
+
+	snprintf(buf, sizeof(buf), "%s/%s", config.savedirectory, filename);
+	filename = buf;
+    }
+
+    if (!isfifo)
+	command = compression_cmd(filename, 0);
+
+    /* This is a hack to resume an existing game when more than one game is
+     * available. Also resuming a saved game and a game from history.
+     */
+    // FIXME: may not need this when a FEN tag is supported (by the engine).
+    if (isfifo)
+	mode = "w";
+    else {
+	if (access(filename, W_OK) == 0) {
+	    c = cmessage(NULL, GAME_SAVE_OVERWRITE_PROMPT,
+		    "%s \"%s\"", E_FILEEXISTS, filename);
+
+	    switch (c) {
+		case 'a':
+		    if (command) {
+			cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
+			return 1;
+		    }
+
+		    mode = "a";
+		    break;
+		case 'o':
+		    mode = "w+";
+		    break;
+		default:
+		    return 1;
+	    }
+	}
+	else
+	    mode = "a";
+    }
+
+    if (command) {
+	if ((fp = popen(command, "w")) == NULL) {
+	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    return 1;
+	}
+    }
+    else {
+	if ((fp = fopen(filename, mode)) == NULL) {
+	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	    return 1;
+	}
+    }
+
+    if (isfifo)
+	pgn_write(fp, game[saveindex], isfifo);
+    else {
+	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
+	    pgn_write(fp, game[i], isfifo);
+    }
+
+    if (command)
+	pclose(fp);
+    else
+	fclose(fp);
+
+    if (!isfifo && saveindex == -1)
+	strncpy(loadfile, filename, sizeof(loadfile));
+
+    return 0;
+}
 
 char *random_agony(GAME g)
 {
@@ -81,45 +1402,45 @@ char *random_agony(GAME g)
 
 static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod)
 {
-    if (piece_to_int(piece) == ROOK && col == 7
+    if (pgn_piece_to_int(piece) == ROOK && col == 7
 	    && row == 7 &&
 	    (TEST_FLAG((*g).flags, GF_WK_CASTLE) || mod) &&
-	    piece_to_int(board[7][4].icon) == KING) {
+	    pgn_piece_to_int(board[7][4].icon) == KING && isupper(piece)) {
 	if (mod)
 	    TOGGLE_FLAG((*g).flags, GF_WK_CASTLE);
 	return 1;
     }
-    else if (piece_to_int(piece) == ROOK && col == 0
+    else if (pgn_piece_to_int(piece) == ROOK && col == 0
 	    && row == 7 &&
 	    (TEST_FLAG((*g).flags, GF_WQ_CASTLE) || mod) &&
-	    piece_to_int(board[7][4].icon) == KING) {
+	    pgn_piece_to_int(board[7][4].icon) == KING && isupper(piece)) {
 	if (mod)
 	    TOGGLE_FLAG((*g).flags, GF_WQ_CASTLE);
 	return 1;
     }
-    else if (piece_to_int(piece) == ROOK && col == 7
+    else if (pgn_piece_to_int(piece) == ROOK && col == 7
 	    && row == 0 &&
 	    (TEST_FLAG((*g).flags, GF_BK_CASTLE) || mod) &&
-	    piece_to_int(board[0][4].icon) == KING) {
+	    pgn_piece_to_int(board[0][4].icon) == KING && islower(piece)) {
 	if (mod)
 	    TOGGLE_FLAG((*g).flags, GF_BK_CASTLE);
 	return 1;
     }
-    else if (piece_to_int(piece) == ROOK && col == 0
+    else if (pgn_piece_to_int(piece) == ROOK && col == 0
 	    && row == 0 &&
 	    (TEST_FLAG((*g).flags, GF_BQ_CASTLE) || mod) &&
-	    piece_to_int(board[0][4].icon) == KING) {
+	    pgn_piece_to_int(board[0][4].icon) == KING && islower(piece)) {
 	if (mod)
 	    TOGGLE_FLAG((*g).flags, GF_BQ_CASTLE);
 	return 1;
     }
-    else if (piece_to_int(piece) == KING && col == 4
+    else if (pgn_piece_to_int(piece) == KING && col == 4
 	    && row == 7 && 
-	    (mod || (piece_to_int(board[7][7].icon) == ROOK &&
+	    (mod || (pgn_piece_to_int(board[7][7].icon) == ROOK &&
 	      TEST_FLAG((*g).flags, GF_WK_CASTLE))
 	      ||
-	     (piece_to_int(board[7][0].icon) == ROOK &&
-	      TEST_FLAG((*g).flags, GF_WQ_CASTLE)))) {
+	     (pgn_piece_to_int(board[7][0].icon) == ROOK &&
+	      TEST_FLAG((*g).flags, GF_WQ_CASTLE))) && isupper(piece)) {
 	if (mod) {
 	    if (TEST_FLAG((*g).flags, GF_WK_CASTLE) ||
 		    TEST_FLAG((*g).flags, GF_WQ_CASTLE)) {
@@ -133,13 +1454,13 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
 	}
 	return 1;
     }
-    else if (piece_to_int(piece) == KING && col == 4
+    else if (pgn_piece_to_int(piece) == KING && col == 4
 	    && row == 0 &&
-	    (mod || (piece_to_int(board[0][7].icon) == ROOK &&
+	    (mod || (pgn_piece_to_int(board[0][7].icon) == ROOK &&
 	      TEST_FLAG((*g).flags, GF_BK_CASTLE))
 	      ||
-	     (piece_to_int(board[0][0].icon) == ROOK &&
-	      TEST_FLAG((*g).flags, GF_BQ_CASTLE)))) {
+	     (pgn_piece_to_int(board[0][0].icon) == ROOK &&
+	      TEST_FLAG((*g).flags, GF_BQ_CASTLE))) && islower(piece)) {
 	if (mod) {
 	    if (TEST_FLAG((*g).flags, GF_BK_CASTLE) ||
 		    TEST_FLAG((*g).flags, GF_BQ_CASTLE)) {
@@ -157,7 +1478,7 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
     return 0;
 }
 
-void draw_board(GAME *g, int crow, int ccol)
+static void draw_board(GAME *g, int crow, int ccol)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -171,7 +1492,8 @@ void draw_board(GAME *g, int crow, int ccol)
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
 	    chtype attrs = 0;
-	    chtype piece, movecount = 0;
+	    unsigned char piece;
+	    int movecount = 0;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -284,7 +1606,7 @@ void draw_board(GAME *g, int crow, int ccol)
 			else if ((*g).side == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
-			waddch(boardw, (piece_to_int(piece) != OPEN_SQUARE) ? piece | attrs : ' ' | attrs);
+			waddch(boardw, (pgn_piece_to_int(piece) != OPEN_SQUARE) ? piece | attrs : ' ' | attrs);
 
 			CLEAR_FLAG(attrs, A_BOLD);
 			CLEAR_FLAG(attrs, A_REVERSE);
@@ -310,6 +1632,14 @@ void draw_board(GAME *g, int crow, int ccol)
     }
 }
 
+void invalid_move(int n, const char *m)
+{
+    if (curses_initialized)
+	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m, n);
+    else
+	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m, n);
+}
+
 /* Convert the selected piece to SAN format and validate it. */
 static char *board_to_san(GAME *g, BOARD b)
 {
@@ -322,13 +1652,13 @@ static char *board_to_san(GAME *g, BOARD b)
 	    (*g).sp.row, x_grid_chars[(*g).sp.destcol - 1], (*g).sp.destrow);
 
     p = str;
-    piece = piece_to_int(b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon);
+    piece = pgn_piece_to_int(b[ROWTOBOARD((*g).sp.row)][COLTOBOARD((*g).sp.col)].icon);
 
     if (piece == PAWN && (((*g).sp.destrow == 8 && (*g).turn == WHITE) ||
 		    ((*g).sp.destrow == 1 && (*g).turn == BLACK))) {
 	promo = cmessage(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
 	
-	if (piece_to_int(promo) == -1)
+	if (pgn_piece_to_int(promo) == -1)
 	    return NULL;
 
 	p = str + strlen(str);
@@ -338,13 +1668,13 @@ static char *board_to_san(GAME *g, BOARD b)
 
     memcpy(oldboard, b, sizeof(BOARD));
 
-    if ((p = a2a4tosan(g, b, str)) == NULL) {
+    if ((p = pgn_a2a4tosan(g, b, str)) == NULL) {
 	cmessage(p, ANYKEY, "%s", E_A2A4_PARSE);
 	memcpy(b, oldboard, sizeof(BOARD));
 	return NULL;
     }
 
-    if (validate_move(g, b, p)) {
+    if (pgn_validate_move(g, b, p)) {
 	invalid_move(gindex + 1, p);
 	memcpy(b, oldboard, sizeof(BOARD));
 	return NULL;
@@ -363,8 +1693,8 @@ static int move_to_engine(GAME *g, BOARD b)
     (*g).sp.row = (*g).sp.col = (*g).sp.icon = 0;
 
     if (noengine) {
-	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
-	switch_turn(&(*g).turn);
+	history_add(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	pgn_switch_turn(&(*g).turn);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	update_all(*g);
 	return 1;
@@ -372,34 +1702,6 @@ static int move_to_engine(GAME *g, BOARD b)
 
     SEND_TO_ENGINE("%s\n", p);
     return 1;
-}
-
-char *book_method(int method)
-{
-    char *book;
-
-    switch (method) {
-	case BOOK_BEST:
-	    book = BOOK_BEST_STR;
-	    break;
-	case BOOK_WORST:
-	    book = BOOK_WORST_STR;
-	    break;
-	case BOOK_PREFER:
-	    book = BOOK_PREFER_STR;
-	    break;
-	case BOOK_RANDOM:
-	    book = BOOK_RANDOM_STR;
-	    break;
-	case BOOK_OFF:
-	    book = BOOK_OFF_STR;
-	    break;
-	default:
-	    book = UNKNOWN;
-	    break;
-    }
-
-    return book;
 }
 
 static void update_clock(int n, int *h, int *m, int *s)
@@ -503,23 +1805,20 @@ void update_status_window(GAME g)
     mvwprintw(statusw, 6, 1, "%*s %-*i", 7, STATUS_DEPTH_STR, w,
 	    config.engine_depth);
 
-    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_BOOK_STR, w,
-	    book_method(config.book_method));
-
-    mvwprintw(statusw, 8, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
+    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
 	    (g.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
     snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
-    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
     snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
-    mvwprintw(statusw, 10, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -556,7 +1855,7 @@ void update_history_window(GAME g)
     mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    if (history_by_index(g, g.hindex, &h))
+    if (history_by_n(g, g.hindex, &h))
 	memset(&h, 0, sizeof(HISTORY));
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move) ? h.move : UNAVAILABLE,
@@ -564,7 +1863,7 @@ void update_history_window(GAME g)
     mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    if (history_by_index(g, game[gindex].hindex - 1, &h))
+    if (history_by_n(g, game[gindex].hindex - 1, &h))
 	memset(&h, 0, sizeof(HISTORY));
 
     snprintf(buf, sizeof(buf), "%s %s", (h.move) ? h.move : UNAVAILABLE,
@@ -578,24 +1877,8 @@ void update_tag_window(TAG *t)
     int i;
     int w = TAG_WIDTH - 10;
 
-    for (i = 0; i < 7; i++) {
-	char *value = t[i].value;
-	int n;
-
-	if ((*value == '?' || *value == '-') && value[1] == '\0')
-	    value = UNAVAILABLE;
-	else if (strcmp(t[i].name, "Result") == 0) {
-	    for (n = 0; n < NARRAY(fancy_results); n++) {
-		if (strcmp(value, fancy_results[n].pgn) == 0) {
-		    value = fancy_results[n].fancy;
-		    break;
-		}
-	    }
-	}
-
-	value = str_etc(value, w, 0);
-	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i].name, w, value);
-    }
+    for (i = 0; i < 7; i++)
+	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i].name, w, t[i].value);
 }
 
 void draw_prompt(WINDOW *win, int y, int width, const char *str, chtype attr)
@@ -664,25 +1947,6 @@ static void game_next_prev(GAME g, int n, int count)
     }
 }
 
-void free_game_data(GAME g)
-{
-    free_history_data(g.history, 0);
-    free_tag_data(g.tag, g.tindex);
-    memset(&g, 0, sizeof(GAME));
-}
-
-void free_all_games()
-{
-    int i;
-
-    for (i = 0; i < gtotal; i++)
-	free_game_data(game[i]);
-
-    if (game)
-	free(game);
-    game = NULL;
-}
-
 static void delete_game(int which)
 {
     GAME *g = NULL;
@@ -691,7 +1955,7 @@ static void delete_game(int which)
 
     for (i = 0; i < gtotal; i++) {
 	if (i == which || TEST_FLAG(game[i].flags, GF_DELETE)) {
-	    free_game_data(game[i]);
+	    pgn_free(game[i]);
 	    continue;
 	}
 
@@ -933,8 +2197,9 @@ static void edit_save_tags(GAME *g)
     for (i = 0; t[i].name; i++)
 	pgn_add_tag(&(*g).tag, &(*g).tindex, t[i].name, t[i].value);
 
-    free_tag_data(t, i);
+    pgn_tag_free(t, i);
     SET_FLAG((*g).flags, GF_MODIFIED);
+    pgn_sort_tags(*g);
 }
 
 static int find_game_exp(char *str, int which, int count)
@@ -1028,7 +2293,7 @@ void edit_board(GAME g, BOARD b)
 
     p = b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon;
     b[ROWTOBOARD(g.sp.destrow)][COLTOBOARD(g.sp.destcol)].icon = p;
-    b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon = int_to_piece(g.turn, OPEN_SQUARE);
+    b[ROWTOBOARD(g.sp.row)][COLTOBOARD(g.sp.col)].icon = pgn_int_to_piece(g.turn, OPEN_SQUARE);
 }
 
 // Updates the notification line in the status window then refreshes the
@@ -1107,22 +2372,6 @@ static void show_enpassant(BOARD b)
     }
 }
 
-void new_game(BOARD b)
-{
-    gindex = ++gtotal - 1;
-    game = Realloc(game, gtotal * sizeof(GAME));
-    memset(&game[gindex], '\0', sizeof(GAME));
-    game[gindex].hp = game[gindex].history;
-    game[gindex].side = game[gindex].turn = WHITE;
-    game[gindex].mode = MODE_PLAY;
-    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
-    init_board(b);
-    pgn_set_default_tags(&game[gindex]);
-}
-
 void game_loop()
 {  
     int error_recover = 0;
@@ -1137,7 +2386,13 @@ void game_loop()
 
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
-    init_history(&game[gindex], board);
+
+    if (game[gindex].htotal)
+	game[gindex].mode = MODE_HISTORY;
+    else
+	game[gindex].mode = MODE_PLAY;
+
+    history_update_board(&game[gindex], board, game[gindex].htotal);
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
     paused = 1; //FIXME clock
@@ -1269,9 +2524,9 @@ void game_loop()
 
 		    for (i = 1; VALIDFILE(i); i++) {
 			if (board[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = int_to_piece(WHITE, OPEN_SQUARE);
+			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = pgn_int_to_piece(WHITE, OPEN_SQUARE);
 			if (board[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = int_to_piece(WHITE, OPEN_SQUARE);
+			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = pgn_int_to_piece(WHITE, OPEN_SQUARE);
 		    }
 
 		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = 'x';
@@ -1291,44 +2546,20 @@ void game_loop()
 	        if (editmode) {
 		    editmode = 0;
 		    pgn_add_tag(&game[gindex].tag, &game[gindex].tindex,
-			    "FEN", board_to_fen(game[gindex], board));
+			    "FEN", pgn_game_to_fen(game[gindex], board));
 		    pgn_add_tag(&game[gindex].tag, &game[gindex].tindex,
 			    "SetUp", "1");
 		    game[gindex].mode = MODE_PLAY;
 		    pgn_sort_tags(game[gindex]);
 		}
 		else {
-		    int fen;
-
 		    game[gindex].mode = MODE_EDIT;
 		    editmode = 1;
 
-		    if ((fen = pgn_find_tag(game[gindex].tag,
-				    game[gindex].tindex, "FEN")) != -1) {
-			unsigned f = 0;
+		    if (pgn_init_fen_board(&game[gindex], board, NULL))
+			break;
 
-			parse_fen_line(board, &f, &game[gindex].turn,
-				game[gindex].tag[fen].value);
-
-			if (f)
-			    game[gindex].flags |= f;
-			else {
-			    // Reset castling availability.
-			    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
-			    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
-			    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
-			    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
-			}
-
-			show_enpassant(board);
-		    }
-		    else {
-			// Reset castling availability.
-			SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
-			SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
-			SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
-			SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
-		    }
+		    show_enpassant(board);
 		}
 
 		update_all(game[gindex]);
@@ -1353,7 +2584,11 @@ void game_loop()
 		    break;
 
 		gindex = n;
-		init_history(&game[gindex], board);
+
+		if (game[gindex].htotal)
+		    game[gindex].mode = MODE_HISTORY;
+
+		history_update_board(&game[gindex], board, game[gindex].htotal);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1445,7 +2680,7 @@ void game_loop()
 		    break;
 
 		game[gindex].hindex = n;
-		parse_history_move(game[gindex], game[gindex].hindex);
+		history_update_board(&game[gindex], board, game[gindex].hindex);
 		update_all(game[gindex]);
 		break;
 	    case 'v':
@@ -1467,7 +2702,11 @@ void game_loop()
 
 		game[gindex].mode = MODE_HISTORY;
 		editmode = 0;
-		init_history(&game[gindex], board);
+
+		if (game[gindex].htotal)
+		    game[gindex].mode = MODE_HISTORY;
+
+		history_update_board(&game[gindex], board, game[gindex].htotal);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1500,7 +2739,11 @@ void game_loop()
 		    break;
 
 		game[gindex].hindex = i * 2;
-		init_history(&game[gindex], board);
+
+		if (game[gindex].htotal)
+		    game[gindex].mode = MODE_HISTORY;
+
+		history_update_board(&game[gindex], board, game[gindex].htotal);
 		update_all(game[gindex]);
 		break;
 	    case 'J':
@@ -1531,7 +2774,11 @@ void game_loop()
 		    break;
 
 		gindex = i;
-		init_history(&game[gindex], board);
+
+		if (game[gindex].htotal)
+		    game[gindex].mode = MODE_HISTORY;
+
+		history_update_board(&game[gindex], board, game[gindex].htotal);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1540,9 +2787,9 @@ void game_loop()
 
 		if (editmode) {
 		    if (game[gindex].sp.icon)
-			board[ROWTOBOARD(game[gindex].sp.row)][COLTOBOARD(game[gindex].sp.col)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
+			board[ROWTOBOARD(game[gindex].sp.row)][COLTOBOARD(game[gindex].sp.col)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 		    else
-			board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = int_to_piece(game[gindex].turn, OPEN_SQUARE);
+			board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 
 		    game[gindex].sp.icon = game[gindex].sp.row = game[gindex].sp.col = 0;
 		    break;
@@ -1609,7 +2856,11 @@ void game_loop()
 		}
 
 		delete_game((!n) ? gindex : -1);
-		init_history(&game[gindex], board);
+
+		if (game[gindex].htotal)
+		    game[gindex].mode = MODE_HISTORY;
+
+		history_update_board(&game[gindex], board, game[gindex].htotal);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1660,7 +2911,7 @@ void game_loop()
 		    c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
 			    GAME_EDIT_TEXT);
 
-		    if (piece_to_int(c) == -1)
+		    if (pgn_piece_to_int(c) == -1)
 			break;
 
 		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
@@ -1677,18 +2928,6 @@ void game_loop()
 		status.engine = ENGINE_THINKING;
 		update_status_window(game[gindex]);
 		SEND_TO_ENGINE("go\n");
-		break;
-	    case 'b':
-		if (config.book_method == -1 || status.engine ==
-			ENGINE_THINKING || config.engine != GNUCHESS)
-		    break;
-
-		if (config.book_method + 1 >= BOOK_MAX)
-		    n = 0;
-		else
-		    n = config.book_method + 1;
-
-		SEND_TO_ENGINE("book %s\n", book_methods[n]);
 		break;
 	    case 'h':
 		if (game[gindex].mode == MODE_HISTORY) {
@@ -1727,10 +2966,12 @@ void game_loop()
 		    status.engine = ENGINE_READY;
 
 		    /* FIXME crafty */
+#if 0
 		    if (config.engine != GNUCHESS)
 			SEND_TO_ENGINE("read %s\n", config.fifo);
 		    else
 			SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
+#endif
 
 		    update_all(game[gindex]);
 		    break;
@@ -1740,21 +2981,28 @@ void game_loop()
 		    break;
 
 		wtimeout(boardw, -1);
-		init_history(&game[gindex], board);
+
+		if (game[gindex].htotal)
+		    game[gindex].mode = MODE_HISTORY;
+
+		history_update_board(&game[gindex], board, game[gindex].htotal);
 		break;
 	    case 'u':
 		/* FIXME dies reading FIFO sometimes. */
 		if (game[gindex].mode != MODE_PLAY || !game[gindex].htotal)
 		    break;
 
-		history_previous(&game[gindex], board, (count) ? count * 2 : 2, &crow, &ccol);
+		history_previous(&game[gindex], board, (count) ? count * 2 : 2,
+			movestep);
 		oldhistorytotal = game[gindex].htotal;
 		game[gindex].htotal = game[gindex].hindex;
 
+#if 0
 		if (status.engine == CRAFTY)
 		    SEND_TO_ENGINE("read %s\n", config.fifo);
 		else
 		    SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
+#endif
 
 		update_history_window(game[gindex]);
 		break;
@@ -1771,7 +3019,11 @@ void game_loop()
 
 		gindex = gtotal - 1;
 		strncpy(loadfile, tmp, sizeof(loadfile));
-		init_history(&game[gindex], board);
+
+		if (game[gindex].htotal)
+		    game[gindex].mode = MODE_HISTORY;
+
+		history_update_board(&game[gindex], board, game[gindex].htotal);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -1820,8 +3072,8 @@ void game_loop()
 		n = 0;
 
 		while (n != 'q') {
-		    n = help(GAME_HELP_INDEX_TITLE,
-			    GAME_HELP_INDEX_PROMPT, mainhelp);
+		    n = help(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT,
+			    mainhelp);
 
 		    switch (n) {
 			case 'h':
@@ -1855,15 +3107,16 @@ void game_loop()
 		game[gindex].sp.icon = 0;
 
 		if (c == 'n') {
-		    newgameinit = 1;
-		    new_game(board);
+		    pgn_new_game(board);
+		    add_custom_tags(&game[gindex].tag, &game[gindex].tindex);
 		}
 		else {
-		    reset_history(game[gindex]);
 		    pgn_parse_file(NULL);
-		    init_board(board);
+		    add_custom_tags(&game[gindex].tag, &game[gindex].tindex);
+		    pgn_init_board(board);
 		}
 
+		game[gindex].mode = MODE_PLAY;
 		crow = (game[gindex].side == WHITE) ? 2 : 7;
 		ccol = 4;
 
@@ -1916,7 +3169,7 @@ void game_loop()
 		}
 
 		if (config.validmoves)
-		    reset_valid_moves(board);
+		    board_reset_valid_moves(board);
 
 		break;
 	    case '0' ... '9':
@@ -1933,7 +3186,9 @@ void game_loop()
 		if (game[gindex].mode == MODE_HISTORY) {
 		    history_next(&game[gindex], board, (count > 0) ?
 			    config.jumpcount * count * movestep : 
-			    config.jumpcount * movestep, &crow, &ccol);
+			    config.jumpcount * movestep, movestep);
+		    update_cursor(game[gindex], game[gindex].hindex, &crow,
+			    &ccol);
 		    update_all(game[gindex]);
 		    break;
 		}
@@ -1961,7 +3216,9 @@ void game_loop()
 		if (game[gindex].mode == MODE_HISTORY) {
 		    history_previous(&game[gindex], board, (count) ?
 			    config.jumpcount * count * movestep : 
-			    config.jumpcount * movestep, &crow, &ccol);
+			    config.jumpcount * movestep, movestep);
+		    update_cursor(game[gindex], game[gindex].hindex, &crow,
+			    &ccol);
 		    update_all(game[gindex]);
 		    break;
 		}
@@ -1989,7 +3246,9 @@ void game_loop()
 	    case KEY_LEFT:
 		if (game[gindex].mode == MODE_HISTORY) {
 		    history_previous(&game[gindex], board, (count) ?
-			    count * movestep : movestep, &crow, &ccol);
+			    count * movestep : movestep, movestep);
+		    update_cursor(game[gindex], game[gindex].hindex, &crow,
+			    &ccol);
 		    update_all(game[gindex]);
 		    break;
 		}
@@ -2016,7 +3275,9 @@ void game_loop()
 	    case KEY_RIGHT:
 		if (game[gindex].mode == MODE_HISTORY) {
 		    history_next(&game[gindex], board, (count) ? 
-			    count * movestep : movestep, &crow, &ccol);
+			    count * movestep : movestep, movestep);
+		    update_cursor(game[gindex], game[gindex].hindex, &crow,
+			    &ccol);
 		    update_all(game[gindex]);
 		    break;
 		}
@@ -2045,7 +3306,7 @@ void game_loop()
 		    break;
 
 		if (game[gindex].mode == MODE_EDIT)
-		    switch_turn(&game[gindex].turn);
+		    pgn_switch_turn(&game[gindex].turn);
 
 		/* FIXME crafty. */
 		SEND_TO_ENGINE("\nswitch\n");
@@ -2101,8 +3362,8 @@ void game_loop()
 		game[gindex].sp.col = ccol;
 
 		if (!editmode && config.validmoves) {
-		    get_valid_moves(&game[gindex], board,
-			    piece_to_int(game[gindex].sp.icon),
+		    board_get_valid_moves(&game[gindex], board,
+			    pgn_piece_to_int(game[gindex].sp.icon),
 			    game[gindex].sp.row, game[gindex].sp.col, &minr,
 			    &maxr, &minc, &maxc);
 		    /*
@@ -2140,7 +3401,7 @@ void game_loop()
 
 		if (move_to_engine(&game[gindex], board)) {
 		    if (config.validmoves)
-			reset_valid_moves(board);
+			board_reset_valid_moves(board);
 
 		    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
 			CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
@@ -2208,7 +3469,8 @@ int main(int argc, char *argv[])
     char buf[FILENAME_MAX];
     char datadir[FILENAME_MAX];
     int ret = EXIT_SUCCESS;
-    int validate_only = 0, validate_and_save = 0;
+    int validate_only = 0, validate_and_write = 0, reduced = 0;
+    int write_custom_tags = 0;
 
     if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
@@ -2249,16 +3511,13 @@ int main(int argc, char *argv[])
     set_defaults();
 
 #ifdef DEBUG
-    while ((opt = getopt(argc, argv, "EDNVtShp:vu:e:f:i:")) != -1) {
+    while ((opt = getopt(argc, argv, "EDNVtSRhp:v")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "ENVtShp:vu:e:f:i:")) != -1) {
+    while ((opt = getopt(argc, argv, "ENVtSRhp:v")) != -1) {
 #endif
-	char *tmp;
-	int i;
-
 	switch (opt) {
 	    case 't':
-		save_custom_tags = 1;
+		write_custom_tags = 1;
 		break;
 	    case 'E':
 		config.stoponerror = 1;
@@ -2266,8 +3525,10 @@ int main(int argc, char *argv[])
 	    case 'N':
 		noengine = 1;
 		break;
+	    case 'R':
+		reduced = 1;
 	    case 'S':
-		validate_and_save = 1;
+		validate_and_write = 1;
 	    case 'V':
 		validate_only = 1;
 		break;
@@ -2276,42 +3537,6 @@ int main(int argc, char *argv[])
 		debug = 1;
 		break;
 #endif
-	    case 'u':
-		i = 0;
-
-		while ((tmp = strsep(&optarg, ":")) != NULL) {
-		    switch (i++) {
-			case 0:
-			    config.ics_user = optarg;
-			    break;
-			case 1:
-			    config.ics_passwd = optarg;
-			    break;
-			default:
-			    usage(argv[0], EXIT_FAILURE);
-		    }
-		}
-		break;
-	    case 'i':
-		i = 0;
-
-		while ((tmp = strsep(&optarg, ":")) != NULL) {
-		    switch (i++) {
-			case 0:
-			    strncpy(config.ics_server, tmp,
-				    sizeof(config.ics_server));
-			    break;
-			case 1:
-			    if (!isinteger(tmp))
-				usage(argv[0], EXIT_FAILURE);
-
-			    config.ics_port = atoi(tmp);
-			    break;
-			default:
-			    usage(argv[0], EXIT_FAILURE);
-		    }
-		}
-		break;
 	    case 'v':
 		printf("%s (%s)\n%s\n", PACKAGE_STRING, curses_version(), 
 			COPYRIGHT);
@@ -2320,21 +3545,13 @@ int main(int argc, char *argv[])
 		filetype = PGN_FILE;
 		strncpy(loadfile, optarg, sizeof(loadfile));
 		break;
-	    case 'f':
-		filetype = FEN_FILE;
-		strncpy(loadfile, optarg, sizeof(loadfile));
-		break;
-	    case 'e':
-		filetype = EPD_FILE;
-		strncpy(loadfile, optarg, sizeof(loadfile));
-		break;
 	    case 'h':
 	    default:
 		usage(argv[0], EXIT_SUCCESS);
 	}
     }
 
-    if ((validate_only || validate_and_save) && !*loadfile)
+    if ((validate_only || validate_and_write) && !*loadfile)
 	usage(argv[0], EXIT_FAILURE);
 
     if (access(config.configfile, R_OK) == 0)
@@ -2359,18 +3576,23 @@ int main(int argc, char *argv[])
 	default:
 	    // No file specified. Empty game.
 	    ret = pgn_parse_file(NULL);
+	    add_custom_tags(&game[gindex].tag, &game[gindex].tindex);
 	    break;
     }
 
-    if (validate_only || validate_and_save) {
-	if (validate_and_save) {
+    if (validate_only || validate_and_write) {
+	if (validate_and_write) {
 	    int i;
 
-	    for (i = 0; i < gtotal; i++)
-		pgn_write(stdout, &game[i], i, 0);
+	    for (i = 0; i < gtotal; i++) {
+		if (write_custom_tags)
+		    add_custom_tags(&game[i].tag, &game[i].tindex);
+
+		pgn_write(stdout, game[i], reduced);
+	    }
 	}
 
-	free_all_games();
+	pgn_free_all();
 	exit(ret);
     }
     else if (ret)
@@ -2417,7 +3639,7 @@ int main(int argc, char *argv[])
     stop_engine();
 
     endwin();
-    free_all_games();
+    pgn_free_all();
     del_panel(boardp);
     del_panel(historyp);
     del_panel(statusp);

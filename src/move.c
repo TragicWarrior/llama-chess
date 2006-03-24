@@ -25,52 +25,27 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#include "chess.h"
+#include "conf.h"
+#include "pgn.h"
+#include "misc.h"
 #include "move.h"
+
 #ifdef DEBUG
 #include "debug.h"
 #endif
 
-int int_to_piece(char turn, int which)
-{
-    int p = 0;
-
-    switch (which) {
-	case PAWN:
-	    p = 'p';
-	    break;
-	case ROOK:
-	    p = 'r';
-	    break;
-	case KNIGHT:
-	    p = 'n';
-	    break;
-	case BISHOP:
-	    p = 'b';
-	    break;
-	case QUEEN:
-	    p = 'q';
-	    break;
-	case KING:
-	    p = 'k';
-	    break;
-	case OPEN_SQUARE:
-	    p = '.';
-	    break;
-	default:
-	    break;
-    }
-
-    return (turn == WHITE) ? toupper(p) : p;
-}
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 int piece_side(GAME g, int c)
 {
-    if (c == int_to_piece(g.turn, OPEN_SQUARE))
+    if (c == pgn_int_to_piece(g.turn, OPEN_SQUARE))
 	return -1;
     
     if (c < 'A')
-	c = int_to_piece(g.turn, c);
+	c = pgn_int_to_piece(g.turn, c);
 
     return (isupper(c)) ? WHITE : BLACK;
 }
@@ -82,33 +57,6 @@ int val_piece_side(char turn, int c)
 	return 1;
 
     return 0;
-}
-
-int piece_to_int(int p)
-{
-    if (p == '.')
-	return OPEN_SQUARE;
-
-    p = tolower(p);
-
-    switch (p) {
-	case 'p':
-	    return PAWN;
-	case 'r':
-	    return ROOK;
-	case 'n':
-	    return KNIGHT;
-	case 'b':
-	    return BISHOP;
-	case 'q':
-	    return QUEEN;
-	case 'k':
-	    return KING;
-	default:
-	    break;
-    }
-
-    return -1;
 }
 
 /*
@@ -133,10 +81,10 @@ int count_by_diag(GAME g, BOARD b, int piece, int row, int col)
 	c = col - i;
 
 	if (!ul && VALIDRANK(r) && VALIDFILE(c)) {
-	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		ul++;
@@ -147,10 +95,10 @@ int count_by_diag(GAME g, BOARD b, int piece, int row, int col)
 	c = col + i;
 
 	if (!ur && VALIDRANK(r) && VALIDFILE(c)) {
-	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		ur++;
@@ -161,10 +109,10 @@ int count_by_diag(GAME g, BOARD b, int piece, int row, int col)
 	c = col - i;
 
 	if (!dl && VALIDRANK(r) && VALIDFILE(c)) {
-	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		dl++;
@@ -175,10 +123,10 @@ int count_by_diag(GAME g, BOARD b, int piece, int row, int col)
 	c = col + i;
 
 	if (!dr && VALIDRANK(r) && VALIDFILE(c)) {
-	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		dr++;
@@ -199,9 +147,9 @@ int count_knight(GAME g, BOARD b, int row, int col)
     c = col - 1;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
 
@@ -209,9 +157,9 @@ int count_knight(GAME g, BOARD b, int row, int col)
     c = col + 1;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
 
@@ -219,18 +167,18 @@ int count_knight(GAME g, BOARD b, int row, int col)
     c = col - 2;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
     r = row - 1;
     c = col + 2;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
 
@@ -238,9 +186,9 @@ int count_knight(GAME g, BOARD b, int row, int col)
     c = col - 1;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
 
@@ -248,9 +196,9 @@ int count_knight(GAME g, BOARD b, int row, int col)
     c = col + 1;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
 
@@ -258,9 +206,9 @@ int count_knight(GAME g, BOARD b, int row, int col)
     c = col - 2;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
 
@@ -268,9 +216,9 @@ int count_knight(GAME g, BOARD b, int row, int col)
     c = col + 2;
 
     if (VALIDFILE(r) && VALIDFILE(c)) {
-	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon & A_CHARTEXT;
+	p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-	if (piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
+	if (pgn_piece_to_int(p) == KNIGHT && val_piece_side(g.turn, p))
 	    count++;
     }
 
@@ -287,10 +235,10 @@ int count_by_rank(GAME g, BOARD b, int piece, int row, int col)
 	unsigned char n;
 
 	if (!u && VALIDRANK(row + i)) {
-	    n = b[ROWTOBOARD(row + i)][COLTOBOARD(col)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(row + i)][COLTOBOARD(col)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		u++;
@@ -298,10 +246,10 @@ int count_by_rank(GAME g, BOARD b, int piece, int row, int col)
 	}
 
 	if (!d && VALIDRANK(row - i)) {
-	    n = b[ROWTOBOARD(row - i)][COLTOBOARD(col)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(row - i)][COLTOBOARD(col)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		d++;
@@ -322,10 +270,10 @@ int count_by_file(GAME g, BOARD b, int piece, int row, int col)
 	unsigned char n;
 
 	if (!r && VALIDFILE(col + i)) {
-	    n = b[ROWTOBOARD(row)][COLTOBOARD(col + i)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(row)][COLTOBOARD(col + i)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		r++;
@@ -333,10 +281,10 @@ int count_by_file(GAME g, BOARD b, int piece, int row, int col)
 	}
 
 	if (!l && VALIDFILE(col - i)) {
-	    n = b[ROWTOBOARD(row)][COLTOBOARD(col - i)].icon & A_CHARTEXT;
+	    n = b[ROWTOBOARD(row)][COLTOBOARD(col - i)].icon;
 
-	    if (piece_to_int(n) != OPEN_SQUARE) {
-		if (piece_to_int(n) == piece && val_piece_side(g.turn, n))
+	    if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+		if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n))
 		    count++;
 
 		l++;
@@ -388,8 +336,8 @@ int piece_by_col(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
     for (i = col - 1; VALIDFILE(i); i--) {
 	int n = b[ROWTOBOARD(row)][COLTOBOARD(i)].icon;
 
-	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g.side, n)) {
+	if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.side, n)) {
 		*c = i;
 		*r = row;
 		count++;
@@ -402,8 +350,8 @@ int piece_by_col(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
     for (i = col + 1; VALIDFILE(i); i++) {
 	int n = b[ROWTOBOARD(row)][COLTOBOARD(i)].icon;
 
-	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g.side, n)) {
+	if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.side, n)) {
 		*c = i;
 		*r = row;
 		count++;
@@ -424,8 +372,8 @@ int piece_by_row(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
     for (i = row + 1; VALIDFILE(i); i++) {
 	int n = b[ROWTOBOARD(i)][COLTOBOARD(col)].icon;
 
-	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
+	if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*r = i;
 		*c = col;
 		count++;
@@ -438,8 +386,8 @@ int piece_by_row(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
     for (i = row - 1; VALIDFILE(i); i--) {
 	int n = b[ROWTOBOARD(i)][COLTOBOARD(col)].icon;
 
-	if (piece_to_int(n) != OPEN_SQUARE) {
-	    if (piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
+	if (pgn_piece_to_int(n) != OPEN_SQUARE) {
+	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*r = i;
 		*c = col;
 		count++;
@@ -470,8 +418,8 @@ int piece_test(GAME g, BOARD b, int piece, int row, int col, int *dstr, int *dst
 
     p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
-    if (piece_to_int(p) != OPEN_SQUARE) {
-	if (piece_to_int(p) == piece && val_piece_side(g.turn, p)) {
+    if (pgn_piece_to_int(p) != OPEN_SQUARE) {
+	if (pgn_piece_to_int(p) == piece && val_piece_side(g.turn, p)) {
 	    *dstr = row;
 	    *dstc = col;
 	    return 1;
@@ -543,14 +491,14 @@ int valid_move(GAME g, BOARD b, int row, int col, int srow, int scol)
     p1 = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
     p2 = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
-    if (piece_to_int(p1) == OPEN_SQUARE)
+    if (pgn_piece_to_int(p1) == OPEN_SQUARE)
 	return 0;
 
     if (piece_side(g, p1) == piece_side(g, p2))
 	return 0;
 
-    if (piece_to_int(p1) == PAWN && scol == col &&
-	    piece_to_int(p2) != OPEN_SQUARE)
+    if (pgn_piece_to_int(p1) == PAWN && scol == col &&
+	    pgn_piece_to_int(p2) != OPEN_SQUARE)
 	return 0;
 
     return 1;
@@ -574,25 +522,21 @@ int castle_move(GAME *g, BOARD b, char which)
 	p2 = b[ROWTOBOARD(row)][COLTOBOARD((n + 2))].icon;
 	p3 = b[ROWTOBOARD(row)][COLTOBOARD((n + 3))].icon;
 
-	if (piece_to_int(p) != OPEN_SQUARE || piece_to_int(p2) != OPEN_SQUARE
-		|| (piece_to_int(p3) != ROOK && val_piece_side((*g).turn, p3)))
+	if (pgn_piece_to_int(p) != OPEN_SQUARE || pgn_piece_to_int(p2) != OPEN_SQUARE
+		|| (pgn_piece_to_int(p3) != ROOK && val_piece_side((*g).turn, p3)))
 	    return 1;
 
 	if (!validate) {
 	    b[ROWTOBOARD(row)][COLTOBOARD(COLTOINT('e'))].icon =
-		int_to_piece((*g).turn, OPEN_SQUARE);
-	    b[ROWTOBOARD(row)][COLTOBOARD(6)].icon = int_to_piece((*g).turn, ROOK);
-	    b[ROWTOBOARD(row)][COLTOBOARD(7)].icon = int_to_piece((*g).turn, KING);
-	    b[ROWTOBOARD(row)][COLTOBOARD(8)].icon = int_to_piece((*g).turn, OPEN_SQUARE);
+		pgn_int_to_piece((*g).turn, OPEN_SQUARE);
+	    b[ROWTOBOARD(row)][COLTOBOARD(6)].icon = pgn_int_to_piece((*g).turn, ROOK);
+	    b[ROWTOBOARD(row)][COLTOBOARD(7)].icon = pgn_int_to_piece((*g).turn, KING);
+	    b[ROWTOBOARD(row)][COLTOBOARD(8)].icon = pgn_int_to_piece((*g).turn, OPEN_SQUARE);
 
-	    if ((*g).turn == WHITE) {
+	    if ((*g).turn == WHITE)
 		CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
-		update_status_notify(*g, "%s", NOTIFY_WCASTLEK);
-	    }
-	    else if ((*g).turn == BLACK) {
+	    else if ((*g).turn == BLACK)
 		CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
-		update_status_notify(*g, "%s", NOTIFY_BCASTLEK);
-	    }
 	}
     }
     else {
@@ -605,26 +549,22 @@ int castle_move(GAME *g, BOARD b, char which)
 	p3 = b[ROWTOBOARD(row)][COLTOBOARD((n - 3))].icon;
 	p4 = b[ROWTOBOARD(row)][COLTOBOARD((n - 4))].icon;
 
-	if (piece_to_int(p) != OPEN_SQUARE || piece_to_int(p2) != OPEN_SQUARE
-		|| piece_to_int(p3) != OPEN_SQUARE ||
-		(piece_to_int(p4) != ROOK && val_piece_side((*g).turn, p4)))
+	if (pgn_piece_to_int(p) != OPEN_SQUARE || pgn_piece_to_int(p2) != OPEN_SQUARE
+		|| pgn_piece_to_int(p3) != OPEN_SQUARE ||
+		(pgn_piece_to_int(p4) != ROOK && val_piece_side((*g).turn, p4)))
 	    return 1;
 
 	if (!validate) {
-	    b[ROWTOBOARD(row)][COLTOBOARD(1)].icon = int_to_piece((*g).turn, OPEN_SQUARE);
+	    b[ROWTOBOARD(row)][COLTOBOARD(1)].icon = pgn_int_to_piece((*g).turn, OPEN_SQUARE);
 	    b[ROWTOBOARD(row)][COLTOBOARD(COLTOINT('e'))].icon =
-		int_to_piece((*g).turn, OPEN_SQUARE);
-	    b[ROWTOBOARD(row)][COLTOBOARD(3)].icon = int_to_piece((*g).turn, KING);
-	    b[ROWTOBOARD(row)][COLTOBOARD(4)].icon = int_to_piece((*g).turn, ROOK);
+		pgn_int_to_piece((*g).turn, OPEN_SQUARE);
+	    b[ROWTOBOARD(row)][COLTOBOARD(3)].icon = pgn_int_to_piece((*g).turn, KING);
+	    b[ROWTOBOARD(row)][COLTOBOARD(4)].icon = pgn_int_to_piece((*g).turn, ROOK);
 
-	    if ((*g).turn == WHITE) {
+	    if ((*g).turn == WHITE)
 		CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
-		update_status_notify(*g, "%s", NOTIFY_WCASTLEQ);
-	    }
-	    else if ((*g).turn == BLACK) {
+	    else if ((*g).turn == BLACK)
 		CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
-		update_status_notify(*g, "%s", NOTIFY_BCASTLEQ);
-	    }
 	}
     }
 
@@ -649,7 +589,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 		for (r = row + i, dist = 0; VALIDFILE(r); r += i, dist++) {
 		    int n = b[ROWTOBOARD(r)][COLTOBOARD(col)].icon;
 
-		    p = piece_to_int(n);
+		    p = pgn_piece_to_int(n);
 
 		    if (p == PAWN && val_piece_side((*g).turn, n))
 			break;
@@ -671,7 +611,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 		}
 
 		if (dist == 2) {
-		    p = piece_to_int(b[ROWTOBOARD(*srow + i)][COLTOBOARD(col)].icon);
+		    p = pgn_piece_to_int(b[ROWTOBOARD(*srow + i)][COLTOBOARD(col)].icon);
 		    if (p != OPEN_SQUARE)
 			return 1;
 		}
@@ -682,11 +622,11 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 
 		*srow = ((*g).turn == WHITE) ? row - 1 : row + 1;
 
-		if (piece_to_int(b[ROWTOBOARD(*srow)][COLTOBOARD(*scol)].icon)
+		if (pgn_piece_to_int(b[ROWTOBOARD(*srow)][COLTOBOARD(*scol)].icon)
 			!= PAWN)
 		    return 1;
 
-		piece = piece_to_int(b[ROWTOBOARD(row)][COLTOBOARD(col)].icon);
+		piece = pgn_piece_to_int(b[ROWTOBOARD(row)][COLTOBOARD(col)].icon);
 
 		/* En Passant. */
 		if (piece == OPEN_SQUARE) {
@@ -705,17 +645,12 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 		    r = ((*g).turn == WHITE) ? row - 1 : row + 1;
 		    piece = b[ROWTOBOARD(r)][COLTOBOARD(col)].icon;
 
-		    if (piece_to_int(piece) != PAWN)
+		    if (pgn_piece_to_int(piece) != PAWN)
 			return 1;
 
-		    if (!validate) {
+		    if (!validate)
 			b[ROWTOBOARD(r)][COLTOBOARD(col)].icon =
-			    int_to_piece((*g).turn, OPEN_SQUARE);
-
-			if (((*g).turn == WHITE && (*g).side != WHITE) ||
-				((*g).turn == BLACK && (*g).side != BLACK))
-			    update_status_notify(*g, "%s", NOTIFY_ENPASSANT);
-		    }
+			    pgn_int_to_piece((*g).turn, OPEN_SQUARE);
 		}
 	    }
 	    break;
@@ -743,7 +678,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -759,7 +694,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -775,7 +710,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -791,7 +726,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -807,7 +742,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -823,7 +758,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -839,7 +774,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -855,7 +790,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
 	    if (VALIDFILE(r) && VALIDFILE(c)) {
 		p = b[ROWTOBOARD(r)][COLTOBOARD(c)].icon;
 
-		if (piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
+		if (pgn_piece_to_int(p) == KNIGHT && val_piece_side((*g).turn, p)) {
 		    *srow = r;
 		    *scol = c;
 		    count++;
@@ -948,7 +883,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
  * are performed here. The real checks are in validate_move() after the
  * conversion.
  */
-char *a2a4tosan(GAME *g, BOARD b, char *m)
+char *pgn_a2a4tosan(GAME *g, BOARD b, char *m)
 {
     static char buf[MAX_SAN_MOVE_LEN + 1] = {0}, *cp = buf;
     char *p = m;
@@ -971,13 +906,13 @@ char *a2a4tosan(GAME *g, BOARD b, char *m)
     row = ROWTOINT(*(p + 3));
 
     if (p[4]) {
-	if ((promo = piece_to_int(p[4])) == -1)
+	if ((promo = pgn_piece_to_int(p[4])) == -1)
 	    return NULL;
     }
 
     piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
 
-    if ((piecei = piece_to_int(piece)) == -1 || piecei == OPEN_SQUARE)
+    if ((piecei = pgn_piece_to_int(piece)) == -1 || piecei == OPEN_SQUARE)
 	return NULL;
 
     spiece = piecei;
@@ -998,7 +933,7 @@ char *a2a4tosan(GAME *g, BOARD b, char *m)
 	*cp++ = toupper(piece);
     else {
 	/* En Passant. */
-	if (scol != col && piece_to_int(b[row][col].icon) == OPEN_SQUARE)
+	if (scol != col && pgn_piece_to_int(b[row][col].icon) == OPEN_SQUARE)
 	    tenpassant = 1;
     }
 
@@ -1023,7 +958,7 @@ char *a2a4tosan(GAME *g, BOARD b, char *m)
 
     piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
-    if ((piecei = piece_to_int(piece)) != OPEN_SQUARE || tenpassant) {
+    if ((piecei = pgn_piece_to_int(piece)) != OPEN_SQUARE || tenpassant) {
 	if (tenpassant || spiece == PAWN)
 	    *cp++ = INTTOCOL(scol);
 
@@ -1035,14 +970,14 @@ char *a2a4tosan(GAME *g, BOARD b, char *m)
 
     if (promo) {
 	*cp++ = '=';
-	*cp++ = toupper(int_to_piece((*g).turn, promo));
+	*cp++ = toupper(pgn_int_to_piece((*g).turn, promo));
     }
 
     *cp = '\0';
     return buf;
 }
 
-void switch_turn(char *turn)
+void pgn_switch_turn(char *turn)
 {
     if (*turn == WHITE)
 	*turn = BLACK;
@@ -1058,7 +993,7 @@ static void kingsquare(GAME g, BOARD b, int *kr, int *kc, int *okr, int *okc)
 	for (col = 1; VALIDFILE(col); col++) {
 	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
-	    if (piece_to_int(p) == KING) {
+	    if (pgn_piece_to_int(p) == KING) {
 		if (val_piece_side(g.turn, p)) {
 		    *kr = row;
 		    *kc = col;
@@ -1077,14 +1012,14 @@ int checktest(GAME *g, BOARD b, int kr, int kc, int okr, int okc, int matetest)
 {
     int row, col;
 
-    switch_turn(&(*g).turn);
+    pgn_switch_turn(&(*g).turn);
 
     /* See if the move would put our opponent in check. */
     for (row = 1; VALIDFILE(row); row++) {
 	for (col = 1; VALIDFILE(col); col++) {
 	    int srow = 0, scol = 0;
 	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
-	    int pi = piece_to_int(p);
+	    int pi = pgn_piece_to_int(p);
 
 	    if (pi == OPEN_SQUARE)
 		continue;
@@ -1094,39 +1029,36 @@ int checktest(GAME *g, BOARD b, int kr, int kc, int okr, int okc, int matetest)
 
 	    /* See if the move would leave ourselves in check. */
 	    if (!matetest) {
-		switch_turn(&(*g).turn);
+		pgn_switch_turn(&(*g).turn);
 
 		if (get_source_yx(g, b, pi, kr, kc, &srow, &scol) == 0)
 		    return -1;
 
-		switch_turn(&(*g).turn);
+		pgn_switch_turn(&(*g).turn);
 	    }
 
 	    if (get_source_yx(g, b, pi, okr, okc, &srow, &scol) == 0) {
-		switch_turn(&(*g).turn);
+		pgn_switch_turn(&(*g).turn);
 		return 1;
 	    }
 	}
     }
 
-    switch_turn(&(*g).turn);
+    pgn_switch_turn(&(*g).turn);
     return 0;
 }
 
-void reset_valid_moves(BOARD b)
+void board_reset_valid_moves(BOARD b)
 {
     int row, col;
 
     for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++) {
+	for (col = 0; col < 8; col++)
 	    b[row][col].valid = 0;
-	    b[row][col].movecount = 0;
-	}
     }
 }
 
-void get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *minr, int *maxr,
-	int *minc, int *maxc)
+void board_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *minr, int *maxr, int *minc, int *maxc)
 {
     int row, col;
 
@@ -1232,9 +1164,9 @@ static int checkmatetest(GAME *g, BOARD b, int kr, int kc, int okr, int okc)
 		p = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
 		b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = p;
 		b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = 
-		    int_to_piece((*g).turn, OPEN_SQUARE);
+		    pgn_int_to_piece((*g).turn, OPEN_SQUARE);
 
-		if (piece_to_int(p) == KING) {
+		if (pgn_piece_to_int(p) == KING) {
 		    if (piece_side(*g, p) == (*g).turn) {
 			nokr = row;
 			nokc = col;
@@ -1279,7 +1211,7 @@ static int drawtest(BOARD b)
     for (row = 1; VALIDFILE(row); row++) {
 	for (col = 1; VALIDFILE(col); col++) {
 	    int p = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
-	    int piece = piece_to_int(p);
+	    int piece = pgn_piece_to_int(p);
 
 	    switch (piece) {
 		case PAWN:
@@ -1300,7 +1232,7 @@ static int drawtest(BOARD b)
     return 0;
 }
 
-void reset_enpassant(BOARD b)
+void board_reset_enpassant(BOARD b)
 {
     int r, c;
 
@@ -1310,7 +1242,7 @@ void reset_enpassant(BOARD b)
     }
 }
 
-int validate_move(GAME *g, BOARD b, char *m)
+int pgn_validate_move(GAME *g, BOARD b, char *m)
 {
     char *p;
     int piece, dstpiece;
@@ -1332,7 +1264,7 @@ again:
 
     while (!isdigit(*--p) && *p != 'O') {
 	if (*p == '=') {
-	    promo = piece_to_int(i);
+	    promo = pgn_piece_to_int(i);
 	    i = 0;
 	    break;
 	}
@@ -1342,7 +1274,7 @@ again:
     }
 
     // Old promotion text (e8Q). Convert to SAN.
-    if (piece_to_int(i) != -1) {
+    if (pgn_piece_to_int(i) != -1) {
 	p = (m) + strlen(m);
 	*p++ = '=';
 	*p++ = i;
@@ -1356,7 +1288,7 @@ again:
     p = m;
 
     /* Skip 'P'. */
-    if (piece_to_int(*p) == PAWN)
+    if (pgn_piece_to_int(*p) == PAWN)
 	p++;
     /* Pawn. */
     if (VALIDCOL(*p)) {
@@ -1384,14 +1316,13 @@ again:
 		    return 1;
 
 		*p++ = '=';
-		*p++ = toupper(int_to_piece((*g).turn, promo));
+		*p++ = toupper(pgn_int_to_piece((*g).turn, promo));
 		*p = '\0';
 		break;
 	    }
 	    else {
 #ifdef DEBUG
-		if (debug)
-		    DUMP("Pawn (move: '%s'): %c\n", m, *p++);
+		DUMP("Pawn (move: '%s'): %c\n", m, *p++);
 #else
 		p++;
 #endif
@@ -1410,7 +1341,7 @@ again:
 	else {
 	    p = m;
 
-	    if ((piece = piece_to_int(*p++)) == -1)
+	    if ((piece = pgn_piece_to_int(*p++)) == -1)
 		return 1;
 
 	    if (strlen(m) > 3) {
@@ -1434,7 +1365,7 @@ again:
 		    for (i = 1; VALIDFILE(i); i++) {
 			int fpiece = b[ROWTOBOARD(i)][COLTOBOARD(scol)].icon;
 
-			if (piece == piece_to_int(fpiece) && 
+			if (piece == pgn_piece_to_int(fpiece) && 
 				val_piece_side((*g).turn, fpiece)) {
 			    srow = i;
 			    break;
@@ -1452,7 +1383,7 @@ again:
 	    else if (scol == 0) {
 		if (srow > 0) {
 		    for (i = 1; VALIDFILE(i); i++) {
-			int fpiece = piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(i)].icon);
+			int fpiece = pgn_piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(i)].icon);
 
 			if (piece == fpiece) {
 			    scol = i;
@@ -1471,11 +1402,11 @@ again:
 	}
     }
 
-    piece = piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon);
+    piece = pgn_piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon);
     dist = abs(srow - row);
 
     if (!validate) {
-	reset_enpassant(b);
+	board_reset_enpassant(b);
 
 	if (piece == PAWN && dist == 2) {
 	    if ((*g).turn == WHITE)
@@ -1504,7 +1435,7 @@ again:
 	goto done;
     }
 
-    if (piece_to_int(piece) != OPEN_SQUARE) {
+    if (pgn_piece_to_int(piece) != OPEN_SQUARE) {
 	if (val_piece_side((*g).turn, piece))
 	    return 2;
 
@@ -1513,24 +1444,19 @@ again:
     }
 
     if (!validate) {
-	if (promo) {
-	    piece = int_to_piece((*g).turn, promo);
-
-	    if (((*g).turn == WHITE && (*g).side != WHITE) ||
-		    ((*g).turn == BLACK && (*g).side != BLACK))
-		update_status_notify(*g, "%s", NOTIFY_PROMOTION);
-	}
+	if (promo)
+	    piece = pgn_int_to_piece((*g).turn, promo);
 	else 
 	    piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
     }
     else 
 	piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
 
-    b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = int_to_piece((*g).turn, OPEN_SQUARE);
+    b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = pgn_int_to_piece((*g).turn, OPEN_SQUARE);
     b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
 
 done:
-    if (!validate && capture && piece_to_int(dstpiece) == ROOK) {
+    if (!validate && capture && pgn_piece_to_int(dstpiece) == ROOK) {
 	if (row == 1 && col == 1)
 	    CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
 	else if (row == 8 && col == 1)
@@ -1542,7 +1468,7 @@ done:
     }
 
     kingsquare(*g, b, &kr, &kc, &okr, &okc);
-    switch_turn(&(*g).turn);
+    pgn_switch_turn(&(*g).turn);
 
     if ((*g).castle) {
 	p = m + strlen(m);
@@ -1556,11 +1482,6 @@ done:
     if (drawtest(b)) {
 	(*g).tag[TAG_RESULT].value = Realloc((*g).tag[TAG_RESULT].value, 8);
 	strncpy((*g).tag[TAG_RESULT].value, "1/2-1/2", 8);
-	update_status_notify(*g, "%s", NOTIFY_GAMEOVER_DRAW);
-
-	if (curses_initialized)
-	    update_tag_window((*g).tag);
-
 	SET_FLAG((*g).flags, GF_GAMEOVER);
     }
     else {
@@ -1569,7 +1490,7 @@ done:
 		break;
 	    case -1:
 		validate = i;
-		switch_turn(&(*g).turn);
+		pgn_switch_turn(&(*g).turn);
 		return 1;
 	    default:
 		if (checkmatetest(g, b, kr, kc, okr, okc)) {
@@ -1578,33 +1499,23 @@ done:
 		    if (result == WHITEWINS) {
 			(*g).tag[TAG_RESULT].value = Realloc((*g).tag[TAG_RESULT].value, 4);
 			strncpy((*g).tag[TAG_RESULT].value, "1-0", 4);
-			update_status_notify(*g, "%s", NOTIFY_GAMEOVER_WWINS);
 		    }
 		    else if (result == BLACKWINS) {
 			(*g).tag[TAG_RESULT].value = Realloc((*g).tag[TAG_RESULT].value, 4);
 			strncpy((*g).tag[TAG_RESULT].value, "0-1", 4);
-			update_status_notify(*g, "%s", NOTIFY_GAMEOVER_BWINS);
 		    }
-
-		    if (curses_initialized)
-			update_tag_window((*g).tag);
 
 		    SET_FLAG((*g).flags, GF_GAMEOVER);
 		}
-		else {
+		else
 		    *p++ = '+';
-
-		    if (((*g).turn == WHITE && (*g).side == WHITE) ||
-			    ((*g).turn == BLACK && (*g).side == BLACK))
-			update_status_notify(*g, "%s", NOTIFY_CHECK);
-		}
 
 		*p = '\0';
 		break;
 	}
     }
 
-    switch_turn(&(*g).turn);
+    pgn_switch_turn(&(*g).turn);
     validate = i;
     return 0;
 }

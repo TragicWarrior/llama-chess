@@ -20,7 +20,20 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#define DUMP(fmt, args...)	(write_debug_output(0, fmt, ## args))
+#define DUMP_F(fmt, args...)	(write_debug_output(1, fmt, ## args))
+
 unsigned gcurrent;
+
+void write_debug_output(int, const char *, ...);
+
+#ifdef CHESS_H
+void dump_board(int which, BOARD b);
+#endif
+
+#ifdef WINDOW_H
+#define dmsg(...) cmessage("DEBUG", ANYKEY, __VA_ARGS__)
+#endif
 
 #endif
 #endif

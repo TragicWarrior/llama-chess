@@ -19,16 +19,15 @@
 #ifndef RCFILE_H
 #define RCFILE_H
 
-/* The order must match the enumeration in common.h. */
-char *enginecmd[] = {
-    "gnuchess xboard",
-    "crafty xboard",
-    NULL
+// Loaded filename from the command line or from the file input dialog.
+char loadfile[FILENAME_MAX];
+int filetype;
+enum {
+    NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
 };
 
-int isinteger(const char *);
-int pgn_add_tag(TAG **, int *, const char *, const char *);
-char *tilde_expand(char *);
 void set_default_colors(void);
+void set_defaults();
+void parse_rcfile(const char *filename);
 
 #endif

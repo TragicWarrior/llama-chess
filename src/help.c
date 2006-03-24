@@ -24,8 +24,14 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#include "chess.h"
+#include "conf.h"
 #include "colors.h"
+#include "window.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);

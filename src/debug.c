@@ -25,7 +25,11 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#include "chess.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 void write_debug_output(int which, const char *format, ...)
 {

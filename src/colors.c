@@ -20,8 +20,17 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#ifdef HAVE_NCURSES_H
+#include <ncurses.h>
+#endif
+
+#include "chess.h"
+#include "conf.h"
 #include "colors.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 void init_color_pairs()
 {

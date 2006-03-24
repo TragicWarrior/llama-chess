@@ -25,9 +25,28 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#ifdef HAVE_NCURSES_H
+#include <ncurses.h>
+#endif
+
+#ifdef HAVE_PANEL_H
+#include <panel.h>
+#endif
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
+
+#include "chess.h"
+#include "conf.h"
+#include "window.h"
 #include "colors.h"
+#include "misc.h"
 #include "message.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 int dump_message(const char *title, const char *prompt, int center,
 	const char *extra_help, void(*custom_func)(void*), void *arg, int ckey,

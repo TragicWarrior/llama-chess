@@ -29,8 +29,18 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#ifdef HAVE_NCURSES_H
+#include <ncurses.h>
+#endif
+
+#include "chess.h"
+#include "conf.h"
+#include "misc.h"
 #include "rcfile.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 static int attributes(const char *filename, int line, char *str)
 {
@@ -88,10 +98,10 @@ static short color_name(const char *filename, int line, const char *color)
 }
 
 static void parse_color(const char *filename, int line, const char *str,
-	struct colors *c)
+	struct color_s *c)
 {
     char fg[16], bg[16], attr[64], nattr[64];
-    struct colors ctmp = *c;
+    struct color_s ctmp = *c;
     int n;
     
     if ((n = sscanf(str, "%[a-zA-Z] %[a-zA-Z] %[a-zA-Z,] %[a-zA-Z,]", fg, bg,
@@ -157,23 +167,9 @@ void set_defaults()
     struct stat st;
 
     filetype = NO_FILE;
-
-    fancy_results[0].pgn = "1-0";
-    fancy_results[1].pgn = "0-1";
-    fancy_results[2].pgn = "1/2-1/2";
-    fancy_results[3].pgn = "*";
-    fancy_results[0].fancy = TAG_RESULT_FANCY_WHITE;
-    fancy_results[1].fancy = TAG_RESULT_FANCY_BLACK;
-    fancy_results[2].fancy = TAG_RESULT_FANCY_DRAW;
-    fancy_results[3].fancy = TAG_RESULT_FANCY_NA;
-
-    status.engine = ENGINE_OFFLINE;
-
-    config.engine = (DEFAULT_ENGINE >= MAX_ENGINES) ? GNUCHESS : DEFAULT_ENGINE;
-    config.engine_cmd = enginecmd[config.engine];
+    config.engine_cmd = strdup("gnuchess");//FIXME
     config.jumpcount = 5;
     config.clevel = 6;
-    config.book_method = (config.engine == GNUCHESS) ? BOOK_RANDOM : BOOK_OFF;
     config.engine_depth = 0;
     config.historyagony = 0;
     config.agony = 1;
@@ -182,9 +178,6 @@ void set_defaults()
     config.deleteprompt = 1;
     config.validmoves = 1;
     config.stoponerror = 0;
-    strncpy(config.ics_server, DEFAULT_ICS_SERVER, sizeof(config.ics_server));
-    config.ics_port = DEFAULT_ICS_PORT;
-    config.ics_user = DEFAULT_ICS_USER;
 
     set_default_colors();
 
@@ -238,22 +231,7 @@ void parse_rcfile(const char *filename)
 	strncpy(val, trim(val), sizeof(val));
 	strncpy(var, trim(var), sizeof(var));
 
-	if (strcmp(var, "book") == 0) {
-	    if (strcmp(val, "prefer") == 0)
-		config.book_method = BOOK_PREFER;
-	    else if (strcmp(val, "random") == 0)
-		config.book_method = BOOK_RANDOM;
-	    else if (strcmp(val, "worst") == 0)
-		config.book_method = BOOK_WORST;
-	    else if (strcmp(val, "best") == 0)
-		config.book_method = BOOK_BEST;
-	    else if (strcmp(val, "off") == 0)
-		config.book_method = BOOK_OFF;
-	    else
-		errx(EXIT_FAILURE, "%s(%i): invalid book method \"%s\"", 
-			filename, lines, val);
-	}
-	else if (strcmp(var, "jumpcount") == 0) {
+	if (strcmp(var, "jumpcount") == 0) {
 	    if (!isinteger(val))
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
 			lines);
@@ -373,37 +351,8 @@ void parse_rcfile(const char *filename)
 		errx(EXIT_FAILURE, "%s(%i): value must be between 1 and 9", 
 			filename, lines);
 	}
-	else if (strcmp(var, "ics_server") == 0)
-	    strncpy(config.ics_server, val, sizeof(config.ics_server));
-	else if (strcmp(var, "ics_port") == 0) {
-	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
-
-	    config.ics_port = atoi(val);
-	}
-	else if (strcmp(var, "ics_user") == 0)
-	    config.ics_user = strdup(val);
-	else if (strcmp(var, "ics_passwd") == 0)
-	    config.ics_passwd = strdup(val);
 	else if (strcmp(var, "engine_cmd") == 0)
 	    altengine = strdup(val);
-	else if (strcmp(var, "engine") == 0) {
-	    switch (atoi(val)) {
-		case 0:
-		    config.engine_cmd = enginecmd[GNUCHESS];
-		    config.engine = GNUCHESS;
-		    break;
-		case 1:
-		    config.engine_cmd = enginecmd[CRAFTY];
-		    config.engine = CRAFTY;
-		    break;
-		default:
-		    errx(EXIT_FAILURE, 
-			    "%s(%i): engine must be 0 through %i", filename, 
-			    lines, MAX_ENGINES - 1);
-	    }
-	}
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

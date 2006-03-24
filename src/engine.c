@@ -36,8 +36,16 @@
 #include <config.h>
 #endif
 
-#include "common.h"
+#include "chess.h"
+#include "conf.h"
+#include "misc.h"
+#include "strings.h"
+#include "window.h"
 #include "engine.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
 
 void send_to_engine(const char *format, ...)
 {
@@ -78,7 +86,6 @@ void send_to_engine(const char *format, ...)
 			message(ERROR, ANYKEY, "Could not write to engine. "
 				"Process no longer exists.");
 			engine_initialized = 0;
-			status.engine = ENGINE_OFFLINE;
 			//update_status_window(NULL);
 			return;
 		    }
@@ -258,9 +265,6 @@ pid_t init_chess_engine(char **args)
 
 void set_engine_defaults()
 {
-    if (status.engine == GNUCHESS)
-	SEND_TO_ENGINE("book %s\n", book_method(config.book_method));
-
     SEND_TO_ENGINE("depth %i\n", config.engine_depth);
 }
 
@@ -285,27 +289,19 @@ int start_chess_engine()
     char **args;
     int i;
 
-    status.engine = ENGINE_INITIALIZING;
-    //update_status_window();
-    update_panels();
-    doupdate();
-
     args = parseargs(config.engine_cmd);
     enginepid = init_chess_engine(args);
 
     switch (enginepid) {
 	case -1:
 	    /* Pty allocation. */
-	    status.engine = ENGINE_OFFLINE;
 	    message(ERROR, ANYKEY, "Could not allocate PTY");
 	    break;
 	case -2:
 	    /* Could not execute engine. */
-	    status.engine = ENGINE_OFFLINE;
 	    message(ERROR, ANYKEY, "%s: %s", args[0], strerror(errno));
 	    break;
 	default:
-	    status.engine = ENGINE_READY;
 	    break;
     }
 
@@ -331,20 +327,21 @@ void parse_gnuchess_line(GAME *g, char *str)
 
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
+	/*
 	if (validate_move(g, m)) {
 	    invalid_move(0, m);
 	    return;
 	}
+	*/
 
         if ((*g).htotal == 0 && (*g).side == BLACK)                   
 	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
-	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	history_add(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
-	switch_turn(&(*g).turn);
+	pgn_switch_turn(&(*g).turn);
 	(*g).sp.icon = 0;
 	str += count;
-	status.engine = ENGINE_THINKING;
 	return;
     }
 
@@ -354,24 +351,29 @@ void parse_gnuchess_line(GAME *g, char *str)
 	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
 	 * need to convert them.
 	 */
-	if ((p = a2a4tosan(g, m)) == NULL)
+	//FIXME
+	/*
+	if ((p = pgn_a2a4tosan(g, m)) == NULL)
 	    return;
+	    */
 
+	/*
 	if (validate_move(g, p)) {
 	    invalid_move(0, p);
 	    return;
 	}
+	*/
 
         if ((*g).htotal == 0 && (*g).side == BLACK)                   
 	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
-	add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	history_add(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
-	switch_turn(&(*g).turn);
+	pgn_switch_turn(&(*g).turn);
 	str += count;
 
 	if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {
-	    init_history(g);
+	    //history_update_board(g, g.htotal); FIXME
 	    RETURN;
 	}
 
@@ -379,7 +381,7 @@ void parse_gnuchess_line(GAME *g, char *str)
     }
 
     if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {
-	init_history(g);
+	//history_update_board(g); FIXME
 	RETURN;
     }
 
@@ -394,7 +396,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    return;
 	}
 	else {
-	    free_history_data((*g).hp, (*g).hindex + 1);
+	    history_free((*g).hp, (*g).hindex + 1);
 	    CLEAR_FLAG((*g).flags, GF_GAMEOVER);
 	    SET_FLAG((*g).flags, GF_MODIFIED);
 	}
@@ -422,23 +424,9 @@ void parse_gnuchess_line(GAME *g, char *str)
 
     /* Bad engine command or move. */
     if (strncmp(str, "Illegal move: ", 14) == 0) {
-	update_status_notify(*g, "%s", E_INVALID_COMMAND);
 	(*g).sp.icon = 0;
 	RETURN;
     }
-
-    if (strcmp(str, "No book found.") == 0)
-	config.book_method = -1; 
-    else if (strcmp(str, "book now off.") == 0)
-	config.book_method = BOOK_OFF;
-    else if (strcmp(str, "book now on.") == 0)
-	config.book_method = BOOK_PREFER;
-    else if (strcmp(str, "book now best.") == 0)
-	config.book_method = BOOK_BEST;
-    else if (strcmp(str, "book now worst.") == 0)
-	config.book_method = BOOK_WORST;
-    else if (strcmp(str, "book now random.") == 0)
-	config.book_method = BOOK_RANDOM;
 }
 
 static void parse_engine_line(GAME *g, char *line)
@@ -448,13 +436,7 @@ static void parse_engine_line(GAME *g, char *line)
     if (!*line)
 	return;
 
-    switch (config.engine) {
-	case GNUCHESS:
-	    parse_gnuchess_line(g, line);
-	    break;
-	default:
-	    break;
-    }
+    parse_gnuchess_line(g, line);
 }
 
 void parse_engine_output(GAME *g, char *str)
@@ -466,7 +448,7 @@ void parse_engine_output(GAME *g, char *str)
 
 	/* FIXME test this ("White ... : ", "Black ... : "). Needed for the
 	 * 'g'o command. */
-	if (status.engine == GNUCHESS && *str == ':') {
+	if (*str == ':') {
 	    p = buf;
 	    str++;
 	    continue;

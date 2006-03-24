@@ -30,23 +30,396 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <dirent.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_MENU_H
-#include <menu.h>
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
 #endif
 
-#include "common.h"
-#include "colors.h"
+#include "chess.h"
 #include "pgn.h"
+#include "misc.h"
+
 #ifdef DEBUG
 #include "debug.h"
 #endif
 
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
+
+/*
+ * Creates a FEN tag from the current game 'g' and board 'b'. Returns a FEN
+ * tag.
+ */
+char *pgn_game_to_fen(GAME g, BOARD b)
+{
+    int row, col;
+    int i;
+    static char buf[MAX_PGN_LINE_LEN], *p;
+    int oldturn = g.turn;
+    char enpassant[3] = {0}, *e;
+    int castle = 0;
+
+    for (i = g.htotal; i >= g.hindex - 1; i--)
+	pgn_switch_turn(&g.turn);
+
+    p = buf;
+
+    for (row = 0; row < 8; row++) {
+	int count = 0;
+
+	for (col = 0; col < 8; col++) {
+	    if (b[row][col].enpassant == 1) {
+		b[row][col].icon = pgn_int_to_piece(WHITE, OPEN_SQUARE);
+		e = enpassant;
+		*e++ = 'a' + col;
+		*e++ = ('0' + 8) - row;
+		*e = 0;
+	    }
+
+	    if (pgn_piece_to_int(b[row][col].icon) == OPEN_SQUARE) {
+		count++;
+		continue;
+	    }
+
+	    if (count) {
+		*p++ = '0' + count;
+		count = 0;
+	    }
+
+	    *p++ = b[row][col].icon;
+	    *p = 0;
+	}
+
+	if (count) {
+	    *p++ = '0' + count;
+	    count = 0;
+	}
+
+	*p++ = '/';
+    }
+
+    --p;
+    *p++ = ' ';
+    *p++ = (g.side == WHITE) ? 'w' : 'b';
+    *p++ = ' ';
+
+    if (TEST_FLAG(g.flags, GF_WK_CASTLE) && pgn_piece_to_int(b[7][7].icon) ==
+	    ROOK && isupper(b[7][7].icon) && pgn_piece_to_int(b[7][4].icon) ==
+		KING && isupper(b[7][4].icon)) {
+	*p++ = 'K';
+	castle = 1;
+    }
+
+    if (TEST_FLAG(g.flags, GF_WQ_CASTLE) && pgn_piece_to_int(b[7][0].icon) ==
+	    ROOK && isupper(b[7][0].icon) && pgn_piece_to_int(b[7][4].icon) ==
+		KING && isupper(b[7][4].icon)) {
+	*p++ = 'Q';
+	castle = 1;
+    }
+
+    if (TEST_FLAG(g.flags, GF_BK_CASTLE) && pgn_piece_to_int(b[0][7].icon) ==
+	    ROOK && islower(b[0][7].icon) && pgn_piece_to_int(b[0][4].icon) ==
+		KING && islower(b[0][4].icon)) {
+	*p++ = 'k';
+	castle = 1;
+    }
+
+    if (TEST_FLAG(g.flags, GF_BQ_CASTLE) && pgn_piece_to_int(b[0][0].icon) ==
+	    ROOK && islower(b[0][0].icon) && pgn_piece_to_int(b[0][4].icon) ==
+		KING && islower(b[0][4].icon)) {
+	*p++ = 'q';
+	castle = 1;
+    }
+
+    if (!castle)
+	*p++ = '-';
+
+    *p++ = ' ';
+
+    if (enpassant[0]) {
+	e = enpassant;
+	*p++ = *e++;
+	*p++ = *e++;
+    }
+    else
+	*p++ = '-';
+
+    *p++ = ' ';
+
+    /*
+    if (g.ply >= 10) {
+	*p++ = '0' + (g.ply / 10);
+	*p++ = '0' + g.ply % 10;
+    }
+    else
+	*p++ = '0' + g.ply;
+	*/
+
+    *p++ = '0';
+    *p++ = ' ';
+
+    i = (g.hindex + 1) / 2;
+
+    if (i >= 100) {
+	*p++ = '0' + (i / 100);
+	*p++ = '0' + (i / 100) / 10;
+	*p++ = '0' + (i / 100) % 10;
+    }
+    else if (i >= 10) {
+	*p++ = '0' + (i / 10);
+	*p++ = '0' + i % 10;
+    }
+    else
+	*p++ = '0' + i;
+
+    *p = '\0';
+
+    g.turn = oldturn;
+    return buf;
+}
+
+/*
+ * Returns the total number of moves in 'h' or 0 if none.
+ */
+int history_total(HISTORY *h)
+{
+    short i;
+
+    if (!h)
+	return 0;
+
+    for (i = 0; h[i].n != -1; i++);
+    return i + 1;
+}
+
+/* 
+ * Deallocates the all the data for 'h' from position 'start' in the array.
+ */
+void history_free(HISTORY *h, int start)
+{
+    int t = history_total(h);
+    int i;
+
+    if (!h)
+	return;
+
+    for (i = start; i < t; i++) {
+	if (h[i].comment)
+	    free(h[i].comment);
+
+	if (h[i].rav) {
+	    history_free(h[i].rav, 0);
+	    free(h[i].rav);
+	}
+
+	if (h[i].move)
+	    free(h[i].move);
+    }
+
+    free(h);
+}
+
+/*
+ * Sets 'h' to the element 'n' of game 'g' move history. Returns 1 if 'n' is
+ * out of 'g' history range or 0 on success.
+ */
+int history_by_n(GAME g, int n, HISTORY *h)
+{
+    if (n < 0 || n > g.htotal - 1)
+	return 1;
+
+    *h = g.hp[n];
+    return 0;
+}
+
+/*
+ * Appends move 'm' to 'h' and increments 'total' and 'n'.
+ */
+void history_add(HISTORY **h, unsigned char *n, unsigned char *total, 
+	const char *m)
+{
+    HISTORY *history = *h;
+    int t = *total;
+
+    history = Realloc(history, (t + 2) * sizeof(HISTORY));
+    memset(&history[t], 0, sizeof(HISTORY));
+    history[t].move = strdup(m);
+    history[t].n = t;
+    t++;
+    memset(&history[t], 0, sizeof(HISTORY));
+    history[t].n = -1;
+    *h = history;
+    *total = t;
+    *n = *total - 1;
+}
+
+/*
+ * Resets the game 'g' using board 'b' up to history move 'n'.
+ */
+int history_update_board(GAME *g, BOARD b, int n)
+{
+    int i = 0;
+    BOARD tb;
+    int ret = 0;
+
+    if (TEST_FLAG((*g).flags, GF_BLACK_OPENING))
+	(*g).turn = BLACK;
+    else
+	(*g).turn = WHITE;
+
+#if 0
+    if (TEST_FLAG((*g).flags, GF_PERROR))
+	SET_FLAG(flags, GF_PERROR);
+
+    if (TEST_FLAG((*g).flags, GF_MODIFIED))
+	SET_FLAG(flags, GF_MODIFIED);
+
+    if (TEST_FLAG((*g).flags, GF_DELETE))
+	SET_FLAG(flags, GF_DELETE);
+
+    if (TEST_FLAG((*g).flags, GF_GAMEOVER))
+	SET_FLAG(flags, GF_GAMEOVER);
+    
+    (*g).flags = flags;
+#endif
+    pgn_init_board(tb);
+
+    if (pgn_init_fen_board(g, tb, NULL))
+	return 1;
+
+    for (i = 0; i < n; i++) {
+	HISTORY h;
+
+	if (history_by_n(*g, i, &h))
+	    break;
+	
+	if (pgn_validate_move(g, tb, h.move)) {
+	    ret = 1;
+	    break;
+	}
+
+	pgn_switch_turn(&(*g).turn);
+    }
+
+    if (ret == 0)
+	memcpy(b, tb, sizeof(BOARD));
+
+    return ret;
+}
+
+/*
+ * Updates the game 'g' using board 'b' to the next 'n'th history move. The
+ * 's' parameter is either 2 for a wholestep or 1 for a halfstep.
+ */
+void history_previous(GAME *g, BOARD b, int n, int s)
+{
+    if (s < 1 || s > 2)
+	return;
+
+    if ((*g).hindex - n < 0) {
+	if ((n == 2 && s == 2) || (n == 1 && s == 1))
+	    (*g).hindex = (*g).htotal;
+	else
+	    (*g).hindex = 0;
+    }
+    else
+	(*g).hindex -= n;
+
+    history_update_board(g, b, (*g).hindex);
+}
+
+/*
+ * Updates the game 'g' using board 'b' to the previous 'n'th history move.
+ * 's' parameter is either 2 for a wholestep or 1 for a halfstep.
+ */
+void history_next(GAME *g, BOARD b, int n, int s)
+{
+    if ((*g).hindex + n > (*g).htotal) {
+	if ((n == 2 && s == 2) || (n == 1 && s == 1))
+	    (*g).hindex = 0;
+	else
+	    (*g).hindex = (*g).htotal;
+    }
+    else
+	(*g).hindex += n;
+
+    history_update_board(g, b, game[gindex].hindex);
+}
+/*
+ * Converts the character piece 'p' to an integer.
+ */
+int pgn_piece_to_int(int p)
+{
+    if (p == '.')
+	return OPEN_SQUARE;
+
+    p = tolower(p);
+
+    switch (p) {
+	case 'p':
+	    return PAWN;
+	case 'r':
+	    return ROOK;
+	case 'n':
+	    return KNIGHT;
+	case 'b':
+	    return BISHOP;
+	case 'q':
+	    return QUEEN;
+	case 'k':
+	    return KING;
+	default:
+	    break;
+    }
+
+    return -1;
+}
+
+/*
+ * Converts the integer piece 'n' to a character.
+ */
+int pgn_int_to_piece(char turn, int n)
+{
+    int p = 0;
+
+    switch (n) {
+	case PAWN:
+	    p = 'p';
+	    break;
+	case ROOK:
+	    p = 'r';
+	    break;
+	case KNIGHT:
+	    p = 'n';
+	    break;
+	case BISHOP:
+	    p = 'b';
+	    break;
+	case QUEEN:
+	    p = 'q';
+	    break;
+	case KING:
+	    p = 'k';
+	    break;
+	case OPEN_SQUARE:
+	    p = '.';
+	    break;
+	default:
+	    break;
+    }
+
+    return (turn == WHITE) ? toupper(p) : p;
+}
+
+/*
+ * Finds a tag 'name' in the structure array 't'. Returns the location in the
+ * array of the found tag or -1 on failure.
+ */
 int pgn_find_tag(TAG *t, int total, const char *name)
 {
     int i;
@@ -67,7 +440,10 @@ static int tag_compare(const void *s1, const void *s2)
     return strcmp(ss1->name, ss2->name);
 }
 
-// The first seven tags are in standard order so don't sort'em.
+/*
+ * Sorts the tag array in game 'g'. The first seven tags are in order of the
+ * PGN standard so don't sort'em.
+ */
 void pgn_sort_tags(GAME g)
 {
     TAG *t = g.tag + 7;
@@ -76,6 +452,7 @@ void pgn_sort_tags(GAME g)
 }
 
 // FIXME ???
+#if 0
 static int end_of_game(GAME g, const char *str)
 {
     int i;
@@ -92,9 +469,13 @@ static int end_of_game(GAME g, const char *str)
 
     return 0;
 }
+#endif
 
-/* Returns 1 if a duplicate tag was found. 0 otherwise. The 'n' argument is
- * a pointer to int, and incremented.
+/*
+ * Adds a tag 'name' with value 'value' to the pointer to array 'dst'. The 'n'
+ * parameter is incremented to the new total of array 'dst'. If a duplicate
+ * tag 'name' was found then the existing tag is updated to the new 'value'.
+ * Returns 1 if a duplicate tag was found or 0 otherwise.
  */
 int pgn_add_tag(TAG **dst, unsigned char *n, char *name, char *value)
 {
@@ -105,7 +486,6 @@ int pgn_add_tag(TAG **dst, unsigned char *n, char *name, char *value)
     name = trim(name);
     value = trim(value);
 
-    /* If a duplicate was found, update the existing one to the new value. */
     for (i = 0; i < idx; i++) {
 	if (strcasecmp(tdata[i].name, name) == 0) {
 	    len = (value) ? strlen(value) + 1 : 1;
@@ -155,7 +535,10 @@ static char *remove_tag_escapes(const char *str)
     return buf;
 }
 
-void init_board(BOARD b)
+/*
+ * Initializes a new game board.
+ */
+void pgn_init_board(BOARD b)
 {
     int row, col;
 
@@ -200,42 +583,67 @@ void init_board(BOARD b)
     }
 }
 
-void pgn_set_default_tags(GAME *g)
+/*
+ * Adds the standard PGN roster tags to game 'g'.
+ */
+static void set_default_tags(GAME *g)
 {
     time_t now;
-    char tbuf[MAX_TIME_LEN + 1] = {0};
+    char tbuf[12] = {0};
     struct tm *tp;
-    int n;
+    struct passwd *pw = getpwuid(getuid());
 
     time(&now);
     tp = localtime(&now);
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
+    tbuf[11] = 0;
 
     /* The standard seven tag roster (in order of appearance). */
     pgn_add_tag(&(*g).tag, &(*g).tindex, "Event", "?");
     pgn_add_tag(&(*g).tag, &(*g).tindex, "Site", "?");
     pgn_add_tag(&(*g).tag, &(*g).tindex, "Date", tbuf);
     pgn_add_tag(&(*g).tag, &(*g).tindex, "Round", "-");
-    pgn_add_tag(&(*g).tag, &(*g).tindex, "White", config.pwd->pw_gecos);
+    pgn_add_tag(&(*g).tag, &(*g).tindex, "White", pw->pw_gecos);
     pgn_add_tag(&(*g).tag, &(*g).tindex, "Black", "?");
     pgn_add_tag(&(*g).tag, &(*g).tindex, "Result", "*");
+}
 
-    /* Add custom tags from the configuration file. */
-    if (newgameinit) {
-	for (n = 0; n < config.tindex; n++)
-	    pgn_add_tag(&(*g).tag, &(*g).tindex, config.tag[n].name, 
-		    config.tag[n].value);
+void pgn_tag_free(TAG *data, int n)
+{
+    int i;
 
-	pgn_sort_tags(*g);
-	newgameinit = 0;
+    for (i = 0; i < n; i++) {
+	free(data[i].name);
+	free(data[i].value);
     }
+
+    free(data);
+}
+
+void pgn_free(GAME g)
+{
+    history_free(g.history, 0);
+    pgn_tag_free(g.tag, g.tindex);
+    memset(&g, 0, sizeof(GAME));
+}
+
+void pgn_free_all()
+{
+    int i;
+
+    for (i = 0; i < gtotal; i++)
+	pgn_free(game[i]);
+
+    if (game)
+	free(game);
+    game = NULL;
 }
 
 static void reset_game_data()
 {
-    free_all_games();
+    pgn_free_all();
     gtotal = gindex = 0;
-    init_board(pgnboard);
+    pgn_init_board(pgnboard);
 }
 
 static void skip_leading_space(FILE *fp)
@@ -250,14 +658,9 @@ static void skip_leading_space(FILE *fp)
     ungetc(c, fp);
 }
 
-void invalid_move(int n, const char *m)
-{
-    if (curses_initialized)
-	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m, n);
-    else
-	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m, n);
-}
-
+/*
+ * PGN move text section.
+ */
 static int move_text(GAME *g, FILE *fp)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0};
@@ -299,7 +702,7 @@ static int move_text(GAME *g, FILE *fp)
     }
     else {
 	if ((*g).hindex > 0)
-	    switch_turn(&(*g).turn);
+	    pgn_switch_turn(&(*g).turn);
     }
 
     ungetc(c, fp);
@@ -308,20 +711,17 @@ static int move_text(GAME *g, FILE *fp)
 	return 1;
 
     // In case the file is in a2a4 format, convert this move to SAN format.
-    if (a2a4tosan(g, pgnboard, m) == NULL) {
-	invalid_move(gcurrent, m);
+    if (pgn_a2a4tosan(g, pgnboard, m) == NULL)
 	return 1;
-    }
 
-    if (validate_move(g, pgnboard, m)) {
+    if (pgn_validate_move(g, pgnboard, m)) {
 	// Black opening move?
 	if ((*g).hindex == 0) {
-	    switch_turn(&(*g).turn);
+	    pgn_switch_turn(&(*g).turn);
 
-	    if (validate_move(g, pgnboard, m)) {
+	    if (pgn_validate_move(g, pgnboard, m)) {
 		// Nope. Parse error.
-		switch_turn(&(*g).turn);
-		invalid_move(gcurrent, m);
+		pgn_switch_turn(&(*g).turn);
 		return 1;
 	    }
 
@@ -329,23 +729,23 @@ static int move_text(GAME *g, FILE *fp)
 	}
 	else {
 	    // Parse error (not an opening move).
-	    switch_turn(&(*g).turn);
-	    invalid_move(gcurrent, m);
+	    pgn_switch_turn(&(*g).turn);
 	    return 1;
 	}
     }
 
 #ifdef DEBUG
-    if (debug) {
-	DUMP("%s\n", m);
-	dump_board(0, pgnboard);
-    }
+    DUMP("%s\n", m);
+    dump_board(0, pgnboard);
 #endif
 
-    add_to_history(&(*g).hp, &(*g).hindex, &(*g).htotal, m);
+    history_add(&(*g).hp, &(*g).hindex, &(*g).htotal, m);
     return 0;
 }
 
+/*
+ * PGN nag text.
+ */
 static void nag_text(GAME *g, FILE *fp)
 {
     int c, i, t;
@@ -451,7 +851,10 @@ static void nag_text(GAME *g, FILE *fp)
     skip_leading_space(fp);
 }
 
-static void move_annotation(GAME *g, FILE *fp, int terminator)
+/*
+ * PGN move annotation.
+ */
+static void annotation_text(GAME *g, FILE *fp, int terminator)
 {
     int c, lastchar = 0;
     int len = 0;
@@ -479,6 +882,9 @@ static void move_annotation(GAME *g, FILE *fp, int terminator)
     strncpy((*g).hp[hindex].comment, buf, len);
 }
 
+/*
+ * PGN roster tag.
+ */
 static void tag_text(GAME *g, FILE *fp)
 {
     char name[LINE_MAX], *n = name;
@@ -535,7 +941,10 @@ static void tag_text(GAME *g, FILE *fp)
     skip_leading_space(fp);
 }
 
-static int eog_marker(GAME *g, FILE *fp)
+/*
+ * PGN end-of-game marker.
+ */
+static int eog_text(GAME *g, FILE *fp)
 {
     int c, i = 0;
     char buf[8], *p = buf;
@@ -543,133 +952,247 @@ static int eog_marker(GAME *g, FILE *fp)
     while ((c = fgetc(fp)) != EOF && !isspace(c) && i++ < sizeof(buf))
 	*p++ = c;
 
-    for (i = 0; i < NARRAY(fancy_results); i++) {
-	int len;
-
-	if (strcmp(buf, fancy_results[i].pgn) == 0) {
-	    len = strlen(fancy_results[i].pgn) + 1;
-	    (*g).tag[TAG_RESULT].value = Realloc((*g).tag[TAG_RESULT].value,
-						 len);
-	    strncpy((*g).tag[TAG_RESULT].value, fancy_results[i].pgn, len);
-	    break;
-	}
-    }
-
+    *p = 0;
+    (*g).tag[TAG_RESULT].value = Realloc((*g).tag[TAG_RESULT].value, 
+					 strlen(buf) + 1);
+    strcpy((*g).tag[TAG_RESULT].value, buf);
     skip_leading_space(fp);
     return 1;
 }
 
-static HISTORY *ravlevel_history(HISTORY h, int level)
-{
-    int l = 0;
-    HISTORY *hp = NULL;
-
-    while (1) {
-	if (l == level)
-	    break;
-
-	if (h.rav) {
-	    if (l + 1 == level) {
-		hp = h.rav;
-		break;
-	    }
-
-	    l++;
-	}
-    }
-
-    return hp;
-}
-
-// This function updates a games move history pointer to a new history
-// instance for the current move.
+/*
+ * This function updates a games move history pointer to a new history
+ * instance for the current move.
+ */
+static int read_file(FILE *);
 static int rav_text(GAME *g, FILE *fp, int which)
 {
+    int hindex = 0;
+    char *fen = NULL;
+
     if (which == '(') {
+	if (!ravlevel)
+	    /* 
+	     * hindex holds the current root move number. We have to know
+	     * where to begin in the originial move history (not the pointer
+	     * .hp) when ravlevel is deincremented (end of this rav). 
+	     */
+	    hindex = (*g).hindex;
+
 	ravlevel++;
-	(*g).ravindex = (*g).hindex;
-	(*g).hp[(*g).hindex].rav = Calloc(1, sizeof(HISTORY));
-	(*g).hp = (*g).hp[(*g).hindex].rav;
+	(*g).hp[hindex].rav = Calloc(1, sizeof(HISTORY));
+	(*g).hp = (*g).hp[hindex].rav;
 	(*g).hindex = (*g).htotal = 0;
+	fen = strdup(pgn_game_to_fen(*g, pgnboard));
+
+	if (read_file(fp)) {
+	    fprintf(stderr, "ACK\n");
+	    return 1;
+	}
+
+	(*g).hp = (*g).history;
+	(*g).hindex = hindex;
+	(*g).htotal = hindex + 1;
+	ravlevel--;
+	pgn_init_fen_board(g, pgnboard, fen);
+	free(fen);
     }
     else if (which == ')') {
 	ravlevel--;
 
+	// Parse error.
 	if (ravlevel < 0)
 	    return 1;
 
-	(*g).hp = ravlevel_history((*g).history[(*g).ravindex], ravlevel);
+	return -1;
     }
 
     return 0;
 }
 
-/* This is called at the EOG marker and the beginning of the move text
- * section. So at least a move or EOG marker has to exist. It initializes the
- * board (b) to the FEN tag. */
-static void fen_tag(GAME *g)
+/*
+ * See pgn_init_fen_board(). Returns -1 on parse error. 0 may be returned on
+ * success when there is no move count in the FEN tag otherwise the move count
+ * is returned.
+ */
+static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *str)
 {
-    int n, i;
+    char *tmp;
+    char line[LINE_MAX], *s;
+    int row = 8, col = 1;
+    int moven;
+
+    strncpy(line, str, sizeof(line));
+    s = line;
+    board_reset_enpassant(b);
+
+    while ((tmp = strsep(&s, "/")) != NULL) {
+	int n;
+
+	if (!VALIDFILE(row))
+	    return -1;
+
+	while (*tmp) {
+	    if (*tmp == ' ')
+		goto other;
+
+	    if (isdigit(*tmp)) {
+		n = *tmp - '0';
+
+		if (!VALIDFILE(n))
+		    return -1;
+
+		for (; n; --n, col++)
+		    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
+			pgn_int_to_piece(WHITE, OPEN_SQUARE);
+	    } 
+	    else if (pgn_piece_to_int(*tmp) != -1)
+		b[ROWTOBOARD(row)][COLTOBOARD(col++)].icon = *tmp;
+	    else
+		return -1;
+
+	    tmp++;
+	}
+
+	row--;
+	col = 1;
+    }
+
+other:
+    tmp++;
+
+    switch (*tmp++) {
+	case 'b':
+	    *turn = BLACK;
+	    break;
+	case 'w':
+	    *turn = WHITE;
+	    break;
+	default:
+	    return -1;
+    }
+	
+    tmp++;
+
+    while (*tmp && *tmp != ' ') {
+	switch (*tmp++) {
+	    case 'K':
+		SET_FLAG(*flags, GF_WK_CASTLE);
+		break;
+	    case 'Q':
+		SET_FLAG(*flags, GF_WQ_CASTLE);
+		break;
+	    case 'k':
+		SET_FLAG(*flags, GF_BK_CASTLE);
+		break;
+	    case 'q':
+		SET_FLAG(*flags, GF_BQ_CASTLE);
+		break;
+	    default:
+		return -1;
+	}
+    }
+
+    // En passant.
+    if (*++tmp != '-') {
+	if (!VALIDCOL(*tmp))
+	    return -1;
+
+	col = *tmp++ - 'a';
+
+	if (!VALIDROW(*tmp))
+	    return -1;
+
+	row = 8 - atoi(tmp++);
+	b[row][col].enpassant = 1;
+    }
+
+    while (*tmp)
+	tmp++;
+
+    while (*tmp != ' ')
+	tmp--;
+
+    moven = atoi(tmp);
+    return moven;
+}
+
+/*
+ * This is called at the EOG marker and the beginning of the move text
+ * section. So at least a move or EOG marker has to exist. It initializes the
+ * board (b) to the FEN tag (if found) and sets the castling and enpassant
+ * info for the game 'g'. If 'fen' is set it should be a fen tag and will be
+ * parsed rather than the game 'g' FEN tag. Returns 0 on success or if there
+ * was no FEN tag and 1 if there was a FEN parse error.
+ */
+int pgn_init_fen_board(GAME *g, BOARD b, const char *fen)
+{
+    int n = -1, i = -1;
     BOARD tmpboard;
     unsigned flags = 0;
     char turn = (*g).turn;
 
-    init_board(tmpboard);
-    n = pgn_find_tag((*g).tag, (*g).tindex, "Setup");
-    i = pgn_find_tag((*g).tag, (*g).tindex, "FEN");
+    pgn_init_board(tmpboard);
 
-    if ((n > -1 && i > -1 && atoi((*g).tag[n].value) == 1) 
-	    || (i != -1 && n == -1)) {
-	if ((n = parse_fen_line(tmpboard, &flags, &turn, (*g).tag[i].value))
-		== -1) {
-	    if (curses_initialized)
-		cmessage(ERROR, ANYKEY, "%s", E_FEN_PARSE); 
-	    else
-		warnx("round #%i: %s", gcurrent, E_FEN_PARSE);
-	}
+    if (!fen) {
+	n = pgn_find_tag((*g).tag, (*g).tindex, "Setup");
+	i = pgn_find_tag((*g).tag, (*g).tindex, "FEN");
+    }
+
+    /*
+     * If the FEN tag exists and there is no SetUp tag go ahead and parse it.
+     * If there is a SetUp tag only parse the FEN tag if the value is 1.
+     */
+    if ((n >= 0 && i >= 0 && atoi((*g).tag[n].value) == 1) 
+	    || (i >= 0 && n == -1) || fen) {
+	if ((n = parse_fen_line(tmpboard, &flags, &turn,
+			(fen) ? fen : (*g).tag[i].value)) == -1)
+	    return 1;
 	else {
-	    memcpy(pgnboard, tmpboard, sizeof(BOARD));
+	    // FIXME .ply
+	    memcpy(b, tmpboard, sizeof(BOARD));
+	    CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
+	    CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
+	    CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
+	    CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
 	    (*g).flags |= flags;
 	    (*g).turn = turn;
 	}
     }
+
+    return 0;
 }
 
-int pgn_parse_file(const char *filename)
+/*
+ * Allocates a new game and increments gindex (the current game) and gtotal
+ * (the total number of games).
+ */
+void pgn_new_game(BOARD b)
 {
-    FILE *fp;
+    gindex = ++gtotal - 1;
+    game = Realloc(game, gtotal * sizeof(GAME));
+    memset(&game[gindex], '\0', sizeof(GAME));
+    game[gindex].hp = game[gindex].history;
+    game[gindex].side = game[gindex].turn = WHITE;
+    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
+    pgn_init_board(b);
+    set_default_tags(&game[gindex]);
+}
+
+static int read_file(FILE *fp)
+{
 #ifdef DEBUG
     char buf[LINE_MAX] = {0}, *p = buf;
 #endif
-    int compressed = 0;
     int c = 0;
     int tag_section = 0;
     int parse_error = 0;
     int nulltags = 1;
     int done_fen_tag = 0;
     int ret = 0;
-
-    if (!filename) {
-	reset_game_data();
-	newgameinit = 1;
-	new_game(pgnboard);
-	return 0;
-    }
-
-    if (access(filename, R_OK) == -1) {
-	if (curses_initialized)
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	else
-	    warn("%s", filename);
-
-	return 1;
-    }
-
-    if ((fp = open_file(filename, &compressed)) == NULL)
-	return 1;
-
-    reset_game_data();
-    gcurrent = gtotal;
 
     while (1) {
 	int nextchar = 0;
@@ -680,11 +1203,6 @@ int pgn_parse_file(const char *filename)
 		break;
 
 	    if (ferror(fp)) {
-		if (curses_initialized)
-		    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-		else
-		    warnx("%s: %s", filename, strerror(errno));
-
 		clearerr(fp);
 		continue;
 	    }
@@ -696,15 +1214,13 @@ int pgn_parse_file(const char *filename)
 	nextchar = fgetc(fp);
 	ungetc(nextchar, fp);
 
-	/* If there was a move text parsing error, keep reading until the end
+	/*
+	 * If there was a move text parsing error, keep reading until the end
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
 	    ret = 1;
 	    
-	    if (config.stoponerror)
-		goto parse_error;
-
 	    if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
 		parse_error = 0;
 		nulltags = 1;
@@ -742,7 +1258,27 @@ int pgn_parse_file(const char *filename)
 	// PGN: Recurrsive Annotation Variation. Read rav_text() for more
 	// info.
 	if (c == '(' || c == ')') {
-	    rav_text(&game[gindex], fp, c);
+	    switch (rav_text(&game[gindex], fp, c)) {
+		case -1:
+		    /*
+		     * This is the end of the current RAV. This function has
+		     * been called from rav_text(). Returning from this point
+		     * will put us back in rav_text().
+		     */
+		    if (ravlevel > 0)
+			return 0;
+
+		    break;
+		case 1:
+		    parse_error = 1;
+		    continue;
+		default:
+		    /*
+		     * Continue processing. Probably the root move.
+		     */
+		    break;
+	    }
+
 	    continue;
 	}
 
@@ -758,7 +1294,7 @@ int pgn_parse_file(const char *filename)
 	// current line. The '{' type comment continues until a '}' is
 	// reached.
 	if (c == '{' || c == ';') {
-	    move_annotation(&game[gindex], fp, (c == '{') ? '}' : '\n');
+	    annotation_text(&game[gindex], fp, (c == '{') ? '}' : '\n');
 	    continue;
 	}
 
@@ -774,8 +1310,7 @@ int pgn_parse_file(const char *filename)
 		    game[gindex].history = game[gindex].hp;
 		}
 
-		new_game(pgnboard); // gindex and gtotal have just been incremented.
-		gcurrent = gtotal;
+		pgn_new_game(pgnboard);
 	    }
 
 	    tag_text(&game[gindex], fp);
@@ -785,12 +1320,16 @@ int pgn_parse_file(const char *filename)
 	// PGN: End-of-game markers.
 	if ((isdigit(c) && (nextchar == '-' || nextchar == '/')) || c == '*') {
 	    ungetc(c, fp);
-	    eog_marker(&game[gindex], fp);
+	    eog_text(&game[gindex], fp);
 	    nulltags = 1;
 	    tag_section = 0;
 
-	    if (!done_fen_tag)
-		fen_tag(&game[gindex]);
+	    if (!done_fen_tag) {
+		if (pgn_init_fen_board(&game[gindex], pgnboard, NULL)) {
+		    parse_error = 1;
+		    continue;
+		}
+	    }
 
 	    done_fen_tag = 0;
 	    continue;
@@ -801,10 +1340,13 @@ int pgn_parse_file(const char *filename)
 		c == 'B' || c == 'R' || c == 'P' || c == 'O') {
 	    ungetc(c, fp);
 
-	    // PGN: If a FEN tag exists, initialize the board to the value
-	    // but only if the SetUp tag is found and set to 1.
+	    // PGN: If a FEN tag exists, initialize the board to the value.
 	    if (tag_section) {
-		fen_tag(&game[gindex]);
+		if (pgn_init_fen_board(&game[gindex], pgnboard, NULL)) {
+		    parse_error = 1;
+		    continue;
+		}
+
 		done_fen_tag = 1;
 		tag_section = 0;
 	    }
@@ -819,8 +1361,7 @@ int pgn_parse_file(const char *filename)
 		    game[gindex].history = game[gindex].hp;
 		}
 
-		new_game(pgnboard);
-		gcurrent = gtotal;
+		pgn_new_game(pgnboard);
 		nulltags = 0;
 	    }
 
@@ -833,24 +1374,52 @@ int pgn_parse_file(const char *filename)
 	}
 
 #ifdef DEBUG
-	if (debug) {
-	    *p++ = c;
+	*p++ = c;
 
-	    DUMP("unparsed: '%s'\n", buf);
+	DUMP("unparsed: '%s'\n", buf);
 
-	    if (strlen(buf) + 1 == sizeof(buf))
-		bzero(buf, sizeof(buf));
-	}
+	if (strlen(buf) + 1 == sizeof(buf))
+	    bzero(buf, sizeof(buf));
 #endif
 
 	continue;
     }
 
-parse_error:
+    return ret;
+}
+
+/*
+ * Parses a PGN game file 'filename'. If 'filename' is NULL then a single
+ * empty game will be allocated. If there is a parsing error 1 is returned
+ * otherwise 0 is returned and the global 'gindex' is set to the last parsed
+ * game in the file and the global 'gtotal' is set to the total number of
+ * games in the file. For file access failures -1 is returned with errno set
+ * to indicate the error.
+ */
+int pgn_parse_file(const char *filename)
+{
+    FILE *fp;
+    int compressed = 0;
+    int ret;
+
+    if (!filename) {
+	reset_game_data();
+	pgn_new_game(pgnboard);
+	return 0;
+    }
+
+    if (access(filename, R_OK) == -1)
+	return -1;
+
+    if ((fp = open_file(filename, &compressed)) == NULL)
+	return -1;
+
+    reset_game_data();
+    ret = read_file(fp);
     fclose(fp);
 
     if (gtotal < 1) {
-	new_game(pgnboard);
+	pgn_new_game(pgnboard);
 	goto done;
     }
 
@@ -860,12 +1429,15 @@ parse_error:
 
 done:
     if (compressed)
-	unlink(config.tmpfile);
+	unlink(tfile);
 
-    switch_turn(&game[gindex].turn);
+    pgn_switch_turn(&game[gindex].turn);
     return ret;
 }
 
+/*
+ * Escape '"' and '\' in tag values.
+ */
 static char *pgn_add_tag_escapes(const char *str)
 {
     int i, n;
@@ -889,7 +1461,10 @@ static char *pgn_add_tag_escapes(const char *str)
     return buf;
 }
 	
-static int dump_comments_and_nag(FILE *fp, HISTORY h, int *len)
+/*
+ * See pgn_write() for more info.
+ */
+static int write_comments_and_nag(FILE *fp, HISTORY h, int *len)
 {
     int i;
     int n;
@@ -937,16 +1512,20 @@ static int dump_comments_and_nag(FILE *fp, HISTORY h, int *len)
     return annotated;
 }
 
-void pgn_write(FILE *fp, GAME *gp, int idx, int isfifo)
+/*
+ * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The
+ * 'reduced' parameter is for writing a PGN reduced export formatted game.
+ */
+void pgn_write(FILE *fp, GAME g, int reduced)
 {
     int i;
     int n, len = 0;
     int annotated = 0;
     int x = 0;
-    char buf[80];
-    GAME g = *gp;
     int oldtotal = g.htotal;
 
+    //FIXME
+    /*
     if (!isfifo && g.hindex != g.htotal) {
 	snprintf(buf, sizeof(buf), "%s (#%i)", GAME_SAVE_FROM_HISTORY_TITLE,
 		idx + 1);
@@ -956,14 +1535,15 @@ void pgn_write(FILE *fp, GAME *gp, int idx, int isfifo)
 	if (i == 'c')
 	    g.htotal = g.hindex;
     }
+    */
 
     pgn_sort_tags(g);
 
     for (i = 0; g.tag[i].name; i++) {
 	struct tm tp;
-	char tbuf[MAX_TIME_LEN + 1];
+	char tbuf[64 + 1]; //FIXME
 
-	if (isfifo && i == 7)
+	if (reduced && i == 7)
 	    break;
 
 	if (strcmp(g.tag[i].name, "Date") == 0) {
@@ -1000,20 +1580,6 @@ void pgn_write(FILE *fp, GAME *gp, int idx, int isfifo)
 		g.tag[i].value[0] = '*';
 		g.tag[i].value[1] = '\0';
 	    }
-	    else {
-		for (n = 0; n < NARRAY(fancy_results); n++) {
-		    if (strcmp(g.tag[i].value, fancy_results[n].pgn) == 0) {
-			n = -1;
-			break;
-		    }
-		}
-
-		if (n != -1) {
-		    g.tag[i].value = Realloc(g.tag[i].value, 2);
-		    g.tag[i].value[0] = '*';
-		    g.tag[i].value[1] = '\0';
-		}
-	    }
 	}
 	else if (strcmp(g.tag[i].name, "Black") == 0) {
 	    if (g.tag[i].value[0] == '\0') {
@@ -1029,25 +1595,10 @@ void pgn_write(FILE *fp, GAME *gp, int idx, int isfifo)
 		g.tag[i].value[1] = '\0';
 	    }
 	}
-	else if (strcmp(g.tag[i].value, UNKNOWN) == 0) {
-	    g.tag[i].value = Realloc(g.tag[i].value, 1);
-	    g.tag[i].value[0] = '\0';
-	}
 
 	fprintf(fp, "[%s \"%s\"]\n", g.tag[i].name, 
 		(g.tag[i].value && g.tag[i].value[0]) ? 
 		pgn_add_tag_escapes(g.tag[i].value) : "");
-    }
-
-    if (save_custom_tags) {
-	for (i = 0; i < config.tindex; i++) {
-	    if (pgn_find_tag(g.tag, g.tindex, config.tag[i].name) >= 0)
-		continue;
-
-	    fprintf(fp, "[%s \"%s\"]\n", config.tag[i].name, 
-		    (config.tag[i].value && config.tag[i].value[0]) ? 
-		    pgn_add_tag_escapes(config.tag[i].value) : "");
-	}
     }
 
     fprintf(fp, "\n");
@@ -1083,8 +1634,8 @@ void pgn_write(FILE *fp, GAME *gp, int idx, int isfifo)
 
 	fprintf(fp, "%s ", g.history[i].move);
 
-	if (!isfifo)
-	    annotated = dump_comments_and_nag(fp, g.history[i], &len);
+	if (!reduced)
+	    annotated = write_comments_and_nag(fp, g.history[i], &len);
 
 	if (!(i % 2) && !annotated)
 	    n++;
@@ -1103,909 +1654,9 @@ void pgn_write(FILE *fp, GAME *gp, int idx, int isfifo)
     fprintf(fp, "%s\n\n", pgn_add_tag_escapes(g.tag[TAG_RESULT].value));
     g.htotal = oldtotal;
 
-    if (!isfifo) {
+    if (!reduced) {
 	CLEAR_FLAG(g.flags, GF_MODIFIED);
 	CLEAR_FLAG(g.flags, GF_PERROR);
-	*gp = g;
+	//*gp = g;
     }
-
-    return;
-}
-
-/* If the saveindex argument is -1, all games will be saved. Otherwise it's a
- * game index number.
- */
-int save_pgn(const char *filename, int isfifo, int saveindex)
-{
-    FILE *fp;
-    char *mode = NULL;
-    int c;
-    char buf[FILENAME_MAX];
-    struct stat st;
-    int i;
-    char *command = NULL;
-    int saveindex_max = (saveindex == -1) ? gtotal : saveindex + 1;
-
-    if (filename[0] != '/' && config.savedirectory && !isfifo) {
-	if (stat(config.savedirectory, &st) == -1) {
-	    if (errno == ENOENT) {
-		if (mkdir(config.savedirectory, 0755) == -1) {
-		    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
-			    strerror(errno));
-		    return 1;
-		}
-	    }
-	    else {
-		cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
-			strerror(errno));
-		return 1;
-	    }
-	}
-
-	stat(config.savedirectory, &st);
-
-	if (!S_ISDIR(st.st_mode)) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory, E_NOTADIR);
-	    return 1;
-	}
-
-	snprintf(buf, sizeof(buf), "%s/%s", config.savedirectory, filename);
-	filename = buf;
-    }
-
-    if (!isfifo)
-	command = compression_cmd(filename, 0);
-
-    /* This is a hack to resume an existing game when more than one game is
-     * available. Also resuming a saved game and a game from history.
-     */
-    // FIXME: may not need this when a FEN tag is supported (by the engine).
-    if (isfifo)
-	mode = "w";
-    else {
-	if (access(filename, W_OK) == 0) {
-	    c = cmessage(NULL, GAME_SAVE_OVERWRITE_PROMPT,
-		    "%s \"%s\"", E_FILEEXISTS, filename);
-
-	    switch (c) {
-		case 'a':
-		    if (command) {
-			cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
-			return 1;
-		    }
-
-		    mode = "a";
-		    break;
-		case 'o':
-		    mode = "w+";
-		    break;
-		default:
-		    return 1;
-	    }
-	}
-	else
-	    mode = "a";
-    }
-
-    if (command) {
-	if ((fp = popen(command, "w")) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	    return 1;
-	}
-    }
-    else {
-	if ((fp = fopen(filename, mode)) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	    return 1;
-	}
-    }
-
-    if (isfifo)
-	pgn_write(fp, &game[saveindex], saveindex, isfifo);
-    else {
-	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
-	    pgn_write(fp, &game[i], i, isfifo);
-    }
-
-    if (command)
-	pclose(fp);
-    else
-	fclose(fp);
-
-    if (!isfifo && saveindex == -1)
-	strncpy(loadfile, filename, sizeof(loadfile));
-
-    return 0;
-}
-
-static void cleanup(WINDOW *win, WINDOW *subw, PANEL *panel, MENU *menu, 
-	ITEM **items, struct d_entries *entries)
-{
-    int i;
-
-    unpost_menu(menu);
-    free_menu(menu);
-
-    for (i = 0; items[i]; i++)
-	free_item(items[i]);
-
-    free(items);
-
-    if (entries) {
-	for (i = 0; entries[i].name; i++) {
-	    free(entries[i].name);
-	    free(entries[i].fancy);
-	}
-
-	free(entries);
-    }
-
-    del_panel(panel);
-    delwin(subw);
-    delwin(win);
-}
-
-static int init_country_codes()
-{
-    FILE *fp;
-    char line[LINE_MAX], *s;
-    int cindex = 0;
-
-    if ((fp = fopen(config.ccfile, "r")) == NULL) {
-	cmessage(ERROR, ANYKEY, "%s: %s", config.ccfile, strerror(errno));
-	return 1;
-    }
-
-    while ((s = fgets(line, sizeof(line), fp)) != NULL) {
-	char *tmp;
-
-	if ((tmp = strsep(&s, " ")) == NULL)
-	    continue;
-
-	s = trim(s);
-	tmp = trim(tmp);
-
-	if (!s || !tmp)
-	    continue;
-
-	ccodes = Realloc(ccodes, (cindex + 2) * sizeof(struct country_codes));
-	strncpy(ccodes[cindex].code, tmp, sizeof(ccodes[cindex].code));
-	strncpy(ccodes[cindex].country, s, sizeof(ccodes[cindex].country));
-	cindex++;
-    }
-
-    memset(&ccodes[cindex], '\0', sizeof(struct country_codes));
-    fclose(fp);
-
-    return 0;
-}
-
-char *country_codes(void *arg)
-{
-    WINDOW *win, *subw;
-    PANEL *panel;
-    ITEM **mitems = NULL;
-    MENU *menu;
-    int i = 0, n;
-    int rows, cols;
-    char *mbuf = NULL;
-    char *tmp = NULL;
-
-    if (!ccodes) {
-	if (init_country_codes())
-	    return NULL;
-    }
-
-    for (n = i = 0; ccodes[n].code[0]; n++, i++) {
-	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	mitems[i] = new_item(ccodes[n].country, ccodes[n].code);
-    }
-
-    mitems[i] = NULL;
-    menu = new_menu(mitems);
-    scale_menu(menu, &rows, &cols);
-
-    if (cols < strlen(HELP_PROMPT) + 21)
-	cols = strlen(HELP_PROMPT) + 21;
-
-    win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
-    set_menu_win(menu, win);
-    subw = derwin(win, rows, cols + 2, 2, 1);
-    set_menu_sub(menu, subw);
-    set_menu_fore(menu, A_REVERSE);
-    set_menu_grey(menu, A_NORMAL);
-    set_menu_mark(menu, NULL);
-    set_menu_spacing(menu, 0, 0, 0);
-    menu_opts_off(menu, O_NONCYCLIC);
-    post_menu(menu);
-    panel = new_panel(win);
-    cbreak();
-    noecho();
-    keypad(win, TRUE);
-    set_menu_pattern(menu, mbuf);
-    wbkgd(win, CP_MESSAGE_WINDOW);
-    draw_window_title(win, CC_TITLE, cols + 4, CP_MESSAGE_TITLE,
-	    CP_MESSAGE_BORDER);
-
-    while (1) {
-	int c;
-	char buf[cols - 4];
-
-	wattron(win, A_REVERSE);
-
-	for (c = 1; c < (cols + 2) - 1; c++)
-	    mvwprintw(win, rows + 2, c, " ");
-
-	c = item_index(current_item(menu)) + 1;
-
-	snprintf(buf, sizeof(buf), "%s %i %s %i %s", MENU_ITEM_STR, c, 
-		N_OF_N_STR, item_count(menu), HELP_PROMPT);
-	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
-
-	wattroff(win, A_REVERSE);
-
-	/* This nl() statement needs to be here because NL is recognized
-	 * for some reason after the first selection.
-	 */
-	nl();
-	update_panels();
-	doupdate();
-
-	c = wgetch(win);
-
-	switch (c) {
-	    case CTRL('G'):
-		help(CC_KEY_HELP, ANYKEY, cc_help);
-		break;
-	    case KEY_HOME:
-		menu_driver(menu, REQ_FIRST_ITEM);
-		break;
-	    case KEY_END:
-		menu_driver(menu, REQ_LAST_ITEM);
-		break;
-	    case KEY_UP:
-		menu_driver(menu, REQ_UP_ITEM);
-		break;
-	    case KEY_DOWN:
-		menu_driver(menu, REQ_DOWN_ITEM);
-		break;
-	    case KEY_PPAGE:
-	    case CTRL('P'):
-		if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
-		    menu_driver(menu, REQ_FIRST_ITEM);
-		break;
-	    case ' ':
-	    case KEY_NPAGE:
-	    case CTRL('N'):
-		if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
-		    menu_driver(menu, REQ_LAST_ITEM);
-		break;
-	    case '\n':
-		tmp = (char *)item_description(current_item(menu));
-		goto done;
-		break;
-	    case KEY_ESCAPE:
-		tmp = NULL;
-		goto done;
-		break;
-	    default:
-		tmp = menu_pattern(menu);
-
-		if (tmp && tmp[strlen(tmp) - 1] != c) {
-		    menu_driver(menu, REQ_CLEAR_PATTERN);
-		    menu_driver(menu, c);
-		}
-		else {
-		    if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
-			menu_driver(menu, c);
-		}
-
-		break;
-	}
-    }
-
-done:
-    unpost_menu(menu);
-    free_menu(menu);
-
-    for (i = 0; mitems[i]; i++)
-	free_item(mitems[i]);
-
-    del_panel(panel);
-    delwin(subw);
-    delwin(win);
-    return tmp;
-}
-
-void free_tag_data(TAG *data, int n)
-{
-    int i;
-
-    for (i = 0; i < n; i++) {
-	free(data[i].name);
-	free(data[i].value);
-    }
-
-    free(data);
-}
-
-TAG *edit_tags(GAME g, BOARD b, int edit)
-{
-    TAG *data = NULL;
-    struct tm tp;
-    unsigned char data_index = 0;
-    int n, lastindex = 0;
-    int len;
-
-    /* Edit the backup copy, not the original in case the save fails. */
-    for (n = 0; n < g.tindex; n++)
-	pgn_add_tag(&data, &data_index, g.tag[n].name, g.tag[n].value);
-
-    while (1) {
-	WINDOW *win, *subw;
-	PANEL *panel;
-	ITEM **mitems = NULL;
-	MENU *menu;
-	int i;
-	char buf[76] = {0};
-	char *tmp = NULL;
-	int rows, cols;
-	int selected = -1;
-	char *mbuf = NULL;
-	int nlen = 0, vlen = 0;
-
-	for (i = 0; i < data_index; i++) {
-	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-
-	    if (data[i].value[0]) {
-		nlen = strlen(data[i].name);
-		vlen = strlen(data[i].value);
-
-		/* The +6 is for the menu padding. */
-		mitems[i] = new_item(data[i].name,
-			(nlen + vlen + 6 >= MAX_VALUE_WIDTH)
-			? PRESS_ENTER : data[i].value);
-	    }
-	    else
-		mitems[i] = new_item(data[i].name, UNKNOWN);
-	}
-
-	mitems[i] = NULL;
-	menu = new_menu(mitems);
-	scale_menu(menu, &rows, &cols);
-
-	/* +14 for the extra prompt info. */
-	if (cols < strlen(HELP_PROMPT) + 14)
-	    cols = strlen(HELP_PROMPT) + 14;
-
-	win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
-	set_menu_win(menu, win);
-	subw = derwin(win, rows, cols + 2, 2, 1);
-	set_menu_sub(menu, subw);
-	set_menu_fore(menu, A_REVERSE);
-	set_menu_grey(menu, A_NORMAL);
-	set_menu_mark(menu, NULL);
-	set_menu_pad(menu, '-');
-	set_menu_spacing(menu, 3, 0, 0);
-	menu_opts_off(menu, O_NONCYCLIC);
-	post_menu(menu);
-	panel = new_panel(win);
-	cbreak();
-	noecho();
-	nl();
-	keypad(win, TRUE);
-	set_menu_pattern(menu, mbuf);
-	wbkgd(win, CP_MESSAGE_WINDOW);
-	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
-		cols + 4, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-
-	while (1) {
-	    int c;
-	    TAG *tmppgn = NULL;
-	    char *newtag = NULL;
-	    unsigned char tpgn_index = 0;
-
-	    if (set_current_item(menu, mitems[lastindex]) != E_OK) {
-		lastindex = item_count(menu) - 1;
-		continue;
-	    }
-
-	    snprintf(buf, sizeof(buf), "%s %i %s %i  %s", MENU_TAG_STR,
-		    item_index(current_item(menu)) + 1, N_OF_N_STR,
-		    item_count(menu), HELP_PROMPT);
-	    draw_prompt(win, rows + 2, cols + 4, buf, CP_MESSAGE_PROMPT);
-
-	    update_panels();
-	    doupdate();
-
-	    c = wgetch(win);
-
-	    switch (c) {
-		case CTRL('G'):
-		    if (edit)
-			help(TAG_EDIT_HELP, ANYKEY, pgn_edit_help);
-		    else
-			help(TAG_VIEW_HELP, ANYKEY, pgn_info_help);
-		    break;
-		case CTRL('R'):
-		    if (!edit)
-			break;
-
-		    selected = item_index(current_item(menu));
-
-		    if (selected <= 6) {
-			cmessage(NULL, ANYKEY, "%s", E_REMOVE_STR);
-			goto cleanup;
-		    }
-
-		    for (i = 0; i < data_index; i++) {
-			if (i == selected)
-			    continue;
-
-			pgn_add_tag(&tmppgn, &tpgn_index, data[i].name,
-				data[i].value);
-		    }
-
-		    free_tag_data(data, data_index);
-		    data = NULL;
-
-		    for (i = data_index = 0; i < tpgn_index; i++) {
-			pgn_add_tag(&data, &data_index, tmppgn[i].name,
-				tmppgn[i].value);
-		    }
-
-		    free_tag_data(tmppgn, tpgn_index);
-		    goto cleanup;
-		    break;
-		case CTRL('A'):
-		    if (!edit)
-			break;
-
-		    if ((newtag = get_input(TAG_NEW_TITLE, NULL, 1, 1, NULL,
-				    NULL, NULL, 0, FIELD_TYPE_PGN_TAG_NAME))
-			    == NULL)
-			break;
-
-		    newtag[0] = toupper(newtag[0]);
-
-		    if (strlen(newtag) > MAX_VALUE_WIDTH - 6 - 
-			    strlen(PRESS_ENTER)) {
-			cmessage(ERROR, ANYKEY, "%s", E_TAG_NAMETOOLONG);
-			break;
-		    }
-
-		    for (i = 0; i < data_index; i++) {
-			if (strcasecmp(data[i].name, newtag) == 0) {
-			    selected = i;
-			    goto gotitem;
-			}
-		    }
-
-		    pgn_add_tag(&data, &data_index, newtag, NULL);
-
-		    selected = data_index - 1;
-		    goto gotitem;
-		    break;
-		case KEY_HOME:
-		    menu_driver(menu, REQ_FIRST_ITEM);
-		    break;
-		case KEY_END:
-		    menu_driver(menu, REQ_LAST_ITEM);
-		    break;
-		case CTRL('F'):
-		    if (!edit)
-			break;
-
-		    pgn_add_tag(&data, &data_index, "FEN",
-			    board_to_fen(g, b));
-
-		    selected = data_index - 1;
-		    goto gotitem;
-		    break;
-		case KEY_NPAGE:
-		case CTRL('N'):
-		    if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
-			menu_driver(menu, REQ_LAST_ITEM);
-		    break;
-		case KEY_PPAGE:
-		case CTRL('P'):
-		    if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
-			menu_driver(menu, REQ_FIRST_ITEM);
-		    break;
-		case KEY_UP:
-		    menu_driver(menu, REQ_UP_ITEM);
-		    break;
-		case KEY_DOWN:
-		    menu_driver(menu, REQ_DOWN_ITEM);
-		    break;
-		case '\n':
-		    selected = item_index(current_item(menu));
-		    goto gotitem;
-		    break;
-		case KEY_ESCAPE:
-		    cleanup(win, subw, panel, menu, mitems, NULL);
-		    goto done;
-		    break;
-		default:
-		    tmp = menu_pattern(menu);
-
-		    if (tmp && tmp[strlen(tmp) - 1] != c) {
-			menu_driver(menu, REQ_CLEAR_PATTERN);
-			menu_driver(menu, c);
-		    }
-		    else {
-			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
-			    menu_driver(menu, c);
-		    }
-
-		    break;
-	    }
-
-	    lastindex = item_index(current_item(menu));
-	}
-
-gotitem:
-	lastindex = selected;
-	nlen = strlen(data[selected].name) + 3;
-	nlen += (edit) ? strlen(TAG_EDIT_TAG_TITLE) : strlen(TAG_VIEW_TAG_TITLE);
-
-	if (nlen > MAX_VALUE_WIDTH)
-	    snprintf(buf, sizeof(buf), "%s", data[selected].name);
-	else
-	    snprintf(buf, sizeof(buf), "%s \"%s\"",
-		    (edit) ? TAG_EDIT_TAG_TITLE : TAG_VIEW_TAG_TITLE,
-		    data[selected].name);
-
-	if (!edit) {
-	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
-		goto cleanup;
-
-	    cmessage(buf, ANYKEY, "%s", data[selected].value);
-	    goto cleanup;
-	}
-
-	if (strcmp(data[selected].name, "Date") == 0) {
-	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, NULL,
-		    0, FIELD_TYPE_PGN_DATE);
-
-	    if (tmp) {
-		if (strptime(tmp, PGN_TIME_FORMAT, &tp) == NULL) {
-		    cmessage(ERROR, ANYKEY, "%s", E_TAG_DATE_FMT);
-		    goto cleanup;
-		}
-	    }
-	    else
-		goto cleanup;
-	}
-	else if (strcmp(data[selected].name, "Site") == 0) {
-	    tmp = get_input(buf, data[selected].value, 1, 1, CC_PROMPT,
-		    country_codes, NULL, CTRL('t'), -1);
-
-	    if (!tmp)
-		tmp = "?";
-	}
-	else if (strcmp(data[selected].name, "Round") == 0) {
-	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL, 0,
-		    FIELD_TYPE_PGN_ROUND);
-
-	    if (!tmp) {
-		if (gtotal > 1)
-		    tmp = "?";
-		else
-		    tmp = "-";
-	    }
-	}
-	else if (strcmp(data[selected].name, "Result") == 0) {
-	    tmp = get_input(buf, data[selected].value, 1, 1, NULL, NULL, NULL, 
-		    0, -1);
-
-	    if (!tmp)
-		tmp = "*";
-
-	    for (i = 0; i < NARRAY(fancy_results); i++) {
-		if (strcmp(tmp, fancy_results[i].pgn) == 0) {
-		    i = -1;
-		    break;
-		}
-	    }
-
-	    if (i != -1)
-		tmp = "*";
-	}
-	else {
-	    if (item_description(mitems[selected]) && 
-		    strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
-		tmp = NULL;
-	    else
-		tmp = data[selected].value;
-
-	    tmp = get_input(buf, tmp, 0, 0, NULL, NULL, NULL, 0, -1);
-	}
-
-	len = (tmp) ? strlen(tmp) + 1 : 1;
-	data[selected].value = Realloc(data[selected].value, len);
-	strncpy(data[selected].value, (tmp) ? tmp : "", len);
-
-cleanup:
-	cleanup(win, subw, panel, menu, mitems, NULL);
-    }
-
-done:
-    if (!edit) {
-	free_tag_data(data, data_index);
-	return NULL;
-    }
-
-    return data;
-}
-
-static int sort_entries(const void *s1, const void *s2)
-{
-    const struct d_entries *ss1 = s1;
-    const struct d_entries *ss2 = s2;
-
-    return strcmp(ss1->name, ss2->name);
-}
-
-static struct d_entries *get_directory_entries(const char *path)
-{
-    DIR *dp;
-    struct dirent *entry;
-    struct d_entries *entries = NULL;
-    int n = 0;
-
-    if ((dp = opendir(path)) == NULL)
-	return NULL;
-
-    while ((entry = readdir(dp)) != NULL) {
-	struct stat st;
-	int len;
-	char tbuf[MAX_TIME_LEN + 1] = {0};
-	struct tm *tp;
-	char buf[FILENAME_MAX];
-	char *tmp;
-	size_t size;
-
-	if (entry->d_name[0] == '.' && entry->d_name[1] == 0)
-	    continue;
-
-	snprintf(buf, sizeof(buf), "%s/%s", path, entry->d_name);
-
-	if (stat(buf, &st) == -1)
-	    continue;
-
-	size = st.st_size ;
-	entries = Realloc(entries, (n + 2) * sizeof(struct d_entries));
-	entries[n].name = strdup(buf);
-	tmp = real_filename(buf);
-	len = strlen(tmp) + 2;
-	entries[n].fancy = Malloc(len);
-	strncpy(entries[n].fancy, tmp, len);
-
-	if (S_ISDIR(st.st_mode))
-	    entries[n].fancy[len - 2] = '/';
-
-	tp = localtime(&st.st_mtime);
-	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
-
-	snprintf(entries[n].desc, sizeof(entries[n].desc), "%-7i %s", 
-		size, tbuf);
-
-	memset(&entries[++n], '\0', sizeof(struct d_entries));
-    }
-
-    closedir(dp);
-    qsort(entries, n, sizeof(struct d_entries), sort_entries);
-    return entries;
-}
-
-char *browse_directory(void *arg)
-{
-    int i;
-    char path[FILENAME_MAX] = {0};
-    static char file[FILENAME_MAX];
-    char *oldwd = getcwd(NULL, 0);
-    DIR *dp;
-    char *inputstr = (char *)arg;
-    int initkey = (inputstr) ? inputstr[0] : 0;
-
-    if (config.savedirectory) {
-	if ((dp = opendir(config.savedirectory)) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
-		    strerror(errno));
-	    getcwd(path, sizeof(path));
-	}
-	else {
-	    closedir(dp);
-	    strncpy(path, config.savedirectory, sizeof(path));
-	}
-    }
-    else
-	getcwd(path, sizeof(path));
-
-again:
-    while (1) {
-	WINDOW *win, *subw;
-	PANEL *panel;
-	ITEM **mitems = NULL;
-	MENU *menu;
-	char *tmp = NULL;
-	int rows, cols;
-	int selected = -1;
-	char *mbuf = NULL;
-	struct d_entries *entries = NULL;
-	struct stat st;
-	int idx = 0;
-	int len = strlen(path);
-
-	/* /some/path/blah/../ */
-	if (path[len - 1] == '.' && path[len - 2] == '.' &&
-		path[len - 3] == '/') {
-	    tmp = path;
-	    tmp += strlen(path) - 5;
-
-	    /* /some/path/ */
-	    while (*--tmp != '/')
-		*tmp = '\0';
-
-	    if (!*path) {
-		path[0] = '/';
-		path[1] = '\0';
-	    }
-	}
-
-	if (path[1] && path[strlen(path) - 1] == '/')
-	    path[strlen(path) - 1] = '\0';
-
-	if ((entries = get_directory_entries(path)) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
-	    return NULL;
-	}
-
-	for (i = 0; entries[i].name; i++) {
-	    mitems = Realloc(mitems, (idx + 2) * sizeof(ITEM));
-	    mitems[idx++] = new_item(entries[i].fancy, entries[i].desc);
-	}
-
-	mitems[idx] = NULL;
-	menu = new_menu(mitems);
-	scale_menu(menu, &rows, &cols);
-
-	if (cols < strlen(path))
-	    cols = strlen(path);
-
-	if (cols < strlen(HELP_PROMPT))
-	    cols = strlen(HELP_PROMPT);
-
-	rows = BROWSE_HEIGHT;
-	cols += 2;
-
-	win = newwin(rows + 4, cols, CALCPOSY(rows) - 2, CALCPOSX(cols));
-	set_menu_format(menu, BROWSE_HEIGHT, 0);
-	set_menu_win(menu, win);
-	subw = derwin(win, rows, cols - 2, 2, 1);
-	set_menu_sub(menu, subw);
-	set_menu_fore(menu, A_REVERSE);
-	set_menu_grey(menu, A_NORMAL);
-	set_menu_mark(menu, NULL);
-	set_menu_spacing(menu, 2, 0, 0);
-	menu_opts_off(menu, O_NONCYCLIC);
-	post_menu(menu);
-	panel = new_panel(win);
-
-	draw_window_title(win, path, cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-	draw_prompt(win, rows + 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
-
-	cbreak();
-	noecho();
-	keypad(win, TRUE);
-	set_menu_pattern(menu, mbuf);
-
-	if (isgraph(initkey)) {
-	    menu_driver(menu, initkey);
-	    initkey = '\0';
-	}
-
-	while (1) {
-	    int c;
-
-	    /* This nl() statement needs to be here because NL is recognized
-	     * for some reason after the first selection.
-	     */
-	    nl();
-	    update_panels();
-	    doupdate();
-
-	    c = wgetch(win);
-
-	    switch (c) {
-		case CTRL('P'):
-		case KEY_PPAGE:
-		    menu_driver(menu, REQ_SCR_UPAGE);
-		    break;
-		case ' ':
-		case CTRL('N'):
-		case KEY_NPAGE:
-		    menu_driver(menu, REQ_SCR_DPAGE);
-		    break;
-		case KEY_UP:
-		    menu_driver(menu, REQ_UP_ITEM);
-		    break;
-		case KEY_DOWN:
-		    menu_driver(menu, REQ_DOWN_ITEM);
-		    break;
-		case '\n':
-		    selected = item_index(current_item(menu));
-		    goto gotitem;
-		    break;
-		case KEY_ESCAPE:
-		    cleanup(win, subw, panel, menu, mitems, entries);
-		    file[0] = '\0';
-		    goto done;
-		    break;
-		case CTRL('G'):
-		    help(BROWSER_HELP, ANYKEY, file_browser_help);
-		    break;
-		case '~':
-		    if ((tmp = getenv("HOME")) == NULL) {
-			cmessage(ERROR, ANYKEY, "%s", E_HOME_ENV);
-			break;
-		    }
-
-		    strncpy(path, tmp, sizeof(path));
-		    cleanup(win, subw, panel, menu, mitems, entries);
-		    goto again;
-		    break;
-		case CTRL('X'):
-		    if ((tmp = get_input_str_clear(BROWSER_CHDIR_TITLE, NULL)) 
-			    == NULL)
-			break;
-
-		    tmp = tilde_expand(tmp);
-		    strncpy(path, tmp, sizeof(path));
-		    cleanup(win, subw, panel, menu, mitems, entries);
-		    goto again;
-		    break;
-		default:
-		    tmp = menu_pattern(menu);
-
-		    if (tmp && tmp[strlen(tmp) - 1] != c) {
-			menu_driver(menu, REQ_CLEAR_PATTERN);
-			menu_driver(menu, c);
-		    }
-		    else {
-			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
-			    menu_driver(menu, c);
-		    }
-
-		    break;
-	    }
-	}
-
-gotitem:
-	snprintf(file, sizeof(file), "%s", entries[selected].name);
-
-	if (stat(file, &st) == -1) {
-	    cmessage(ERROR, ANYKEY, "%s", strerror(errno));
-	    cleanup(win, subw, panel, menu, mitems, entries);
-	    continue;
-	}
-
-	cleanup(win, subw, panel, menu, mitems, entries);
-
-	if (S_ISDIR(st.st_mode)) {
-	    strncpy(path, file, sizeof(path));
-	    continue;
-	}
-
-	if (S_ISREG(st.st_mode))
-	    break;
-
-	cmessage(ERROR, ANYKEY, "%s", E_NOTAREGFILE);
-    }
-
-done:
-    chdir(oldwd);
-    free(oldwd);
-    return (*file) ? file : NULL;
 }

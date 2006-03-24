@@ -20,24 +20,20 @@
 #define INPUT_H
 
 #define INPUT_WIDTH	((COLS > 60) ? 60 : COLS - 2)
+#define CTRL(x)			((x) & 0x1f)
+#define KEY_ESCAPE		CTRL('[')
 
-const char *inputhelp[] = {
-    "UP/DOWN/LEFT/RIGHT - position cursor",
-    "            CTRL-A - move cursor to the beginning of line",
-    "            CTRL-E - move cursor to the end of line",
-    "            CTRL-B - move cursor to previous word",
-    "            CTRL-W - move cursor to next word",
-    "            CTRL-X - delete word under cursor",
-    "            CTRL-K - delete from cursor to end of line",
-    "            CTRL-U - clear entire input field",
-    "         BACKSPACE - delete previous character",
-    "            ESCAPE - quit without changes",
-    "             ENTER - quit with changes",
-    NULL
+enum {
+    FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
+    FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
+    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND
 };
 
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
-void help(const char *, const char *, const char **);
+int help(const char *, const char *, const char **);
+char *get_input(const char *title, const char *init, int lines, int reset,
+	const char *extra_help, char *(*custom_func)(void *), void *arg, 
+	chtype ckey, int type, ...);
 
 #endif

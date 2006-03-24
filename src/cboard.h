@@ -31,15 +31,10 @@
 #define TAG_WIDTH	(COLS - BOARD_WIDTH)
 #define HISTORY_HEIGHT	6
 #define HISTORY_WIDTH	(COLS - STATUS_WIDTH)
+#define MAX_VALUE_WIDTH	(COLS - 8)
 
 enum {
     UP, DOWN, LEFT, RIGHT
-};
-
-/* The order must match the BOOK_... enumeration on common.h. */
-const char *book_methods[] = {
-    BOOK_OFF_STR, BOOK_PREFER_STR, BOOK_BEST_STR, BOOK_WORST_STR,
-    BOOK_RANDOM_STR
 };
 
 WINDOW *boardw;
@@ -56,20 +51,22 @@ char **agony;
 int paused;
 BOARD board;	// Board for the current game.
 
+struct country_codes {
+    char code[4];
+    char country[64];
+} *ccodes;
+
 const char *cmdlinehelp[] = {
 #ifdef DEBUG
-    "Usage: cboard [-hvNED] [-VtS] [-pf <file>] [-i hostname[:port]]\n"
+    "Usage: cboard [-hvNED] [-VtRS] [-p <file>]\n",
 #else
-    "Usage: cboard [-hvNE] [-VtS] [-pf <file>] [-i hostname[:port]]\n"
+    "Usage: cboard [-hvNE] [-VtRS] [-p <file>]\n",
 #endif
-	"        [-u username[:passwd]]\n",
     "  -p  Load PGN file.\n",
-    "  -f  Load FEN file.\n",
-    "  -i  ICS hostname and optional port.\n",
-    "  -u  ICS username and optional password.\n",
     "  -V  Validate a game file.\n",
     "  -S  Validate and output a PGN formatted game.\n",
-    "  -t  When outputting include custom PGN tags from config file.\n",
+    "  -R  Like -S but write a reduced PGN formatted game.\n",
+    "  -t  Also write custom PGN tags from config file.\n",
     "  -N  Don't enable the chess engine (two human players).\n",
     "  -E  Stop processing on file parsing error (overrides config).\n",
 #ifdef DEBUG
@@ -156,58 +153,116 @@ const char *playhelp[] = {
     NULL
 };
 
-pid_t init_chess_engine(void);
-int pgn_parse_file(const char *);
-void update_history(void);
-void reset_history(GAME);
-TAG *edit_tags(GAME, BOARD, int);
-void parse_engine_output(BOARD, char *);
-char *real_filename(char *);
-void send_to_engine(const char *, ...);
-int history_by_index(GAME, int, HISTORY *);
-void history_next(GAME *, BOARD, int, int *, int *);
-void history_previous(GAME *, BOARD, int, int *, int *);
-void init_history(GAME *, BOARD);
-void parse_rcfile(const char *);
-char *history_edit_nag(void *);
-void view_annotation(HISTORY);
-int save_pgn(const char *, int, int);
-void set_engine_defaults(void);
-int start_chess_engine(void);
-void stop_engine(void);
-int help(const char *, const char *, const char **);
-void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
-void init_color_pairs(void);
-char *browse_directory(void *);
-char *a2a4tosan(GAME *, BOARD, char *);
-int pgn_add_tag(TAG **, unsigned char *, const char *, const char *);
-void new_game(BOARD);
-void *Malloc(size_t);
-int isinteger(const char *);
-int parse_ics_output(char *);
-char *compression_cmd(const char *, int);
-int piece_to_int(int);
-int int_to_piece(char, int);
-void free_tag_data(TAG *, int);
-void free_history_data(HISTORY *, int);
-void get_valid_moves(GAME *, BOARD, int, int, int, int *, int *, int *, int *);
-void reset_valid_moves(BOARD);
-int validate_move(GAME *, BOARD, char *);
-void parse_history_move(GAME, int);
-void switch_turn(char *);
-char *str_etc(const char *, int, int);
-char *tilde_expand(char *);
-int parse_fen_file(BOARD, const char *);
-char *board_to_fen(GAME, BOARD);
-void set_defaults(void);
-void add_to_history(HISTORY **, unsigned char *, unsigned char *, const char *);
-void update_all(GAME);
-void pgn_write(FILE *, GAME *, int, int);
-void invalid_move(int, const char *);
-int pgn_find_tag(TAG *, int, const char *);
-int parse_fen_line(BOARD b, unsigned *, char *, char *);
-void init_board(BOARD);
-void pgn_sort_tags(GAME);
-void pgn_set_default_tags(GAME *);
+const char *cc_help[] = {
+    "    UP/DOWN - previous/next menu entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
+    "      ENTER - selected entry",
+    "     ESCAPE - cancel",
+    NULL
+};
+
+const char *pgn_info_help[] = {
+    "    UP/DOWN - select menu entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
+    "      ENTER - view selected entry",
+    "     ESCAPE - quit",
+    NULL
+};
+
+const char *pgn_edit_help[] = {
+    "    UP/DOWN - select menu entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
+    "      ENTER - edit selected entry",
+    "     CTRL-a - add an entry",
+    "     CTRL-f - add FEN tag from current position",
+    "     CTRL-r - remove selected entry",
+    "     ESCAPE - quit",
+    NULL
+};
+
+struct d_entries {
+    char *name;
+    char *fancy;
+    char desc[25];
+};
+
+const char *file_browser_help[] = {
+    "    UP/DOWN - select menu entry",
+    "       HOME - first entry",
+    "        END - last entry",
+    "CTRL-n/PGDN - next page",
+    "CTRL-p/PGUP - previous page",
+    "  a-zA-Z0-9 - jump to entry",
+    "     CTRL-x - change directory",
+    "          ~ - change to home directory",
+    "      ENTER - commit selected entry",
+    "     ESCAPE - quit",
+    NULL
+};
+
+const char *naghelp[] = {
+    "    UP/DOWN - previous/next item",
+    " LEFT/RIGHT - previous/next selected item",
+    "       HOME - first item",
+    "        END - last item",
+    "CTRL-p/PGUP - previous page",
+    "CTRL-n/PGDN - next page",
+    "  a-zA-Z0-9 - jump to item",
+    "      SPACE - toggle current item",
+    "      ENTER - quit with changes",
+    "     ESCAPE - quit without changes",
+    NULL
+};
+
+struct nag_s {
+    char *line;
+} *nags;
+
+// This is used to pass to get_input() as an argument for a function pointer.
+// Used for NAG editing.
+struct annotation_edit_s {
+    HISTORY h;		// The move.
+    int game;		// The game number the move belongs to.
+    unsigned char n;	// The history number from game.hp the move belongs to.
+};
+
+// Status window.
+struct {
+    char engine;	// Chess engine status: ENGINE_[READY/OFFLINE].
+    char *notify;	// The status window notification line buffer.
+} status;
+
+enum {
+    MODE_HISTORY, MODE_PLAY, MODE_EDIT
+};
+
+int curses_initialized;
+// Two human players. FIXME
+int noengine;
+
+// When in history mode a full step is to the next move of the same playing
+// side. Half stepping is alternating sides.
+int movestep;
+
+void update_all(GAME g);
+
+#ifdef DEBUG
+void dump_board(int, BOARD);
+void dump_flags(int);
+int debug;
+char *debug_board(BOARD);
+#endif
 
 #endif

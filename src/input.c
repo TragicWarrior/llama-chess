@@ -29,9 +29,36 @@
 #include <form.h>
 #endif
 
-#include "common.h"
+#ifdef HAVE_PANEL_H
+#include <panel.h>
+#endif
+
+#include "chess.h"
+#include "conf.h"
 #include "colors.h"
+#include "window.h"
+#include "strings.h"
+#include "misc.h"
 #include "input.h"
+
+#ifdef WITH_DMALLOC
+#include <dmalloc.h>
+#endif
+
+const char *inputhelp[] = {
+    "UP/DOWN/LEFT/RIGHT - position cursor",
+    "            CTRL-A - move cursor to the beginning of line",
+    "            CTRL-E - move cursor to the end of line",
+    "            CTRL-B - move cursor to previous word",
+    "            CTRL-W - move cursor to next word",
+    "            CTRL-X - delete word under cursor",
+    "            CTRL-K - delete from cursor to end of line",
+    "            CTRL-U - clear entire input field",
+    "         BACKSPACE - delete previous character",
+    "            ESCAPE - quit without changes",
+    "             ENTER - quit with changes",
+    NULL
+};
 
 static bool validate_pgn_tag_name(int c, const void *arg)
 {
