@@ -3447,6 +3447,12 @@ void catch_signal(int which)
     }
 }
 
+static void set_defaults()
+{
+    filetype = NO_FILE;
+    set_config_defaults();
+}
+
 int main(int argc, char *argv[])
 {
     int opt;
@@ -3471,8 +3477,6 @@ int main(int argc, char *argv[])
     config.configfile = strdup(buf);
     snprintf(buf, sizeof(buf), "%s/fifo", datadir);
     config.fifo = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/tmpfile", datadir);
-    config.tmpfile = strdup(buf);
 
     if (stat(datadir, &st) == -1) {
 	if (errno == ENOENT) {
@@ -3558,6 +3562,9 @@ int main(int argc, char *argv[])
 	    add_custom_tags(&game[gindex].tag, &game[gindex].tindex);
 	    break;
     }
+
+    if (ret == -1)
+	err(EXIT_FAILURE, "%s", loadfile);
 
     if (validate_only || validate_and_write) {
 	if (validate_and_write) {

@@ -28,8 +28,9 @@
 #include <config.h>
 #endif
 
-#include "chess.h"
-#include "conf.h"
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
@@ -138,8 +139,8 @@ char *compression_cmd(const char *filename, int expand)
 	    snprintf(command, sizeof(command), "unzip -p %s 2>/dev/null", 
 		    filename);
 	else
-	    snprintf(command, sizeof(command), "zip -%i >%s 2>/dev/null",
-		    config.clevel, filename);
+	    snprintf(command, sizeof(command), "zip -9 >%s 2>/dev/null", 
+		    filename);
 
 	return command;
     }
@@ -148,8 +149,7 @@ char *compression_cmd(const char *filename, int expand)
 	if (expand)
 	    snprintf(command, sizeof(command), "gzip -dc %s", filename);
 	else
-	    snprintf(command, sizeof(command), "gzip -c%i 1>%s", config.clevel,
-		    filename);
+	    snprintf(command, sizeof(command), "gzip -c 1>%s", filename);
 
 	return command;
     }
@@ -170,8 +170,7 @@ char *compression_cmd(const char *filename, int expand)
 	if (expand)
 	    snprintf(command, sizeof(command), "bzip2 -dc %s", filename);
 	else
-	    snprintf(command, sizeof(command), "bzip2 -zc%i 1>%s", 
-		    config.clevel, filename);
+	    snprintf(command, sizeof(command), "bzip2 -zc 1>%s", filename);
 
 	return command;
     }
@@ -179,35 +178,34 @@ char *compression_cmd(const char *filename, int expand)
     return NULL;
 }
 
-FILE *open_file(const char *filename, int *compressed)
+FILE *open_file(const char *filename)
 {
-    FILE *fp, *ofp;
-    static char tfile[FILENAME_MAX];
+    FILE *fp, *tfp;
     char *command = NULL;
     char *p;
     char buf[LINE_MAX];
 
+    fp = tfp = NULL;
+    
     if ((command = compression_cmd(filename, 1)) != NULL) {
-	snprintf(tfile, sizeof(tfile), "%s", config.tmpfile);
-
-	if ((ofp = fopen(tfile, "w+")) == NULL)
+	if ((tfp = tmpfile()) == NULL)
 	    return NULL;
 
 	if ((fp = popen(command, "r")) == NULL)
 	    return NULL;
 
 	while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
-	    fprintf(ofp, "%s", p);
+	    fprintf(tfp, "%s", p);
 
 	pclose(fp);
-	fclose(ofp);
-
-	filename = (char *)tfile;
-	*compressed = 1;
     }
 
-    if ((fp = fopen(filename, "r")) == NULL)
-	return NULL;
+    if (tfp)
+	fseek(tfp, 0, SEEK_SET);
+    else {
+	if ((tfp = fopen(filename, "r")) == NULL)
+	    return NULL;
+    }
 
-    return fp;
+    return tfp;
 }

@@ -31,7 +31,7 @@
 #include <dmalloc.h>
 #endif
 
-void write_debug_output(int which, const char *format, ...)
+void write_debug_output(int file, const char *format, ...)
 {
     FILE *fp = stderr;
     va_list ap;
@@ -41,14 +41,14 @@ void write_debug_output(int which, const char *format, ...)
     vasprintf(&buf, format, ap);
     va_end(ap);
 
-    if (which) {
+    if (file) {
 	if ((fp = fopen("debug", "a")) == NULL)
 	    return;
     }
 
     fprintf(fp, "%s", buf);
 
-    if (which)
+    if (file)
 	fclose(fp);
 
     free(buf);
@@ -57,26 +57,28 @@ void write_debug_output(int which, const char *format, ...)
 
 char *debug_board(BOARD b)
 {
-    static char buf[64 + 8 + 16 + 1];
+    static char buf[129];
     char *p = buf;
     int row, col;
 
     for (row = 0; row < 8; row++) {
 	for (col = 0; col < 8; col++) {
-	    *p++ = (b[row][col].enpassant) ? 'x' : b[row][col].icon & A_CHARTEXT;
+	    *p++ = (b[row][col].enpassant) ? 'x' : b[row][col].icon;
+
 	    if (col < 7)
 		*p++ = ' ';
 	}
 
 	*p++ = '\n';
+	*p = 0;
     }
 
     *p = 0;
     return buf;
 }
 
-void dump_board(int which, BOARD b)
+void dump_board(int file, BOARD b)
 {
-    write_debug_output(which, "%s", debug_board(b));
+    write_debug_output(file, "%s", debug_board(b));
 }
 #endif

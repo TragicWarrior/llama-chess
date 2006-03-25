@@ -46,10 +46,17 @@ PANEL *statusp;
 WINDOW *historyw;
 PANEL *historyp;
 
+char loadfile[FILENAME_MAX];
 int quit;
 char **agony;
 int paused;
 BOARD board;	// Board for the current game.
+
+// Loaded filename from the command line or from the file input dialog.
+int filetype;
+enum {
+    NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
+};
 
 struct country_codes {
     char code[4];

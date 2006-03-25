@@ -19,15 +19,7 @@
 #ifndef RCFILE_H
 #define RCFILE_H
 
-// Loaded filename from the command line or from the file input dialog.
-char loadfile[FILENAME_MAX];
-int filetype;
-enum {
-    NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
-};
-
-void set_default_colors(void);
-void set_defaults();
+void set_config_defaults();
 void parse_rcfile(const char *filename);
 
 #endif

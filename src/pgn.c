@@ -1380,7 +1380,6 @@ static int read_file(FILE *fp)
 int pgn_parse_file(const char *filename)
 {
     FILE *fp;
-    int compressed = 0;
     int ret;
 
     if (!filename) {
@@ -1392,7 +1391,7 @@ int pgn_parse_file(const char *filename)
     if (access(filename, R_OK) == -1)
 	return -1;
 
-    if ((fp = open_file(filename, &compressed)) == NULL)
+    if ((fp = open_file(filename)) == NULL)
 	return -1;
 
     reset_game_data();
@@ -1409,9 +1408,6 @@ int pgn_parse_file(const char *filename)
     gtotal = gindex + 1;
 
 done:
-    if (compressed)
-	unlink(tfile);
-
     pgn_switch_turn(&game[gindex].turn);
     return ret;
 }

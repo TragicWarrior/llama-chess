@@ -140,5 +140,6 @@
 	config.color[CONF_CASTLE].nattrs)
 
 void init_color_pairs();
+void set_default_colors();
 
 #endif

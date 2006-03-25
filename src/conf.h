@@ -67,7 +67,6 @@ struct {
     char *ccfile;	// The pathname to the Country Code data file.
     char *fifo;		// The pathname to the FIFO used for resuming games
     			// with a chess engine.
-    char *tmpfile;	// Temporary file used for decompression of files.
     char *savedirectory; // Directory where saved games are stored.
     char *engine_cmd;	// Alternate chess engine command. FIXME
     int engine;		// FIXME

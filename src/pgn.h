@@ -29,7 +29,6 @@ extern char *strptime(const char *, const char *, struct tm *);
 
 BOARD pgnboard;		// Board to use when validating/parsing.
 int validate;
-char *tfile;		// Temporary file for decompression.
 int nulltags;
 int done_fen_tag;
 int tag_section;

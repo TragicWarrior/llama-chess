@@ -36,6 +36,7 @@
 #include "chess.h"
 #include "conf.h"
 #include "misc.h"
+#include "colors.h"
 #include "rcfile.h"
 
 #ifdef WITH_DMALLOC
@@ -162,11 +163,10 @@ void copydatafile(const char *dst, const char *src)
     return;
 }
 
-void set_defaults()
+void set_config_defaults()
 {
     struct stat st;
 
-    filetype = NO_FILE;
     config.engine_cmd = strdup("gnuchess");//FIXME
     config.jumpcount = 5;
     config.clevel = 6;
