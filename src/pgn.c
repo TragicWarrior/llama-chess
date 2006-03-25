@@ -1221,8 +1221,10 @@ static int read_file(FILE *fp)
 	    continue;
 	}
 
-	// PGN: Application comment. The '%' must be on the first column of
-	// the line. The comment continues until the end of the current line.
+	/*
+	 * PGN: Application comment. The '%' must be on the first column of
+	 * the line. The comment continues until the end of the current line.
+	 */
 	if (c == '%') { 
 	    if (lastchar == '\n' || lastchar == 0) {
 		while ((c = fgetc(fp)) != EOF && c != '\n');
@@ -1239,8 +1241,10 @@ static int read_file(FILE *fp)
 	if (c == '<' || c == '>')
 	    continue;
 
-	// PGN: Recurrsive Annotation Variation. Read rav_text() for more
-	// info.
+	/*
+	 * PGN: Recurrsive Annotation Variation. Read rav_text() for more
+	 * info.
+	 */
 	if (c == '(' || c == ')') {
 	    switch (rav_text(&game[gindex], fp, c)) {
 		case -1:
@@ -1274,9 +1278,11 @@ static int read_file(FILE *fp)
 	    continue;
 	}
 
-	// PGN: Annotation. The ';' comment continues until the end of the
-	// current line. The '{' type comment continues until a '}' is
-	// reached.
+	/*
+	 * PGN: Annotation. The ';' comment continues until the end of the
+	 * current line. The '{' type comment continues until a '}' is
+	 * reached.
+	 */
 	if (c == '{' || c == ';') {
 	    annotation_text(&game[gindex], fp, (c == '{') ? '}' : '\n');
 	    continue;
@@ -1333,10 +1339,12 @@ static int read_file(FILE *fp)
 		tag_section = 0;
 	    }
 
-	    // PGN: Import format doesn't require a roster tag section. We've
-	    // arrived to the move text section without any tags so we
-	    // initialize a new game which set's the default tags and any tags
-	    // from the configuration file.
+	    /*
+	     * PGN: Import format doesn't require a roster tag section. We've
+	     * arrived to the move text section without any tags so we
+	     * initialize a new game which set's the default tags and any tags
+	     * from the configuration file.
+	     */
 	    if (nulltags) {
 		if (gtotal)
 		    game[gindex].hindex = history_total(game[gindex].hp) - 1;
@@ -1365,7 +1373,6 @@ static int read_file(FILE *fp)
 	continue;
     }
 
-    game[gindex].hp = game[gindex].history;
     return ret;
 }
 
@@ -1381,6 +1388,7 @@ int pgn_parse_file(const char *filename)
 {
     FILE *fp;
     int ret;
+    int i;
 
     if (!filename) {
 	reset_game_data();
@@ -1403,6 +1411,9 @@ int pgn_parse_file(const char *filename)
 	pgn_new_game(pgnboard);
 	goto done;
     }
+
+    for (i = 0; i < gtotal; i++)
+	game[i].hp = game[i].history;
 
     pgn_sort_tags(game[gindex]);
     gtotal = gindex + 1;
