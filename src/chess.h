@@ -98,19 +98,8 @@ typedef struct history {
     char *move;				// The SAN move text.
     char *comment;			// Annotation for this move.
     unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph. FIXME
-    short n;				// Current move number.
     struct history **rav;		// Variation of the current move.
 } HISTORY;
-
-// FIXME
-// The selected piece from the board.
-struct selected_piece_s {
-    unsigned char icon;		// The piece.
-    char row;			// The source rank.
-    char col;			// The source file.
-    char destrow;		// Destination rank.
-    char destcol;		// Destination file.
-};
 
 /* 
  * This is an array of 'games' structures. One for each game in a file, or
@@ -119,16 +108,12 @@ struct selected_piece_s {
 typedef struct games {
     fd_set fds;   		// The file descriptors associated with this
     				// game.
-    struct selected_piece_s sp; // The selected piece on the board for this
-    				// game or ground.
     TAG *tag;			// Roster tags.
     unsigned char tindex;	// Total number of roster tags.
     HISTORY **history;		// Move history for this game.
     HISTORY **hp; 		// History pointer pointing to the location 
     				// in *history used mainly for RAV.
     unsigned char hindex;	// Current move in *hp.
-    unsigned char ravindex;	// The original move of *history before *hp
-    				// was updated.
     double moveclock;		// Move clock. FIXME
     unsigned flags;		// Game flags from above.
     char castle;		// The current move is a castling move. FIXME

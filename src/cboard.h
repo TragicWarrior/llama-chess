@@ -52,6 +52,15 @@ char **agony;
 int paused;
 BOARD board;	// Board for the current game.
 
+// The selected piece.
+struct {
+    unsigned char icon;		// The piece.
+    char row;			// The source rank.
+    char col;			// The source file.
+    char destrow;		// Destination rank.
+    char destcol;		// Destination file.
+} sp;
+
 // Loaded filename from the command line or from the file input dialog.
 int filetype;
 enum {

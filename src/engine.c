@@ -340,7 +340,6 @@ void parse_gnuchess_line(GAME *g, char *str)
 	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	pgn_switch_turn(&(*g).turn);
-	(*g).sp.icon = 0;
 	str += count;
 	return;
     }
@@ -423,7 +422,6 @@ void parse_gnuchess_line(GAME *g, char *str)
 
     /* Bad engine command or move. */
     if (strncmp(str, "Illegal move: ", 14) == 0) {
-	(*g).sp.icon = 0;
 	RETURN;
     }
 }

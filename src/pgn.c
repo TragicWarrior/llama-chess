@@ -238,14 +238,21 @@ HISTORY *history_by_n(HISTORY **h, int n)
 /*
  * Appends move 'm' to 'h' and increments 'n'.
  */
-HISTORY **history_add(HISTORY **h, unsigned char *n, const char *m)
+HISTORY **history_add(HISTORY **history, unsigned char *n, const char *m)
 {
-    int t = history_total(h);
+    int t = history_total(history);
+    HISTORY **h = NULL;
+    HISTORY *new;
 
-    h = Realloc(h, (t + 2) * sizeof(HISTORY *));
-    h[t] = Calloc(1, sizeof(HISTORY));
-    h[t]->move = strdup(m);
-    h[t]->n = *n = t;
+    if ((h = realloc(history, (t + 2) * sizeof(HISTORY *))) == NULL)
+	return NULL;
+
+    if ((new = calloc(1, sizeof(HISTORY))) == NULL)
+	return NULL;
+
+    new->move = strdup(m);
+    h[t] = new;
+    *n = t;
     h[++t] = NULL;
     return h;
 }
