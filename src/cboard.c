@@ -2665,6 +2665,9 @@ void game_loop()
 		update_all(game[gindex]);
 		break;
 	    case 'v':
+		if (game[gindex].hindex == history_total(game[gindex].hp))
+		    break;
+
 	        view_annotation(*game[gindex].hp[game[gindex].hindex]);
 		break;
 	    case 'V':

@@ -834,10 +834,10 @@ static void nag_text(GAME *g, FILE *fp)
 	return;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if ((*g).hp[(*g).hindex - 1]->nag[i])
+	if ((*g).hp[(*g).hindex]->nag[i])
 	    continue;
 
-	(*g).hp[(*g).hindex - 1]->nag[i] = nag;
+	(*g).hp[(*g).hindex]->nag[i] = nag;
 	break;
     }
 
@@ -1620,6 +1620,8 @@ void pgn_write(FILE *fp, GAME g, int reduced)
 		annotated = 0;
 	    }
 	}
+
+	fprintf(fp, "%s ", g.history[i]->move);
 
 	if (!reduced)
 	    annotated = write_comments_and_nag(fp, g.history[i], &len);
