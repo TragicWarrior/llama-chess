@@ -232,7 +232,7 @@ HISTORY *history_by_n(HISTORY **h, int n);
 /*
  * Appends move 'm' to 'h' and increments 'n'.
  */
-void history_add(HISTORY ***h, unsigned char *n, const char *m);
+HISTORY **history_add(HISTORY **h, unsigned char *n, const char *m);
 
 /*
  * Resets the game 'g' using board 'b' up to history move 'n'.

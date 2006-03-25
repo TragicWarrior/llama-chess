@@ -1689,7 +1689,7 @@ static int move_to_engine(GAME *g, BOARD b)
     (*g).sp.row = (*g).sp.col = (*g).sp.icon = 0;
 
     if (noengine) {
-	history_add(&(*g).hp, &(*g).hindex, p);
+	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
 	pgn_switch_turn(&(*g).turn);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	update_all(*g);

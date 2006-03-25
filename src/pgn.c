@@ -238,17 +238,16 @@ HISTORY *history_by_n(HISTORY **h, int n)
 /*
  * Appends move 'm' to 'h' and increments 'n'.
  */
-void history_add(HISTORY ***h, unsigned char *n, const char *m)
+HISTORY **history_add(HISTORY **h, unsigned char *n, const char *m)
 {
-    HISTORY **new = *h;
-    int t = history_total(new);
+    int t = history_total(h);
 
-    new = Realloc(new, (t + 2) * sizeof(HISTORY *));
-    new[t] = Calloc(1, sizeof(HISTORY));
-    new[t]->move = strdup(m);
-    new[t]->n = *n = t;
-    new[++t] = NULL;
-    *h = new;
+    h = Realloc(h, (t + 2) * sizeof(HISTORY *));
+    h[t] = Calloc(1, sizeof(HISTORY));
+    h[t]->move = strdup(m);
+    h[t]->n = *n = t;
+    h[++t] = NULL;
+    return h;
 }
 
 /*
@@ -732,7 +731,7 @@ static int move_text(GAME *g, FILE *fp)
     dump_board(0, pgnboard);
 #endif
 
-    history_add(&(*g).hp, &(*g).hindex, m);
+    (*g).hp = history_add((*g).hp, &(*g).hindex, m);
     return 0;
 }
 

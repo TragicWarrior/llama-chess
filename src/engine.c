@@ -337,7 +337,7 @@ void parse_gnuchess_line(GAME *g, char *str)
         if (history_total((*g).hp) == 0 && (*g).side == BLACK)
 	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
-	history_add(&(*g).hp, &(*g).hindex, p);
+	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	pgn_switch_turn(&(*g).turn);
 	(*g).sp.icon = 0;
@@ -367,7 +367,7 @@ void parse_gnuchess_line(GAME *g, char *str)
         if (history_total((*g).hp) == 0 && (*g).side == BLACK)
 	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
-	history_add(&(*g).hp, &(*g).hindex, p);
+	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	pgn_switch_turn(&(*g).turn);
 	str += count;
