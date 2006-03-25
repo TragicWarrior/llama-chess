@@ -334,10 +334,10 @@ void parse_gnuchess_line(GAME *g, char *str)
 	}
 	*/
 
-        if ((*g).htotal == 0 && (*g).side == BLACK)                   
+        if (history_total((*g).hp) == 0 && (*g).side == BLACK)
 	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
-	history_add(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	history_add(&(*g).hp, &(*g).hindex, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	pgn_switch_turn(&(*g).turn);
 	(*g).sp.icon = 0;
@@ -364,10 +364,10 @@ void parse_gnuchess_line(GAME *g, char *str)
 	}
 	*/
 
-        if ((*g).htotal == 0 && (*g).side == BLACK)                   
+        if (history_total((*g).hp) == 0 && (*g).side == BLACK)
 	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
 
-	history_add(&(*g).hp, &(*g).hindex, &(*g).htotal, p);
+	history_add(&(*g).hp, &(*g).hindex, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	pgn_switch_turn(&(*g).turn);
 	str += count;
@@ -391,7 +391,6 @@ void parse_gnuchess_line(GAME *g, char *str)
     // FIXME FEN
     if (strncmp(str, "pgnload ", 8) == 0) {
 	if (save_pgn(config.fifo, 1, gindex)) {
-	    (*g).htotal = oldhistorytotal;
 	    oldhistorytotal = 0;
 	    return;
 	}

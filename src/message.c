@@ -144,6 +144,7 @@ int dump_message(const char *title, const char *prompt, int center,
 
     win = newwin((title) ? height + 5 : height + 4, width,
 	    CALCPOSY(((title) ? height + 5 : height + 4)), CALCPOSX(width));
+    keypad(win, TRUE);
     panel = new_panel(win);
     wbkgd(win, CP_MESSAGE_WINDOW);
     draw_window_title(win, title, width, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);

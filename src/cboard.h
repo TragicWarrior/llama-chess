@@ -56,27 +56,6 @@ struct country_codes {
     char country[64];
 } *ccodes;
 
-const char *cmdlinehelp[] = {
-#ifdef DEBUG
-    "Usage: cboard [-hvNED] [-VtRS] [-p <file>]\n",
-#else
-    "Usage: cboard [-hvNE] [-VtRS] [-p <file>]\n",
-#endif
-    "  -p  Load PGN file.\n",
-    "  -V  Validate a game file.\n",
-    "  -S  Validate and output a PGN formatted game.\n",
-    "  -R  Like -S but write a reduced PGN formatted game.\n",
-    "  -t  Also write custom PGN tags from config file.\n",
-    "  -N  Don't enable the chess engine (two human players).\n",
-    "  -E  Stop processing on file parsing error (overrides config).\n",
-#ifdef DEBUG
-    "  -D  Enable debugging.\n",
-#endif
-    "  -v  Version information.\n",
-    "  -h  This help text.\n",
-    NULL
-};
-
 const char *historyhelp[] = {
     "   UP/DOWN - next or previous history with jump count *",
     "RIGHT/LEFT - next or previous history *",
@@ -230,14 +209,6 @@ struct nag_s {
     char *line;
 } *nags;
 
-// This is used to pass to get_input() as an argument for a function pointer.
-// Used for NAG editing.
-struct annotation_edit_s {
-    HISTORY h;		// The move.
-    int game;		// The game number the move belongs to.
-    unsigned char n;	// The history number from game.hp the move belongs to.
-};
-
 // Status window.
 struct {
     char engine;	// Chess engine status: ENGINE_[READY/OFFLINE].
@@ -261,7 +232,6 @@ void update_all(GAME g);
 #ifdef DEBUG
 void dump_board(int, BOARD);
 void dump_flags(int);
-int debug;
 char *debug_board(BOARD);
 #endif
 

@@ -92,14 +92,14 @@ typedef struct tags {
  * ravlevel++; Incremented for this move.
  * g.hp[move].last = g.hindex; 
  * g.hp = h.hp[move].rav; Now operating on the current move.
- * g.htotal = g.hindex = 0; Reset for the current move.
+ * g.hindex = 0; Reset for the current move.
  */
 typedef struct history {
     char *move;				// The SAN move text.
     char *comment;			// Annotation for this move.
     unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph. FIXME
     short n;				// Current move number.
-    struct history *rav;		// Variation of the current move.
+    struct history **rav;		// Variation of the current move.
 } HISTORY;
 
 // FIXME
@@ -123,11 +123,10 @@ typedef struct games {
     				// game or ground.
     TAG *tag;			// Roster tags.
     unsigned char tindex;	// Total number of roster tags.
-    HISTORY *history;		// Move history for this game.
-    HISTORY *hp; 		// History pointer pointing to the location 
+    HISTORY **history;		// Move history for this game.
+    HISTORY **hp; 		// History pointer pointing to the location 
     				// in *history used mainly for RAV.
     unsigned char hindex;	// Current move in *hp.
-    unsigned char htotal;	// Total number of moves in *hp.
     unsigned char ravindex;	// The original move of *history before *hp
     				// was updated.
     double moveclock;		// Move clock. FIXME
@@ -184,7 +183,7 @@ void pgn_init_board(BOARD b);
  * found) and sets the castling and enpassant info for the game 'g'. Returns 0
  * on success or if there was no FEN tag and 1 if there was a FEN parse error.
  */
-int pgn_init_fen_board(GAME *g, BOARD b, const char *fen);
+int pgn_init_fen_board(GAME *g, BOARD b, char *fen);
 
 /*
  * Creates a FEN tag from the current game 'g' and board 'b'. Returns a FEN
@@ -217,24 +216,23 @@ void pgn_write(FILE *fp, GAME g, int reduced);
 /*
  * Returns the total number of moves in 'h' or 0 if none.
  */
-int history_total(HISTORY *h);
+int history_total(HISTORY **h);
 
 /* 
  * Deallocates the all the data for 'h' from position 'start' in the array.
  */
-void history_free(HISTORY *h, int start);
+void history_free(HISTORY **h, int start);
 
 /*
- * Sets 'h' to the element 'n' of game 'g' move history. Returns 1 if 'n' is
- * out of 'g' history range or 0 on success.
+ * Returns the history ply 'n' from 'h'. If 'n' is out of range then NULL is
+ * returned.
  */
-int history_by_n(GAME g, int n, HISTORY *h);
+HISTORY *history_by_n(HISTORY **h, int n);
 
 /*
- * Appends move 'm' to 'h' and increments 'total' and 'n'.
+ * Appends move 'm' to 'h' and increments 'n'.
  */
-void history_add(HISTORY **h, unsigned char *n, unsigned char *total, 
-	const char *m);
+void history_add(HISTORY ***h, unsigned char *n, const char *m);
 
 /*
  * Resets the game 'g' using board 'b' up to history move 'n'.

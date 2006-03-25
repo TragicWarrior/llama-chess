@@ -64,7 +64,7 @@ char *pgn_game_to_fen(GAME g, BOARD b)
     char enpassant[3] = {0}, *e;
     int castle = 0;
 
-    for (i = g.htotal; i >= g.hindex - 1; i--)
+    for (i = history_total(g.hp); i >= g.hindex - 1; i--)
 	pgn_switch_turn(&g.turn);
 
     p = buf;
@@ -186,76 +186,69 @@ char *pgn_game_to_fen(GAME g, BOARD b)
 /*
  * Returns the total number of moves in 'h' or 0 if none.
  */
-int history_total(HISTORY *h)
+int history_total(HISTORY **h)
 {
-    short i;
+    int i;
 
     if (!h)
 	return 0;
 
-    for (i = 0; h[i].n != -1; i++);
-    return i + 1;
+    for (i = 0; h[i]; i++);
+    return i;
 }
 
 /* 
  * Deallocates the all the data for 'h' from position 'start' in the array.
  */
-void history_free(HISTORY *h, int start)
+void history_free(HISTORY **h, int start)
 {
-    int t = history_total(h);
     int i;
 
     if (!h)
 	return;
 
-    for (i = start; i < t; i++) {
-	if (h[i].comment)
-	    free(h[i].comment);
+    for (i = start; h[i]; i++) {
+	if (h[i]->comment)
+	    free(h[i]->comment);
 
-	if (h[i].rav) {
-	    history_free(h[i].rav, 0);
-	    free(h[i].rav);
+	if (h[i]->rav) {
+	    history_free(h[i]->rav, 0);
+	    free(h[i]->rav);
 	}
 
-	if (h[i].move)
-	    free(h[i].move);
+	if (h[i]->move)
+	    free(h[i]->move);
     }
 
     free(h);
 }
 
 /*
- * Sets 'h' to the element 'n' of game 'g' move history. Returns 1 if 'n' is
- * out of 'g' history range or 0 on success.
+ * Returns the history ply 'n' from 'h'. If 'n' is out of range then NULL is
+ * returned.
  */
-int history_by_n(GAME g, int n, HISTORY *h)
+HISTORY *history_by_n(HISTORY **h, int n)
 {
-    if (n < 0 || n > g.htotal - 1)
-	return 1;
+    if (n < 0 || n > history_total(h) - 1)
+	return NULL;
 
-    *h = g.hp[n];
-    return 0;
+    return h[n];
 }
 
 /*
- * Appends move 'm' to 'h' and increments 'total' and 'n'.
+ * Appends move 'm' to 'h' and increments 'n'.
  */
-void history_add(HISTORY **h, unsigned char *n, unsigned char *total, 
-	const char *m)
+void history_add(HISTORY ***h, unsigned char *n, const char *m)
 {
-    HISTORY *history = *h;
-    int t = *total;
+    HISTORY **new = *h;
+    int t = history_total(new);
 
-    history = Realloc(history, (t + 2) * sizeof(HISTORY));
-    memset(&history[t], 0, sizeof(HISTORY));
-    history[t].move = strdup(m);
-    history[t].n = t;
-    t++;
-    memset(&history[t], 0, sizeof(HISTORY));
-    history[t].n = -1;
-    *h = history;
-    *total = t;
-    *n = *total - 1;
+    new = Realloc(new, (t + 2) * sizeof(HISTORY *));
+    new[t] = Calloc(1, sizeof(HISTORY));
+    new[t]->move = strdup(m);
+    new[t]->n = *n = t;
+    new[++t] = NULL;
+    *h = new;
 }
 
 /*
@@ -293,12 +286,12 @@ int history_update_board(GAME *g, BOARD b, int n)
 	return 1;
 
     for (i = 0; i < n; i++) {
-	HISTORY h;
+	HISTORY *h;
 
-	if (history_by_n(*g, i, &h))
+	if ((h = history_by_n((*g).hp, i)) == NULL)
 	    break;
 	
-	if (pgn_validate_move(g, tb, h.move)) {
+	if (pgn_validate_move(g, tb, h->move)) {
 	    ret = 1;
 	    break;
 	}
@@ -323,7 +316,7 @@ void history_previous(GAME *g, BOARD b, int n, int s)
 
     if ((*g).hindex - n < 0) {
 	if ((n == 2 && s == 2) || (n == 1 && s == 1))
-	    (*g).hindex = (*g).htotal;
+	    (*g).hindex = history_total((*g).hp);
 	else
 	    (*g).hindex = 0;
     }
@@ -339,11 +332,11 @@ void history_previous(GAME *g, BOARD b, int n, int s)
  */
 void history_next(GAME *g, BOARD b, int n, int s)
 {
-    if ((*g).hindex + n > (*g).htotal) {
+    if ((*g).hindex + n > history_total((*g).hp)) {
 	if ((n == 2 && s == 2) || (n == 1 && s == 1))
 	    (*g).hindex = 0;
 	else
-	    (*g).hindex = (*g).htotal;
+	    (*g).hindex = history_total((*g).hp);
     }
     else
 	(*g).hindex += n;
@@ -739,7 +732,7 @@ static int move_text(GAME *g, FILE *fp)
     dump_board(0, pgnboard);
 #endif
 
-    history_add(&(*g).hp, &(*g).hindex, &(*g).htotal, m);
+    history_add(&(*g).hp, &(*g).hindex, m);
     return 0;
 }
 
@@ -841,10 +834,10 @@ static void nag_text(GAME *g, FILE *fp)
 	return;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if ((*g).hp[(*g).hindex - 1].nag[i])
+	if ((*g).hp[(*g).hindex - 1]->nag[i])
 	    continue;
 
-	(*g).hp[(*g).hindex - 1].nag[i] = nag;
+	(*g).hp[(*g).hindex - 1]->nag[i] = nag;
 	break;
     }
 
@@ -858,7 +851,7 @@ static void annotation_text(GAME *g, FILE *fp, int terminator)
 {
     int c, lastchar = 0;
     int len = 0;
-    int hindex = (*g).htotal - 1;
+    int hindex = history_total((*g).hp) - 1;
     char buf[MAX_PGN_LINE_LEN], *a = buf;
 
     skip_leading_space(fp);
@@ -878,8 +871,8 @@ static void annotation_text(GAME *g, FILE *fp, int terminator)
     }
 
     *a = '\0';
-    (*g).hp[hindex].comment = Realloc((*g).hp[hindex].comment, ++len);
-    strncpy((*g).hp[hindex].comment, buf, len);
+    (*g).hp[hindex]->comment = Realloc((*g).hp[hindex]->comment, ++len);
+    strncpy((*g).hp[hindex]->comment, buf, len);
 }
 
 /*
@@ -980,9 +973,9 @@ static int rav_text(GAME *g, FILE *fp, int which)
 	    hindex = (*g).hindex;
 
 	ravlevel++;
-	(*g).hp[hindex].rav = Calloc(1, sizeof(HISTORY));
-	(*g).hp = (*g).hp[hindex].rav;
-	(*g).hindex = (*g).htotal = 0;
+	(*g).hp[hindex]->rav = Calloc(1, sizeof(HISTORY));
+	(*g).hp = (*g).hp[hindex]->rav;
+	(*g).hindex = 0;
 	fen = strdup(pgn_game_to_fen(*g, pgnboard));
 
 	if (read_file(fp)) {
@@ -992,7 +985,6 @@ static int rav_text(GAME *g, FILE *fp, int which)
 
 	(*g).hp = (*g).history;
 	(*g).hindex = hindex;
-	(*g).htotal = hindex + 1;
 	ravlevel--;
 	pgn_init_fen_board(g, pgnboard, fen);
 	free(fen);
@@ -1118,7 +1110,7 @@ other:
  * parsed rather than the game 'g' FEN tag. Returns 0 on success or if there
  * was no FEN tag and 1 if there was a FEN parse error.
  */
-int pgn_init_fen_board(GAME *g, BOARD b, const char *fen)
+int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
 {
     int n = -1, i = -1;
     BOARD tmpboard;
@@ -1164,8 +1156,9 @@ void pgn_new_game(BOARD b)
 {
     gindex = ++gtotal - 1;
     game = Realloc(game, gtotal * sizeof(GAME));
-    memset(&game[gindex], '\0', sizeof(GAME));
-    game[gindex].history = Calloc(1, sizeof(HISTORY));
+    memset(&game[gindex], 0, sizeof(GAME));
+    game[gindex].history = Calloc(1, sizeof(HISTORY *));
+    game[gindex].history[0] = NULL;
     game[gindex].hp = game[gindex].history;
     game[gindex].side = game[gindex].turn = WHITE;
     SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
@@ -1296,10 +1289,8 @@ static int read_file(FILE *fp)
 		nulltags = 0;
 		tag_section = 1;
 
-		if (gtotal && game[gindex].htotal) {
-		    game[gindex].hindex = game[gindex].htotal - 1;
-		    game[gindex].history = game[gindex].hp;
-		}
+		if (gtotal && history_total(game[gindex].hp))
+		    game[gindex].hindex = history_total(game[gindex].hp) - 1;
 
 		pgn_new_game(pgnboard);
 	    }
@@ -1347,10 +1338,8 @@ static int read_file(FILE *fp)
 	    // initialize a new game which set's the default tags and any tags
 	    // from the configuration file.
 	    if (nulltags) {
-		if (gtotal) {
-		    game[gindex].hindex = game[gindex].htotal - 1;
-		    game[gindex].history = game[gindex].hp;
-		}
+		if (gtotal)
+		    game[gindex].hindex = history_total(game[gindex].hp) - 1;
 
 		pgn_new_game(pgnboard);
 		nulltags = 0;
@@ -1418,7 +1407,6 @@ int pgn_parse_file(const char *filename)
 
     pgn_sort_tags(game[gindex]);
     gtotal = gindex + 1;
-    game[gindex].history = game[gindex].hp;
 
 done:
     if (compressed)
@@ -1457,7 +1445,7 @@ static char *pgn_add_tag_escapes(const char *str)
 /*
  * See pgn_write() for more info.
  */
-static int write_comments_and_nag(FILE *fp, HISTORY h, int *len)
+static int write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
 {
     int i;
     int n;
@@ -1465,38 +1453,38 @@ static int write_comments_and_nag(FILE *fp, HISTORY h, int *len)
     int annotated = 0;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (h.nag[i]) {
+	if (h->nag[i]) {
 	    annotated = 1;
 
-	    *len += integer_len(h.nag[i]) + 2;
+	    *len += integer_len(h->nag[i]) + 2;
 
 	    if (*len + 1 >= 80) {
 		fprintf(fp, "\n");
 		*len = 0;
 	    }
 
-	    fprintf(fp, "$%i ", h.nag[i]);
+	    fprintf(fp, "$%i ", h->nag[i]);
 	}
     }
 
-    if (h.comment && h.comment[0]) {
+    if (h->comment && h->comment[0]) {
 	annotated = 1;
 
 	fprintf(fp, "\n{");
 
-	if ((n = strlen(h.comment) + 1) >= 80) {
+	if ((n = strlen(h->comment) + 1) >= 80) {
 	    for (i = 0, x = 0; i < (n - 1); i++, x++) {
 		if (x + 1 >= 80) {
 		    fprintf(fp, "\n");
 		    x = 0;
 		}
 
-		if (fputc(h.comment[i], fp) == EOF)
+		if (fputc(h->comment[i], fp) == EOF)
 		    warn("PGN Save");
 	    }
 	}
 	else
-	    fprintf(fp, "%s", h.comment);
+	    fprintf(fp, "%s", h->comment);
 
 	fprintf(fp, "}\n");
 	*len = 0;
@@ -1515,7 +1503,8 @@ void pgn_write(FILE *fp, GAME g, int reduced)
     int n, len = 0;
     int annotated = 0;
     int x = 0;
-    int oldtotal = g.htotal;
+    int oldtotal = history_total(g.hp);
+    int t = oldtotal;
 
     //FIXME
     /*
@@ -1600,8 +1589,8 @@ void pgn_write(FILE *fp, GAME g, int reduced)
      * NAG data.
      */
     // FIXME RAV
-    for (i = len = 0, n = 1; i < g.htotal; i++) {
-	int mlen = strlen(g.history[i].move);
+    for (i = len = 0, n = 1; i < t; i++) {
+	int mlen = strlen(g.history[i]->move);
 
 	if ((i % 2) == x) {
 	    len += 2;
@@ -1625,8 +1614,6 @@ void pgn_write(FILE *fp, GAME g, int reduced)
 	    }
 	}
 
-	fprintf(fp, "%s ", g.history[i].move);
-
 	if (!reduced)
 	    annotated = write_comments_and_nag(fp, g.history[i], &len);
 
@@ -1645,7 +1632,6 @@ void pgn_write(FILE *fp, GAME g, int reduced)
 	fprintf(fp, "\n");
 
     fprintf(fp, "%s\n\n", pgn_add_tag_escapes(g.tag[TAG_RESULT].value));
-    g.htotal = oldtotal;
 
     if (!reduced) {
 	CLEAR_FLAG(g.flags, GF_MODIFIED);
