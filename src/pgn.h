@@ -27,6 +27,16 @@ extern char *strptime(const char *, const char *, struct tm *);
 
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 
+/*
+ * Keeps game state history for the root move. We could use a BOARD and GAME
+ * but less memory this way.
+ */
+typedef struct {
+    char *fen;		// Game board state.
+    HISTORY **h;	// Pointer to the root move.
+} RAV;
+
+RAV *rav;
 BOARD pgnboard;		// Board to use when validating/parsing.
 int validate;
 int nulltags;

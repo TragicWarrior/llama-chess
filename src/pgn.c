@@ -211,10 +211,8 @@ void history_free(HISTORY **h, int start)
 	if (h[i]->comment)
 	    free(h[i]->comment);
 
-	if (h[i]->rav) {
+	if (h[i]->rav)
 	    history_free(h[i]->rav, 0);
-	    free(h[i]->rav);
-	}
 
 	if (h[i]->move)
 	    free(h[i]->move);
@@ -700,6 +698,7 @@ static int move_text(GAME *g, FILE *fp)
 	}
     }
     else {
+	// FIXME pgn_switch_turn() botches RAV if there is no move number.
 	if ((*g).hindex > 0)
 	    pgn_switch_turn(&(*g).turn);
     }
@@ -960,41 +959,62 @@ static int eog_text(GAME *g, FILE *fp)
 }
 
 /*
- * This function updates a games move history pointer to a new history
- * instance for the current move.
+ * Parse RAV text and keep track of g.hp. The 'o' argument is the board state
+ * before the current move (.hindex) was parsed.
  */
 static int read_file(FILE *);
-static int rav_text(GAME *g, FILE *fp, int which)
+static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 {
-    int hindex = 0;
-    char *fen = NULL;
+    int ravindex = ravlevel;
+    GAME tg;
 
+    // Begin RAV for the current move.
     if (which == '(') {
-	if (!ravlevel)
-	    /* 
-	     * hindex holds the current root move number. We have to know
-	     * where to begin in the originial move history (not the pointer
-	     * .hp) when ravlevel is deincremented (end of this rav). 
-	     */
-	    hindex = (*g).hindex;
+	/*
+	 * Save the current game state for this RAV depth/level.
+	 */
+	rav = Realloc(rav, (ravindex + 1) * sizeof(RAV));
+	rav[ravindex].fen = strdup(pgn_game_to_fen((*g), pgnboard));
+	rav[ravindex].h = (*g).hp;
+	memcpy(&tg, &(*g), sizeof(GAME));
+	memcpy(pgnboard, o, sizeof(BOARD));
 
-	ravlevel++;
-	(*g).hp[hindex]->rav = Calloc(1, sizeof(HISTORY));
-	(*g).hp = (*g).hp[hindex]->rav;
+	(*g).hp[(*g).hindex]->rav = Calloc(1, sizeof(HISTORY));
+
+	// history_add() will now append to this new RAV.
+	(*g).hp = (*g).hp[(*g).hindex]->rav;
+
+	/*
+	 * Reset. Will be restored later from 'tg' which is a local variable
+	 * so recursion is possible.
+	 */
 	(*g).hindex = 0;
-	fen = strdup(pgn_game_to_fen(*g, pgnboard));
+	ravlevel++;
 
+	/*
+	 * Now continue as normal as if there were no RAV. Moves will be
+	 * parsed and appended to the new .hp.
+	 */
 	if (read_file(fp)) {
 	    fprintf(stderr, "ACK\n");
 	    return 1;
 	}
 
-	(*g).hp = (*g).history;
-	(*g).hindex = hindex;
+	/*
+	 * read_file() has returned. The means that a RAV has ended by this
+	 * function returning -1 (see below). So we restore the game state
+	 * that was saved before calling read_file().
+	 */
+	pgn_init_fen_board(&tg, pgnboard, rav[ravindex].fen);
+	free(rav[ravindex].fen);
+	memcpy(&(*g), &tg, sizeof(GAME));
+	(*g).hp = rav[ravindex].h;
 	ravlevel--;
-	pgn_init_fen_board(g, pgnboard, fen);
-	free(fen);
     }
+    /*
+     * The end of a RAV. This makes read_file() that called this function
+     * rav_text() return (see above).
+     */
     else if (which == ')')
 	return -1;
 
@@ -1163,9 +1183,8 @@ void pgn_new_game(BOARD b)
     gindex = ++gtotal - 1;
     game = Realloc(game, gtotal * sizeof(GAME));
     memset(&game[gindex], 0, sizeof(GAME));
-    game[gindex].history = Calloc(1, sizeof(HISTORY *));
-    game[gindex].history[0] = NULL;
-    game[gindex].hp = game[gindex].history;
+    game[gindex].hp = Calloc(1, sizeof(HISTORY *));
+    game[gindex].hp[0] = NULL;
     game[gindex].side = game[gindex].turn = WHITE;
     SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
     SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
@@ -1183,6 +1202,7 @@ static int read_file(FILE *fp)
     int c = 0;
     int parse_error = 0;
     int ret = 0;
+    BOARD old;
 
     while (1) {
 	int nextchar = 0;
@@ -1209,6 +1229,7 @@ static int read_file(FILE *fp)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
+	    fprintf(stderr, "ACKACK: %c\n", c);
 	    ret = 1;
 	    
 	    if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
@@ -1252,7 +1273,7 @@ static int read_file(FILE *fp)
 	 * info.
 	 */
 	if (c == '(' || c == ')') {
-	    switch (rav_text(&game[gindex], fp, c)) {
+	    switch (rav_text(&game[gindex], fp, c, old)) {
 		case -1:
 		    /*
 		     * This is the end of the current RAV. This function has
@@ -1262,6 +1283,9 @@ static int read_file(FILE *fp)
 		    if (ravlevel > 0)
 			return 0;
 
+		    /*
+		     * We're back at the root move. Continue as normal.
+		     */
 		    break;
 		case 1:
 		    parse_error = 1;
@@ -1305,6 +1329,7 @@ static int read_file(FILE *fp)
 		    game[gindex].hindex = history_total(game[gindex].hp) - 1;
 
 		pgn_new_game(pgnboard);
+		memcpy(old, pgnboard, sizeof(BOARD));
 	    }
 
 	    tag_text(&game[gindex], fp);
@@ -1356,8 +1381,11 @@ static int read_file(FILE *fp)
 		    game[gindex].hindex = history_total(game[gindex].hp) - 1;
 
 		pgn_new_game(pgnboard);
+		memcpy(old, pgnboard, sizeof(BOARD));
 		nulltags = 0;
 	    }
+
+	    memcpy(old, pgnboard, sizeof(BOARD));
 
 	    if (move_text(&game[gindex], fp)) {
 		SET_FLAG(game[gindex].flags, GF_PERROR);
@@ -1413,13 +1441,16 @@ int pgn_parse_file(const char *filename)
     ret = read_file(fp);
     fclose(fp);
 
+    if (rav)
+	free(rav);
+
     if (gtotal < 1) {
 	pgn_new_game(pgnboard);
 	goto done;
     }
 
     for (i = 0; i < gtotal; i++)
-	game[i].hp = game[i].history;
+	game[i].history = game[i].hp;
 
     pgn_sort_tags(game[gindex]);
     gtotal = gindex + 1;
