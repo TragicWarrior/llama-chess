@@ -1,23 +1,6 @@
 file globbing patterns in the file browser (breaks config.save_directory) this
     adds configuration parameter glob_pattern.
 
-define a prototype for vasprintf if not detected even if its not linux
-
-include strings.h only in source files that require it
-
-fix for game flags (visual)
-
-removed board move number count code. i'll add it back in later probably
-
-dont use cpp concatination token '##' for strings. fixes gcc 3 compilation
-    problems.
-
-function and variable names have changed to make a little more sense.
-
-update the game modified flag on save
-
-add "Setup" tag when added FEN tag
-
 more consistant menu help and keys
 
-added vim modelines to *.[ch]
+A move with more than one variation need a way to select which one.
