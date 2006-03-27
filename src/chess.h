@@ -100,6 +100,16 @@ typedef struct history {
     struct history **rav;		// Variation of the current move.
 } HISTORY;
 
+/*
+ * Keeps game state history for the root move.
+ */
+typedef struct {
+    char *fen;		// Game board state.
+    unsigned short flags;
+    unsigned char hindex;
+    HISTORY **hp;	// Pointer to the root move.
+} RAV;
+
 /* 
  * This is an array of 'games' structures. One for each game in a file, or
  * the current game.
@@ -112,6 +122,8 @@ typedef struct games {
     HISTORY **history;		// Move history for this game.
     HISTORY **hp; 		// History pointer pointing to the location 
     				// in *history used mainly for RAV.
+    RAV *rav;			// Saved game states for the root move of RAV.
+    int ravlevel;		// An index to *rav.
     unsigned char hindex;	// Current move in *hp.
     unsigned moveclock;		// Move clock. FIXME
     unsigned short flags;	// Game flags.
@@ -123,7 +135,6 @@ typedef struct games {
 
 GAME *game;
 int gindex, gtotal;
-int ravlevel;
 
 /*
  * Converts the character piece 'p' to an integer.

@@ -199,9 +199,7 @@
 #define HISTORY_MOVE_STEP	" (half step)"
 #define HISTORY_MOVE_STR	"Move:"
 #define HISTORY_MOVE_NEXT_STR	"Next move:"
-#define HISTORY_ANNO_NEXT	"(press 'v')"
 #define HISTORY_MOVE_PREV_STR	"Prev move:"
-#define HISTORY_ANNO_PREV	"(press 'V')"
 
 /* White and black window strings. */
 #define BW_NAME_STR	"Name:"

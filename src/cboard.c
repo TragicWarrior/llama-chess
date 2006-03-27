@@ -1835,15 +1835,55 @@ void update_history_window(GAME g)
 
     h = history_by_n(g.hp, g.hindex);
 
-    snprintf(buf, sizeof(buf), "%s %s", (h && h->move) ? h->move : UNAVAILABLE,
-	    (h && ((h->comment && h->comment[0]) || h->nag[0])) ? HISTORY_ANNO_NEXT : "");
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+
+    n = 0;
+
+    if (h && ((h->comment && h->comment[0]) || h->nag[0])) {
+	strncat(buf, " (v", sizeof(buf));
+	n++;
+    }
+
+    if (h && h->rav) {
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	n++;
+    }
+
+    if (g.ravlevel) {
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	n++;
+    }
+
+    if (n)
+	strncat(buf, ")", sizeof(buf));
+
     mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
 	    HISTORY_WIDTH - 13, buf);
 
     h = history_by_n(g.hp, game[gindex].hindex - 1);
 
-    snprintf(buf, sizeof(buf), "%s %s", (h && h->move) ? h->move : UNAVAILABLE,
-	    (h && ((h->comment && h->comment[0]) || h->nag[0])) ? HISTORY_ANNO_PREV : "");
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+
+    n = 0;
+
+    if (h && ((h->comment && h->comment[0]) || h->nag[0])) {
+	strncat(buf, " (V", sizeof(buf));
+	n++;
+    }
+
+    if (h && h->rav) {
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	n++;
+    }
+
+    if (g.ravlevel) {
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	n++;
+    }
+
+    if (n)
+	strncat(buf, ")", sizeof(buf));
+
     mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
 	    HISTORY_WIDTH - 13, buf);
 }
@@ -2196,8 +2236,35 @@ static void switch_side(GAME *g)
 	(*g).side = WHITE;
 }
 
-void update_history_pointer(GAME g, int n)
+int update_history_pointer(GAME *g, BOARD b, int n)
 {
+    // Next RAV.
+    if (n) {
+	if ((*g).hp[(*g).hindex]->rav == NULL)
+	    return 1;
+
+	(*g).rav = Realloc((*g).rav, ((*g).ravlevel + 1) * sizeof(RAV));
+	(*g).rav[(*g).ravlevel].hp = (*g).hp;
+	(*g).rav[(*g).ravlevel].flags = (*g).flags;
+	(*g).rav[(*g).ravlevel].fen = strdup(pgn_game_to_fen(*g, b));
+	(*g).rav[(*g).ravlevel].hindex = (*g).hindex;
+	(*g).hp = (*g).hp[(*g).hindex]->rav;
+	(*g).hindex = 0;
+	(*g).ravlevel++;
+	return 0;
+    }
+
+    if ((*g).ravlevel - 1 < 0)
+	return 1;
+
+    // Previous RAV.
+    (*g).ravlevel--;
+    pgn_init_fen_board(g, b, (*g).rav[(*g).ravlevel].fen);
+    free((*g).rav[(*g).ravlevel].fen);
+    (*g).hp = (*g).rav[(*g).ravlevel].hp;
+    (*g).flags = (*g).rav[(*g).ravlevel].flags;
+    (*g).hindex = (*g).rav[(*g).ravlevel].hindex;
+    return 0;
 }
 
 void game_loop()
@@ -2350,7 +2417,8 @@ void game_loop()
 		if (game[gindex].mode != MODE_HISTORY)
 		    break;
 
-		update_history_pointer(game[gindex], (c == '-') ? 0 : 1);
+		update_history_pointer(&game[gindex], board, (c == '-') ? 0 : 1);
+		update_all(game[gindex]);
 		break;
 	    case 'p':
 		if (game[gindex].mode == MODE_EDIT) {

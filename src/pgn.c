@@ -262,7 +262,7 @@ int history_update_board(GAME *g, BOARD b, int n)
 {
     int i = 0;
     BOARD tb;
-    int ret = 0;
+    int r = 0;
 
     if (TEST_FLAG((*g).flags, GF_BLACK_OPENING))
 	(*g).turn = BLACK;
@@ -284,10 +284,12 @@ int history_update_board(GAME *g, BOARD b, int n)
     
     (*g).flags = flags;
 #endif
-    pgn_init_board(tb);
 
-    if (pgn_init_fen_board(g, tb, NULL))
+    if (pgn_find_tag((*g).tag, (*g).tindex, "FEN") != -1 &&
+	    pgn_init_fen_board(g, tb, NULL))
 	return 1;
+    else
+	pgn_init_board(tb);
 
     for (i = 0; i < n; i++) {
 	HISTORY *h;
@@ -296,7 +298,7 @@ int history_update_board(GAME *g, BOARD b, int n)
 	    break;
 	
 	if (pgn_validate_move(g, tb, h->move)) {
-	    ret = 1;
+	    r = 1;
 	    break;
 	}
 
@@ -306,7 +308,7 @@ int history_update_board(GAME *g, BOARD b, int n)
     if (ret == 0)
 	memcpy(b, tb, sizeof(BOARD));
 
-    return ret;
+    return r;
 }
 
 /*
@@ -628,8 +630,16 @@ void pgn_free_all()
 {
     int i;
 
-    for (i = 0; i < gtotal; i++)
+    for (i = 0; i < gtotal; i++) {
 	pgn_free(game[i]);
+
+	if (game[i].rav) {
+	    for (game[i].ravlevel--; game[i].ravlevel >= 0; game[i].ravlevel--)
+		free(game[i].rav[game[i].ravlevel].fen);
+
+	    free(game[i].rav);
+	}
+    }
 
     if (game)
 	free(game);
@@ -975,7 +985,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 */
 	rav = Realloc(rav, (ravindex + 1) * sizeof(RAV));
 	rav[ravindex].fen = strdup(pgn_game_to_fen((*g), pgnboard));
-	rav[ravindex].h = (*g).hp;
+	rav[ravindex].hp = (*g).hp;
 	memcpy(&tg, &(*g), sizeof(GAME));
 	memcpy(pgnboard, o, sizeof(BOARD));
 
@@ -995,10 +1005,8 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 * Now continue as normal as if there were no RAV. Moves will be
 	 * parsed and appended to the new .hp.
 	 */
-	if (read_file(fp)) {
-	    fprintf(stderr, "ACK\n");
+	if (read_file(fp))
 	    return 1;
-	}
 
 	/*
 	 * read_file() has returned. The means that a RAV has ended by this
@@ -1008,7 +1016,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	pgn_init_fen_board(&tg, pgnboard, rav[ravindex].fen);
 	free(rav[ravindex].fen);
 	memcpy(&(*g), &tg, sizeof(GAME));
-	(*g).hp = rav[ravindex].h;
+	(*g).hp = rav[ravindex].hp;
 	ravlevel--;
     }
     /*
@@ -1133,8 +1141,8 @@ other:
  * section. So at least a move or EOG marker has to exist. It initializes the
  * board (b) to the FEN tag (if found) and sets the castling and enpassant
  * info for the game 'g'. If 'fen' is set it should be a fen tag and will be
- * parsed rather than the game 'g' FEN tag. Returns 0 on success or if there
- * was no FEN tag and 1 if there was a FEN parse error.
+ * parsed rather than the game 'g'.tag FEN tag. Returns 0 on success or 1 if
+ * there was a FEN parse error or no FEN tag at all.
  */
 int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
 {
@@ -1170,6 +1178,8 @@ int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
 	    (*g).turn = turn;
 	}
     }
+    else
+	return 1;
 
     return 0;
 }
@@ -1198,7 +1208,6 @@ static int read_file(FILE *fp)
 #endif
     int c = 0;
     int parse_error = 0;
-    int ret = 0;
     BOARD old;
 
     while (1) {
@@ -1226,9 +1235,11 @@ static int read_file(FILE *fp)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
-	    fprintf(stderr, "ACKACK: %c\n", c);
 	    ret = 1;
 	    
+	    if (ravlevel)
+		return 1;
+
 	    if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
 		parse_error = 0;
 		nulltags = 1;
@@ -1278,7 +1289,7 @@ static int read_file(FILE *fp)
 		     * will put us back in rav_text().
 		     */
 		    if (ravlevel > 0)
-			return 0;
+			return ret;
 
 		    /*
 		     * We're back at the root move. Continue as normal.
@@ -1418,7 +1429,6 @@ static int read_file(FILE *fp)
 int pgn_parse_file(const char *filename)
 {
     FILE *fp;
-    int ret;
     int i;
 
     if (!filename) {
