@@ -1474,7 +1474,7 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
     return 0;
 }
 
-static void draw_board(GAME *g, int crow, int ccol)
+static void draw_board(GAME *g, int details, int crow, int ccol)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -1585,10 +1585,13 @@ static void draw_board(GAME *g, int crow, int ccol)
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			piece = board[row / 2][bcol].icon;
+			if (details && board[row / 2][bcol].enpassant)
+			    piece = 'x';
+			else
+			    piece = board[row / 2][bcol].icon;
 
-			if ((*g).mode == MODE_EDIT && castling_state(g, board, 
-				    brow, bcol, piece, 0))
+			if (details && castling_state(g, board, brow, bcol,
+				    piece, 0))
 			    attrs |= A_REVERSE;
 
 			if ((*g).side == WHITE && isupper(piece))
@@ -2201,19 +2204,6 @@ static void switch_side(GAME *g)
 	(*g).side = WHITE;
 }
 
-static void show_enpassant(BOARD b)
-{
-    int i;
-
-    for (i = 0; i < 8; i++) {
-	if (b[2][i].enpassant)
-	    b[2][i].icon = 'x';
-
-	if (b[5][i].enpassant)
-	    b[5][i].icon = 'x';
-    }
-}
-
 void update_history_pointer(GAME g, int n)
 {
 }
@@ -2229,6 +2219,7 @@ void game_loop()
     int delete_count = 0;
     int markstart = -1, markend = -1;
     int editmode = 0;
+    int board_details = 0;
 
     gindex = gtotal - 1;
     markstart = -1, markend = -1;
@@ -2335,7 +2326,7 @@ void game_loop()
 #endif
 
 	error_recover = 0;
-	draw_board(&game[gindex], crow, ccol);
+	draw_board(&game[gindex], board_details, crow, ccol);
 	wmove(boardw, ROWTOMATRIX(crow), COLTOMATRIX(ccol));
 
 	if (!paused) {
@@ -2374,14 +2365,8 @@ void game_loop()
 		    if (crow != 6 && crow != 3)
 			break;
 
-		    for (i = 1; VALIDFILE(i); i++) {
-			if (board[ROWTOBOARD(3)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(3)][COLTOBOARD(i)].icon = pgn_int_to_piece(WHITE, OPEN_SQUARE);
-			if (board[ROWTOBOARD(6)][COLTOBOARD(i)].icon == 'x')
-			    board[ROWTOBOARD(6)][COLTOBOARD(i)].icon = pgn_int_to_piece(WHITE, OPEN_SQUARE);
-		    }
-
-		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = 'x';
+		    pgn_reset_enpassant(board);
+		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].enpassant = 1;
 		    break;
 		}
 
@@ -2391,11 +2376,18 @@ void game_loop()
 		    paused = 1;
 
 		break;
+	    case 'd':
+		if (board_details)
+		    board_details = 0;
+		else
+		    board_details = 1;
+		break;
 	    case 'e':
 		if (history_total(game[gindex].hp))
 		    break;
 
 	        if (editmode) {
+		    board_details--;
 		    editmode = 0;
 		    pgn_add_tag(&game[gindex].tag, &game[gindex].tindex,
 			    "FEN", pgn_game_to_fen(game[gindex], board));
@@ -2411,7 +2403,7 @@ void game_loop()
 		    if (pgn_init_fen_board(&game[gindex], board, NULL))
 			break;
 
-		    show_enpassant(board);
+		    board_details++;
 		}
 
 		update_all(game[gindex]);

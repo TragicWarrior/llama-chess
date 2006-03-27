@@ -52,21 +52,21 @@ enum {
 };
 
 /* Game flags. */
-#define GF_PERROR	0x0001 /* Parse error for this game. */
-#define GF_DELETE	0x0002 /* Flagged for deletion ('x' command). */
-#define GF_MODIFIED	0x0004 /* Modified tags or history. */
-#define GF_ENPASSANT	0x0008 /* For En Passant validation. */
-#define GF_GAMEOVER	0x0010 /* End of game. */
-#define GF_WK_CASTLE	0x0020
-#define GF_WQ_CASTLE	0x0040
-#define GF_BK_CASTLE	0x0080
-#define GF_BQ_CASTLE	0x0100
-#define GF_BLACK_OPENING	0x0200
+#define GF_PERROR	1 /* Parse error for this game. */
+#define GF_DELETE	2 /* Flagged for deletion ('x' command). */
+#define GF_MODIFIED	4 /* Modified tags or history. */
+#define GF_ENPASSANT	8 /* For En Passant validation. */
+#define GF_GAMEOVER	10 /* End of game. */
+#define GF_WK_CASTLE	20
+#define GF_WQ_CASTLE	40
+#define GF_BK_CASTLE	80
+#define GF_BQ_CASTLE	100
+#define GF_BLACK_OPENING	200
 
 /*
  * The chess board.
  */
-typedef struct board_matrix {
+typedef struct {
     unsigned char icon;		// The piece.
     unsigned char valid: 1, 	// != 0 if this square is a valid move for the
     				// selected piece.
@@ -114,11 +114,11 @@ typedef struct games {
     				// in *history used mainly for RAV.
     unsigned char hindex;	// Current move in *hp.
     unsigned moveclock;		// Move clock. FIXME
+    unsigned short flags;	// Game flags.
     unsigned char castle: 2,	// The current move is a castling move. FIXME
                   side: 1,      // This playing side. BLACK or WHITE.
                   turn: 1,      // BLACK or WHITE.
-    	          mode: 2,      // MODE_[HISTORY/EDIT/PLAY]
-                  flags: 2;
+    	          mode: 2;      // MODE_[HISTORY/EDIT/PLAY]
 } GAME;
 
 GAME *game;
@@ -244,6 +244,6 @@ void board_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *min
 void pgn_free_all(void);
 void pgn_free(GAME);
 void pgn_tag_free(TAG *, int n);
-void board_reset_enpassant(BOARD b);
+void pgn_reset_enpassant(BOARD b);
 
 #endif

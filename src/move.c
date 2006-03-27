@@ -1232,7 +1232,7 @@ static int drawtest(BOARD b)
     return 0;
 }
 
-void board_reset_enpassant(BOARD b)
+void pgn_reset_enpassant(BOARD b)
 {
     int r, c;
 
@@ -1406,7 +1406,7 @@ again:
     dist = abs(srow - row);
 
     if (!validate) {
-	board_reset_enpassant(b);
+	pgn_reset_enpassant(b);
 
 	if (piece == PAWN && dist == 2) {
 	    if ((*g).turn == WHITE)

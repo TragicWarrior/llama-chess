@@ -73,7 +73,7 @@ char *pgn_game_to_fen(GAME g, BOARD b)
 	int count = 0;
 
 	for (col = 0; col < 8; col++) {
-	    if (b[row][col].enpassant == 1) {
+	    if (b[row][col].enpassant) {
 		b[row][col].icon = pgn_int_to_piece(WHITE, OPEN_SQUARE);
 		e = enpassant;
 		*e++ = 'a' + col;
@@ -1035,7 +1035,7 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *str)
 
     strncpy(line, str, sizeof(line));
     s = line;
-    board_reset_enpassant(b);
+    pgn_reset_enpassant(b);
 
     while ((tmp = strsep(&s, "/")) != NULL) {
 	int n;

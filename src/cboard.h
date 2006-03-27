@@ -140,7 +140,7 @@ const char *playhelp[] = {
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
-    "                 b - cycle through book modes",
+    "                 b - show game board details",
     "                 w - switch playing side",
     "                 u - undo previous move *",
     "                 g - force engine to make the next move",
