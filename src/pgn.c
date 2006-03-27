@@ -1186,10 +1186,7 @@ void pgn_new_game(BOARD b)
     game[gindex].hp = Calloc(1, sizeof(HISTORY *));
     game[gindex].hp[0] = NULL;
     game[gindex].side = game[gindex].turn = WHITE;
-    SET_FLAG(game[gindex].flags, GF_WK_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_WQ_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_BK_CASTLE);
-    SET_FLAG(game[gindex].flags, GF_BQ_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|GF_BK_CASTLE|GF_BQ_CASTLE);
     pgn_init_board(b);
     set_default_tags(&game[gindex]);
 }

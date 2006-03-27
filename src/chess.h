@@ -52,16 +52,16 @@ enum {
 };
 
 /* Game flags. */
-#define GF_PERROR	1 /* Parse error for this game. */
-#define GF_DELETE	2 /* Flagged for deletion ('x' command). */
-#define GF_MODIFIED	4 /* Modified tags or history. */
-#define GF_ENPASSANT	8 /* For En Passant validation. */
-#define GF_GAMEOVER	10 /* End of game. */
-#define GF_WK_CASTLE	20
-#define GF_WQ_CASTLE	40
-#define GF_BK_CASTLE	80
-#define GF_BQ_CASTLE	100
-#define GF_BLACK_OPENING	200
+#define GF_PERROR	0x01 /* Parse error for this game. */
+#define GF_DELETE	0x02 /* Flagged for deletion ('x' command). */
+#define GF_MODIFIED	0x04 /* Modified tags or history. */
+#define GF_ENPASSANT	0x08 /* For En Passant validation. */
+#define GF_GAMEOVER	0x010 /* End of game. */
+#define GF_WK_CASTLE	0x020
+#define GF_WQ_CASTLE	0x040
+#define GF_BK_CASTLE	0x080
+#define GF_BQ_CASTLE	0x0100
+#define GF_BLACK_OPENING	0x0200
 
 /*
  * The chess board.

@@ -1439,14 +1439,10 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
 	      TEST_FLAG((*g).flags, GF_WQ_CASTLE))) && isupper(piece)) {
 	if (mod) {
 	    if (TEST_FLAG((*g).flags, GF_WK_CASTLE) ||
-		    TEST_FLAG((*g).flags, GF_WQ_CASTLE)) {
-		CLEAR_FLAG((*g).flags, GF_WK_CASTLE);
-		CLEAR_FLAG((*g).flags, GF_WQ_CASTLE);
-	    }
-	    else {
-		SET_FLAG((*g).flags, GF_WK_CASTLE);
-		SET_FLAG((*g).flags, GF_WQ_CASTLE);
-	    }
+		    TEST_FLAG((*g).flags, GF_WQ_CASTLE))
+		CLEAR_FLAG((*g).flags, GF_WK_CASTLE|GF_WQ_CASTLE);
+	    else
+		SET_FLAG((*g).flags, GF_WK_CASTLE|GF_WQ_CASTLE);
 	}
 	return 1;
     }
@@ -1459,14 +1455,10 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
 	      TEST_FLAG((*g).flags, GF_BQ_CASTLE))) && islower(piece)) {
 	if (mod) {
 	    if (TEST_FLAG((*g).flags, GF_BK_CASTLE) ||
-		    TEST_FLAG((*g).flags, GF_BQ_CASTLE)) {
-		CLEAR_FLAG((*g).flags, GF_BK_CASTLE);
-		CLEAR_FLAG((*g).flags, GF_BQ_CASTLE);
-	    }
-	    else {
-		SET_FLAG((*g).flags, GF_BK_CASTLE);
-		SET_FLAG((*g).flags, GF_BQ_CASTLE);
-	    }
+		    TEST_FLAG((*g).flags, GF_BQ_CASTLE))
+		CLEAR_FLAG((*g).flags, GF_BK_CASTLE|GF_BQ_CASTLE);
+	    else
+		SET_FLAG((*g).flags, GF_BK_CASTLE|GF_BQ_CASTLE);
 	}
 	return 1;
     }
