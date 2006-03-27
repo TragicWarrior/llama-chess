@@ -65,7 +65,7 @@ char *pgn_game_to_fen(GAME g, BOARD b)
     int castle = 0;
 
     for (i = history_total(g.hp); i >= g.hindex - 1; i--)
-	pgn_switch_turn(&g.turn);
+	pgn_switch_turn(&g);
 
     p = buf;
 
@@ -300,7 +300,7 @@ int history_update_board(GAME *g, BOARD b, int n)
 	    break;
 	}
 
-	pgn_switch_turn(&(*g).turn);
+	pgn_switch_turn(g);
     }
 
     if (ret == 0)
@@ -700,7 +700,7 @@ static int move_text(GAME *g, FILE *fp)
     else {
 	// FIXME pgn_switch_turn() botches RAV if there is no move number.
 	if ((*g).hindex > 0)
-	    pgn_switch_turn(&(*g).turn);
+	    pgn_switch_turn(g);
     }
 
     ungetc(c, fp);
@@ -715,11 +715,11 @@ static int move_text(GAME *g, FILE *fp)
     if (pgn_validate_move(g, pgnboard, m)) {
 	// Black opening move?
 	if ((*g).hindex == 0) {
-	    pgn_switch_turn(&(*g).turn);
+	    pgn_switch_turn(g);
 
 	    if (pgn_validate_move(g, pgnboard, m)) {
 		// Nope. Parse error.
-		pgn_switch_turn(&(*g).turn);
+		pgn_switch_turn(g);
 		return 1;
 	    }
 
@@ -727,7 +727,7 @@ static int move_text(GAME *g, FILE *fp)
 	}
 	else {
 	    // Parse error (not an opening move).
-	    pgn_switch_turn(&(*g).turn);
+	    pgn_switch_turn(g);
 	    return 1;
 	}
     }
@@ -1456,7 +1456,7 @@ int pgn_parse_file(const char *filename)
     gtotal = gindex + 1;
 
 done:
-    pgn_switch_turn(&game[gindex].turn);
+    pgn_switch_turn(&game[gindex]);
     return ret;
 }
 

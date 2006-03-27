@@ -68,10 +68,9 @@ enum {
  */
 typedef struct board_matrix {
     unsigned char icon;		// The piece.
-    char valid;			// != 0 if this square is a valid move for the
+    unsigned char valid: 1, 	// != 0 if this square is a valid move for the
     				// selected piece.
-    unsigned char movecount;	// Distance from the selected piece. FIXME
-    char enpassant;		// This square is an en passant one.
+		  enpassant: 1; // This square is an en passant one.
 } BOARD[8][8];
 
 /*
@@ -114,12 +113,12 @@ typedef struct games {
     HISTORY **hp; 		// History pointer pointing to the location 
     				// in *history used mainly for RAV.
     unsigned char hindex;	// Current move in *hp.
-    double moveclock;		// Move clock. FIXME
-    unsigned flags;		// Game flags from above.
-    char castle;		// The current move is a castling move. FIXME
-    char mode;			// Game mode: MODE_[PLAY/HISTORY/EDIT].
-    char side;			// This playing side. BLACK or WHITE.
-    char turn;			// BLACK or WHITE.
+    unsigned moveclock;		// Move clock. FIXME
+    unsigned char castle: 2,	// The current move is a castling move. FIXME
+                  side: 1,      // This playing side. BLACK or WHITE.
+                  turn: 1,      // BLACK or WHITE.
+    	          mode: 2,      // MODE_[HISTORY/EDIT/PLAY]
+                  flags: 2;
 } GAME;
 
 GAME *game;
@@ -238,7 +237,7 @@ void history_next(GAME *g, BOARD b, int n, int s);
 
 int pgn_validate_move(GAME *g, BOARD b, char *m);
 
-void pgn_switch_turn(char *turn);
+void pgn_switch_turn(GAME *);
 char *pgn_a2a4tosan(GAME *g, BOARD b, char *m);
 void board_reset_valid_moves(BOARD b);
 void board_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *minr, int *maxr, int *minc, int *maxc);

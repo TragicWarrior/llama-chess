@@ -265,7 +265,6 @@ pid_t init_chess_engine(char **args)
 
 void set_engine_defaults()
 {
-    SEND_TO_ENGINE("depth %i\n", config.engine_depth);
 }
 
 void stop_engine()
@@ -339,7 +338,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
-	pgn_switch_turn(&(*g).turn);
+	pgn_switch_turn(g);
 	str += count;
 	return;
     }
@@ -368,7 +367,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
 	SET_FLAG((*g).flags, GF_MODIFIED);
-	pgn_switch_turn(&(*g).turn);
+	pgn_switch_turn(g);
 	str += count;
 
 	if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {
@@ -401,13 +400,6 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	set_engine_defaults();
 	return;
-    }
-
-    /* 'depth' command. */
-    if (strncmp(str, "Search to a depth of ", 21) == 0) {
-	str += 21;
-	str = trim(str);
-	config.engine_depth = atoi(str);
     }
 
     /* 'switch' command. */

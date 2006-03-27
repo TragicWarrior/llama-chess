@@ -1489,7 +1489,6 @@ static void draw_board(GAME *g, int crow, int ccol)
 	    int attrwhich = -1;
 	    chtype attrs = 0;
 	    unsigned char piece;
-	    int movecount = 0;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -1564,11 +1563,6 @@ static void draw_board(GAME *g, int crow, int ccol)
 		    if (config.validmoves && board[brow][bcol].valid) {
 			attrs = (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE :
 			    CP_BOARD_MOVES_BLACK;
-
-			if (board[brow][bcol].movecount) {
-			    if (brow + 1 != crow && bcol + 1 != ccol)
-				movecount = (board[brow][bcol].movecount + '0');
-			}
 		    }
 		    else
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE :
@@ -1608,11 +1602,7 @@ static void draw_board(GAME *g, int crow, int ccol)
 			CLEAR_FLAG(attrs, A_REVERSE);
 		    }
 
-		    if (movecount && row != maxy -1)
-			waddch(boardw, movecount | CP_BOARD_COUNT);
-		    else
-			waddch(boardw, ' ' | attrs);
-
+		    waddch(boardw, ' ' | attrs);
 		    col += 2;
 		    bcol++;
 		}
@@ -1690,7 +1680,7 @@ static int move_to_engine(GAME *g, BOARD b)
 
     if (noengine) {
 	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
-	pgn_switch_turn(&(*g).turn);
+	pgn_switch_turn(g);
 	SET_FLAG((*g).flags, GF_MODIFIED);
 	update_all(*g);
 	return 1;
@@ -1798,23 +1788,20 @@ void update_status_window(GAME g)
     mvwaddstr(statusw, 5, 9, engine);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, 6, 1, "%*s %-*i", 7, STATUS_DEPTH_STR, w,
-	    config.engine_depth);
-
-    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
+    mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
 	    (g.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
     snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
-    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 7, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
     snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
-    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     for (i = 1; i < STATUS_WIDTH - 4; i++)
 	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
@@ -1975,133 +1962,6 @@ static void delete_game(int which)
 
     game[gindex].hp = game[gindex].history;
 }
-
-/* FIXME dont show out of reach counts. Diagonals. */
-/*
-static void number_valid_moves(BOARD b, int srow, int scol)
-{
-    int row, col;
-    int count;
-
-    for (row = srow + 1, col = scol, count = 1; VALIDFILE(row); row++) {
-	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
-	    continue;
-
-	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
-    }
-
-    for (row = srow - 1, col = scol, count = 1; VALIDFILE(row); row--) {
-	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
-	    continue;
-
-	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
-    }
-
-    for (col = scol + 1, row = srow, count = 1; VALIDFILE(col); col++) {
-	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
-	    continue;
-
-	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
-    }
-
-    for (col = scol - 1, row = srow, count = 1; VALIDFILE(col); col--) {
-	if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
-	    continue;
-
-	b[ROWTOBOARD(row)][COLTOBOARD(col)].movecount = count++;
-    }
-
-    return;
-}
-*/
-
-/*
-static void get_valid_cursor(BOARD b, int which, int count, int *crow,
-	int *ccol, int minr, int maxr, int minc, int maxc)
-{
-    int row, col;
-    int incr, cincr;
-
-    if (which == UP || which == RIGHT)
-	incr = 1;
-    else
-	incr = -(1);
-
-    switch (which) {
-	case UP:
-	case DOWN:
-	    if (count > 1) {
-		row = *crow;
-
-		if (which == UP)
-		    *crow += count;
-		else
-		    *crow -= count;
-
-		if (!VALIDFILE(*crow))
-		    *crow = row;
-	    }
-
-	    for (row = *crow + incr, col = *ccol; VALIDFILE(row); row += incr) {
-		if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
-		    continue;
-
-		*crow = row;
-		goto done;
-	    }
-
-	    break;
-	case RIGHT:
-	case LEFT:
-	    if (count > 1) {
-		col = *ccol;
-
-		if (which == RIGHT)
-		    *ccol += count;
-		else
-		    *ccol -= count;
-
-		if (!VALIDFILE(*ccol))
-		    *ccol = col;
-	    }
-
-	    for (col = *ccol + incr, row = *crow; VALIDFILE(col); col += incr) {
-		if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
-		    continue;
-
-		*ccol = col;
-		goto done;
-	    }
-
-	    break;
-	default:
-	    break;
-    }
-
-    if (*ccol < sp.col || (which == DOWN || which == LEFT))
-	cincr = -(1);
-    else
-	cincr = 1;
-
-    if (*ccol < sp.col && (which == DOWN || which == LEFT))
-	cincr = 1;
-
-    for (row = *crow + incr; VALIDFILE(row); row += incr) {
-	for (col = *ccol + cincr; VALIDFILE(col); col += cincr) {
-	    if (!b[ROWTOBOARD(row)][COLTOBOARD(col)].valid)
-		continue;
-
-	    *crow = row;
-	    *ccol = col;
-	    goto done;
-	}
-    }
-
-done:
-    number_valid_moves(board, *crow, *ccol);
-    return;
-}
-*/
 
 static int find_move_exp(GAME g, const char *str, int init, int which,
 	int count)
@@ -2354,6 +2214,10 @@ static void show_enpassant(BOARD b)
     }
 }
 
+void update_history_pointer(GAME g, int n)
+{
+}
+
 void game_loop()
 {  
     int error_recover = 0;
@@ -2498,6 +2362,13 @@ void game_loop()
 	        message("DEBUG BOARD", ANYKEY, "%s", debug_board(board));
 		break;
 #endif
+	    case '-':
+	    case '+':
+		if (game[gindex].mode != MODE_HISTORY)
+		    break;
+
+		update_history_pointer(game[gindex], (c == '-') ? 0 : 1);
+		break;
 	    case 'p':
 		if (game[gindex].mode == MODE_EDIT) {
 		    if (crow != 6 && crow != 3)
@@ -2620,24 +2491,6 @@ void game_loop()
 		break;
 	    case 'H':
 	        ccol = 8;
-		break;
-	    case '_':
-	    case '+':
-		if (status.engine != ENGINE_READY)
-		    break;
-
-		n = (count) ? count : 1;
-
-		if (c == '_') {
-		    if (config.engine_depth - n < 0)
-			n = 0;
-		    else
-			n -= config.engine_depth;
-		}
-		else
-		    n += config.engine_depth;
-
-		SEND_TO_ENGINE("depth %i\n", abs(n));
 		break;
 	    case ']':
 	    case '[':
@@ -3288,7 +3141,7 @@ void game_loop()
 		    break;
 
 		if (game[gindex].mode == MODE_EDIT)
-		    pgn_switch_turn(&game[gindex].turn);
+		    pgn_switch_turn(&game[gindex]);
 
 		/* FIXME crafty. */
 		SEND_TO_ENGINE("\nswitch\n");

@@ -170,7 +170,6 @@ void set_config_defaults()
     config.engine_cmd = strdup("gnuchess");//FIXME
     config.jumpcount = 5;
     config.clevel = 6;
-    config.engine_depth = 0;
     config.historyagony = 0;
     config.agony = 1;
     config.linegraphics = 0;
@@ -237,13 +236,6 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.jumpcount = atoi(val);
-	}
-	else if (strcmp(var, "depth") == 0) {
-	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
-
-	    config.engine_depth = atoi(val);
 	}
 	else if (strcmp(var, "historyagony") == 0)
 	    config.historyagony = on_or_off(filename, lines, val);

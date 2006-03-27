@@ -83,6 +83,8 @@ const char *historyhelp[] = {
     "         a - edit comments for the previous move",
     "         v - view comments for the next move",
     "         V - view comments for the previous move",
+    "         + - Next variation",
+    "         - - Previous variation",
     "         h - toggle history mode",
     NULL
 };
@@ -138,8 +140,6 @@ const char *playhelp[] = {
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
-    "                 + - increase engine depth level *",
-    "                 _ - decrease engine depth level *",
     "                 b - cycle through book modes",
     "                 w - switch playing side",
     "                 u - undo previous move *",

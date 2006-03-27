@@ -49,8 +49,6 @@ struct color_s {
 struct {
     int stoponerror;	// Stop processing when a parse error occurs.
     int jumpcount;	// KEY_UP and KEY_DOWN in history mode.
-    int book_method;	// FIXME
-    int engine_depth;	// FIXME
     int historyagony;	// Whether to display agony strings on capture when in 
     			// history mode.
     int agony;		// Whether to display agony anywhere.

@@ -40,10 +40,9 @@ dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT
 AC_HEADER_STDC
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h paths.h \
-		  sys/socket.h limits.h sys/time.h unistd.h stdlib.h string.h \
-		  ncurses.h panel.h form.h menu.h getopt.h sys/param.h \
-		  regex.h])
+AC_CHECK_HEADERS([fcntl.h paths.h sys/socket.h limits.h sys/time.h unistd.h \
+		  stdlib.h string.h ncurses.h panel.h form.h menu.h getopt.h \
+		  sys/param.h regex.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -74,18 +73,6 @@ AH_TOP([/* Maximum SAN move length without terminating NULL. */
 
 AH_TOP([/* Maximum number of NAG entries per move. */
 #define MAX_PGN_NAG 5])
-
-AH_TOP([/* Default internet chess server. */
-#define DEFAULT_ICS_SERVER "localhost"])
-
-AH_TOP([/* Default internet chess server port. */
-#define DEFAULT_ICS_PORT 5000])
-
-AH_TOP([/* Default internet chess server username. */
-#define DEFAULT_ICS_USER "guest"])
-
-AH_TOP([/* Default chess engine. 0=gnuchess, 1=crafty. */ 
-#define DEFAULT_ENGINE 0])
 
 AC_DEFUN([AC_DEBUG],
 [
