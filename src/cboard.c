@@ -1697,11 +1697,18 @@ static void update_clock(int n, int *h, int *m, int *s)
 void update_status_window(GAME g)
 {
     int i = 0;
-    char buf[STATUS_WIDTH - 7];
+    char *buf;
     char tmp[15], *engine, *mode;
-    int w = STATUS_WIDTH - 10;
+    int w;
     int h, m, s;
     char *p;
+    int maxy, maxx;
+    int len;
+
+    getmaxyx(statusw, maxy, maxx);
+    w = maxx = 10;
+    len = maxx - 2;
+    buf = Malloc(len);
 
     *tmp = '\0';
     p = tmp;
@@ -1739,7 +1746,7 @@ void update_status_window(GAME g)
 
     mvwprintw(statusw, 2, 1, "%*s %-*s", 7, STATUS_FILE_STR, w,
 	    (loadfile[0]) ? str_etc(loadfile, w, 1) : UNAVAILABLE);
-    snprintf(buf, sizeof(buf), "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
+    snprintf(buf, len, "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
 	    (*tmp) ? tmp : "");
     mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
 
@@ -1789,24 +1796,25 @@ void update_status_window(GAME g)
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
-    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
+    snprintf(buf, len, "%.2i:%.2i:%.2i", h, m, s);
     mvwprintw(statusw, 7, 1, "%*s: %-*s", 6, tmp, w, buf);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     update_clock(g.moveclock, &h, &m, &s);
-    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
+    snprintf(buf, len, "%.2i:%.2i:%.2i", h, m, s);
     mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, buf);
+    free(buf);
 
-    for (i = 1; i < STATUS_WIDTH - 4; i++)
-	mvwprintw(statusw, STATUS_HEIGHT - 2, i, " ");
+    for (i = 1; i < maxx - 4; i++)
+	mvwprintw(statusw, maxy - 2, i, " ");
 
     if (!status.notify)
 	status.notify = strdup(GAME_HELP_PROMPT);
 
     wattron(statusw, CP_STATUS_NOTIFY);
-    mvwprintw(statusw, STATUS_HEIGHT - 2,
-	    CENTERX(STATUS_WIDTH, status.notify), "%s", status.notify);
+    mvwprintw(statusw, maxy - 2, CENTERX(maxx, status.notify), "%s",
+	    status.notify);
     wattroff(statusw, CP_STATUS_NOTIFY);
 }
 
@@ -1934,6 +1942,7 @@ void update_all(GAME g)
 {
     update_status_window(g);
     update_history_window(g);
+    update_tag_window(g.tag);
 }
 
 static void game_next_prev(GAME g, int n, int count)
@@ -2236,7 +2245,7 @@ static void switch_side(GAME *g)
 	(*g).side = WHITE;
 }
 
-int update_history_pointer(GAME *g, BOARD b, int n)
+int rav_next_prev(GAME *g, BOARD b, int n)
 {
     // Next RAV.
     if (n) {
@@ -2265,6 +2274,41 @@ int update_history_pointer(GAME *g, BOARD b, int n)
     (*g).flags = (*g).rav[(*g).ravlevel].flags;
     (*g).hindex = (*g).rav[(*g).ravlevel].hindex;
     return 0;
+}
+
+static void draw_window_decor()
+{
+    move_panel(historyp, LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
+    move_panel(boardp, 0, COLS - BOARD_WIDTH);
+    wbkgd(boardw, CP_BOARD_WINDOW);
+    wbkgd(statusw, CP_STATUS_WINDOW);
+    draw_window_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
+	    CP_STATUS_TITLE, CP_STATUS_BORDER);
+    wbkgd(tagw, CP_TAG_WINDOW);
+    draw_window_title(tagw, TAG_WINDOW_TITLE, TAG_WIDTH, CP_TAG_TITLE, 
+	    CP_TAG_BORDER);
+    wbkgd(historyw, CP_HISTORY_WINDOW);
+    draw_window_title(historyw, HISTORY_WINDOW_TITLE, HISTORY_WIDTH,
+	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
+}
+
+static void do_window_resize()
+{
+    if (LINES < 24 || COLS < 80)
+	return;
+
+    resizeterm(LINES, COLS);
+    wresize(historyw, HISTORY_HEIGHT, HISTORY_WIDTH);
+    wresize(statusw, STATUS_HEIGHT, STATUS_WIDTH);
+    wresize(tagw, TAG_HEIGHT, TAG_WIDTH);
+    wmove(historyw, 0, 0);
+    wclrtobot(historyw);
+    wmove(tagw, 0, 0);
+    wclrtobot(tagw);
+    wmove(statusw, 0, 0);
+    wclrtobot(statusw);
+    draw_window_decor();
+    update_all(game[gindex]);
 }
 
 void game_loop()
@@ -2412,13 +2456,20 @@ void game_loop()
 	        message("DEBUG BOARD", ANYKEY, "%s", debug_board(board));
 		break;
 #endif
+	    case KEY_RESIZE:
+		do_window_resize();
+		break;
 	    case '-':
 	    case '+':
-		if (game[gindex].mode != MODE_HISTORY)
+		if (game[gindex].mode == MODE_PLAY) {
 		    break;
+		}
 
-		update_history_pointer(&game[gindex], board, (c == '-') ? 0 : 1);
-		update_all(game[gindex]);
+		if (game[gindex].mode == MODE_HISTORY) {
+		    rav_next_prev(&game[gindex], board, (c == '-') ? 0 : 1);
+		    update_all(game[gindex]);
+		    break;
+		}
 		break;
 	    case 'p':
 		if (game[gindex].mode == MODE_EDIT) {
@@ -3497,6 +3548,11 @@ int main(int argc, char *argv[])
     else
 	curses_initialized = 1;
 
+    if (LINES < 24 || COLS < 80) {
+	endwin();
+	errx(EXIT_FAILURE, "Need at least an 80x24 terminal.");
+    }
+
     if (has_colors() == TRUE && start_color() == OK)
 	init_color_pairs();
 
@@ -3517,17 +3573,7 @@ int main(int argc, char *argv[])
     curs_set(0);
     cbreak();
     noecho();
-
-    wbkgd(boardw, CP_BOARD_WINDOW);
-    wbkgd(statusw, CP_STATUS_WINDOW);
-    draw_window_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
-	    CP_STATUS_TITLE, CP_STATUS_BORDER);
-    wbkgd(tagw, CP_TAG_WINDOW);
-    draw_window_title(tagw, TAG_WINDOW_TITLE, TAG_WIDTH, CP_TAG_TITLE, 
-	    CP_TAG_BORDER);
-    wbkgd(historyw, CP_HISTORY_WINDOW);
-    draw_window_title(historyw, HISTORY_WINDOW_TITLE, HISTORY_WIDTH,
-	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
+    draw_window_decor();
 
     game_loop();
     stop_engine();

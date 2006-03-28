@@ -708,7 +708,6 @@ static int move_text(GAME *g, FILE *fp)
 	}
     }
     else {
-	// FIXME pgn_switch_turn() botches RAV if there is no move number.
 	if ((*g).hindex > 0)
 	    pgn_switch_turn(g);
     }
@@ -724,7 +723,7 @@ static int move_text(GAME *g, FILE *fp)
 
     if (pgn_validate_move(g, pgnboard, m)) {
 	// Black opening move?
-	if ((*g).hindex == 0) {
+	if ((*g).hindex == 0 && (*g).ravlevel == 0) {
 	    pgn_switch_turn(g);
 
 	    if (pgn_validate_move(g, pgnboard, m)) {
@@ -733,7 +732,8 @@ static int move_text(GAME *g, FILE *fp)
 		return 1;
 	    }
 
-	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
+	    //FIXME breaks RAV
+	   // SET_FLAG((*g).flags, GF_BLACK_OPENING);
 	}
 	else {
 	    // Parse error (not an opening move).
@@ -986,7 +986,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	rav = Realloc(rav, (ravindex + 1) * sizeof(RAV));
 	rav[ravindex].fen = strdup(pgn_game_to_fen((*g), pgnboard));
 	rav[ravindex].hp = (*g).hp;
-	memcpy(&tg, &(*g), sizeof(GAME));
+	memcpy(&tg, g, sizeof(GAME));
 	memcpy(pgnboard, o, sizeof(BOARD));
 
 	(*g).hp[(*g).hindex]->rav = Calloc(1, sizeof(HISTORY));
@@ -1015,7 +1015,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 */
 	pgn_init_fen_board(&tg, pgnboard, rav[ravindex].fen);
 	free(rav[ravindex].fen);
-	memcpy(&(*g), &tg, sizeof(GAME));
+	memcpy(g, &tg, sizeof(GAME));
 	(*g).hp = rav[ravindex].hp;
 	ravlevel--;
     }
