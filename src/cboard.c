@@ -283,7 +283,7 @@ char *history_edit_nag(void *arg)
 	switch (c) {
 	    int found;
 
-	    case CTRL('G'):
+	    case KEY_F(1):
 		help(NAG_EDIT_HELP, ANYKEY, naghelp);
 		break;
 	    case KEY_RIGHT:
@@ -705,7 +705,7 @@ again:
 		    file[0] = '\0';
 		    goto done;
 		    break;
-		case CTRL('G'):
+		case KEY_F(1):
 		    help(BROWSER_HELP, ANYKEY, file_browser_help);
 		    break;
 		case '~':
@@ -880,7 +880,7 @@ char *country_codes(void *arg)
 	c = wgetch(win);
 
 	switch (c) {
-	    case CTRL('G'):
+	    case KEY_F(1):
 		help(CC_KEY_HELP, ANYKEY, cc_help);
 		break;
 	    case KEY_HOME:
@@ -943,26 +943,32 @@ done:
     return tmp;
 }
 
-static void add_custom_tags(TAG **t, unsigned char *n)
+static void add_custom_tags(TAG ***t)
 {
     int i;
 
-    for (i = 0; i < config.tindex; i++)
-	pgn_add_tag(&(*t), &(*n), config.tag[i].name, 
-		config.tag[i].value);
+    if (!config.tag)
+	return;
+
+    for (i = 0; config.tag[i]; i++)
+	pgn_add_tag(t, config.tag[i]->name, config.tag[i]->value);
+
+    pgn_sort_tags(*t);
 }
 
-TAG *edit_tags(GAME g, BOARD b, int edit)
+TAG **edit_tags(GAME g, BOARD b, int edit)
 {
-    TAG *data = NULL;
+    TAG **data = NULL;
     struct tm tp;
     unsigned char data_index = 0;
     int n, lastindex = 0;
     int len;
 
     /* Edit the backup copy, not the original in case the save fails. */
-    for (n = 0; n < g.tindex; n++)
-	pgn_add_tag(&data, &data_index, g.tag[n].name, g.tag[n].value);
+    for (n = 0; g.tag[n]; n++)
+	pgn_add_tag(&data, g.tag[n]->name, g.tag[n]->value);
+
+    data_index = pgn_tag_total(data);
 
     while (1) {
 	WINDOW *win, *subw;
@@ -977,20 +983,22 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 	char *mbuf = NULL;
 	int nlen = 0, vlen = 0;
 
+	data_index = pgn_tag_total(data);
+
 	for (i = 0; i < data_index; i++) {
 	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
 
-	    if (data[i].value[0]) {
-		nlen = strlen(data[i].name);
-		vlen = strlen(data[i].value);
+	    if (data[i]->value) {
+		nlen = strlen(data[i]->name);
+		vlen = strlen(data[i]->value);
 
 		/* The +6 is for the menu padding. */
-		mitems[i] = new_item(data[i].name,
+		mitems[i] = new_item(data[i]->name,
 			(nlen + vlen + 6 >= MAX_VALUE_WIDTH)
-			? PRESS_ENTER : data[i].value);
+			? PRESS_ENTER : data[i]->value);
 	    }
 	    else
-		mitems[i] = new_item(data[i].name, UNKNOWN);
+		mitems[i] = new_item(data[i]->name, UNKNOWN);
 	}
 
 	mitems[i] = NULL;
@@ -1024,9 +1032,8 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 
 	while (1) {
 	    int c;
-	    TAG *tmppgn = NULL;
+	    TAG **tmppgn = NULL;
 	    char *newtag = NULL;
-	    unsigned char tpgn_index = 0;
 
 	    if (set_current_item(menu, mitems[lastindex]) != E_OK) {
 		lastindex = item_count(menu) - 1;
@@ -1045,10 +1052,10 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 
 	    switch (c) {
 		case CTRL('T'):
-		    add_custom_tags(&data, &data_index);
+		    add_custom_tags(&data);
 		    goto cleanup;
 		    break;
-		case CTRL('G'):
+		case KEY_F(1):
 		    if (edit)
 			help(TAG_EDIT_HELP, ANYKEY, pgn_edit_help);
 		    else
@@ -1065,23 +1072,22 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 			goto cleanup;
 		    }
 
+		    data_index = pgn_tag_total(data);
+
 		    for (i = 0; i < data_index; i++) {
 			if (i == selected)
 			    continue;
 
-			pgn_add_tag(&tmppgn, &tpgn_index, data[i].name,
-				data[i].value);
+			pgn_add_tag(&tmppgn, data[i]->name, data[i]->value);
 		    }
 
-		    pgn_tag_free(data, data_index);
+		    pgn_tag_free(data);
 		    data = NULL;
 
-		    for (i = data_index = 0; i < tpgn_index; i++) {
-			pgn_add_tag(&data, &data_index, tmppgn[i].name,
-				tmppgn[i].value);
-		    }
+		    for (i = 0; tmppgn[i]; i++)
+			pgn_add_tag(&data, tmppgn[i]->name, tmppgn[i]->value);
 
-		    pgn_tag_free(tmppgn, tpgn_index);
+		    pgn_tag_free(tmppgn);
 		    goto cleanup;
 		    break;
 		case CTRL('A'):
@@ -1102,14 +1108,14 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 		    }
 
 		    for (i = 0; i < data_index; i++) {
-			if (strcasecmp(data[i].name, newtag) == 0) {
+			if (strcasecmp(data[i]->name, newtag) == 0) {
 			    selected = i;
 			    goto gotitem;
 			}
 		    }
 
-		    pgn_add_tag(&data, &data_index, newtag, NULL);
-
+		    pgn_add_tag(&data, newtag, NULL);
+		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
 		    goto gotitem;
 		    break;
@@ -1123,7 +1129,8 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 		    if (!edit)
 			break;
 
-		    pgn_add_tag(&data, &data_index, "FEN", pgn_game_to_fen(g, b));
+		    pgn_add_tag(&data, "FEN", pgn_game_to_fen(g, b));
+		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
 		    goto gotitem;
 		    break;
@@ -1171,26 +1178,26 @@ TAG *edit_tags(GAME g, BOARD b, int edit)
 
 gotitem:
 	lastindex = selected;
-	nlen = strlen(data[selected].name) + 3;
+	nlen = strlen(data[selected]->name) + 3;
 	nlen += (edit) ? strlen(TAG_EDIT_TAG_TITLE) : strlen(TAG_VIEW_TAG_TITLE);
 
 	if (nlen > MAX_VALUE_WIDTH)
-	    snprintf(buf, sizeof(buf), "%s", data[selected].name);
+	    snprintf(buf, sizeof(buf), "%s", data[selected]->name);
 	else
 	    snprintf(buf, sizeof(buf), "%s \"%s\"",
 		    (edit) ? TAG_EDIT_TAG_TITLE : TAG_VIEW_TAG_TITLE,
-		    data[selected].name);
+		    data[selected]->name);
 
 	if (!edit) {
 	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
 		goto cleanup;
 
-	    cmessage(buf, ANYKEY, "%s", data[selected].value);
+	    cmessage(buf, ANYKEY, "%s", data[selected]->value);
 	    goto cleanup;
 	}
 
-	if (strcmp(data[selected].name, "Date") == 0) {
-	    tmp = get_input(buf, data[selected].value, 0, 0, NULL, NULL, NULL,
+	if (strcmp(data[selected]->name, "Date") == 0) {
+	    tmp = get_input(buf, data[selected]->value, 0, 0, NULL, NULL, NULL,
 		    0, FIELD_TYPE_PGN_DATE);
 
 	    if (tmp) {
@@ -1202,14 +1209,14 @@ gotitem:
 	    else
 		goto cleanup;
 	}
-	else if (strcmp(data[selected].name, "Site") == 0) {
-	    tmp = get_input(buf, data[selected].value, 1, 1, CC_PROMPT,
+	else if (strcmp(data[selected]->name, "Site") == 0) {
+	    tmp = get_input(buf, data[selected]->value, 1, 1, CC_PROMPT,
 		    country_codes, NULL, CTRL('t'), -1);
 
 	    if (!tmp)
 		tmp = "?";
 	}
-	else if (strcmp(data[selected].name, "Round") == 0) {
+	else if (strcmp(data[selected]->name, "Round") == 0) {
 	    tmp = get_input(buf, NULL, 1, 1, NULL, NULL, NULL, 0,
 		    FIELD_TYPE_PGN_ROUND);
 
@@ -1220,8 +1227,8 @@ gotitem:
 		    tmp = "-";
 	    }
 	}
-	else if (strcmp(data[selected].name, "Result") == 0) {
-	    tmp = get_input(buf, data[selected].value, 1, 1, NULL, NULL, NULL, 
+	else if (strcmp(data[selected]->name, "Result") == 0) {
+	    tmp = get_input(buf, data[selected]->value, 1, 1, NULL, NULL, NULL, 
 		    0, -1);
 
 	    if (!tmp)
@@ -1232,14 +1239,14 @@ gotitem:
 		    strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
 		tmp = NULL;
 	    else
-		tmp = data[selected].value;
+		tmp = data[selected]->value;
 
 	    tmp = get_input(buf, tmp, 0, 0, NULL, NULL, NULL, 0, -1);
 	}
 
 	len = (tmp) ? strlen(tmp) + 1 : 1;
-	data[selected].value = Realloc(data[selected].value, len);
-	strncpy(data[selected].value, (tmp) ? tmp : "", len);
+	data[selected]->value = Realloc(data[selected]->value, len);
+	strncpy(data[selected]->value, (tmp) ? tmp : "", len);
 
 cleanup:
 	cleanup(win, subw, panel, menu, mitems, NULL);
@@ -1247,7 +1254,7 @@ cleanup:
 
 done:
     if (!edit) {
-	pgn_tag_free(data, data_index);
+	pgn_tag_free(data);
 	return NULL;
     }
 
@@ -1400,65 +1407,65 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
 {
     if (pgn_piece_to_int(piece) == ROOK && col == 7
 	    && row == 7 &&
-	    (TEST_FLAG((*g).flags, GF_WK_CASTLE) || mod) &&
-	    pgn_piece_to_int(board[7][4].icon) == KING && isupper(piece)) {
+	    (TEST_FLAG(g->flags, GF_WK_CASTLE) || mod) &&
+	    pgn_piece_to_int(b[7][4].icon) == KING && isupper(piece)) {
 	if (mod)
-	    TOGGLE_FLAG((*g).flags, GF_WK_CASTLE);
+	    TOGGLE_FLAG(g->flags, GF_WK_CASTLE);
 	return 1;
     }
     else if (pgn_piece_to_int(piece) == ROOK && col == 0
 	    && row == 7 &&
-	    (TEST_FLAG((*g).flags, GF_WQ_CASTLE) || mod) &&
-	    pgn_piece_to_int(board[7][4].icon) == KING && isupper(piece)) {
+	    (TEST_FLAG(g->flags, GF_WQ_CASTLE) || mod) &&
+	    pgn_piece_to_int(b[7][4].icon) == KING && isupper(piece)) {
 	if (mod)
-	    TOGGLE_FLAG((*g).flags, GF_WQ_CASTLE);
+	    TOGGLE_FLAG(g->flags, GF_WQ_CASTLE);
 	return 1;
     }
     else if (pgn_piece_to_int(piece) == ROOK && col == 7
 	    && row == 0 &&
-	    (TEST_FLAG((*g).flags, GF_BK_CASTLE) || mod) &&
-	    pgn_piece_to_int(board[0][4].icon) == KING && islower(piece)) {
+	    (TEST_FLAG(g->flags, GF_BK_CASTLE) || mod) &&
+	    pgn_piece_to_int(b[0][4].icon) == KING && islower(piece)) {
 	if (mod)
-	    TOGGLE_FLAG((*g).flags, GF_BK_CASTLE);
+	    TOGGLE_FLAG(g->flags, GF_BK_CASTLE);
 	return 1;
     }
     else if (pgn_piece_to_int(piece) == ROOK && col == 0
 	    && row == 0 &&
-	    (TEST_FLAG((*g).flags, GF_BQ_CASTLE) || mod) &&
-	    pgn_piece_to_int(board[0][4].icon) == KING && islower(piece)) {
+	    (TEST_FLAG(g->flags, GF_BQ_CASTLE) || mod) &&
+	    pgn_piece_to_int(b[0][4].icon) == KING && islower(piece)) {
 	if (mod)
-	    TOGGLE_FLAG((*g).flags, GF_BQ_CASTLE);
+	    TOGGLE_FLAG(g->flags, GF_BQ_CASTLE);
 	return 1;
     }
     else if (pgn_piece_to_int(piece) == KING && col == 4
 	    && row == 7 && 
-	    (mod || (pgn_piece_to_int(board[7][7].icon) == ROOK &&
-	      TEST_FLAG((*g).flags, GF_WK_CASTLE))
+	    (mod || (pgn_piece_to_int(b[7][7].icon) == ROOK &&
+	      TEST_FLAG(g->flags, GF_WK_CASTLE))
 	      ||
-	     (pgn_piece_to_int(board[7][0].icon) == ROOK &&
-	      TEST_FLAG((*g).flags, GF_WQ_CASTLE))) && isupper(piece)) {
+	     (pgn_piece_to_int(b[7][0].icon) == ROOK &&
+	      TEST_FLAG(g->flags, GF_WQ_CASTLE))) && isupper(piece)) {
 	if (mod) {
-	    if (TEST_FLAG((*g).flags, GF_WK_CASTLE) ||
-		    TEST_FLAG((*g).flags, GF_WQ_CASTLE))
-		CLEAR_FLAG((*g).flags, GF_WK_CASTLE|GF_WQ_CASTLE);
+	    if (TEST_FLAG(g->flags, GF_WK_CASTLE) ||
+		    TEST_FLAG(g->flags, GF_WQ_CASTLE))
+		CLEAR_FLAG(g->flags, GF_WK_CASTLE|GF_WQ_CASTLE);
 	    else
-		SET_FLAG((*g).flags, GF_WK_CASTLE|GF_WQ_CASTLE);
+		SET_FLAG(g->flags, GF_WK_CASTLE|GF_WQ_CASTLE);
 	}
 	return 1;
     }
     else if (pgn_piece_to_int(piece) == KING && col == 4
 	    && row == 0 &&
-	    (mod || (pgn_piece_to_int(board[0][7].icon) == ROOK &&
-	      TEST_FLAG((*g).flags, GF_BK_CASTLE))
+	    (mod || (pgn_piece_to_int(b[0][7].icon) == ROOK &&
+	      TEST_FLAG(g->flags, GF_BK_CASTLE))
 	      ||
-	     (pgn_piece_to_int(board[0][0].icon) == ROOK &&
-	      TEST_FLAG((*g).flags, GF_BQ_CASTLE))) && islower(piece)) {
+	     (pgn_piece_to_int(b[0][0].icon) == ROOK &&
+	      TEST_FLAG(g->flags, GF_BQ_CASTLE))) && islower(piece)) {
 	if (mod) {
-	    if (TEST_FLAG((*g).flags, GF_BK_CASTLE) ||
-		    TEST_FLAG((*g).flags, GF_BQ_CASTLE))
-		CLEAR_FLAG((*g).flags, GF_BK_CASTLE|GF_BQ_CASTLE);
+	    if (TEST_FLAG(g->flags, GF_BK_CASTLE) ||
+		    TEST_FLAG(g->flags, GF_BQ_CASTLE))
+		CLEAR_FLAG(g->flags, GF_BK_CASTLE|GF_BQ_CASTLE);
 	    else
-		SET_FLAG((*g).flags, GF_BK_CASTLE|GF_BQ_CASTLE);
+		SET_FLAG(g->flags, GF_BK_CASTLE|GF_BQ_CASTLE);
 	}
 	return 1;
     }
@@ -1552,7 +1559,7 @@ static void draw_board(GAME *g, int details, int crow, int ccol)
 		    else
 			attrwhich = WHITE;
 
-		    if (config.validmoves && board[brow][bcol].valid) {
+		    if (config.validmoves && g->b[brow][bcol].valid) {
 			attrs = (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE :
 			    CP_BOARD_MOVES_BLACK;
 		    }
@@ -1577,18 +1584,18 @@ static void draw_board(GAME *g, int details, int crow, int ccol)
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			if (details && board[row / 2][bcol].enpassant)
+			if (details && g->b[row / 2][bcol].enpassant)
 			    piece = 'x';
 			else
-			    piece = board[row / 2][bcol].icon;
+			    piece = g->b[row / 2][bcol].icon;
 
-			if (details && castling_state(g, board, brow, bcol,
+			if (details && castling_state(g, g->b, brow, bcol,
 				    piece, 0))
 			    attrs |= A_REVERSE;
 
-			if ((*g).side == WHITE && isupper(piece))
+			if (g->side == WHITE && isupper(piece))
 			    attrs |= A_BOLD;
-			else if ((*g).side == BLACK && islower(piece))
+			else if (g->side == BLACK && islower(piece))
 			    attrs |= A_BOLD;
 
 			waddch(boardw, (pgn_piece_to_int(piece) != OPEN_SQUARE) ? piece | attrs : ' ' | attrs);
@@ -1635,8 +1642,8 @@ static char *board_to_san(GAME *g, BOARD b)
     p = str;
     piece = pgn_piece_to_int(b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon);
 
-    if (piece == PAWN && ((sp.destrow == 8 && (*g).turn == WHITE) ||
-		    (sp.destrow == 1 && (*g).turn == BLACK))) {
+    if (piece == PAWN && ((sp.destrow == 8 && g->turn == WHITE) ||
+		    (sp.destrow == 1 && g->turn == BLACK))) {
 	promo = cmessage(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
 	
 	if (pgn_piece_to_int(promo) == -1)
@@ -1674,9 +1681,9 @@ static int move_to_engine(GAME *g, BOARD b)
     sp.row = sp.col = sp.icon = 0;
 
     if (noengine) {
-	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
+	g->hp = history_add(g->hp, &g->hindex, p);
 	pgn_switch_turn(g);
-	SET_FLAG((*g).flags, GF_MODIFIED);
+	SET_FLAG(g->flags, GF_MODIFIED);
 	update_all(*g);
 	return 1;
     }
@@ -1706,7 +1713,7 @@ void update_status_window(GAME g)
     int len;
 
     getmaxyx(statusw, maxy, maxx);
-    w = maxx = 10;
+    w = maxx - 2 - 8;
     len = maxx - 2;
     buf = Malloc(len);
 
@@ -1896,13 +1903,13 @@ void update_history_window(GAME g)
 	    HISTORY_WIDTH - 13, buf);
 }
 
-void update_tag_window(TAG *t)
+void update_tag_window(TAG **t)
 {
     int i;
     int w = TAG_WIDTH - 10;
 
     for (i = 0; i < 7; i++)
-	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i].name, w, t[i].value);
+	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i]->name, w, t[i]->value);
 }
 
 void draw_prompt(WINDOW *win, int y, int width, const char *str, chtype attr)
@@ -2084,20 +2091,15 @@ static int toggle_delete_flag(int n)
 
 static void edit_save_tags(GAME *g)
 {
-    int i;
-    TAG *t;
+    TAG **t;
 
-    if ((t = edit_tags(*g, board, 1)) == NULL)
+    if ((t = edit_tags(*g, g->b, 1)) == NULL)
 	return;
 
-    (*g).tindex = 0;
-
-    for (i = 0; t[i].name; i++)
-	pgn_add_tag(&(*g).tag, &(*g).tindex, t[i].name, t[i].value);
-
-    pgn_tag_free(t, i);
-    SET_FLAG((*g).flags, GF_MODIFIED);
-    pgn_sort_tags(*g);
+    pgn_tag_free(g->tag);
+    g->tag = t;
+    SET_FLAG(g->flags, GF_MODIFIED);
+    pgn_sort_tags(g->tag);
 }
 
 static int find_game_exp(char *str, int which, int count)
@@ -2151,10 +2153,10 @@ static int find_game_exp(char *str, int which, int count)
 	else if (g < 0)
 	    g = gtotal - 1;
 
-	for (t = 0; t < game[g].tindex; t++) {
+	for (t = 0; game[g].tag[t]; t++) {
 	    if (nstr) {
-		if (regexec(&nexp, game[g].tag[t].name, 0, 0, 0) == 0) {
-		    if (regexec(&vexp, game[g].tag[t].value, 0, 0, 0) == 0) {
+		if (regexec(&nexp, game[g].tag[t]->name, 0, 0, 0) == 0) {
+		    if (regexec(&vexp, game[g].tag[t]->value, 0, 0, 0) == 0) {
 			if (count == ++found) {
 			    ret = g;
 			    goto cleanup;
@@ -2163,7 +2165,7 @@ static int find_game_exp(char *str, int which, int count)
 		}
 	    }
 	    else {
-		if (regexec(&vexp, game[g].tag[t].value, 0, 0, 0) == 0) {
+		if (regexec(&vexp, game[g].tag[t]->value, 0, 0, 0) == 0) {
 		    if (count == ++found) {
 			ret = g;
 			goto cleanup;
@@ -2185,17 +2187,10 @@ cleanup:
     return ret;
 }
 
-void edit_board(GAME g, BOARD b)
-{
-    chtype p;
-
-    p = b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon;
-    b[ROWTOBOARD(sp.destrow)][COLTOBOARD(sp.destcol)].icon = p;
-    b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = pgn_int_to_piece(g.turn, OPEN_SQUARE);
-}
-
-// Updates the notification line in the status window then refreshes the
-// status window.
+/*
+ * Updates the notification line in the status window then refreshes the
+ * status window.
+ */
 void update_status_notify(GAME g, char *fmt, ...)
 {
     va_list ap;
@@ -2239,40 +2234,37 @@ void update_status_notify(GAME g, char *fmt, ...)
 
 static void switch_side(GAME *g)
 {
-    if ((*g).side == WHITE)
-	(*g).side = BLACK;
-    else
-	(*g).side = WHITE;
+    g->side = (g->side == WHITE) ? BLACK : WHITE;
 }
 
 int rav_next_prev(GAME *g, BOARD b, int n)
 {
     // Next RAV.
     if (n) {
-	if ((*g).hp[(*g).hindex]->rav == NULL)
+	if (g->hp[g->hindex]->rav == NULL)
 	    return 1;
 
-	(*g).rav = Realloc((*g).rav, ((*g).ravlevel + 1) * sizeof(RAV));
-	(*g).rav[(*g).ravlevel].hp = (*g).hp;
-	(*g).rav[(*g).ravlevel].flags = (*g).flags;
-	(*g).rav[(*g).ravlevel].fen = strdup(pgn_game_to_fen(*g, b));
-	(*g).rav[(*g).ravlevel].hindex = (*g).hindex;
-	(*g).hp = (*g).hp[(*g).hindex]->rav;
-	(*g).hindex = 0;
-	(*g).ravlevel++;
+	g->rav = Realloc(g->rav, (g->ravlevel + 1) * sizeof(RAV));
+	g->rav[g->ravlevel].hp = g->hp;
+	g->rav[g->ravlevel].flags = g->flags;
+	g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(*g, b));
+	g->rav[g->ravlevel].hindex = g->hindex;
+	g->hp = g->hp[g->hindex]->rav;
+	g->hindex = 0;
+	g->ravlevel++;
 	return 0;
     }
 
-    if ((*g).ravlevel - 1 < 0)
+    if (g->ravlevel - 1 < 0)
 	return 1;
 
     // Previous RAV.
-    (*g).ravlevel--;
-    pgn_init_fen_board(g, b, (*g).rav[(*g).ravlevel].fen);
-    free((*g).rav[(*g).ravlevel].fen);
-    (*g).hp = (*g).rav[(*g).ravlevel].hp;
-    (*g).flags = (*g).rav[(*g).ravlevel].flags;
-    (*g).hindex = (*g).rav[(*g).ravlevel].hindex;
+    g->ravlevel--;
+    pgn_init_fen_board(g, b, g->rav[g->ravlevel].fen);
+    free(g->rav[g->ravlevel].fen);
+    g->hp = g->rav[g->ravlevel].hp;
+    g->flags = g->rav[g->ravlevel].flags;
+    g->hindex = g->rav[g->ravlevel].hindex;
     return 0;
 }
 
@@ -2311,28 +2303,341 @@ static void do_window_resize()
     update_all(game[gindex]);
 }
 
+static void historymode_keys(int);
+static void playmode_keys(int c)
+{
+    // More keys in MODE_EDIT share keys with MODE_PLAY than don't.
+    int editmode = (game[gindex].mode == MODE_EDIT) ? 1 : 0;
+    chtype p;
+    int w, x, y, z;
+    char *tmp;
+
+    switch (c) {
+	case 'c':
+	    if (status.engine == ENGINE_THINKING || status.engine ==
+		    ENGINE_OFFLINE)
+		break;
+
+	    if ((tmp = get_input_str_clear(ENGINE_CMD_TITLE, NULL)) != NULL)
+		SEND_TO_ENGINE("%s\n", tmp);
+	    break;
+	case '\015':
+	case '\n':
+	    pushkey = keycount = 0;
+	    update_status_notify(game[gindex], NULL);
+
+	    if (status.engine == ENGINE_THINKING) {
+		beep();
+		break;
+	    }
+
+	    if (!sp.icon)
+		break;
+
+	    sp.destrow = c_row;
+	    sp.destcol = c_col;
+
+	    if (editmode) {
+		p = game[gindex].b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon;
+		game[gindex].b[ROWTOBOARD(sp.destrow)][COLTOBOARD(sp.destcol)].icon = p;
+		game[gindex].b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+		sp.icon = sp.row = sp.col = 0;
+		break;
+	    }
+
+	    if (move_to_engine(&game[gindex], game[gindex].b)) {
+		if (config.validmoves)
+		    board_reset_valid_moves(game[gindex].b);
+
+		if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
+		    CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
+		    SET_FLAG(game[gindex].flags, GF_MODIFIED);
+		}
+	    }
+
+	    break;
+	case ' ':
+	    if (!noengine && (status.engine == ENGINE_OFFLINE ||
+			!engine_initialized) && !editmode) {
+		if (start_chess_engine() < 0) {
+		    sp.icon = 0;
+		    break;
+		}
+
+	    }
+
+	    if (!editmode)
+		wtimeout(boardw, 70);
+
+	    if (sp.icon || (!editmode && status.engine == ENGINE_THINKING)) {
+		beep();
+		break;
+	    }
+
+	    sp.icon = mvwinch(boardw, ROWTOMATRIX(c_row), 
+		    COLTOMATRIX(c_col)+1) & A_CHARTEXT;
+
+	    if (sp.icon == ' ') {
+		sp.icon = 0;
+		break;
+	    }
+
+	    if (!editmode && ((islower(sp.icon) && game[gindex].turn != BLACK)
+			|| (isupper(sp.icon) && game[gindex].turn != WHITE))) {
+		message(NULL, ANYKEY, "%s", E_SELECT_TURN);
+		sp.icon = 0;
+		break;
+	    }
+
+	    sp.row = c_row;
+	    sp.col = c_col;
+
+	    if (!editmode && config.validmoves)
+		board_get_valid_moves(&game[gindex], game[gindex].b,
+			pgn_piece_to_int(sp.icon), sp.row, sp.col, &w, &x, &y, &z);
+
+	    paused = 0;
+	    break;
+	case 'w':
+	    SEND_TO_ENGINE("\nswitch\n");
+	    switch_side(&game[gindex]);
+	    update_status_window(game[gindex]);
+	    break;
+	case 'u':
+	    /* FIXME dies reading FIFO sometimes. */
+	    if (!history_total(game[gindex].hp))
+		break;
+
+	    history_previous(&game[gindex], game[gindex].b, (keycount) ? keycount * 2 :
+		    2);
+
+#if 0
+	    if (status.engine == CRAFTY)
+		SEND_TO_ENGINE("read %s\n", config.fifo);
+	    else
+		SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
+#endif
+
+	    update_history_window(game[gindex]);
+	    break;
+	case 'a':
+	    historymode_keys(c);
+	    break;
+	case 'd':
+	    board_details = (board_details) ? 0 : 1;
+	    break;
+	case 'p':
+	    paused = (paused) ? 0 : 1;
+	    break;
+	default:
+	    break;
+    }
+}
+
+static void editmode_keys(int c)
+{
+    switch (c) {
+	case '\015':
+	case '\n':
+	case ' ':
+	    playmode_keys(c);
+	    break;
+	case 'd':
+	    if (sp.icon)
+		game[gindex].b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+	    else
+		game[gindex].b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+
+	    sp.icon = sp.row = sp.col = 0;
+	    break;
+	case 'w':
+	    pgn_switch_turn(&game[gindex]);
+	    switch_side(&game[gindex]);
+	    update_all(game[gindex]);
+	    break;
+	case 'c':
+	    castling_state(&game[gindex], game[gindex].b, ROWTOBOARD(c_row), 
+		    COLTOBOARD(c_col),
+		    game[gindex].b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].icon, 1);
+	    break;
+	case 'i':
+	    c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
+		    GAME_EDIT_TEXT);
+
+	    if (pgn_piece_to_int(c) == -1)
+		break;
+
+	    game[gindex].b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].icon = c;
+	    break;
+	case 'p':
+	    if (c_row == 6 || c_row == 3) {
+		pgn_reset_enpassant(game[gindex].b);
+		game[gindex].b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].enpassant = 1;
+	    }
+	    break;
+	default:
+	    break;
+    }
+}
+
+static void historymode_keys(int c)
+{
+    int n, len;
+    char *tmp, *buf;
+    static char moveexp[255] = {0};
+
+    switch (c) {
+	case ' ':
+	    movestep = (movestep == 1) ? 2 : 1;
+	    update_history_window(game[gindex]);
+	    break;
+	case KEY_UP:
+	    history_next(&game[gindex], game[gindex].b, (keycount > 0) ?
+		    config.jumpcount * keycount * movestep : 
+		    config.jumpcount * movestep);
+	    update_cursor(game[gindex], game[gindex].hindex, &c_row, &c_col);
+	    update_all(game[gindex]);
+	    break;
+	case KEY_DOWN:
+	    history_previous(&game[gindex], game[gindex].b, (keycount) ?
+		    config.jumpcount * keycount * movestep : 
+		    config.jumpcount * movestep);
+	    update_cursor(game[gindex], game[gindex].hindex, &c_row, &c_col);
+	    update_all(game[gindex]);
+	    break;
+	case KEY_LEFT:
+	    history_previous(&game[gindex], game[gindex].b, (keycount) ?
+		    keycount * movestep : movestep);
+	    update_cursor(game[gindex], game[gindex].hindex, &c_row, &c_col);
+	    update_all(game[gindex]);
+	    break;
+	case KEY_RIGHT:
+	    history_next(&game[gindex], game[gindex].b, (keycount) ? 
+		    keycount * movestep : movestep);
+	    update_cursor(game[gindex], game[gindex].hindex, &c_row, &c_col);
+	    update_all(game[gindex]);
+	    break;
+	case 'a':
+	    n = game[gindex].hindex;
+
+	    if (n && game[gindex].hp[n - 1]->move)
+		n--;
+	    else
+		break;
+
+	    buf = Malloc(COLS);
+	    snprintf(buf, COLS - 1, "%s \"%s\"", ANNOTATION_EDIT_TITLE,
+		    game[gindex].hp[n]->move);
+
+	    tmp = get_input(buf, game[gindex].hp[n]->comment, 0, 0, NAG_PROMPT,
+		    history_edit_nag, (void *)game[gindex].hp[n], CTRL('T'),
+		    -1);
+	    free(buf);
+
+	    if (!tmp && (!game[gindex].hp[n]->comment ||
+			!*game[gindex].hp[n]->comment))
+		break;
+	    else if (tmp && game[gindex].hp[n]->comment) {
+		if (strcmp(tmp, game[gindex].hp[n]->comment) == 0)
+		    break;
+	    }
+
+	    len = (tmp) ? strlen(tmp) + 1 : 1;
+	    game[gindex].hp[n]->comment = Realloc(game[gindex].hp[n]->comment,
+		    len);
+	    strncpy(game[gindex].hp[n]->comment, (tmp) ? tmp : "", len);
+	    SET_FLAG(game[gindex].flags, GF_MODIFIED);
+	    update_all(game[gindex]);
+	    break;
+	case ']':
+	case '[':
+	case '/':
+	    if (history_total(game[gindex].hp) < 2)
+		break;
+
+	    n = 0;
+
+	    if (!*moveexp || c == '/') {
+		if ((tmp = get_input(FIND_REGEXP, moveexp, 1, 1, NULL, NULL, NULL, 0, -1)) == NULL)
+		    break;
+
+		strncpy(moveexp, tmp, sizeof(moveexp));
+		n = 1;
+	    }
+
+	    if ((n = find_move_exp(game[gindex], moveexp, n, 
+			    (c == '[') ? 0 : 1, (keycount) ? keycount : 1)) 
+		    == -1)
+		break;
+
+	    game[gindex].hindex = n;
+	    history_update_board(&game[gindex], game[gindex].b, game[gindex].hindex);
+	    update_all(game[gindex]);
+	    break;
+	case 'v':
+	    view_annotation(*game[gindex].hp[game[gindex].hindex]);
+	    break;
+	case 'V':
+	    if (game[gindex].hindex - 1 >= 0)
+		view_annotation(*game[gindex].hp[game[gindex].hindex - 1]);
+	    break;
+	case '-':
+	case '+':
+	    rav_next_prev(&game[gindex], game[gindex].b, (c == '-') ? 0 : 1);
+	    update_all(game[gindex]);
+	    break;
+	case 'j':
+	    if (history_total(game[gindex].hp) < 2)
+		break;
+
+	    /* FIXME field validation
+	       if ((tmp = get_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, 
+	       NULL, NULL, NULL, 0, FIELD_TYPE_INTEGER, 1, 0, 
+	       game[gindex].htotal)) == NULL)
+	       break;
+	       */
+
+	    if (!keycount) {
+		if ((tmp = get_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, 
+				NULL, NULL, NULL, 0, -1)) == NULL)
+		    break;
+
+		if (!isinteger(tmp))
+		    break;
+
+		n = atoi(tmp);
+	    }
+	    else
+		n = keycount;
+
+	    if (n > (history_total(game[gindex].hp) / 2) || n < 0)
+		break;
+
+	    game[gindex].hindex = n * 2;
+	    history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+	    update_all(game[gindex]);
+	    break;
+	default: 
+	    break;
+    }
+}
+
 void game_loop()
 {  
     int error_recover = 0;
-    int pushkey = 0;
-    int count = 0;
-    int crow = 2, ccol = 5;
-    char moveexp[255] = {0};
     char gameexp[255] = {0};
     int delete_count = 0;
     int markstart = -1, markend = -1;
-    int editmode = 0;
-    int board_details = 0;
 
+    c_row = 2, c_col = 5;
     gindex = gtotal - 1;
-    markstart = -1, markend = -1;
 
     if (history_total(game[gindex].hp))
 	game[gindex].mode = MODE_HISTORY;
     else
 	game[gindex].mode = MODE_PLAY;
 
-    history_update_board(&game[gindex], board, history_total(game[gindex].hp));
+    history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
     paused = 1; //FIXME clock
@@ -2342,16 +2647,14 @@ void game_loop()
 
     while (!quit) {
 	int c = 0;
-	int i, x, n = 0, len = 0;
+	int i, x, n = 0;
 	/*
 	fd_set fds;
 	char fdbuf[8192] = {0};
 	struct timeval tv;
 	*/
 	char *tmp = NULL;
-	char buf[78];
 	char tfile[FILENAME_MAX];
-	int minr, maxr, minc, maxc;
 
 	// FIXME game.fds
 #if 0
@@ -2429,8 +2732,8 @@ void game_loop()
 #endif
 
 	error_recover = 0;
-	draw_board(&game[gindex], board_details, crow, ccol);
-	wmove(boardw, ROWTOMATRIX(crow), COLTOMATRIX(ccol));
+	draw_board(&game[gindex], board_details, c_row, c_col);
+	wmove(boardw, ROWTOMATRIX(c_row), COLTOMATRIX(c_col));
 
 	if (!paused) {
 	}
@@ -2445,194 +2748,59 @@ void game_loop()
 		continue;
 	}
 
-	if (!count && status.notify)
+	if (!keycount && status.notify)
 	    update_status_notify(game[gindex], NULL);
 
+	// Global and other keys.
 	switch (c) {
-	    int annotate;
-
-#ifdef DEBUG
-	    case 'O':
-	        message("DEBUG BOARD", ANYKEY, "%s", debug_board(board));
-		break;
-#endif
-	    case KEY_RESIZE:
-		do_window_resize();
-		break;
-	    case '-':
-	    case '+':
-		if (game[gindex].mode == MODE_PLAY) {
-		    break;
-		}
-
-		if (game[gindex].mode == MODE_HISTORY) {
-		    rav_next_prev(&game[gindex], board, (c == '-') ? 0 : 1);
-		    update_all(game[gindex]);
-		    break;
-		}
-		break;
-	    case 'p':
-		if (game[gindex].mode == MODE_EDIT) {
-		    if (crow != 6 && crow != 3)
+	    case 'h':
+		if (game[gindex].mode != MODE_HISTORY) {
+		    if (!history_total(game[gindex].hp) || status.engine ==
+			    ENGINE_THINKING)
 			break;
 
-		    pgn_reset_enpassant(board);
-		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].enpassant = 1;
+		    game[gindex].mode = MODE_HISTORY;
+		    history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
 		    break;
 		}
 
-		if (paused)
-		    paused = 0;
-		else
-		    paused = 1;
-
-		break;
-	    case 'd':
-		if (board_details)
-		    board_details = 0;
-		else
-		    board_details = 1;
-		break;
-	    case 'e':
-		if (history_total(game[gindex].hp))
+		// FIXME
+		if (TEST_FLAG(game[gindex].flags, GF_BLACK_OPENING)) {
+		    cmessage(NULL, ANYKEY, "%s", E_RESUME_BLACK);
 		    break;
+		}
 
-	        if (editmode) {
-		    board_details--;
-		    editmode = 0;
-		    pgn_add_tag(&game[gindex].tag, &game[gindex].tindex,
-			    "FEN", pgn_game_to_fen(game[gindex], board));
-		    pgn_add_tag(&game[gindex].tag, &game[gindex].tindex,
-			    "SetUp", "1");
-		    game[gindex].mode = MODE_PLAY;
-		    pgn_sort_tags(game[gindex]);
+		// FIXME Resuming from previous history could append to a RAV.
+		if (game[gindex].hindex != history_total(game[gindex].hp)) {
+		    if (!pushkey) {
+			if ((c = message(NULL, YESNO, "%s",
+					GAME_RESUME_HISTORY_TEXT)) != 'y')
+			    break;
+		    }
 		}
 		else {
-		    game[gindex].mode = MODE_EDIT;
-		    editmode = 1;
-
-		    if (pgn_init_fen_board(&game[gindex], board, NULL))
+		    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
 			break;
-
-		    board_details++;
 		}
 
-		update_all(game[gindex]);
-		break;
-	    case '}':
-	    case '{':
-	    case '?':
-		if (gtotal < 2)
-		    break;
-
-		if (!*gameexp || c == '?') {
-		    if ((tmp = get_input(GAME_FIND_EXPRESSION_TITLE, gameexp, 
-				    1, 1, GAME_FIND_EXPRESSION_PROMPT, NULL, 
-				    NULL, 0, -1)) == NULL)
+		if (!noengine && !engine_initialized) {
+		    if (start_chess_engine() < 0)
 			break;
 
-		    strncpy(gameexp, tmp, sizeof(gameexp));
+		    pushkey = 'h';
+		    break;
 		}
 
-	        if ((n = find_game_exp(gameexp, (c == '{') ? 0 : 1,
-				(count) ? count : 1)) == -1)
-		    break;
-
-		gindex = n;
-
-		if (history_total(game[gindex].hp))
-		    game[gindex].mode = MODE_HISTORY;
-
-		history_update_board(&game[gindex], board, history_total(game[gindex].hp));
+		pushkey = 0;
+		oldhistorytotal = history_total(game[gindex].hp);
+		game[gindex].mode = MODE_PLAY;
+		status.engine = ENGINE_READY;
 		update_all(game[gindex]);
-		update_tag_window(game[gindex].tag);
-		break;
-	    case '!':
-	        crow = 1;
-		break;
-	    case '@':
-	        crow = 2;
-		break;
-	    case '#':
-	        crow = 3;
-		break;
-	    case '$':
-	        crow = 4;
-		break;
-	    case '%':
-	        crow = 5;
-		break;
-	    case '^':
-	        crow = 6;
-		break;
-	    case '&':
-	        crow = 7;
-		break;
-	    case '*':
-	        crow = 8;
-		break;
-	    case 'A':
-	        ccol = 1;
-		break;
-	    case 'B':
-	        ccol = 2;
-		break;
-	    case 'C':
-	        ccol = 3;
-		break;
-	    case 'D':
-	        ccol = 4;
-		break;
-	    case 'E':
-	        ccol = 5;
-		break;
-	    case 'F':
-	        ccol = 6;
-		break;
-	    case 'G':
-	        ccol = 7;
-		break;
-	    case 'H':
-	        ccol = 8;
-		break;
-	    case ']':
-	    case '[':
-	    case '/':
-		if (history_total(game[gindex].hp) < 2)
-		    break;
-
-		n = 0;
-
-	        if (!*moveexp || c == '/') {
-		    if ((tmp = get_input(FIND_REGEXP, moveexp, 1, 1, NULL, 
-				    NULL, NULL, 0, -1)) == NULL)
-			break;
-
-		    strncpy(moveexp, tmp, sizeof(moveexp));
-		    n = 1;
-		}
-
-		if ((n = find_move_exp(game[gindex], moveexp, n, 
-				(c == '[') ? 0 : 1, (count) ? count : 1)) == -1)
-		    break;
-
-		game[gindex].hindex = n;
-		history_update_board(&game[gindex], board, game[gindex].hindex);
-		update_all(game[gindex]);
-		break;
-	    case 'v':
-		if (game[gindex].hindex == history_total(game[gindex].hp))
-		    break;
-
-	        view_annotation(*game[gindex].hp[game[gindex].hindex]);
-		break;
-	    case 'V':
-		if (game[gindex].hindex - 1 >= 0)
-		    view_annotation(*game[gindex].hp[game[gindex].hindex - 1]);
 		break;
 	    case '>':
 	    case '<':
-		game_next_prev(game[gindex], (c == '>') ? 1 : 0, (count) ? count : 1);
+		game_next_prev(game[gindex], (c == '>') ? 1 : 0, (keycount) ?
+			keycount : 1);
 
 		if (delete_count) {
 		    markend = gindex;
@@ -2640,65 +2808,71 @@ void game_loop()
 		    delete_count = 0;
 		}
 
-		game[gindex].mode = MODE_HISTORY;
-		editmode = 0;
-
-		if (history_total(game[gindex].hp))
-		    game[gindex].mode = MODE_HISTORY;
-
-		history_update_board(&game[gindex], board, history_total(game[gindex].hp));
-		update_cursor(game[gindex], game[gindex].hindex, &crow, &ccol);
+		if (game[gindex].mode != MODE_EDIT) {
+		    history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		    update_cursor(game[gindex], game[gindex].hindex, &c_row, &c_col);
+		}
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
-	    case 'j':
-		if (game[gindex].mode != MODE_HISTORY || 
-			history_total(game[gindex].hp) < 2)
+	    // Not sure whether to keep these.
+	    case '!': c_row = 1; break;
+	    case '@': c_row = 2; break;
+	    case '#': c_row = 3; break;
+	    case '$': c_row = 4; break;
+	    case '%': c_row = 5; break;
+	    case '^': c_row = 6; break;
+	    case '&': c_row = 7; break;
+	    case '*': c_row = 8; break;
+	    case 'A': c_col = 1; break;
+	    case 'B': c_col = 2; break;
+	    case 'C': c_col = 3; break;
+	    case 'D': c_col = 4; break;
+	    case 'E': c_col = 5; break;
+	    case 'F': c_col = 6; break;
+	    case 'G': c_col = 7; break;
+	    case 'H': c_col = 8; break;
+	    case '}':
+	    case '{':
+	    case '?':
+		if (gtotal < 2)
 		    break;
 
-		/*
-		if ((tmp = get_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, 
-				NULL, NULL, NULL, 0, FIELD_TYPE_INTEGER, 1, 0, 
-				game[gindex].htotal)) == NULL)
-		    break;
-		*/
-
-		if (!count) {
-		    if ((tmp = get_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, 
-				    NULL, NULL, NULL, 0, -1)) == NULL)
+		if (!*gameexp || c == '?') {
+		    if ((tmp = get_input(GAME_FIND_EXPRESSION_TITLE, gameexp,
+				    1, 1, GAME_FIND_EXPRESSION_PROMPT, NULL,
+				    NULL, 0, -1)) == NULL)
 			break;
 
-		    if (!isinteger(tmp))
-			break;
-
-		    i = atoi(tmp);
+		    strncpy(gameexp, tmp, sizeof(gameexp));
 		}
-		else
-		    i = count;
 
-		if (i > (history_total(game[gindex].hp) / 2) || i < 0)
+	        if ((n = find_game_exp(gameexp, (c == '{') ? 0 : 1, (keycount)
+				? keycount : 1)) == 
+			-1)
 		    break;
 
-		game[gindex].hindex = i * 2;
+		gindex = n;
 
 		if (history_total(game[gindex].hp))
 		    game[gindex].mode = MODE_HISTORY;
 
-		history_update_board(&game[gindex], board, history_total(game[gindex].hp));
+		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
 		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case 'J':
 		if (gtotal < 2)
 		    break;
 
-		/*
+		/* FIXME field validation
 		if ((tmp = get_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL,
 				NULL, 0, FIELD_TYPE_INTEGER, 1, 1, gtotal))
 			== NULL)
 		    break;
 		*/
 
-		if (!count) {
+		if (!keycount) {
 		    if ((tmp = get_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL,
 				    NULL, NULL, 0, -1)) == NULL)
 			break;
@@ -2709,38 +2883,24 @@ void game_loop()
 		    i = atoi(tmp);
 		}
 		else
-		    i = count;
+		    i = keycount;
 
 		if (--i > gtotal - 1 || i < 0)
 		    break;
 
 		gindex = i;
-
-		if (history_total(game[gindex].hp))
-		    game[gindex].mode = MODE_HISTORY;
-
-		history_update_board(&game[gindex], board, history_total(game[gindex].hp));
-		update_cursor(game[gindex], game[gindex].hindex, &crow, &ccol);
+		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		update_cursor(game[gindex], game[gindex].hindex, &c_row, &c_col);
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
 	    case 'x':
 		pushkey = 0;
 
-		if (editmode) {
-		    if (sp.icon)
-			board[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
-		    else
-			board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
-
-		    sp.icon = sp.row = sp.col = 0;
-		    break;
-		}
-
 		if (gtotal < 2)
 		    break;
 
-		if (count && !delete_count) {
+		if (keycount && !delete_count) {
 		    markstart = gindex;
 		    delete_count = 1;
 		    update_status_notify(game[gindex], "%s (delete)",
@@ -2802,152 +2962,22 @@ void game_loop()
 		if (history_total(game[gindex].hp))
 		    game[gindex].mode = MODE_HISTORY;
 
-		history_update_board(&game[gindex], board, history_total(game[gindex].hp));
+		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
-	    case 'a':
-	        annotate = game[gindex].hindex;
-
-		if (annotate && game[gindex].hp[annotate - 1]->move)
-		    annotate--;
-		else
-		    break;
-
-		snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_EDIT_TITLE,
-			game[gindex].hp[annotate]->move);
-
-		tmp = get_input(buf, game[gindex].hp[annotate]->comment, 
-			0, 0, NAG_PROMPT, history_edit_nag,
-			(void *)game[gindex].hp[annotate], CTRL('T'), -1);
-
-		if (!tmp && (!game[gindex].hp[annotate]->comment ||
-			    !*game[gindex].hp[annotate]->comment))
-		    break;
-		else if (tmp && game[gindex].hp[annotate]->comment) {
-		    if (strcmp(tmp, game[gindex].hp[annotate]->comment) == 0)
-			break;
-		}
-		    
-		len = (tmp) ? strlen(tmp) + 1 : 1;
-
-		game[gindex].hp[annotate]->comment = 
-		    Realloc(game[gindex].hp[annotate]->comment, len);
-
-		strncpy(game[gindex].hp[annotate]->comment,
-			(tmp) ? tmp : "", len);
-
-		SET_FLAG(game[gindex].flags, GF_MODIFIED);
+	    case 'T':
+		edit_save_tags(&game[gindex]);
 		update_all(game[gindex]);
+		update_tag_window(game[gindex].tag);
 		break;
 	    case 't':
-		edit_save_tags(&game[gindex]);
-		pgn_sort_tags(game[gindex]);
-		update_all(game[gindex]);
-		update_tag_window(game[gindex].tag);
-		break;
-	    case 'i':
-		if (game[gindex].mode == MODE_EDIT) {
-		    c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
-			    GAME_EDIT_TEXT);
-
-		    if (pgn_piece_to_int(c) == -1)
-			break;
-
-		    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon = c;
-		    break;
-		}
-
-		edit_tags(game[gindex], board, 0);
-		break;
-	    case 'g':
-		if (game[gindex].mode == MODE_HISTORY || 
-			status.engine == ENGINE_THINKING)
-		    break;
-
-		status.engine = ENGINE_THINKING;
-		update_status_window(game[gindex]);
-		SEND_TO_ENGINE("go\n");
-		break;
-	    case 'h':
-		if (game[gindex].mode == MODE_HISTORY) {
-		    if (TEST_FLAG(game[gindex].flags, GF_BLACK_OPENING)) {
-			cmessage(NULL, ANYKEY, "%s", E_RESUME_BLACK);
-			break;
-		    }
-
-		    if (game[gindex].hindex != history_total(game[gindex].hp)) {
-			if (!pushkey) {
-			    if ((c = message(NULL, YESNO, "%s",
-					    GAME_RESUME_HISTORY_TEXT)) != 'y')
-				break;
-			}
-		    }
-		    else {
-			if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
-			    break;
-		    }
-
-		    if (!noengine)
-			wtimeout(boardw, 70);
-
-		    if (!noengine && !engine_initialized) {
-			if (start_chess_engine() < 0)
-			    break;
-
-			pushkey = 'h';
-			break;
-		    }
-
-		    pushkey = 0;
-		    oldhistorytotal = history_total(game[gindex].hp);
-		    game[gindex].mode = MODE_PLAY;
-		    status.engine = ENGINE_READY;
-
-		    /* FIXME crafty */
-#if 0
-		    if (config.engine != GNUCHESS)
-			SEND_TO_ENGINE("read %s\n", config.fifo);
-		    else
-			SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
-#endif
-
-		    update_all(game[gindex]);
-		    break;
-		}
-
-		if (!history_total(game[gindex].hp) || status.engine ==
-			ENGINE_THINKING)
-		    break;
-
-		wtimeout(boardw, -1);
-
-		if (history_total(game[gindex].hp))
-		    game[gindex].mode = MODE_HISTORY;
-
-		history_update_board(&game[gindex], board, history_total(game[gindex].hp));
-		break;
-	    case 'u':
-		/* FIXME dies reading FIFO sometimes. */
-		if (game[gindex].mode != MODE_PLAY || !history_total(game[gindex].hp))
-		    break;
-
-		history_previous(&game[gindex], board, (count) ? count * 2 : 2,
-			movestep);
-
-#if 0
-		if (status.engine == CRAFTY)
-		    SEND_TO_ENGINE("read %s\n", config.fifo);
-		else
-		    SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
-#endif
-
-		update_history_window(game[gindex]);
+		edit_tags(game[gindex], game[gindex].b, 0);
 		break;
 	    case 'r':
 		if ((tmp = get_input(GAME_LOAD_TITLE, NULL, 1, 1,
-				BROWSER_PROMPT, browse_directory, NULL, 
-				'\t', -1)) == NULL)
+				BROWSER_PROMPT, browse_directory, NULL, '\t',
+				-1)) == NULL)
 		    break;
 
 		tmp = tilde_expand(tmp);
@@ -2955,13 +2985,12 @@ void game_loop()
 		if (pgn_parse_file(tmp))
 		    break;
 
-		gindex = gtotal - 1;
 		strncpy(loadfile, tmp, sizeof(loadfile));
 
 		if (history_total(game[gindex].hp))
 		    game[gindex].mode = MODE_HISTORY;
 
-		history_update_board(&game[gindex], board, history_total(game[gindex].hp));
+		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
 		update_all(game[gindex]);
 		update_tag_window(game[gindex].tag);
 		break;
@@ -3006,7 +3035,7 @@ void game_loop()
 		update_status_notify(game[gindex], "%s", NOTIFY_SAVED);
 		update_all(game[gindex]);
 		break;
-	    case CTRL('G'):
+	    case KEY_F(1):
 		n = 0;
 
 		while (n != 'q') {
@@ -3040,23 +3069,19 @@ void game_loop()
 			break;
 		}
 
-		game[gindex].mode = MODE_PLAY;
-		editmode = 0;
-		sp.icon = 0;
-
 		if (c == 'n') {
-		    pgn_new_game(board);
-		    add_custom_tags(&game[gindex].tag, &game[gindex].tindex);
+		    pgn_new_game();
+		    add_custom_tags(&game[gindex].tag);
 		}
 		else {
 		    pgn_parse_file(NULL);
-		    add_custom_tags(&game[gindex].tag, &game[gindex].tindex);
-		    pgn_init_board(board);
+		    add_custom_tags(&game[gindex].tag);
+		    pgn_init_board(game[gindex].b);
 		}
 
 		game[gindex].mode = MODE_PLAY;
-		crow = (game[gindex].side == WHITE) ? 2 : 7;
-		ccol = 4;
+		c_row = (game[gindex].side == WHITE) ? 2 : 7;
+		c_col = 4;
 
 		if (!noengine && (status.engine == ENGINE_OFFLINE ||
 			engine_initialized == 0)) {
@@ -3072,291 +3097,158 @@ void game_loop()
 		update_tag_window(game[gindex].tag);
 		break;
 	    case CTRL('L'):
-	    case 'R':
 		endwin();
 		keypad(boardw, TRUE);
 		update_panels();
 		doupdate();
 		break;
-	    case 'c':
-		if (game[gindex].mode == MODE_EDIT) {
-		    castling_state(&game[gindex], board, ROWTOBOARD(crow), 
-			    COLTOBOARD(ccol),
-			    board[ROWTOBOARD(crow)][COLTOBOARD(ccol)].icon, 1);
-		    break;
-		}
-
-		if (status.engine == ENGINE_THINKING)
-		    break;
-
-		if (status.engine == ENGINE_OFFLINE)
-		    break;
-
-		if ((tmp = get_input_str_clear(ENGINE_CMD_TITLE, NULL)) 
-			!= NULL) {
-		    SEND_TO_ENGINE("%s\n", tmp);
-		}
-		break;
 	    case KEY_ESCAPE:
 		sp.icon = sp.row = sp.col = 0;
 		markend = markstart = 0;
 
-		if (count) {
-		    count = 0;
+		if (keycount) {
+		    keycount = 0;
 		    update_status_notify(game[gindex], NULL);
 		}
 
 		if (config.validmoves)
-		    board_reset_valid_moves(board);
+		    board_reset_valid_moves(game[gindex].b);
 
 		break;
 	    case '0' ... '9':
 		n = c - '0';
 
-		if (count)
-		    count = count * 10 + n;
+		if (keycount)
+		    keycount = keycount * 10 + n;
 		else
-		    count = n;
+		    keycount = n;
 
-		update_status_notify(game[gindex], "Repeat %i", count);
+		update_status_notify(game[gindex], "Repeat %i", keycount);
 		continue;
 	    case KEY_UP:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_next(&game[gindex], board, (count > 0) ?
-			    config.jumpcount * count * movestep : 
-			    config.jumpcount * movestep, movestep);
-		    update_cursor(game[gindex], game[gindex].hindex, &crow,
-			    &ccol);
-		    update_all(game[gindex]);
+		    historymode_keys(c);
 		    break;
 		}
 
-		/*
-		if (sp.icon && config.validmoves) {
-		    get_valid_cursor(board, UP, (count) ? count : 1, 
-			    &crow, &ccol, minr, maxr, minc, maxc);
-		    break;
-		}
-		*/
-
-		if (count) {
-		    crow += count;
+		if (keycount) {
+		    c_row += keycount;
 		    pushkey = '\n';
 		}
 		else
-		    crow++;
+		    c_row++;
 
-		if (crow > 8)
-		    crow = 1;
+		if (c_row > 8)
+		    c_row = 1;
 
 		break;
 	    case KEY_DOWN:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_previous(&game[gindex], board, (count) ?
-			    config.jumpcount * count * movestep : 
-			    config.jumpcount * movestep, movestep);
-		    update_cursor(game[gindex], game[gindex].hindex, &crow,
-			    &ccol);
-		    update_all(game[gindex]);
+		    historymode_keys(c);
 		    break;
 		}
 
-		/*
-		if (sp.icon && config.validmoves) {
-		    get_valid_cursor(board, DOWN, (count) ? count : 1, 
-			    &crow, &ccol, minr, maxr, minc, maxc);
-		    break;
-		}
-		*/
-
-		if (count) {
-		    crow -= count;
+		if (keycount) {
+		    c_row -= keycount;
 		    pushkey = '\n';
 		    update_status_notify(game[gindex], NULL);
 		}
 		else
-		    crow--;
+		    c_row--;
 
-		if (crow < 1)
-		    crow = 8;
+		if (c_row < 1)
+		    c_row = 8;
 
 		break;
 	    case KEY_LEFT:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_previous(&game[gindex], board, (count) ?
-			    count * movestep : movestep, movestep);
-		    update_cursor(game[gindex], game[gindex].hindex, &crow,
-			    &ccol);
-		    update_all(game[gindex]);
+		    historymode_keys(c);
 		    break;
 		}
 
-		/*
-		if (sp.icon && config.validmoves) {
-		    get_valid_cursor(board, LEFT, (count) ? count : 1, 
-			    &crow, &ccol, minr, maxr, minc, maxc);
-		    break;
-		}
-		*/
-
-		if (count) {
-		    ccol -= count;
+		if (keycount) {
+		    c_col -= keycount;
 		    pushkey = '\n';
 		}
 		else
-		    ccol--;
+		    c_col--;
 
-		if (ccol < 1)
-		    ccol = 8;
+		if (c_col < 1)
+		    c_col = 8;
 
 		break;
 	    case KEY_RIGHT:
 		if (game[gindex].mode == MODE_HISTORY) {
-		    history_next(&game[gindex], board, (count) ? 
-			    count * movestep : movestep, movestep);
-		    update_cursor(game[gindex], game[gindex].hindex, &crow,
-			    &ccol);
+		    historymode_keys(c);
+		    break;
+		}
+
+		if (keycount) {
+		    c_col += keycount;
+		    pushkey = '\n';
+		}
+		else
+		    c_col++;
+
+		if (c_col > 8)
+		    c_col = 1;
+
+		break;
+	    case 'e':
+		if (game[gindex].mode != MODE_EDIT && game[gindex].mode !=
+			MODE_PLAY)
+		    break;
+
+		// Don't edit a running game (for now).
+		if (history_total(game[gindex].hp))
+		    break;
+
+		if (game[gindex].mode != MODE_EDIT) {
+		    pgn_init_fen_board(&game[gindex], game[gindex].b, NULL);
+		    board_details++;
+		    game[gindex].mode = MODE_EDIT;
 		    update_all(game[gindex]);
 		    break;
 		}
 
-		/*
-		if (sp.icon && config.validmoves) {
-		    get_valid_cursor(board, RIGHT, (count) ? count : 1, 
-			    &crow, &ccol, minr, maxr, minc, maxc);
-		    break;
-		}
-		*/
-
-		if (count) {
-		    ccol += count;
-		    pushkey = '\n';
-		}
-		else
-		    ccol++;
-
-		if (ccol > 8)
-		    ccol = 1;
-
+		board_details--;
+		pgn_add_tag(&game[gindex].tag, "FEN", 
+			pgn_game_to_fen(game[gindex], game[gindex].b));
+		pgn_add_tag(&game[gindex].tag, "SetUp", "1");
+		game[gindex].mode = MODE_PLAY;
+		update_all(game[gindex]);
 		break;
-	    case 'w':
-		if (game[gindex].mode == MODE_HISTORY)
-		    break;
-
-		if (game[gindex].mode == MODE_EDIT)
-		    pgn_switch_turn(&game[gindex]);
-
-		/* FIXME crafty. */
-		SEND_TO_ENGINE("\nswitch\n");
-		switch_side(&game[gindex]);
-		update_status_window(game[gindex]);
-		break;
-	    case ' ':
-		if (!editmode && game[gindex].mode == MODE_HISTORY) {
-		    if (movestep == 1)
-			movestep = 2;
-		    else
-			movestep = 1;
-
-		    update_history_window(game[gindex]);
-		    break;
-		}
-
-		if (!noengine && (status.engine == ENGINE_OFFLINE ||
-			    !engine_initialized) && !editmode) {
-		    if (start_chess_engine() < 0) {
-			sp.icon = 0;
-			break;
-		    }
-
-		}
-
-		if (!editmode)
-		    wtimeout(boardw, 70);
-
-		if (sp.icon || (!editmode && status.engine == ENGINE_THINKING)) {
-		    beep();
-		    break;
-		}
-
-		sp.icon = mvwinch(boardw, ROWTOMATRIX(crow), 
-			COLTOMATRIX(ccol)+1) & A_CHARTEXT;
-
-		if (sp.icon == ' ') {
-		    sp.icon = 0;
-		    break;
-		}
-
-		if (!editmode && ((islower(sp.icon) &&
-				game[gindex].turn != BLACK) ||
-			    (isupper(sp.icon) && game[gindex].turn != WHITE))) {
-		    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
-		    sp.icon = 0;
-		    break;
-		}
-
-		sp.row = crow;
-		sp.col = ccol;
-
-		if (!editmode && config.validmoves) {
-		    board_get_valid_moves(&game[gindex], board,
-			    pgn_piece_to_int(sp.icon), sp.row, sp.col, &minr,
-			    &maxr, &minc, &maxc);
-		    /*
-		    number_valid_moves(board, sp.row, sp.col);
-		    */
-		}
-
-		if (game[gindex].mode == MODE_PLAY)
-		    paused = 0;
-		break;
-	    case '\015':
-	    case '\n':
-		pushkey = count = 0;
-		update_status_notify(game[gindex], NULL);
-
-		if (!editmode && game[gindex].mode == MODE_HISTORY)
-		    break;
-
-		if (status.engine == ENGINE_THINKING) {
-		    beep();
-		    break;
-		}
-
-		if (!sp.icon)
-		    break;
-
-		sp.destrow = crow;
-		sp.destcol = ccol;
-
-		if (editmode) {
-		    edit_board(game[gindex], board);
-		    sp.icon = sp.row = sp.col = 0;
-		    break;
-		}
-
-		if (move_to_engine(&game[gindex], board)) {
-		    if (config.validmoves)
-			board_reset_valid_moves(board);
-
-		    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
-			CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
-			SET_FLAG(game[gindex].flags, GF_MODIFIED);
-		    }
-		}
-
-		break;
-	    case 'q':
+	    case 'Q':
 		quit = 1;
 		break;
-	    case 0:
+	    case KEY_RESIZE:
+		do_window_resize();
 		break;
+#ifdef DEBUG
+	    case 'O':
+	        message("DEBUG BOARD", ANYKEY, "%s", debug_board(game[gindex].b));
+		break;
+#endif
+	    case 0:
 	    default:
-		beep();
 		break;
 	}
 
-	count = 0;
+	switch (game[gindex].mode) {
+	    case MODE_EDIT:
+		editmode_keys(c);
+		break;
+	    case MODE_PLAY:
+		playmode_keys(c);
+		break;
+	    case MODE_HISTORY:
+		historymode_keys(c);
+		break;
+	    default:
+		break;
+	}
+
+	keycount = 0;
     }
 }
 
@@ -3518,7 +3410,7 @@ int main(int argc, char *argv[])
 	default:
 	    // No file specified. Empty game.
 	    ret = pgn_parse_file(NULL);
-	    add_custom_tags(&game[gindex].tag, &game[gindex].tindex);
+	    add_custom_tags(&game[gindex].tag);
 	    break;
     }
 
@@ -3531,7 +3423,7 @@ int main(int argc, char *argv[])
 
 	    for (i = 0; i < gtotal; i++) {
 		if (write_custom_tags)
-		    add_custom_tags(&game[i].tag, &game[i].tindex);
+		    add_custom_tags(&game[i].tag);
 
 		pgn_write(stdout, game[i], reduced);
 	    }

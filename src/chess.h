@@ -115,10 +115,10 @@ typedef struct {
  * the current game.
  */
 typedef struct games {
+    BOARD b;			// The board associated with this game.
     fd_set fds;   		// The file descriptors associated with this
     				// game.
-    TAG *tag;			// Roster tags.
-    unsigned char tindex;	// Total number of roster tags.
+    TAG **tag;			// Roster tags.
     HISTORY **history;		// Move history for this game.
     HISTORY **hp; 		// History pointer pointing to the location 
     				// in *history used mainly for RAV.
@@ -142,29 +142,35 @@ int gindex, gtotal;
 int pgn_piece_to_int(int p);
 
 /*
- * Converts the integer piece 'n' to a character whose turn is 'turn'.
+ * Converts the integer piece 'n' to a character whose turn is 'turn'. WHITE
+ * piece are uppercase and BLACK pieces are lowercase.
  */
 int pgn_int_to_piece(char turn, int n);
+
+/*
+ * Returns the total number of tags in 't' or 0 if 't' is NULL.
+ */
+int pgn_tag_total(TAG **t);
 
 /*
  * Finds a tag 'name' in the structure array 't'. Returns the location in the
  * array of the found tag or -1 on failure.
  */
-int pgn_find_tag(TAG *t, int total, const char *name);
+int pgn_find_tag(TAG **t, const char *name);
 
 /*
- * Sorts the tag array in game 'g'. The first seven tags are in order of the
- * PGN standard so don't sort'em.
+ * Sorts a tag array. The first seven tags are in order of the PGN standard so
+ * don't sort'em.
  */
-void pgn_sort_tags(GAME g);
+void pgn_sort_tags(TAG **t);
 
 /*
- * Adds a tag 'name' with value 'value' to the pointer to array 'dst'. The 'n'
- * parameter is incremented to the new total of array 'dst'. If a duplicate
- * tag 'name' was found then the existing tag is updated to the new 'value'.
- * Returns 1 if a duplicate tag was found or 0 otherwise.
+ * Adds a tag 'name' with value 'value' to the pointer to array of TAG
+ * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
+ * is updated to the new 'value'. Returns 1 if a duplicate tag was found or 0
+ * otherwise.
  */
-int pgn_add_tag(TAG **dst, unsigned char *n, char *name, char *value);
+int pgn_add_tag(TAG ***dst, char *name, char *value);
 
 /*
  * Resets or initializes a new game board 'b'.
@@ -190,7 +196,7 @@ char *pgn_game_to_fen(GAME g, BOARD b);
  * Allocates a new game and increments gindex (the current game) and gtotal
  * (the total number of games).
  */
-void pgn_new_game(BOARD b);
+void pgn_new_game();
 
 /*
  * Parses a PGN game file 'filename'. If 'filename' is NULL then a single
@@ -235,16 +241,14 @@ HISTORY **history_add(HISTORY **h, unsigned char *n, const char *m);
 int history_update_board(GAME *g, BOARD b, int n);
 
 /*
- * Updates the game 'g' using board 'b' to the next 'n'th history move. The
- * 's' parameter is either 2 for a wholestep or 1 for a halfstep.
+ * Updates the game 'g' using board 'b' to the next 'n'th history move.
  */
-void history_previous(GAME *g, BOARD b, int n, int s);
+void history_previous(GAME *g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the previous 'n'th history move.
- * 's' parameter is either 2 for a wholestep or 1 for a halfstep.
  */
-void history_next(GAME *g, BOARD b, int n, int s);
+void history_next(GAME *g, BOARD b, int n);
 
 int pgn_validate_move(GAME *g, BOARD b, char *m);
 
@@ -254,7 +258,7 @@ void board_reset_valid_moves(BOARD b);
 void board_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *minr, int *maxr, int *minc, int *maxc);
 void pgn_free_all(void);
 void pgn_free(GAME);
-void pgn_tag_free(TAG *, int n);
+void pgn_tag_free(TAG **);
 void pgn_reset_enpassant(BOARD b);
 
 #endif

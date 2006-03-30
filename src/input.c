@@ -255,7 +255,7 @@ char *get_input(const char *title, const char *init, int lines, int reset,
 	    case CTRL('U'):
 		form_driver(form, REQ_CLR_FIELD);
 		break;
-	    case CTRL('G'):
+	    case KEY_F(1):
 		help(INPUT_HELP_TITLE, ANYKEY, inputhelp);
 		break;
 	    case KEY_LEFT:

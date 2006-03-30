@@ -57,7 +57,6 @@ int help(const char *title, const char *prompt, const char **text)
 
     win = newwin(n, x, LINES / 2 - n / 2, CALCPOSX(x));
     panel = new_panel(win);
-
     wbkgd(win, CP_MESSAGE_WINDOW);
     draw_window_title(win, title, x, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 
@@ -65,14 +64,10 @@ int help(const char *title, const char *prompt, const char **text)
 	mvwprintw(win, y++, 2, "%s", text[i]);
 
     draw_prompt(win, y, x, prompt, CP_MESSAGE_PROMPT);
-
     update_panels();
     doupdate();
-
     c = wgetch(win);
-
     del_panel(panel);
     delwin(win);
-
     return c;
 }

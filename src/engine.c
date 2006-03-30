@@ -333,11 +333,11 @@ void parse_gnuchess_line(GAME *g, char *str)
 	}
 	*/
 
-        if (history_total((*g).hp) == 0 && (*g).side == BLACK)
-	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
+        if (history_total(g->hp) == 0 && g->side == BLACK)
+	    SET_FLAG(g->flags, GF_BLACK_OPENING);
 
-	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
-	SET_FLAG((*g).flags, GF_MODIFIED);
+	g->hp = history_add(g->hp, &g->hindex, p);
+	SET_FLAG(g->flags, GF_MODIFIED);
 	pgn_switch_turn(g);
 	str += count;
 	return;
@@ -362,15 +362,15 @@ void parse_gnuchess_line(GAME *g, char *str)
 	}
 	*/
 
-        if (history_total((*g).hp) == 0 && (*g).side == BLACK)
-	    SET_FLAG((*g).flags, GF_BLACK_OPENING);
+        if (history_total(g->hp) == 0 && g->side == BLACK)
+	    SET_FLAG(g->flags, GF_BLACK_OPENING);
 
-	(*g).hp = history_add((*g).hp, &(*g).hindex, p);
-	SET_FLAG((*g).flags, GF_MODIFIED);
+	g->hp = history_add(g->hp, &g->hindex, p);
+	SET_FLAG(g->flags, GF_MODIFIED);
 	pgn_switch_turn(g);
 	str += count;
 
-	if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {
+	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 	    //history_update_board(g, g.htotal); FIXME
 	    RETURN;
 	}
@@ -378,7 +378,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 	RETURN;
     }
 
-    if (TEST_FLAG((*g).flags, GF_GAMEOVER)) {
+    if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 	//history_update_board(g); FIXME
 	RETURN;
     }
@@ -393,9 +393,9 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    return;
 	}
 	else {
-	    history_free((*g).hp, (*g).hindex + 1);
-	    CLEAR_FLAG((*g).flags, GF_GAMEOVER);
-	    SET_FLAG((*g).flags, GF_MODIFIED);
+	    history_free(g->hp, g->hindex + 1);
+	    CLEAR_FLAG(g->flags, GF_GAMEOVER);
+	    SET_FLAG(g->flags, GF_MODIFIED);
 	}
 
 	set_engine_defaults();
@@ -404,11 +404,11 @@ void parse_gnuchess_line(GAME *g, char *str)
 
     /* 'switch' command. */
     if (strncmp(str, "White to move", 13) == 0) {
-	(*g).side = (*g).turn = WHITE;
+	g->side = g->turn = WHITE;
 	RETURN;
     }
     else if (strncmp(str, "Black to move", 13) == 0) {
-	(*g).side = (*g).turn = BLACK;
+	g->side = g->turn = BLACK;
 	RETURN;
     }
 

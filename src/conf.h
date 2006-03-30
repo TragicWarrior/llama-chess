@@ -69,8 +69,7 @@ struct {
     char *engine_cmd;	// Alternate chess engine command. FIXME
     int engine;		// FIXME
     struct color_s color[CONF_MAX_COLORS]; // Color configuration.
-    TAG *tag;		// Custom PGN tags.
-    unsigned char tindex; // Total number of custom PGN tags.
+    TAG **tag;		// Custom PGN tags.
 } config;
 
 #endif

@@ -55,7 +55,7 @@
 #define GAME_HELP_GAME_TITLE "Other Game Keys" GAME_HELP_REPEAT
 #define GAME_LOAD_TITLE	"Load Filename"
 #define GAME_SAVE_TITLE	"Save Game Filename"
-#define GAME_HELP_PROMPT	"Type CTRL-g for command keys"
+#define GAME_HELP_PROMPT	"Type F1 for help"
 #define GAME_EDIT_TITLE		"Insert Piece"
 #define GAME_EDIT_PROMPT	"P=pawn, R=rook, N=knight, B=bishop, "\
     "Q=queen, K=king, X=en passant"
@@ -127,11 +127,11 @@
 /* NAG editing window. */
 #define NAG_PROMPT	"Type CTRL-t to edit NAG"
 #define NAG_EDIT_TITLE	"Numeric Annotation Glyphs"
-#define NAG_EDIT_PROMPT	"Type CTRL-g for help"
+#define NAG_EDIT_PROMPT	"Type F1 for help"
 #define NAG_EDIT_HELP	"NAG Menu Keys"
 
 /* The input window. */
-#define INPUT_HELP_PROMPT	"Type CTRL-g for available line editing keys"
+#define INPUT_HELP_PROMPT	GAME_HELP_PROMPT
 #define INPUT_HELP_TITLE	"Line Editing Keys"
 
 /* Country code menu window when editing the "Site" tag. */
@@ -169,7 +169,7 @@
 #define CONFIRM			"[ CONFIRM ]"
 #define UNKNOWN			"(empty value)"
 #define UNAVAILABLE	"not available"
-#define HELP_PROMPT	"Type CTRL-g for help"
+#define HELP_PROMPT	"Type F1 for help"
 #define ENGINE_CMD_TITLE "Engine Command"
 #define N_OF_N_STR	"of"
 #define WHITE_STR	"white"

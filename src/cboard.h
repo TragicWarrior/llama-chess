@@ -46,11 +46,14 @@ PANEL *statusp;
 WINDOW *historyw;
 PANEL *historyp;
 
+int board_details;
+int c_row, c_col;
+int pushkey;
+int keycount;
 char loadfile[FILENAME_MAX];
 int quit;
 char **agony;
 int paused;
-BOARD board;	// Board for the current game.
 
 // The selected piece.
 struct {
@@ -73,19 +76,19 @@ struct country_codes {
 } *ccodes;
 
 const char *historyhelp[] = {
-    "   UP/DOWN - next or previous history with jump count *",
+    "   UP/DOWN - jump to next or previous history *",
     "RIGHT/LEFT - next or previous history *",
-    "     SPACE - toggle half move stepping",
-    "         j - jump to move number *",
+    "     SPACE - toggle half move (ply) stepping",
+    "         j - jump to move number (prompt) *",
     "         / - specify a new move text search expression *",
     "         ] - find the next move text expression *",
     "         [ - find the previous move text expression *",
-    "         a - edit comments for the previous move",
-    "         v - view comments for the next move",
-    "         V - view comments for the previous move",
-    "         + - Next variation",
-    "         - - Previous variation",
-    "         h - toggle history mode",
+    "         a - annotate the previous move",
+    "         v - view annotation for the next move",
+    "         V - view annotation for the previous move",
+    "         + - next variation for the previous move",
+    "         - - previous variation for the previous move",
+    "         h - exit history mode",
     NULL
 };
 
@@ -98,24 +101,25 @@ const char *mainhelp[] = {
 };
 
 const char *edithelp[] = {
-    "             0...9 - cursor repeat count",
+    "              0..9 - cursor repeat count",
     "UP/DOWN/LEFT/RIGHT - position cursor *",
     "            !-*A-H - position cursor at rank or file",
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
-    "                 x - delete the piece under the cursor",
+    "                 d - delete the piece under the cursor",
     "                 i - insert a new piece",
     "                 c - toggle castling availability",
     "                 p - this square is the en passant one",
-    "                 e - toggle board edit mode",
+    "                 w - switch turn",
+    "                 e - exit edit mode",
     NULL,
 };
 
 const char *gamehelp[] = {
     " 0...9 - command repeat count",
-    "     t - edit the current games roster tags",
-    "     i - view the current games roster tags",
+    "     T - edit the current games roster tags",
+    "     t - view the current games roster tags",
     "     ? - specify a new roster tag expression *",
     "     } - find the next roster tag expression *",
     "     { - find the previous roster tag expression *",
@@ -129,7 +133,7 @@ const char *gamehelp[] = {
     "     r - resume a saved game",
     "     s - save game",
     "     S - save game and prompt",
-    "     q - quit",
+    "     Q - quit",
     NULL
 };
 
@@ -140,7 +144,7 @@ const char *playhelp[] = {
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
-    "                 b - show game board details",
+    "                 d - show game board details",
     "                 w - switch playing side",
     "                 u - undo previous move *",
     "                 g - force engine to make the next move",
@@ -183,6 +187,7 @@ const char *pgn_edit_help[] = {
     "     CTRL-a - add an entry",
     "     CTRL-f - add FEN tag from current position",
     "     CTRL-r - remove selected entry",
+    "     CTRL-t - add custom tags",
     "     ESCAPE - quit",
     NULL
 };

@@ -29,7 +29,6 @@ extern char *strptime(const char *, const char *, struct tm *);
 
 RAV *rav;
 int ravlevel;
-BOARD pgnboard;		// Board to use when validating/parsing.
 int validate;
 int nulltags;
 int done_fen_tag;

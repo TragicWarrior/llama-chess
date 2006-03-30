@@ -157,20 +157,20 @@ void set_default_colors()
     config.color[CONF_MBORDER].fg = COLOR_CYAN;
     config.color[CONF_MBORDER].bg = COLOR_BLACK;
     config.color[CONF_MTITLE].fg = COLOR_WHITE;
-    config.color[CONF_MTITLE].bg = COLOR_GREEN;
+    config.color[CONF_MTITLE].bg = COLOR_MAGENTA;
     config.color[CONF_MTITLE].nattrs = A_REVERSE;
-    config.color[CONF_MPROMPT].fg = COLOR_CYAN;
-    config.color[CONF_MPROMPT].bg = COLOR_BLACK;
+    config.color[CONF_MPROMPT].fg = COLOR_WHITE;
+    config.color[CONF_MPROMPT].bg = COLOR_MAGENTA;
     config.color[CONF_MPROMPT].nattrs = A_BOLD;
     config.color[CONF_IWINDOW].fg = COLOR_WHITE;
     config.color[CONF_IWINDOW].bg = COLOR_BLACK;
     config.color[CONF_IBORDER].fg = COLOR_CYAN;
     config.color[CONF_IBORDER].bg = COLOR_BLACK;
     config.color[CONF_ITITLE].fg = COLOR_WHITE;
-    config.color[CONF_ITITLE].bg = COLOR_GREEN;
+    config.color[CONF_ITITLE].bg = COLOR_MAGENTA;
     config.color[CONF_ITITLE].nattrs = A_REVERSE;
-    config.color[CONF_IPROMPT].fg = COLOR_CYAN;
-    config.color[CONF_IPROMPT].bg = COLOR_BLACK;
+    config.color[CONF_IPROMPT].fg = COLOR_WHITE;
+    config.color[CONF_IPROMPT].bg = COLOR_MAGENTA;
     config.color[CONF_IPROMPT].nattrs = A_BOLD;
     config.color[CONF_CASTLE].fg = COLOR_BLUE;
 }
