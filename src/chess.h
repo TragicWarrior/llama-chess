@@ -209,10 +209,13 @@ void pgn_new_game();
 int pgn_parse_file(const char *filename);
 
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The
- * 'reduced' parameter is for writing a PGN reduced export formatted game.
+ * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The 'mpl'
+ * parameter specifies how many full moves there are per line or in 80 columns
+ * which ever occurs first. If 'mpl' is 0 then pgn_write() will try and fit as
+ * many moves as possible in 80 columns. The 'reduced' parameter is for
+ * writing a PGN reduced export formatted game.
  */
-void pgn_write(FILE *fp, GAME g, int reduced);
+void pgn_write(FILE *fp, GAME g, int mpl, int reduced);
 
 /*
  * Returns the total number of moves in 'h' or 0 if none.

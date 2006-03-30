@@ -1350,10 +1350,10 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
     }
 
     if (isfifo)
-	pgn_write(fp, game[saveindex], isfifo);
+	pgn_write(fp, game[saveindex], config.mpl, isfifo);
     else {
 	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
-	    pgn_write(fp, game[i], isfifo);
+	    pgn_write(fp, game[i], config.mpl, isfifo);
     }
 
     if (command)
@@ -3425,7 +3425,7 @@ int main(int argc, char *argv[])
 		if (write_custom_tags)
 		    add_custom_tags(&game[i].tag);
 
-		pgn_write(stdout, game[i], reduced);
+		pgn_write(stdout, game[i], config.mpl, reduced);
 	    }
 	}
 

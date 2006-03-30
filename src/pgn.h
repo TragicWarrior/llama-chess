@@ -34,6 +34,9 @@ int nulltags;
 int done_fen_tag;
 int tag_section;
 int ret;
+int pgn_write_turn;
+int pgn_mpl;
+int pgn_lastc;
 
 void switch_turn(char *);
 

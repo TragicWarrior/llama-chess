@@ -177,6 +177,7 @@ void set_config_defaults()
     config.deleteprompt = 1;
     config.validmoves = 1;
     config.stoponerror = 0;
+    config.mpl = 0;
 
     set_default_colors();
 
@@ -236,6 +237,12 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.jumpcount = atoi(val);
+	}
+	else if (strcmp(var, "mpl") == 0) {
+	    if (!isinteger(val))
+		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
+			lines);
+	    config.mpl = atoi(val);
 	}
 	else if (strcmp(var, "historyagony") == 0)
 	    config.historyagony = on_or_off(filename, lines, val);

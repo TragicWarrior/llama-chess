@@ -442,13 +442,9 @@ static int tag_compare(const void *a, const void *b)
  */
 void pgn_sort_tags(TAG **tags)
 {
-    TAG **t;
-
     if (pgn_tag_total(tags) <= 7)
 	return;
 
-    t = tags + 7;
-    fprintf(stderr, "%i %s\n", pgn_tag_total(tags) - 7, t[0]->name);
     qsort(tags + 7, pgn_tag_total(tags) - 7, sizeof(TAG *), tag_compare);
 }
 
@@ -1384,13 +1380,16 @@ static int read_file(FILE *fp)
 	}
 
 	// PGN: Move text.
-	if (isdigit(c) || VALIDCOL(c) || c == 'N' || c == 'K' || c == 'Q' || 
-		c == 'B' || c == 'R' || c == 'P' || c == 'O') {
+	if ((isdigit(c) && c != '0') || VALIDCOL(c) || c == 'N' || c == 'K' 
+		    || c == 'Q' || c == 'B' || c == 'R' || c == 'P' ||
+		    c == 'O') {
 	    ungetc(c, fp);
 
 	    // PGN: If a FEN tag exists, initialize the board to the value.
 	    if (tag_section) {
-		if (pgn_init_fen_board(&game[gindex], game[gindex].b, NULL)) {
+		if (pgn_find_tag(game[gindex].tag, "FEN") != -1 && 
+			pgn_init_fen_board(&game[gindex], game[gindex].b,
+			    NULL)) {
 		    parse_error = 1;
 		    continue;
 		}
@@ -1512,70 +1511,160 @@ static char *pgn_add_tag_escapes(const char *str)
     buf[n] = '\0';
     return buf;
 }
-	
+
+static void Fputc(int c, FILE *fp, int *len)
+{
+    int i = *len;
+
+    if (c != '\n' && i + 1 > 80)
+	Fputc('\n', fp, &i);
+
+    if (pgn_lastc == '\n' && c == ' ')
+	return;
+
+    if (fputc(c, fp) == EOF)
+	warn("PGN Save");
+    else {
+	if (c == '\n')
+	    i = 0;
+	else
+	    i++;
+    }
+
+    *len = i;
+    pgn_lastc = c;
+}
+
+static void putstring(FILE *fp, char *str, int *len)
+{
+    char *p;
+
+    for (p = str; *p; p++) {
+	int n = 0;
+
+	while (*p && *p != ' ')
+	    n++, p++;
+
+	if (n + *len > 80)
+	    Fputc('\n', fp, len);
+
+	p -= n;
+	Fputc(*p, fp, len);
+    }
+}
+
 /*
  * See pgn_write() for more info.
  */
-static int write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
+static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
 {
     int i;
-    int n;
-    int x;
-    int annotated = 0;
+    int type = 0;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
 	if (h->nag[i]) {
-	    annotated = 1;
-
-	    *len += integer_len(h->nag[i]) + 2;
-
-	    if (*len + 1 >= 80) {
-		fprintf(fp, "\n");
-		*len = 0;
-	    }
-
-	    fprintf(fp, "$%i ", h->nag[i]);
+	    Fputc(' ', fp, len);
+	    Fputc('$', fp, len);
+	    putstring(fp, itoa(h->nag[i]), len);
 	}
     }
 
-    if (h->comment && h->comment[0]) {
-	annotated = 1;
-
-	fprintf(fp, "\n{");
-
-	if ((n = strlen(h->comment) + 1) >= 80) {
-	    for (i = 0, x = 0; i < (n - 1); i++, x++) {
-		if (x + 1 >= 80) {
-		    fprintf(fp, "\n");
-		    x = 0;
-		}
-
-		if (fputc(h->comment[i], fp) == EOF)
-		    warn("PGN Save");
-	    }
+    if (h->comment) {
+	if (strlen(h->comment) + *len + 1 > 80) {
+	    type = 1;
+	    putstring(fp, " {", len);
 	}
 	else
-	    fprintf(fp, "%s", h->comment);
+	    putstring(fp, " ;", len);
 
-	fprintf(fp, "}\n");
-	*len = 0;
+	putstring(fp, h->comment, len);
+
+	if (type)
+	    putstring(fp, "}", len);
+	else
+	    Fputc('\n', fp, len);
     }
+}
 
-    return annotated;
+static void write_move_text(FILE *fp, HISTORY *h, int *len, int reduced)
+{
+    Fputc(' ', fp, len);
+    putstring(fp, h->move, len);
+
+    if (!reduced)
+	write_comments_and_nag(fp, h, len);
+}
+
+static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len,
+	int mpl, int reduced)
+{
+    int i;
+    HISTORY **hp = NULL;
+
+    for (i = 0; h[i]; i++) {
+	if (pgn_write_turn == WHITE) {
+	    if (pgn_mpl == mpl) {
+		pgn_mpl = 0;
+		Fputc('\n', fp, len);
+	    }
+
+	    if (m > 1 && i > 0)
+		Fputc(' ', fp, len);
+
+	    putstring(fp, itoa(m), len);
+	    Fputc('.', fp, len);
+	    pgn_mpl++;
+	}
+
+	write_move_text(fp, h[i], len, reduced);
+
+	if (!reduced && h[i]->rav) {
+	    int oldm = m;
+	    int oldturn = pgn_write_turn;
+
+	    ravlevel++;
+	    putstring(fp, " (", len);
+
+	    /*
+	     * If it's WHITE's turn the move number will be added above after
+	     * the call to write_all_move_text() below.
+	     */
+	    if (pgn_write_turn == BLACK) {
+		putstring(fp, itoa(m), len);
+		putstring(fp, "...", len);
+	    }
+
+	    hp = h[i]->rav;
+	    write_all_move_text(fp, hp, m, len, mpl, reduced);
+	    m = oldm;
+	    pgn_write_turn = oldturn;
+	    putstring(fp, ")", len);
+	    ravlevel--;
+
+	    if (h[i + 1] && !ravlevel)
+		Fputc(' ', fp, len);
+
+	    if (pgn_write_turn == WHITE && h[i + 1]) {
+		putstring(fp, itoa(m), len);
+		putstring(fp, "...", len);
+	    }
+	}
+
+	if (pgn_write_turn == BLACK)
+	    m++;
+
+	pgn_write_turn = (pgn_write_turn == WHITE) ? BLACK : WHITE;
+    }
 }
 
 /*
  * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The
  * 'reduced' parameter is for writing a PGN reduced export formatted game.
  */
-void pgn_write(FILE *fp, GAME g, int reduced)
+void pgn_write(FILE *fp, GAME g, int mpl, int reduced)
 {
     int i;
-    int n, len = 0;
-    int annotated = 0;
-    int x = 0;
-    int oldtotal = history_total(g.hp);
-    int t = oldtotal;
+    int len = 0;
 
     //FIXME
     /*
@@ -1654,61 +1743,16 @@ void pgn_write(FILE *fp, GAME g, int reduced)
 		pgn_add_tag_escapes(g.tag[i]->value) : "");
     }
 
-    fprintf(fp, "\n");
-
-    /* Move text section. If it's dumping to the FIFO, dont dump comments and
-     * NAG data.
-     */
-    // FIXME RAV
-    for (i = len = 0, n = 1; i < t; i++) {
-	int mlen = strlen(g.history[i]->move);
-
-	if ((i % 2) == x) {
-	    len += 2;
-
-	    if (i == 0 && TEST_FLAG(g.flags, GF_BLACK_OPENING)) {
-		len += 3;
-		x = 1;
-		fprintf(fp, "%u... ", n++);
-	    }
-	    else {
-		if (i == 1 && x)
-		    --n;
-
-		fprintf(fp, "%u. ", n);
-	    }
-	}
-	else {
-	    if (annotated) {
-		fprintf(fp, "%u... ", n++);
-		annotated = 0;
-	    }
-	}
-
-	fprintf(fp, "%s ", g.history[i]->move);
-
-	if (!reduced)
-	    annotated = write_comments_and_nag(fp, g.history[i], &len);
-
-	if (!(i % 2) && !annotated)
-	    n++;
-
-	len += mlen + integer_len(n) + 1;
-
-	if (len + 1 >= 80) {
-	    fprintf(fp, "\n");
-	    len = 0;
-	}
-    }
-
-    if (strlen(g.tag[TAG_RESULT]->value) + len + 1 >= 80)
-	fprintf(fp, "\n");
-
-    fprintf(fp, "%s\n\n", pgn_add_tag_escapes(g.tag[TAG_RESULT]->value));
+    Fputc('\n', fp, &len);
+    g.hp = g.history;
+    ravlevel = 0;
+    write_all_move_text(fp, g.hp, 1, &len, mpl, reduced);
+    Fputc(' ', fp, &len);
+    putstring(fp, g.tag[TAG_RESULT]->value, &len);
+    putstring(fp, "\n\n", &len);
 
     if (!reduced) {
 	CLEAR_FLAG(g.flags, GF_MODIFIED);
 	CLEAR_FLAG(g.flags, GF_PERROR);
-	//*gp = g;
     }
 }

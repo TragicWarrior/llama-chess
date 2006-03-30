@@ -92,10 +92,7 @@ char *itoa(long n)
 
 int integer_len(long n)
 {
-    char buf[64];
-
-    snprintf(buf, sizeof(buf), "%li", n);
-    return strlen(buf);
+    return strlen(itoa(n));
 }
 
 int isinteger(const char *str)
