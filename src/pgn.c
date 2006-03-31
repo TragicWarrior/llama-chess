@@ -282,11 +282,11 @@ int history_update_board(GAME *g, BOARD b, int n)
     g->flags = flags;
 #endif
 
+    pgn_init_board(tb);
+
     if (pgn_find_tag(g->tag, "FEN") != -1 &&
 	    pgn_init_fen_board(g, tb, NULL))
 	return 1;
-    else
-	pgn_init_board(tb);
 
     for (i = 0; i <= n; i++) {
 	HISTORY *h;
@@ -1482,7 +1482,6 @@ int pgn_parse_file(const char *filename)
 	game[i].history = game[i].hp;
 
 done:
-    pgn_switch_turn(&game[gindex]);
     return ret;
 }
 
