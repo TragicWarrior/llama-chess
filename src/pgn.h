@@ -31,7 +31,6 @@ RAV *rav;
 int ravlevel;
 int validate;
 int nulltags;
-int done_fen_tag;
 int tag_section;
 int ret;
 int pgn_write_turn;

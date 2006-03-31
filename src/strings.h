@@ -196,7 +196,7 @@
 #define MODE_PLAY_STR		"play"
 
 /* History window strings. */
-#define HISTORY_MOVE_STEP	" (half step)"
+#define HISTORY_PLY_STEP	" (ply)"
 #define HISTORY_MOVE_STR	"Move:"
 #define HISTORY_MOVE_NEXT_STR	"Next move:"
 #define HISTORY_MOVE_PREV_STR	"Prev move:"

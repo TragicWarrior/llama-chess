@@ -131,6 +131,7 @@ typedef struct games {
                   side: 1,      // This playing side. BLACK or WHITE.
                   turn: 1,      // BLACK or WHITE.
     	          mode: 2;      // MODE_[HISTORY/EDIT/PLAY]
+    unsigned char ply;          // Move count.
 } GAME;
 
 GAME *game;
@@ -213,7 +214,8 @@ int pgn_parse_file(const char *filename);
  * parameter specifies how many full moves there are per line or in 80 columns
  * which ever occurs first. If 'mpl' is 0 then pgn_write() will try and fit as
  * many moves as possible in 80 columns. The 'reduced' parameter is for
- * writing a PGN reduced export formatted game.
+ * writing a PGN reduced export formatted game. Returns 1 if the written move
+ * count doesn't match the game's ply count (FEN tag) or 0 on success.
  */
 void pgn_write(FILE *fp, GAME g, int mpl, int reduced);
 
@@ -234,9 +236,12 @@ void history_free(HISTORY **h, int start);
 HISTORY *history_by_n(HISTORY **h, int n);
 
 /*
- * Appends move 'm' to 'h' and increments 'n'.
+ * Appends move 'm' to game 'g' history pointer. The history pointer may be a
+ * in a RAV so g->rav.hp is also updated to the new (realloc()'ed) pointer. If
+ * not in a RAV then g->history will be updated. Returns 1 if realloc() failed
+ * or 0 on success.
  */
-HISTORY **history_add(HISTORY **h, unsigned char *n, const char *m);
+int history_add(GAME *g, const char *m);
 
 /*
  * Resets the game 'g' using board 'b' up to history move 'n'.

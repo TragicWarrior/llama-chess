@@ -105,7 +105,7 @@ char *pgn_game_to_fen(GAME g, BOARD b)
 
     --p;
     *p++ = ' ';
-    *p++ = (g.side == WHITE) ? 'w' : 'b';
+    *p++ = (g.turn == WHITE) ? 'w' : 'b';
     *p++ = ' ';
 
     if (TEST_FLAG(g.flags, GF_WK_CASTLE) && pgn_piece_to_int(b[7][7].icon) ==
@@ -151,33 +151,16 @@ char *pgn_game_to_fen(GAME g, BOARD b)
 
     *p++ = ' ';
 
-    /*
-    if (g.ply >= 10) {
-	*p++ = '0' + (g.ply / 10);
-	*p++ = '0' + g.ply % 10;
-    }
-    else
-	*p++ = '0' + g.ply;
-	*/
-
-    *p++ = '0';
+    // Halfmove clock.
+    *p = 0;
+    strcat(p, itoa(g.ply));
+    p = buf + strlen(buf);
     *p++ = ' ';
 
+    // Fullmove number.
     i = (g.hindex + 1) / 2;
-
-    if (i >= 100) {
-	*p++ = '0' + (i / 100);
-	*p++ = '0' + (i / 100) / 10;
-	*p++ = '0' + (i / 100) % 10;
-    }
-    else if (i >= 10) {
-	*p++ = '0' + (i / 10);
-	*p++ = '0' + i % 10;
-    }
-    else
-	*p++ = '0' + i;
-
-    *p = '\0';
+    *p = 0;
+    strcat(p, itoa((g.hindex / 2) + (g.hindex % 2)));
 
     g.turn = oldturn;
     return buf;
@@ -227,32 +210,46 @@ void history_free(HISTORY **h, int start)
  */
 HISTORY *history_by_n(HISTORY **h, int n)
 {
-    if (n < 0 || n > history_total(h) - 1)
+    if (n < 0 || n >= history_total(h))
 	return NULL;
 
     return h[n];
 }
 
 /*
- * Appends move 'm' to 'h' and increments 'n'.
+ * Appends move 'm' to game 'g' history pointer. The history pointer may be a
+ * in a RAV so g->rav.hp is also updated to the new (realloc()'ed) pointer. If
+ * not in a RAV then g->history will be updated. Returns 1 if realloc() failed
+ * or 0 on success.
  */
-HISTORY **history_add(HISTORY **history, unsigned char *n, const char *m)
+int history_add(GAME *g, const char *m)
 {
-    int t = history_total(history);
+    int t = history_total(g->hp);
+    int o;
     HISTORY **h = NULL;
-    HISTORY *new;
 
-    if ((h = realloc(history, (t + 2) * sizeof(HISTORY *))) == NULL)
-	return NULL;
+    if (g->ravlevel)
+	o = g->rav[g->ravlevel].hp - g->hp;
+    else
+	o = g->history - g->hp;
 
-    if ((new = calloc(1, sizeof(HISTORY))) == NULL)
-	return NULL;
+    if ((h = realloc(g->hp, (t + 2) * sizeof(HISTORY *))) == NULL)
+	return 1;
 
-    new->move = strdup(m);
-    h[t] = new;
-    *n = t;
-    h[++t] = NULL;
-    return h;
+    g->hp = h;
+
+    if (g->ravlevel)
+	g->rav[g->ravlevel].hp = g->hp + o;
+    else
+	g->history = g->hp + o;
+
+    if ((g->hp[t] = calloc(1, sizeof(HISTORY))) == NULL)
+	return 1;
+
+    g->hindex = t;
+    g->hp[t++]->move = strdup(m);
+    g->hp[t] = NULL;
+    return 0;
 }
 
 /*
@@ -291,7 +288,7 @@ int history_update_board(GAME *g, BOARD b, int n)
     else
 	pgn_init_board(tb);
 
-    for (i = 0; i < n; i++) {
+    for (i = 0; i <= n; i++) {
 	HISTORY *h;
 
 	if ((h = history_by_n(g->hp, i)) == NULL)
@@ -335,11 +332,11 @@ void history_previous(GAME *g, BOARD b, int n)
  */
 void history_next(GAME *g, BOARD b, int n)
 {
-    if (g->hindex + n > history_total(g->hp)) {
+    if (g->hindex + n >= history_total(g->hp)) {
 	if (n <= 2)
 	    g->hindex = 0;
 	else
-	    g->hindex = history_total(g->hp);
+	    g->hindex = history_total(g->hp) - 1;
     }
     else
 	g->hindex += n;
@@ -749,8 +746,7 @@ static int move_text(GAME *g, FILE *fp)
 		return 1;
 	    }
 
-	    //FIXME breaks RAV
-	   // SET_FLAG(g->flags, GF_BLACK_OPENING);
+	    SET_FLAG(g->flags, GF_BLACK_OPENING);
 	}
 	else {
 	    // Parse error (not an opening move).
@@ -764,7 +760,7 @@ static int move_text(GAME *g, FILE *fp)
     dump_board(0, g->b);
 #endif
 
-    g->hp = history_add(g->hp, &g->hindex, m);
+    history_add(g, m);
     return 0;
 }
 
@@ -910,7 +906,7 @@ static void annotation_text(GAME *g, FILE *fp, int terminator)
 /*
  * PGN roster tag.
  */
-static void tag_text(GAME *g, FILE *fp)
+static int tag_text(GAME *g, FILE *fp)
 {
     char name[LINE_MAX], *n = name;
     char value[LINE_MAX], *v = value;
@@ -964,6 +960,11 @@ static void tag_text(GAME *g, FILE *fp)
     strncpy(value, remove_tag_escapes(value), sizeof(value));
     pgn_add_tag(&g->tag, name, value);
     skip_leading_space(fp);
+
+    if (strcasecmp(name, "FEN") == 0)
+	return pgn_init_fen_board(g, g->b, NULL);
+
+    return 0;
 }
 
 /*
@@ -1050,7 +1051,8 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
  * success when there is no move count in the FEN tag otherwise the move count
  * is returned.
  */
-static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *str)
+static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply, 
+	char *str)
 {
     char *tmp;
     char line[LINE_MAX], *s;
@@ -1142,11 +1144,17 @@ other:
 	b[row][col].enpassant = 1;
     }
 
-    while (*tmp)
+    if (*tmp)
 	tmp++;
 
-    while (*tmp != ' ')
-	tmp--;
+    if (*tmp)
+	*ply = atoi(tmp);
+
+    while (*tmp && isdigit(*tmp))
+	tmp++;
+
+    if (*tmp)
+	tmp++;
 
     moven = atoi(tmp);
     return moven;
@@ -1166,6 +1174,7 @@ int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
     BOARD tmpboard;
     unsigned flags = 0;
     char turn = g->turn;
+    char ply = 0;
 
     pgn_init_board(tmpboard);
 
@@ -1180,11 +1189,10 @@ int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
      */
     if ((n >= 0 && i >= 0 && atoi(g->tag[n]->value) == 1) 
 	    || (i >= 0 && n == -1) || fen) {
-	if ((n = parse_fen_line(tmpboard, &flags, &turn,
+	if ((n = parse_fen_line(tmpboard, &flags, &turn, &ply,
 			(fen) ? fen : g->tag[i]->value)) == -1)
 	    return 1;
 	else {
-	    // FIXME .ply
 	    memcpy(b, tmpboard, sizeof(BOARD));
 	    CLEAR_FLAG(g->flags, GF_WK_CASTLE);
 	    CLEAR_FLAG(g->flags, GF_WQ_CASTLE);
@@ -1192,6 +1200,7 @@ int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
 	    CLEAR_FLAG(g->flags, GF_BQ_CASTLE);
 	    g->flags |= flags;
 	    g->turn = turn;
+	    g->ply = ply;
 	}
     }
     else
@@ -1357,7 +1366,9 @@ static int read_file(FILE *fp)
 		memcpy(old, game[gindex].b, sizeof(BOARD));
 	    }
 
-	    tag_text(&game[gindex], fp);
+	    if (tag_text(&game[gindex], fp))
+		parse_error = 1; // FEN tag parse error.
+
 	    continue;
 	}
 
@@ -1367,15 +1378,6 @@ static int read_file(FILE *fp)
 	    eog_text(&game[gindex], fp);
 	    nulltags = 1;
 	    tag_section = 0;
-
-	    if (!done_fen_tag) {
-		if (pgn_init_fen_board(&game[gindex], game[gindex].b, NULL)) {
-		    parse_error = 1;
-		    continue;
-		}
-	    }
-
-	    done_fen_tag = 0;
 	    continue;
 	}
 
@@ -1394,7 +1396,6 @@ static int read_file(FILE *fp)
 		    continue;
 		}
 
-		done_fen_tag = 1;
 		tag_section = 0;
 	    }
 
@@ -1519,8 +1520,10 @@ static void Fputc(int c, FILE *fp, int *len)
     if (c != '\n' && i + 1 > 80)
 	Fputc('\n', fp, &i);
 
-    if (pgn_lastc == '\n' && c == ' ')
+    if (pgn_lastc == '\n' && c == ' ') {
+	*len = 0;
 	return;
+    }
 
     if (fputc(c, fp) == EOF)
 	warn("PGN Save");
@@ -1603,7 +1606,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len,
 
     for (i = 0; h[i]; i++) {
 	if (pgn_write_turn == WHITE) {
-	    if (pgn_mpl == mpl) {
+	    if (mpl && pgn_mpl == mpl) {
 		pgn_mpl = 0;
 		Fputc('\n', fp, len);
 	    }
@@ -1658,13 +1661,18 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len,
 }
 
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The
- * 'reduced' parameter is for writing a PGN reduced export formatted game.
+ * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The 'mpl'
+ * parameter specifies how many full moves there are per line or in 80 columns
+ * which ever occurs first. If 'mpl' is 0 then pgn_write() will try and fit as
+ * many moves as possible in 80 columns. The 'reduced' parameter is for
+ * writing a PGN reduced export formatted game.
  */
 void pgn_write(FILE *fp, GAME g, int mpl, int reduced)
 {
     int i;
     int len = 0;
+
+    pgn_write_turn = (TEST_FLAG(g.flags, GF_BLACK_OPENING)) ? BLACK : WHITE;
 
     //FIXME
     /*
@@ -1746,7 +1754,12 @@ void pgn_write(FILE *fp, GAME g, int mpl, int reduced)
     Fputc('\n', fp, &len);
     g.hp = g.history;
     ravlevel = 0;
+
+    if (pgn_write_turn == BLACK)
+	putstring(fp, "1...", &len);
+
     write_all_move_text(fp, g.hp, 1, &len, mpl, reduced);
+
     Fputc(' ', fp, &len);
     putstring(fp, g.tag[TAG_RESULT]->value, &len);
     putstring(fp, "\n\n", &len);

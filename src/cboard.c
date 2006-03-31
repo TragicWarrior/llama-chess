@@ -1681,7 +1681,7 @@ static int move_to_engine(GAME *g, BOARD b)
     sp.row = sp.col = sp.icon = 0;
 
     if (noengine) {
-	g->hp = history_add(g->hp, &g->hindex, p);
+	history_add(g, p);
 	pgn_switch_turn(g);
 	SET_FLAG(g->flags, GF_MODIFIED);
 	update_all(*g);
@@ -1827,7 +1827,7 @@ void update_status_window(GAME g)
 
 void update_history_window(GAME g)
 {
-    char buf[HISTORY_WIDTH];
+    char buf[HISTORY_WIDTH - 1];
     HISTORY *h = NULL;
     int n, total;
     int t = history_total(g.hp);
@@ -1840,8 +1840,8 @@ void update_history_window(GAME g)
 	total = t / 2;
 
     if (t)
-	snprintf(buf, sizeof(buf), "%u %s %u%s",n, N_OF_N_STR, total,
-		(movestep == 1) ? HISTORY_MOVE_STEP : "");
+	snprintf(buf, sizeof(buf), "%u %s %u%s", n, N_OF_N_STR, total,
+		(movestep == 1) ? HISTORY_PLY_STEP : "");
     else
 	strncpy(buf, UNAVAILABLE, sizeof(buf));
 
@@ -1849,12 +1849,10 @@ void update_history_window(GAME g)
 	    HISTORY_WIDTH - 13, buf);
 
     h = history_by_n(g.hp, g.hindex);
-
     snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
-
     n = 0;
 
-    if (h && ((h->comment && h->comment[0]) || h->nag[0])) {
+    if (h && ((h->comment) || h->nag[0])) {
 	strncat(buf, " (v", sizeof(buf));
 	n++;
     }
@@ -1876,12 +1874,10 @@ void update_history_window(GAME g)
 	    HISTORY_WIDTH - 13, buf);
 
     h = history_by_n(g.hp, game[gindex].hindex - 1);
-
     snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
-
     n = 0;
 
-    if (h && ((h->comment && h->comment[0]) || h->nag[0])) {
+    if (h && ((h->comment) || h->nag[0])) {
 	strncat(buf, " (V", sizeof(buf));
 	n++;
     }
@@ -2038,16 +2034,16 @@ static int find_move_exp(GAME g, const char *str, int init, int which,
 	firstrun = 1;
     }
 
-    incr = (which == 0) ? -(1) : 1;
+    incr = (which == 0) ? -1 : 1;
 
     for (i = g.hindex + incr - 1, found = 0; ; i += incr) {
 	if (i == g.hindex - 1)
 	    break;
 
-	if (i > history_total(g.hp))
+	if (i >= history_total(g.hp))
 	    i = 0;
 	else if (i < 0)
-	    i = history_total(g.hp);
+	    i = history_total(g.hp) - 1;
 
 	// FIXME RAV
 	ret = regexec(&r, g.hp[i]->move, 0, 0, 0);
@@ -2637,7 +2633,12 @@ void game_loop()
     else
 	game[gindex].mode = MODE_PLAY;
 
-    history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+    if (game[gindex].mode == MODE_HISTORY) {
+	history_update_board(&game[gindex], game[gindex].b,
+		history_total(game[gindex].hp));
+	update_cursor(game[gindex], game[gindex].hindex, &c_row, &c_col);
+    }
+
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
     paused = 1; //FIXME clock
@@ -3215,6 +3216,7 @@ void game_loop()
 		pgn_add_tag(&game[gindex].tag, "FEN", 
 			pgn_game_to_fen(game[gindex], game[gindex].b));
 		pgn_add_tag(&game[gindex].tag, "SetUp", "1");
+		pgn_sort_tags(game[gindex].tag);
 		game[gindex].mode = MODE_PLAY;
 		update_all(game[gindex]);
 		break;

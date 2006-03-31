@@ -1200,10 +1200,8 @@ static int drawtest(BOARD b)
     int row, col;
     int other = 0;
 
-    /*
     if (game[gindex].ply >= 50)
 	return 1;
-	*/
 
     for (row = 1; VALIDFILE(row); row++) {
 	for (col = 1; VALIDFILE(col); col++) {
@@ -1248,7 +1246,6 @@ int pgn_validate_move(GAME *g, BOARD b, char *m)
     int dist = 0;
     int promo = -1;
     int kr = 0, kc = 0, okr = 0, okc = 0;
-    int plyincr = 0;
 
     if (strlen(m) < 2)
 	return 1;
@@ -1305,7 +1302,6 @@ again:
 	    else if (*p == 'x') {
 		col = COLTOINT(*++p);
 		row = ROWTOINT(*++p);
-		plyincr++;
 		capture++;
 	    }
 	    else if (*p == '=') {
@@ -1403,6 +1399,11 @@ again:
     dist = abs(srow - row);
 
     if (!validate) {
+	if (piece == PAWN || capture)
+	    g->ply = 0;
+	else
+	    g->ply++;
+
 	pgn_reset_enpassant(b);
 
 	if (piece == PAWN && dist == 2) {
@@ -1417,9 +1418,6 @@ again:
 	    CLEAR_FLAG(g->flags, GF_ENPASSANT);
 	}
     }
-
-    if (piece == PAWN)
-	plyincr++;
 
     dstpiece = piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
