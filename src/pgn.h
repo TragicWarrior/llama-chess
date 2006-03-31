@@ -37,6 +37,7 @@ int ret;
 int pgn_write_turn;
 int pgn_mpl;
 int pgn_lastc;
+int pgn_stop;
 
 void switch_turn(char *);
 

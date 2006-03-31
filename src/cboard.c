@@ -2983,7 +2983,7 @@ void game_loop()
 
 		tmp = tilde_expand(tmp);
 
-		if (pgn_parse_file(tmp))
+		if (pgn_parse_file(tmp, config.stoponerror))
 		    break;
 
 		strncpy(loadfile, tmp, sizeof(loadfile));
@@ -3075,7 +3075,7 @@ void game_loop()
 		    add_custom_tags(&game[gindex].tag);
 		}
 		else {
-		    pgn_parse_file(NULL);
+		    pgn_parse_file(NULL, config.stoponerror);
 		    add_custom_tags(&game[gindex].tag);
 		    pgn_init_board(game[gindex].b);
 		}
@@ -3257,7 +3257,7 @@ void game_loop()
 void usage(const char *pn, int ret)
 {
     fprintf((ret) ? stderr : stdout, "%s",
-    "Usage: cboard [-hvNE] [-d <n>] [-VtRS] [-p <file>]\n"
+    "Usage: cboard [-hvNE] [-VtRS] [-p <file>]\n"
     "  -p  Load PGN file.\n"
     "  -V  Validate a game file.\n"
     "  -S  Validate and output a PGN formatted game.\n"
@@ -3265,7 +3265,6 @@ void usage(const char *pn, int ret)
     "  -t  Also write custom PGN tags from config file.\n"
     "  -N  Don't enable the chess engine (two human players).\n"
     "  -E  Stop processing on file parsing error (overrides config).\n"
-    "  -d  Escape key delay in milliseconds.\n"
     "  -v  Version information.\n"
     "  -h  This help text.\n");
 
@@ -3352,11 +3351,8 @@ int main(int argc, char *argv[])
 
     set_defaults();
 
-    while ((opt = getopt(argc, argv, "d:ENVtSRhp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "ENVtSRhp:v")) != -1) {
 	switch (opt) {
-	    case 'd':
-		ESCDELAY = atoi(optarg);
-		break;
 	    case 't':
 		write_custom_tags = 1;
 		break;
@@ -3402,7 +3398,7 @@ int main(int argc, char *argv[])
 
     switch (filetype) {
 	case PGN_FILE:
-	    ret = pgn_parse_file(loadfile);
+	    ret = pgn_parse_file(loadfile, config.stoponerror);
 	    break;
 	case FEN_FILE:
 	    //ret = parse_fen_file(loadfile);
@@ -3411,7 +3407,7 @@ int main(int argc, char *argv[])
 	case NO_FILE:
 	default:
 	    // No file specified. Empty game.
-	    ret = pgn_parse_file(NULL);
+	    ret = pgn_parse_file(NULL, config.stoponerror);
 	    add_custom_tags(&game[gindex].tag);
 	    break;
     }

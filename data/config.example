@@ -2,31 +2,23 @@
 # This is an example configuration file for CBoard. All of the settings below
 # are the program defaults. Empty lines and lines beginning with '#' are
 # ignored. Parameters and values are separated by one or more space or TAB
-# characters and must be on the same line.
+# characters and must be on the same line. Options which are noted to have a
+# BOOL value can be one of: true, 1, yes, on OR false, 0, no, off.
 ###############################################################################
-# The chess engine to run. 0=gnuchess, 1=crafty.
-engine		0
+# The command of the chess engine to use. Engines that support the xboard
+# protocol should work.
+#engine_cmd	gnuchess
 
-# For testing other engines not supported, set the command here.
-#engine_cmd	some test engine command
+# The number of moves to jump when browsing move history and pressing the UP
+# or DOWN keys.
+jump_count	5
 
-# The number of moves to jump when browsing history and pressing the UP or
-# DOWN keys.
-jumpcount	5
-
-# The book method for the engine to use. Must be one of: off, prefer, best,
-# worst or random.
-book		random
-
-# The engine search level for the next move.
-depth		0
-
-# Show agony strings on captures.
+# Show agony strings on captures. BOOL
 agony		on
 
-# Show agony strings when browsing history. If "agony" above is off,
-# this will be off also regardless of the setting.
-historyagony	off
+# Show agony strings when browsing history. If "agony" above is off, this will
+# be off also regardless of the setting. BOOL
+history_agony	off
 
 # If set, the default directory where games will be saved to and opened from.
 # A tilde "~" as the first character will expand to your home directory.
@@ -34,38 +26,32 @@ historyagony	off
 
 # When saving a game, prompt to edit PGN data. When saving in history mode,
 # prompt for the history type. If off, you can override it using the ingame 'S'
-# command.
+# command. BOOL
 save_prompt	on
 
-# When deleting games with the 'D' command and this is on, prompt before
-# deleting.
+# When deleting games with the 'X' command and this is on, prompt before
+# deleting. BOOL
 delete_prompt	on
 
-# Compression level of .gz'd, .bz2'd and .zip'd files.
-clevel		6
+# If enabled, chess board line graphics will be drawn. BOOL
+line_graphics	on
 
-# If "on", chess board line graphics will be drawn.
-line_graphics	off
-
-# If on, show valid moves for the selected piece.
+# If on, show valid moves for the selected piece. BOOL
 valid_moves	on
 
 # If enabled and there is a parsing error when loading a file, stop processing
 # immediately. Normally a game or round will be flagged as having an error and
-# other games will be loaded.
-stoponerror	off
+# other games will be loaded. BOOL
+stop_on_error	off
 
-# ICS server.
-ics_server	ics.freechess.org
+# The number of full moves to write per linea (up to 80 columns) when saving a
+# game. If 0, then try and fit as many as possible in 80 columns.
+mpl		0
 
-# ICS server port.
-ics_port	5000
-
-# ICS username.
-ics_user	guest
-
-# ICS user password.
-#ics_passwd	password
+# Custom roster tags to add to new games and existing games with the -t
+# switch. If an existing tag with the same name exists then the tag will be
+# updated with the new value. You can specify as many tags as needed.
+#tag		White	Ben Kibbey
 
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
@@ -80,37 +66,37 @@ ics_user	guest
 # a single comma. The following attributes are available: bold, blink,
 # reverse, dim, standout, underline, invisible, or none. Note that not all
 # terminals support all attributes.
-board_window		white	black
-board_graphics		white	black
-board_selected		white	yellow	none	bold,reverse
-board_cursor		white	green	none	bold,reverse
-board_black		white	black
-board_white		white	red	none	reverse
-board_coords		yellow	black	bold
-board_count		magenta	cyan	bold	bold,reverse
-board_white_moves	white	magenta	none	reverse
-board_black_moves	white	blue	none	reverse
+color_board_window		white	black
+color_board_graphics		white	black
+color_board_selected		white	yellow	none	bold,reverse
+color_board_cursor		white	green	none	bold,reverse
+color_board_black		white	black
+color_board_white		white	red	none	reverse
+color_board_coords		yellow	black	bold
+color_board_count		magenta	cyan	bold	bold,reverse
+color_board_white_moves	white	magenta	none	reverse
+color_board_black_moves	white	blue	none	reverse
 
-status_window	white	black
-status_title	white	blue	none	reverse
-status_border	cyan	black
-status_notify	green	black	none	bold
-status_engine	yellow	black	none	bold
+color_status_window	white	black
+color_status_title	white	blue	none	reverse
+color_status_border	cyan	black
+color_status_notify	green	black	none	bold
+color_status_engine	yellow	black	none	bold
 
-tag_window	white	black
-tag_title	white	blue	none	reverse
-tag_border	cyan	black
+color_tag_window	white	black
+color_tag_title	white	blue	none	reverse
+color_tag_border	cyan	black
 
-history_window	white	black
-history_title	white	blue	none	reverse
-history_border	cyan	black
+color_history_window	white	black
+color_history_title	white	blue	none	reverse
+color_history_border	cyan	black
 
-message_window	white	black
-message_title	white	green	none	reverse
-message_border	cyan	black
-message_prompt	white	green	none	bold
+color_message_window	white	black
+color_message_title	white	magenta	none	reverse
+color_message_border	cyan	black
+color_message_prompt	white	magenta	none	bold
 
-input_window	white	black
-input_title	white	green	none	reverse
-input_border	cyan	black
-input_prompt	white	green	none	bold
+color_input_window	white	black
+color_input_title	white	magenta	none	reverse
+color_input_border	cyan	black
+color_input_prompt	white	magenta	none	bold

@@ -92,8 +92,6 @@ void init_color_pairs()
 	    config.color[CONF_BCOUNT].bg);
     init_pair(29, config.color[CONF_BDWINDOW].fg, 
 	    config.color[CONF_BDWINDOW].bg);
-    init_pair(30, config.color[CONF_CASTLE].fg, 
-	    config.color[CONF_CASTLE].bg);
 }
 
 void set_default_colors()
@@ -172,5 +170,4 @@ void set_default_colors()
     config.color[CONF_IPROMPT].fg = COLOR_WHITE;
     config.color[CONF_IPROMPT].bg = COLOR_MAGENTA;
     config.color[CONF_IPROMPT].nattrs = A_BOLD;
-    config.color[CONF_CASTLE].fg = COLOR_BLUE;
 }

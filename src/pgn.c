@@ -1265,6 +1265,9 @@ static int read_file(FILE *fp)
 	    if (ravlevel)
 		return 1;
 
+	    if (pgn_stop)
+		return 1;
+
 	    if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
 		parse_error = 0;
 		nulltags = 1;
@@ -1460,9 +1463,12 @@ static int read_file(FILE *fp)
  * otherwise 0 is returned and the global 'gindex' is set to the last parsed
  * game in the file and the global 'gtotal' is set to the total number of
  * games in the file. For file access failures -1 is returned with errno set
- * to indicate the error.
+ * to indicate the error. If 'stop' is greater than 0 then processing of the
+ * file will stop when a parse error occurs. If 0 and a parse error occurs
+ * then processing for the current game or round will stop and the game flag
+ * GF_PERROR will be set.
  */
-int pgn_parse_file(const char *filename)
+int pgn_parse_file(const char *filename, int stop)
 {
     FILE *fp;
     int i;
@@ -1481,6 +1487,7 @@ int pgn_parse_file(const char *filename)
 
     reset_game_data();
     nulltags = 1;
+    pgn_stop = stop;
     ret = read_file(fp);
     fclose(fp);
 

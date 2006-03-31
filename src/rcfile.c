@@ -120,17 +120,16 @@ static void parse_color(const char *filename, int line, const char *str,
 	ctmp.nattrs = attributes(filename, line, nattr);
 
     *c = ctmp;
-    return;
 }
 
 static int on_or_off(const char *filename, int lines, const char *str)
 {
-    if (strcmp(str, "on") == 0 || strcmp(str, "1") == 0 || 
-	    strcmp(str, "yes") == 0)
+    if (strcasecmp(str, "on") == 0 || strcasecmp(str, "1") == 0 || 
+	    strcasecmp(str, "yes") == 0 || strcasecmp(str, "true") == 0)
 	return 1;
 
-    if (strcmp(str, "off") == 0 || strcmp(str, "0") == 0 ||
-	    strcmp(str, "no") == 0)
+    if (strcasecmp(str, "off") == 0 || strcasecmp(str, "0") == 0 ||
+	    strcasecmp(str, "no") == 0 || strcasecmp(str, "false") == 0)
 	return 0;
 
     errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, lines, str);
@@ -160,19 +159,17 @@ void copydatafile(const char *dst, const char *src)
 
     fclose(fp);
     fclose(ofp);
-    return;
 }
 
 void set_config_defaults()
 {
     struct stat st;
 
-    config.engine_cmd = strdup("gnuchess");//FIXME
+    config.engine_cmd = strdup("gnuchess");
     config.jumpcount = 5;
-    config.clevel = 6;
     config.historyagony = 0;
     config.agony = 1;
-    config.linegraphics = 0;
+    config.linegraphics = 1;
     config.saveprompt = 1;
     config.deleteprompt = 1;
     config.validmoves = 1;
@@ -231,7 +228,7 @@ void parse_rcfile(const char *filename)
 	strncpy(val, trim(val), sizeof(val));
 	strncpy(var, trim(var), sizeof(var));
 
-	if (strcmp(var, "jumpcount") == 0) {
+	if (strcmp(var, "jump_count") == 0) {
 	    if (!isinteger(val))
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
 			lines);
@@ -244,13 +241,13 @@ void parse_rcfile(const char *filename)
 			lines);
 	    config.mpl = atoi(val);
 	}
-	else if (strcmp(var, "historyagony") == 0)
+	else if (strcmp(var, "history_agony") == 0)
 	    config.historyagony = on_or_off(filename, lines, val);
 	else if (strcmp(var, "agony") == 0)
 	    config.agony = on_or_off(filename, lines, val);
-	else if (strcmp(var, "stoponerror") == 0)
+	else if (strcmp(var, "stop_on_error") == 0)
 	    config.stoponerror = on_or_off(filename, lines, val);
-	else if (strcmp(var, "pgntag") == 0) {
+	else if (strcmp(var, "tag") == 0) {
 	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
 		    n > 2)
 		errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, 
@@ -273,64 +270,6 @@ void parse_rcfile(const char *filename)
 	    token[0] = toupper(token[0]);
 	    pgn_add_tag(&config.tag, token, value);
 	}
-	else if (strcmp(var, "board_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BDWINDOW]);
-	else if (strcmp(var, "board_selected") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BSELECTED]);
-	else if (strcmp(var, "board_white_moves") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BMOVESW]);
-	else if (strcmp(var, "board_black_moves") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BMOVESB]);
-	else if (strcmp(var, "board_count") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BCOUNT]);
-	else if (strcmp(var, "board_cursor") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BCURSOR]);
-	else if (strcmp(var, "board_black") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BBLACK]);
-	else if (strcmp(var, "board_white") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BWHITE]);
-	else if (strcmp(var, "board_graphics") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BGRAPHICS]);
-	else if (strcmp(var, "board_coords") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_BCOORDS]);
-	else if (strcmp(var, "status_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_SWINDOW]);
-	else if (strcmp(var, "status_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_STITLE]);
-	else if (strcmp(var, "status_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_SBORDER]);
-	else if (strcmp(var, "status_notify") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_SNOTIFY]);
-	else if (strcmp(var, "status_engine") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_SENGINE]);
-	else if (strcmp(var, "tag_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_TWINDOW]);
-	else if (strcmp(var, "tag_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_TTITLE]);
-	else if (strcmp(var, "tag_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_TBORDER]);
-	else if (strcmp(var, "history_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_HWINDOW]);
-	else if (strcmp(var, "history_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_HTITLE]);
-	else if (strcmp(var, "history_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_HBORDER]);
-	else if (strcmp(var, "message_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_MWINDOW]);
-	else if (strcmp(var, "message_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_MTITLE]);
-	else if (strcmp(var, "message_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_MBORDER]);
-	else if (strcmp(var, "message_prompt") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_MPROMPT]);
-	else if (strcmp(var, "input_window") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_IWINDOW]);
-	else if (strcmp(var, "input_title") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_ITITLE]);
-	else if (strcmp(var, "input_border") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_IBORDER]);
-	else if (strcmp(var, "input_prompt") == 0)
-	    parse_color(filename, lines, val, &config.color[CONF_IPROMPT]);
 	else if (strcmp(var, "save_directory") == 0)
 	    config.savedirectory = strdup(tilde_expand(val));
 	else if (strcmp(var, "line_graphics") == 0)
@@ -341,17 +280,66 @@ void parse_rcfile(const char *filename)
 	    config.deleteprompt = on_or_off(filename, lines, val);
 	else if (strcmp(var, "valid_moves") == 0)
 	    config.validmoves = on_or_off(filename, lines, val);
-	else if (strcmp(var, "clevel") == 0) {
-	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
-
-	    if ((config.clevel = atoi(val)) > 9 || config.clevel < 1)
-		errx(EXIT_FAILURE, "%s(%i): value must be between 1 and 9", 
-			filename, lines);
-	}
 	else if (strcmp(var, "engine_cmd") == 0)
 	    altengine = strdup(val);
+	else if (strcmp(var, "color_board_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BDWINDOW]);
+	else if (strcmp(var, "color_board_selected") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BSELECTED]);
+	else if (strcmp(var, "color_board_white_moves") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BMOVESW]);
+	else if (strcmp(var, "color_board_black_moves") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BMOVESB]);
+	else if (strcmp(var, "color_board_count") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BCOUNT]);
+	else if (strcmp(var, "color_board_cursor") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BCURSOR]);
+	else if (strcmp(var, "color_board_black") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BBLACK]);
+	else if (strcmp(var, "color_board_white") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BWHITE]);
+	else if (strcmp(var, "color_board_graphics") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BGRAPHICS]);
+	else if (strcmp(var, "color_board_coords") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BCOORDS]);
+	else if (strcmp(var, "color_status_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_SWINDOW]);
+	else if (strcmp(var, "color_status_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_STITLE]);
+	else if (strcmp(var, "color_status_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_SBORDER]);
+	else if (strcmp(var, "color_status_notify") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_SNOTIFY]);
+	else if (strcmp(var, "color_status_engine") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_SENGINE]);
+	else if (strcmp(var, "color_tag_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_TWINDOW]);
+	else if (strcmp(var, "color_tag_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_TTITLE]);
+	else if (strcmp(var, "color_tag_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_TBORDER]);
+	else if (strcmp(var, "color_history_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_HWINDOW]);
+	else if (strcmp(var, "color_history_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_HTITLE]);
+	else if (strcmp(var, "color_history_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_HBORDER]);
+	else if (strcmp(var, "color_message_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_MWINDOW]);
+	else if (strcmp(var, "color_message_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_MTITLE]);
+	else if (strcmp(var, "color_message_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_MBORDER]);
+	else if (strcmp(var, "color_message_prompt") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_MPROMPT]);
+	else if (strcmp(var, "color_input_window") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_IWINDOW]);
+	else if (strcmp(var, "color_input_title") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_ITITLE]);
+	else if (strcmp(var, "color_input_border") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_IBORDER]);
+	else if (strcmp(var, "color_input_prompt") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_IPROMPT]);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);
@@ -359,8 +347,9 @@ void parse_rcfile(const char *filename)
 
     fclose(fp);
 
-    if (altengine)
-	config.engine_cmd = altengine;
-
-    return;
+    if (altengine) {
+	free(config.engine_cmd);
+	config.engine_cmd = NULL;
+	config.engine_cmd = strdup(altengine);
+    }
 }
