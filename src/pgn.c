@@ -959,7 +959,6 @@ static int tag_text(GAME *g, FILE *fp)
 
     strncpy(value, remove_tag_escapes(value), sizeof(value));
     pgn_add_tag(&g->tag, name, value);
-    skip_leading_space(fp);
 
     if (strcasecmp(name, "FEN") == 0)
 	return pgn_init_fen_board(g, g->b, NULL);
