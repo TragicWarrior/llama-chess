@@ -977,10 +977,12 @@ static int eog_text(GAME *g, FILE *fp)
     while ((c = fgetc(fp)) != EOF && !isspace(c) && i++ < sizeof(buf))
 	*p++ = c;
 
+    if (isspace(c))
+	ungetc(c, fp);
+
     *p = 0;
     g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, strlen(buf) + 1);
     strcpy(g->tag[TAG_RESULT]->value, buf);
-    skip_leading_space(fp);
     return 1;
 }
 
@@ -1276,6 +1278,11 @@ static int read_file(FILE *fp)
 
 	// New game reached.
 	if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
+	    if (tag_section) {
+		tag_section = 0;
+		continue;
+	    }
+
 	    nulltags = 1;
 	    tag_section = 0;
 	    continue;
