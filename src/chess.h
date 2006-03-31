@@ -181,9 +181,11 @@ void pgn_init_board(BOARD b);
 /*
  * This is called at the EOG marker and the beginning of the move text
  * section. So at least a move or EOG marker has to exist. It initializes the
- * board (b) to the FEN tag 'fen' if not NULL or from the game 'g' FEN tag (if
- * found) and sets the castling and enpassant info for the game 'g'. Returns 0
- * on success or if there was no FEN tag and 1 if there was a FEN parse error.
+ * board (b) to the FEN tag (if found) and sets the castling and enpassant
+ * info for the game 'g'. If 'fen' is set it should be a fen tag and will be
+ * parsed rather than the game 'g'.tag FEN tag. Returns 0 on success or if
+ * there was both a FEN and SetUp tag with the SetUp tag set to 0. Returns 1
+ * if there was a FEN parse error or no FEN tag at all.
  */
 int pgn_init_fen_board(GAME *g, BOARD b, char *fen);
 

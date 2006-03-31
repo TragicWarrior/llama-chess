@@ -288,7 +288,7 @@ int history_update_board(GAME *g, BOARD b, int n)
 	    pgn_init_fen_board(g, tb, NULL))
 	return 1;
 
-    for (i = 0; i <= n; i++) {
+    for (i = 1; i <= n; i++) {
 	HISTORY *h;
 
 	if ((h = history_by_n(g->hp, i)) == NULL)
@@ -959,10 +959,6 @@ static int tag_text(GAME *g, FILE *fp)
 
     strncpy(value, remove_tag_escapes(value), sizeof(value));
     pgn_add_tag(&g->tag, name, value);
-
-    if (strcasecmp(name, "FEN") == 0)
-	return pgn_init_fen_board(g, g->b, NULL);
-
     return 0;
 }
 
@@ -1166,8 +1162,9 @@ other:
  * section. So at least a move or EOG marker has to exist. It initializes the
  * board (b) to the FEN tag (if found) and sets the castling and enpassant
  * info for the game 'g'. If 'fen' is set it should be a fen tag and will be
- * parsed rather than the game 'g'.tag FEN tag. Returns 0 on success or 1 if
- * there was a FEN parse error or no FEN tag at all.
+ * parsed rather than the game 'g'.tag FEN tag. Returns 0 on success or if
+ * there was both a FEN and SetUp tag with the SetUp tag set to 0. Returns 1
+ * if there was a FEN parse error or no FEN tag at all.
  */
 int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
 {
@@ -1205,7 +1202,7 @@ int pgn_init_fen_board(GAME *g, BOARD b, char *fen)
 	}
     }
     else
-	return 1;
+	return (i >= 0 && n >= 0) ? 0 : 1;
 
     return 0;
 }
@@ -1221,6 +1218,7 @@ void pgn_new_game()
     memset(&game[gindex], 0, sizeof(GAME));
     game[gindex].hp = Calloc(1, sizeof(HISTORY *));
     game[gindex].hp[0] = NULL;
+    game[gindex].hindex = 1;
     game[gindex].history = game[gindex].hp;
     game[gindex].side = game[gindex].turn = WHITE;
     SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|GF_BK_CASTLE|GF_BQ_CASTLE);
@@ -1384,6 +1382,16 @@ static int read_file(FILE *fp)
 	    eog_text(&game[gindex], fp);
 	    nulltags = 1;
 	    tag_section = 0;
+
+	    if (!done_fen_tag) {
+		if (pgn_init_fen_board(&game[gindex], game[gindex].b, NULL)) {
+		    parse_error = 1;
+		    continue;
+		}
+
+		done_fen_tag = 1;
+	    }
+
 	    continue;
 	}
 
@@ -1402,6 +1410,7 @@ static int read_file(FILE *fp)
 		    continue;
 		}
 
+		done_fen_tag = 1;
 		tag_section = 0;
 	    }
 
