@@ -52,11 +52,11 @@ enum {
 };
 
 /* Game flags. */
-#define GF_PERROR	0x01 /* Parse error for this game. */
-#define GF_DELETE	0x02 /* Flagged for deletion ('x' command). */
-#define GF_MODIFIED	0x04 /* Modified tags or history. */
-#define GF_ENPASSANT	0x08 /* For En Passant validation. */
-#define GF_GAMEOVER	0x010 /* End of game. */
+#define GF_PERROR	0x01	/* Parse error for this game. */
+#define GF_DELETE	0x02	/* Flagged for deletion ('x' command). */
+#define GF_MODIFIED	0x04	/* Modified tags or history. */
+#define GF_ENPASSANT	0x08	/* For En Passant validation. */
+#define GF_GAMEOVER	0x010	/* End of game. */
 #define GF_WK_CASTLE	0x020
 #define GF_WQ_CASTLE	0x040
 #define GF_BK_CASTLE	0x080
@@ -86,12 +86,7 @@ typedef struct tags {
  *
  * g.hp is the pointer to the current history which may be .rav for
  * Recursive Annotated Variations. The depth of recursion is kept track of in
- * ravlevel. 
- *
- * ravlevel++; Incremented for this move.
- * g.hp[move].last = g.hindex; 
- * g.hp = h.hp[move].rav; Now operating on the current move.
- * g.hindex = 0; Reset for the current move.
+ * g.ravlevel. 
  */
 typedef struct history {
     char *move;				// The SAN move text.
@@ -136,6 +131,39 @@ typedef struct games {
 
 GAME *game;
 int gindex, gtotal;
+
+typedef enum {
+    /*
+     * When pgn_write() is called to write a game, write reduced PGN format.
+     * This will only write the seven tag roster and move text skipping any
+     * annotation.
+     */
+    PGN_REDUCED,
+
+    /*
+     * The number of full moves to write per line. If 0 then pgn_write() will
+     * write as many as possible within 80 columns.
+     */
+    PGN_MPL,
+
+    /*
+     * Normally when a parse error occurs in a game the game is flagged with
+     * GF_PERROR and the rest of the game is discarded and processing of the
+     * next game is done. When set and a parse error occurs the rest of the
+     * entire file will be discarded.
+     */
+    PGN_STOP_ON_ERROR
+} pgn_config_flag;
+
+/*
+ * Set game flags. See chess.h for available flags.
+ */
+int pgn_config_set(pgn_config_flag f, int val);
+
+/*
+ * Returns the value accociated with 'f' or -1 if 'f' is invalid.
+ */
+int pgn_config_get(pgn_config_flag f);
 
 /*
  * Converts the character piece 'p' to an integer.
@@ -202,27 +230,34 @@ char *pgn_game_to_fen(GAME g, BOARD b);
 void pgn_new_game();
 
 /*
- * Parses a PGN game file 'filename'. If 'filename' is NULL then a single
- * empty game will be allocated. If there is a parsing error 1 is returned
- * otherwise 0 is returned and the global 'gindex' is set to the last parsed
- * game in the file and the global 'gtotal' is set to the total number of
- * games in the file. For file access failures -1 is returned with errno set
- * to indicate the error. If 'stop' is greater than 0 then processing of the
- * file will stop when a parse error occurs. If 0 and a parse error occurs
- * then processing for the current game or round will stop and the game flag
- * GF_PERROR will be set.
+ * Returns a file pointer associated with 'filename' or NULL on error with
+ * errno set to indicate the error. If compressed file support was enabled at
+ * compile time and the filetype is supported and the utility is installed
+ * then the file will be decompressed.
  */
-int pgn_parse_file(const char *filename, int stop);
+FILE *pgn_open(const char *filename);
 
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The 'mpl'
- * parameter specifies how many full moves there are per line or in 80 columns
- * which ever occurs first. If 'mpl' is 0 then pgn_write() will try and fit as
- * many moves as possible in 80 columns. The 'reduced' parameter is for
- * writing a PGN reduced export formatted game. Returns 1 if the written move
- * count doesn't match the game's ply count (FEN tag) or 0 on success.
+ * Parses a file whose file pointer is 'fp'. 'fp' may have been returned by
+ * pgn_open(). If 'fp' is NULL then a single empty game will be allocated. If
+ * there is a parsing error 1 is returned otherwise 0 is returned and the
+ * global 'gindex' is set to the last parsed game in the file and the global
+ * 'gtotal' is set to the total number of games in the file. The file will be
+ * closed when the parsing is done.
  */
-void pgn_write(FILE *fp, GAME g, int mpl, int reduced);
+int pgn_parse(FILE *fp);
+
+/*
+ * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. Returns 1
+ * if the written move count doesn't match the game's ply count (FEN tag) or 0
+ * on success.
+ */
+void pgn_write(FILE *fp, GAME g);
+
+/* 
+ * Returns 1 if 'filename' is a recognized compressed filetype or 0 if not.
+ */
+int pgn_is_compressed(const char *filename);
 
 /*
  * Returns the total number of moves in 'h' or 0 if none.

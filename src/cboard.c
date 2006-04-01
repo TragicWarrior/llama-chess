@@ -1302,9 +1302,6 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	filename = buf;
     }
 
-    if (!isfifo)
-	command = compression_cmd(filename, 0);
-
     /* This is a hack to resume an existing game when more than one game is
      * available. Also resuming a saved game and a game from history.
      */
@@ -1318,7 +1315,7 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 
 	    switch (c) {
 		case 'a':
-		    if (command) {
+		    if (pgn_is_compressed(filename)) {
 			cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
 			return 1;
 		    }
@@ -1350,10 +1347,10 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
     }
 
     if (isfifo)
-	pgn_write(fp, game[saveindex], config.mpl, isfifo);
+	pgn_write(fp, game[saveindex]);
     else {
 	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
-	    pgn_write(fp, game[i], config.mpl, isfifo);
+	    pgn_write(fp, game[i]);
     }
 
     if (command)
@@ -2624,6 +2621,7 @@ void game_loop()
     char gameexp[255] = {0};
     int delete_count = 0;
     int markstart = -1, markend = -1;
+    FILE *fp;
 
     c_row = 2, c_col = 5;
     gindex = gtotal - 1;
@@ -2982,8 +2980,13 @@ void game_loop()
 		    break;
 
 		tmp = tilde_expand(tmp);
+		
+		if ((fp = pgn_open(tmp)) == NULL) {
+		    cmessage(ERROR, ANYKEY, "%s\n%s", tmp, strerror(errno));
+		    break;
+		}
 
-		if (pgn_parse_file(tmp, config.stoponerror))
+		if (pgn_parse(fp))
 		    break;
 
 		strncpy(loadfile, tmp, sizeof(loadfile));
@@ -3022,8 +3025,7 @@ void game_loop()
 
 		tmp = tilde_expand(tmp);
 
-		if (strstr(tmp, ".") == NULL && compression_cmd(tmp, 0)
-			== NULL) {
+		if (pgn_is_compressed(tmp)) {
 		    snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
 		    tmp = tfile;
 		}
@@ -3075,7 +3077,7 @@ void game_loop()
 		    add_custom_tags(&game[gindex].tag);
 		}
 		else {
-		    pgn_parse_file(NULL, config.stoponerror);
+		    pgn_parse(NULL);
 		    add_custom_tags(&game[gindex].tag);
 		    pgn_init_board(game[gindex].b);
 		}
@@ -3314,6 +3316,7 @@ int main(int argc, char *argv[])
     int ret = EXIT_SUCCESS;
     int validate_only = 0, validate_and_write = 0, reduced = 0;
     int write_custom_tags = 0;
+    FILE *fp;
 
     if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
@@ -3398,7 +3401,10 @@ int main(int argc, char *argv[])
 
     switch (filetype) {
 	case PGN_FILE:
-	    ret = pgn_parse_file(loadfile, config.stoponerror);
+	    if ((fp = pgn_open(loadfile)) == NULL)
+		err(EXIT_FAILURE, "%s", loadfile);
+
+	    ret = pgn_parse(fp);
 	    break;
 	case FEN_FILE:
 	    //ret = parse_fen_file(loadfile);
@@ -3407,7 +3413,7 @@ int main(int argc, char *argv[])
 	case NO_FILE:
 	default:
 	    // No file specified. Empty game.
-	    ret = pgn_parse_file(NULL, config.stoponerror);
+	    ret = pgn_parse(NULL);
 	    add_custom_tags(&game[gindex].tag);
 	    break;
     }
@@ -3423,7 +3429,7 @@ int main(int argc, char *argv[])
 		if (write_custom_tags)
 		    add_custom_tags(&game[i].tag);
 
-		pgn_write(stdout, game[i], config.mpl, reduced);
+		pgn_write(stdout, game[i]);
 	    }
 	}
 

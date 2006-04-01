@@ -1,7 +1,7 @@
 dnl $Id: configure.ac,v 1.18 2003-02-07 19:27:39 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT(cboard, 0.1-git, [Ben Kibbey <bjk@luxsci.net>])
+AC_INIT(cboard, 0.1-git, [Ben Kibbey bjk@luxsci.net])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
@@ -64,6 +64,10 @@ AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
 		select socket strcasecmp strdup strerror strrchr strstr \
 		vasprintf])
+
+AC_ARG_ENABLE([compressed],
+	      [  --disable-compressed    disable compressed file support (enabled)],
+	      ,[AC_DEFINE_UNQUOTED([WITH_COMPRESSED], 1, [Enable compressed file support])])
 
 AH_TOP([/* Maximum line length in a PGN file. */
 #define MAX_PGN_LINE_LEN 255])

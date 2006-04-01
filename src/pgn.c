@@ -1249,6 +1249,11 @@ static int read_file(FILE *fp)
 	    }
 	}
 
+	if (!isascii(c)) {
+	    parse_error = 1;
+	    continue;
+	}
+
 	if (c == '\015')
 	    continue;
 
@@ -1265,7 +1270,7 @@ static int read_file(FILE *fp)
 	    if (ravlevel)
 		return 1;
 
-	    if (pgn_stop)
+	    if (pgn_config.stop)
 		return 1;
 
 	    if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
@@ -1458,36 +1463,25 @@ static int read_file(FILE *fp)
 }
 
 /*
- * Parses a PGN game file 'filename'. If 'filename' is NULL then a single
- * empty game will be allocated. If there is a parsing error 1 is returned
- * otherwise 0 is returned and the global 'gindex' is set to the last parsed
- * game in the file and the global 'gtotal' is set to the total number of
- * games in the file. For file access failures -1 is returned with errno set
- * to indicate the error. If 'stop' is greater than 0 then processing of the
- * file will stop when a parse error occurs. If 0 and a parse error occurs
- * then processing for the current game or round will stop and the game flag
- * GF_PERROR will be set.
+ * Parses a file whose file pointer is 'fp'. 'fp' may have been returned by
+ * pgn_open(). If 'fp' is NULL then a single empty game will be allocated. If
+ * there is a parsing error 1 is returned otherwise 0 is returned and the
+ * global 'gindex' is set to the last parsed game in the file and the global
+ * 'gtotal' is set to the total number of games in the file. The file will be
+ * closed when the parsing is done.
  */
-int pgn_parse_file(const char *filename, int stop)
+int pgn_parse(FILE *fp)
 {
-    FILE *fp;
     int i;
 
-    if (!filename) {
+    if (!fp) {
 	reset_game_data();
 	pgn_new_game();
 	return 0;
     }
 
-    if (access(filename, R_OK) == -1)
-	return -1;
-
-    if ((fp = open_file(filename)) == NULL)
-	return -1;
-
     reset_game_data();
     nulltags = 1;
-    pgn_stop = stop;
     ret = read_file(fp);
     fclose(fp);
 
@@ -1610,24 +1604,23 @@ static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
     }
 }
 
-static void write_move_text(FILE *fp, HISTORY *h, int *len, int reduced)
+static void write_move_text(FILE *fp, HISTORY *h, int *len)
 {
     Fputc(' ', fp, len);
     putstring(fp, h->move, len);
 
-    if (!reduced)
+    if (pgn_config.reduced)
 	write_comments_and_nag(fp, h, len);
 }
 
-static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len,
-	int mpl, int reduced)
+static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 {
     int i;
     HISTORY **hp = NULL;
 
     for (i = 0; h[i]; i++) {
 	if (pgn_write_turn == WHITE) {
-	    if (mpl && pgn_mpl == mpl) {
+	    if (pgn_config.mpl && pgn_mpl == pgn_config.mpl) {
 		pgn_mpl = 0;
 		Fputc('\n', fp, len);
 	    }
@@ -1640,9 +1633,9 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len,
 	    pgn_mpl++;
 	}
 
-	write_move_text(fp, h[i], len, reduced);
+	write_move_text(fp, h[i], len);
 
-	if (!reduced && h[i]->rav) {
+	if (!pgn_config.reduced && h[i]->rav) {
 	    int oldm = m;
 	    int oldturn = pgn_write_turn;
 
@@ -1659,7 +1652,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len,
 	    }
 
 	    hp = h[i]->rav;
-	    write_all_move_text(fp, hp, m, len, mpl, reduced);
+	    write_all_move_text(fp, hp, m, len);
 	    m = oldm;
 	    pgn_write_turn = oldturn;
 	    putstring(fp, ")", len);
@@ -1681,14 +1674,181 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len,
     }
 }
 
+#ifdef WITH_COMPRESSED
+static char *compression_cmd(const char *filename, int expand)
+{
+    static char command[FILENAME_MAX];
+    int len = strlen(filename);
+
+    if (filename[len - 4] == '.' && filename[len - 3] == 'z' &&
+	    filename[len - 2] == 'i' && filename[len - 1] == 'p' &&
+	    filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "unzip -p %s 2>/dev/null", 
+		    filename);
+	else
+	    snprintf(command, sizeof(command), "zip -9 >%s 2>/dev/null", 
+		    filename);
+
+	return command;
+    }
+    else if (filename[len - 3] == '.' && filename[len - 2] == 'g' &&
+	    filename[len - 1] == 'z' && filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "gzip -dc %s", filename);
+	else
+	    snprintf(command, sizeof(command), "gzip -c 1>%s", filename);
+
+	return command;
+    }
+    else if (filename[len - 2] == '.' && filename[len - 1] == 'Z' &&
+	    filename[len] == '\0') {
+	if (expand)
+	    snprintf(command, sizeof(command), "uncompress -c %s", filename);
+	else
+	    snprintf(command, sizeof(command), "compress -c 1>%s", filename);
+
+	return command;
+    }
+    else if ((filename[len - 4] == '.' && filename[len - 3] == 'b' &&
+	    filename[len - 2] == 'z' && filename[len - 1] == '2' &&
+	    filename[len] == '\0') || (filename[len - 3] == '.' && 
+		filename[len - 2] == 'b' && filename[len - 1] == 'z' &&
+		filename[len] == '\0')) {
+	if (expand)
+	    snprintf(command, sizeof(command), "bzip2 -dc %s", filename);
+	else
+	    snprintf(command, sizeof(command), "bzip2 -zc 1>%s", filename);
+
+	return command;
+    }
+
+    return NULL;
+}
+#endif
+
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. The 'mpl'
- * parameter specifies how many full moves there are per line or in 80 columns
- * which ever occurs first. If 'mpl' is 0 then pgn_write() will try and fit as
- * many moves as possible in 80 columns. The 'reduced' parameter is for
- * writing a PGN reduced export formatted game.
+ * Returns a file pointer associated with 'filename' or NULL on error with
+ * errno set to indicate the error. If compressed file support was enabled at
+ * compile time and the filetype is supported and the utility is installed
+ * then the file will be decompressed.
  */
-void pgn_write(FILE *fp, GAME g, int mpl, int reduced)
+FILE *pgn_open(const char *filename)
+{
+    FILE *fp = NULL;
+#ifdef WITH_COMPRESSED
+    FILE *tfp = NULL;
+    char buf[LINE_MAX];
+    char *p;
+    char *command = NULL;
+#endif
+
+    if (access(filename, R_OK) == -1)
+	return NULL;
+
+#ifdef WITH_COMPRESSED
+    if ((command = compression_cmd(filename, 1)) != NULL) {
+	if ((tfp = tmpfile()) == NULL)
+	    return NULL;
+
+	if ((fp = popen(command, "r")) == NULL)
+	    return NULL;
+
+	while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+	    fprintf(tfp, "%s", p);
+
+	pclose(fp);
+    }
+
+    if (tfp)
+	fseek(tfp, 0, SEEK_SET);
+    else {
+	if ((tfp = fopen(filename, "r")) == NULL)
+	    return NULL;
+    }
+
+    return tfp;
+#else
+    if ((fp = fopen(filename, "r")) == NULL)
+	return NULL;
+
+    return fp;
+#endif
+}
+
+/* 
+ * Returns 1 if 'filename' is a recognized compressed filetype.
+ */
+int pgn_is_compressed(const char *filename)
+{
+#ifdef WITH_COMPRESSED
+    if (compression_cmd(filename, 0))
+	return 1;
+#endif
+
+    return 0;
+}
+
+/*
+ * Set game flags. See chess.h for available flags.
+ */
+int pgn_config_set(pgn_config_flag f, int val)
+{
+    if (val < 0)
+	return 1;
+
+    switch (f) {
+	case PGN_REDUCED:
+	    if (val == 1)
+		pgn_config.reduced = 1;
+	    else if (val == 0)
+		pgn_config.reduced = 0;
+	    else
+		return 1;
+	    break;
+	case PGN_MPL:
+	    pgn_config.mpl = val;
+	    break;
+	case PGN_STOP_ON_ERROR:
+	    if (val == 1)
+		pgn_config.stop = 1;
+	    else if (val == 0)
+		pgn_config.stop = 0;
+	    else
+		return 1;
+	    break;
+	default:
+	    return 1;
+    }
+
+    return 0;
+}
+
+/*
+ * Returns the value accociated with 'f' or -1 if 'f' is invalid.
+ */
+int pgn_config_get(pgn_config_flag f)
+{
+    switch (f) {
+	case PGN_REDUCED:
+	    return pgn_config.reduced;
+	case PGN_STOP_ON_ERROR:
+	    return pgn_config.stop;
+	case PGN_MPL:
+	    return pgn_config.mpl;
+	default:
+	    break;
+    }
+
+    return -1;
+}
+
+/*
+ * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. Returns 1
+ * if the written move count doesn't match the game's ply count (FEN tag) or 0
+ * on success.
+ */
+void pgn_write(FILE *fp, GAME g)
 {
     int i;
     int len = 0;
@@ -1714,7 +1874,7 @@ void pgn_write(FILE *fp, GAME g, int mpl, int reduced)
 	struct tm tp;
 	char tbuf[64 + 1]; //FIXME
 
-	if (reduced && i == 7)
+	if (pgn_config.reduced && i == 7)
 	    break;
 
 	if (strcmp(g.tag[i]->name, "Date") == 0) {
@@ -1779,13 +1939,13 @@ void pgn_write(FILE *fp, GAME g, int mpl, int reduced)
     if (pgn_write_turn == BLACK)
 	putstring(fp, "1...", &len);
 
-    write_all_move_text(fp, g.hp, 1, &len, mpl, reduced);
+    write_all_move_text(fp, g.hp, 1, &len);
 
     Fputc(' ', fp, &len);
     putstring(fp, g.tag[TAG_RESULT]->value, &len);
     putstring(fp, "\n\n", &len);
 
-    if (!reduced) {
+    if (!pgn_config.reduced) {
 	CLEAR_FLAG(g.flags, GF_MODIFIED);
 	CLEAR_FLAG(g.flags, GF_PERROR);
     }

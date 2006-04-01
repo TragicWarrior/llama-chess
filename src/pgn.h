@@ -27,6 +27,12 @@ extern char *strptime(const char *, const char *, struct tm *);
 
 #define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
 
+struct {
+    int mpl;
+    int stop;
+    int reduced;
+} pgn_config;
+
 int done_fen_tag;
 RAV *rav;
 int ravlevel;

@@ -27,7 +27,6 @@ char *itoa(long n);
 int integer_len(long n);
 int isinteger(const char *str);
 char *tilde_expand(char *str);
-char *compression_cmd(const char *filename, int expand);
 FILE *open_file(const char *filename);
 
 #endif
