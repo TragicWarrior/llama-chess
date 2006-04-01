@@ -46,6 +46,8 @@ PANEL *statusp;
 WINDOW *historyw;
 PANEL *historyp;
 
+int delete_count = 0;
+int markstart = -1, markend = -1;
 int board_details;
 int c_row, c_col;
 int pushkey;

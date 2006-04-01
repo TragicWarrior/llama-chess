@@ -210,7 +210,7 @@ void history_free(HISTORY **h, int start)
  */
 HISTORY *history_by_n(HISTORY **h, int n)
 {
-    if (n < 0 || n >= history_total(h))
+    if (n < 0 || n > history_total(h) - 1)
 	return NULL;
 
     return h[n];
@@ -288,8 +288,9 @@ int history_update_board(GAME *g, BOARD b, int n)
 	    pgn_init_fen_board(g, tb, NULL))
 	return 1;
 
-    for (i = 1; i <= n; i++) {
+    for (i = 0; i < n; i++) {
 	HISTORY *h;
+
 
 	if ((h = history_by_n(g->hp, i)) == NULL)
 	    break;
@@ -332,7 +333,7 @@ void history_previous(GAME *g, BOARD b, int n)
  */
 void history_next(GAME *g, BOARD b, int n)
 {
-    if (g->hindex + n >= history_total(g->hp)) {
+    if (g->hindex + n > history_total(g->hp)) {
 	if (n <= 2)
 	    g->hindex = 0;
 	else
@@ -721,10 +722,6 @@ static int move_text(GAME *g, FILE *fp)
 		CLEAR_FLAG(g->flags, GF_BLACK_OPENING);
 	}
     }
-    else {
-	if (g->hindex > 0)
-	    pgn_switch_turn(g);
-    }
 
     ungetc(c, fp);
 
@@ -733,7 +730,7 @@ static int move_text(GAME *g, FILE *fp)
 
     p = m + strlen(m) - 1;
 
-    if (g->hindex == 0 && g->ravlevel == 0 && VALIDRANK(ROWTOINT(*p)) && 
+    if (!history_total(g->hp) && g->ravlevel == 0 && VALIDRANK(ROWTOINT(*p)) && 
 	    VALIDFILE(COLTOINT(*(p-1))) && ROWTOINT(*p) > 4) {
 	g->turn = BLACK;
 	SET_FLAG(g->flags, GF_BLACK_OPENING);
@@ -756,6 +753,7 @@ static int move_text(GAME *g, FILE *fp)
 #endif
 
     history_add(g, p);
+    pgn_switch_turn(g);
     return 0;
 }
 
