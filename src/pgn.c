@@ -337,7 +337,7 @@ void history_next(GAME *g, BOARD b, int n)
 	if (n <= 2)
 	    g->hindex = 0;
 	else
-	    g->hindex = history_total(g->hp) - 1;
+	    g->hindex = history_total(g->hp);
     }
     else
 	g->hindex += n;
