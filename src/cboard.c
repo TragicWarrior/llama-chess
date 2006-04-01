@@ -2567,6 +2567,7 @@ static void historymode_keys(int c)
 	    game[gindex].hindex = n;
 	    history_update_board(&game[gindex], game[gindex].b, game[gindex].hindex);
 	    update_all(game[gindex]);
+	    update_cursor(game[gindex], game[gindex].hindex);
 	    break;
 	case 'v':
 	    view_annotation(*game[gindex].hp[game[gindex].hindex]);
