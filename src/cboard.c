@@ -3418,9 +3418,6 @@ int main(int argc, char *argv[])
 	    break;
     }
 
-    if (ret == -1)
-	err(EXIT_FAILURE, "%s", loadfile);
-
     if (validate_only || validate_and_write) {
 	if (validate_and_write) {
 	    int i;

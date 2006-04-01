@@ -39,7 +39,7 @@ int ravlevel;
 int validate;
 int nulltags;
 int tag_section;
-int ret;
+int pgn_ret;
 int pgn_write_turn;
 int pgn_mpl;
 int pgn_lastc;

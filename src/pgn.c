@@ -259,7 +259,7 @@ int history_update_board(GAME *g, BOARD b, int n)
 {
     int i = 0;
     BOARD tb;
-    int r = 0;
+    int ret = 0;
 
     if (TEST_FLAG(g->flags, GF_BLACK_OPENING))
 	g->turn = BLACK;
@@ -295,7 +295,7 @@ int history_update_board(GAME *g, BOARD b, int n)
 	    break;
 	
 	if (pgn_validate_move(g, tb, h->move)) {
-	    r = 1;
+	    ret = 1;
 	    break;
 	}
 
@@ -305,7 +305,7 @@ int history_update_board(GAME *g, BOARD b, int n)
     if (ret == 0)
 	memcpy(b, tb, sizeof(BOARD));
 
-    return r;
+    return ret;
 }
 
 /*
@@ -684,7 +684,7 @@ static void skip_leading_space(FILE *fp)
  */
 static int move_text(GAME *g, FILE *fp)
 {
-    char m[MAX_SAN_MOVE_LEN + 1] = {0};
+    char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
     int dots = 0;
@@ -711,7 +711,7 @@ static int move_text(GAME *g, FILE *fp)
 	if (dots > 1) {
 	    g->turn = BLACK;
 
-	    if (g->hindex == 0)
+	    if (g->hindex == 0 && g->ravlevel == 0)
 		SET_FLAG(g->flags, GF_BLACK_OPENING);
 	}
 	else {
@@ -731,36 +731,31 @@ static int move_text(GAME *g, FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
 
+    p = m + strlen(m) - 1;
+
+    if (g->hindex == 0 && g->ravlevel == 0 && VALIDRANK(ROWTOINT(*p)) && 
+	    VALIDFILE(COLTOINT(*(p-1))) && ROWTOINT(*p) > 4) {
+	g->turn = BLACK;
+	SET_FLAG(g->flags, GF_BLACK_OPENING);
+    }
+
+    p = m;
+
     // In case the file is in a2a4 format, convert this move to SAN format.
-    if (pgn_a2a4tosan(g, g->b, m) == NULL)
+    if ((p = pgn_a2a4tosan(g, g->b, m)) == NULL)
 	return 1;
 
-    if (pgn_validate_move(g, g->b, m)) {
-	// Black opening move?
-	if (g->hindex == 0 && g->ravlevel == 0) {
-	    pgn_switch_turn(g);
-
-	    if (pgn_validate_move(g, g->b, m)) {
-		// Nope. Parse error.
-		pgn_switch_turn(g);
-		return 1;
-	    }
-
-	    SET_FLAG(g->flags, GF_BLACK_OPENING);
-	}
-	else {
-	    // Parse error (not an opening move).
-	    pgn_switch_turn(g);
-	    return 1;
-	}
+    if (pgn_validate_move(g, g->b, p)) {
+	pgn_switch_turn(g);
+	return 1;
     }
 
 #ifdef DEBUG
-    DUMP("%s\n", m);
+    DUMP("%s\n", p);
     dump_board(0, g->b);
 #endif
 
-    history_add(g, m);
+    history_add(g, p);
     return 0;
 }
 
@@ -1218,7 +1213,6 @@ void pgn_new_game()
     memset(&game[gindex], 0, sizeof(GAME));
     game[gindex].hp = Calloc(1, sizeof(HISTORY *));
     game[gindex].hp[0] = NULL;
-    game[gindex].hindex = 1;
     game[gindex].history = game[gindex].hp;
     game[gindex].side = game[gindex].turn = WHITE;
     SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|GF_BK_CASTLE|GF_BQ_CASTLE);
@@ -1265,7 +1259,7 @@ static int read_file(FILE *fp)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
-	    ret = 1;
+	    pgn_ret = 1;
 	    
 	    if (ravlevel)
 		return 1;
@@ -1327,7 +1321,7 @@ static int read_file(FILE *fp)
 		     * will put us back in rav_text().
 		     */
 		    if (ravlevel > 0)
-			return ret;
+			return pgn_ret;
 
 		    /*
 		     * We're back at the root move. Continue as normal.
@@ -1459,7 +1453,7 @@ static int read_file(FILE *fp)
 	continue;
     }
 
-    return ret;
+    return pgn_ret;
 }
 
 /*
@@ -1482,7 +1476,7 @@ int pgn_parse(FILE *fp)
 
     reset_game_data();
     nulltags = 1;
-    ret = read_file(fp);
+    pgn_ret = read_file(fp);
     fclose(fp);
 
     if (rav)
@@ -1499,7 +1493,7 @@ int pgn_parse(FILE *fp)
 	game[i].history = game[i].hp;
 
 done:
-    return ret;
+    return pgn_ret;
 }
 
 /*
@@ -1936,7 +1930,7 @@ void pgn_write(FILE *fp, GAME g)
     g.hp = g.history;
     ravlevel = 0;
 
-    if (pgn_write_turn == BLACK)
+    if (history_total(g.hp) && pgn_write_turn == BLACK)
 	putstring(fp, "1...", &len);
 
     write_all_move_text(fp, g.hp, 1, &len);
