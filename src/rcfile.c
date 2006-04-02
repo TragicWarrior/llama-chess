@@ -165,7 +165,7 @@ void set_config_defaults()
 {
     struct stat st;
 
-    config.engine_cmd = strdup("gnuchess");
+    config.engine_cmd = strdup("gnuchess --xboard");
     config.jumpcount = 5;
     config.historyagony = 0;
     config.agony = 1;

@@ -111,8 +111,6 @@ typedef struct {
  */
 typedef struct games {
     BOARD b;			// The board associated with this game.
-    fd_set fds;   		// The file descriptors associated with this
-    				// game.
     TAG **tag;			// Roster tags.
     HISTORY **history;		// Move history for this game.
     HISTORY **hp; 		// History pointer pointing to the location 
@@ -127,6 +125,8 @@ typedef struct games {
                   turn: 1,      // BLACK or WHITE.
     	          mode: 2;      // MODE_[HISTORY/EDIT/PLAY]
     unsigned char ply;          // Move count.
+    void *data;			/* User data associated with this game. Must
+				 * be freed by the user. */
 } GAME;
 
 GAME *game;

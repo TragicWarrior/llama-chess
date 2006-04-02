@@ -251,6 +251,7 @@ int noengine;
 int movestep;
 
 void update_all(GAME g);
+void parse_engine_output(GAME *g, char *str);
 
 #ifdef DEBUG
 void dump_board(int, BOARD);

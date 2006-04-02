@@ -7,7 +7,7 @@
 ###############################################################################
 # The command of the chess engine to use. Engines that support the xboard
 # protocol should work.
-#engine_cmd	gnuchess
+#engine_cmd	gnuchess --xboard
 
 # The number of moves to jump when browsing move history and pressing the UP
 # or DOWN keys.

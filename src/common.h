@@ -16,22 +16,30 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#ifndef ENGINE_H
-#define ENGINE_H
+#ifndef COMMON_H
+#define COMMON_H
 
-#if 0
-#define RETURN		status.engine = ENGINE_READY; \
-			return
-#endif
-#define RETURN return
+enum {
+    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
+};
 
-// This is a failsafe when resuming a game.
-int oldhistorytotal;
+enum { 
+    HUMAN, ENGINE
+};
 
-void send_to_engine(GAME *g, const char *format, ...);
-int start_chess_engine();
-void set_engine_defaults();
-void stop_engine();
-int save_pgn(const char *filename, int isfifo, int saveindex);
+enum {
+    ENGINE_IN_FD,
+    ENGINE_OUT_FD,
+    ICS_FD
+};
+
+struct user_data_s {
+    int fd[3];
+    pid_t pid;
+    int status;
+};
+
+void invalid_move(int n, const char *m);
+void update_status_window(GAME g);
 
 #endif

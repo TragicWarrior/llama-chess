@@ -57,6 +57,7 @@
 #include "engine.h"
 #include "rcfile.h"
 #include "strings.h"
+#include "common.h"
 #include "cboard.h"
 
 #ifdef DEBUG
@@ -1686,7 +1687,7 @@ static int move_to_engine(GAME *g, BOARD b)
 	return 1;
     }
 
-    SEND_TO_ENGINE("%s\n", p);
+    send_to_engine(g, "%s\n", p);
     return 1;
 }
 
@@ -2305,6 +2306,7 @@ static void playmode_keys(int c)
     chtype p;
     int w, x, y, z;
     char *tmp;
+    struct user_data_s *d = game[gindex].data;
 
     switch (c) {
 	case 'c':
@@ -2313,7 +2315,7 @@ static void playmode_keys(int c)
 		break;
 
 	    if ((tmp = get_input_str_clear(ENGINE_CMD_TITLE, NULL)) != NULL)
-		SEND_TO_ENGINE("%s\n", tmp);
+		send_to_engine(&game[gindex], "%s\n", tmp);
 	    break;
 	case '\015':
 	case '\n':
@@ -2351,13 +2353,11 @@ static void playmode_keys(int c)
 
 	    break;
 	case ' ':
-	    if (!noengine && (status.engine == ENGINE_OFFLINE ||
-			!engine_initialized) && !editmode) {
-		if (start_chess_engine() < 0) {
+	    if (!noengine && (!d || d->status == ENGINE_OFFLINE) && !editmode) {
+		if (start_chess_engine(&game[gindex]) < 0) {
 		    sp.icon = 0;
 		    break;
 		}
-
 	    }
 
 	    if (!editmode)
@@ -2393,7 +2393,7 @@ static void playmode_keys(int c)
 	    paused = 0;
 	    break;
 	case 'w':
-	    SEND_TO_ENGINE("\nswitch\n");
+	    send_to_engine(&game[gindex], "\nswitch\n");
 	    switch_side(&game[gindex]);
 	    update_status_window(game[gindex]);
 	    break;
@@ -2627,6 +2627,7 @@ static int globalkeys(int c)
     char *tmp, *p;
     int n, i;
     char tfile[FILENAME_MAX];
+    struct user_data_s *d = game[gindex].data;
 
     switch (c) {
 	case 'h':
@@ -2659,7 +2660,7 @@ static int globalkeys(int c)
 		    return 1;
 	    }
 
-	    if (!noengine && !engine_initialized) {
+	    if (!noengine && (!d || d->status == ENGINE_OFFLINE)) {
 		if (start_chess_engine() < 0)
 		    return 1;
 
@@ -2975,14 +2976,12 @@ static int globalkeys(int c)
 		  c_row = (game[gindex].side == WHITE) ? 2 : 7;
 		  c_col = 4;
 
-		  if (!noengine && (status.engine == ENGINE_OFFLINE ||
-			      engine_initialized == 0)) {
-		      if (start_chess_engine() < 0)
+		  if (!noengine && (!d || d->status == ENGINE_OFFLINE)) {
+		      if (start_chess_engine(&game[gindex]) < 0)
 			  return 1;
 		  }
 
-		  SEND_TO_ENGINE("\nnew\n");
-		  set_engine_defaults();
+		  send_to_engine(&game[gindex], "\nnew\n");
 		  status.engine = ENGINE_READY;
 		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
@@ -3125,7 +3124,6 @@ static int globalkeys(int c)
 void game_loop()
 {  
     int error_recover = 0;
-    int n;
 
     c_row = 2, c_col = 5;
     gindex = gtotal - 1;
@@ -3150,73 +3148,60 @@ void game_loop()
 
     while (!quit) {
 	int c = 0;
-	/*
-	fd_set fds;
+	int n = 0, i;
 	char fdbuf[8192] = {0};
-	struct timeval tv;
-	*/
+	int len;
+	struct timeval tv = {0, 0};
+	fd_set rfds, wfds;
+	struct user_data_s *d = NULL;
 
-	// FIXME game.fds
-#if 0
-	if (engine_initialized) {
-	    tv.tv_sec = 0;
-	    tv.tv_usec = 0;
+	FD_ZERO(&rfds);
+	FD_ZERO(&wfds);
 
-	    FD_ZERO(&fds);
-	    FD_SET(enginefd[0], &fds);
+	for (i = 0; i < gtotal; i++) {
+	    if (game[i].data) {
+		d = game[i].data;
 
-	    for (i = 0; i < gtotal; i++) {
-		if (game[i].sockfd > 0) {
-		    if (game[i].sockfd > n)
-			n = game[i].sockfd;
+		if (d->fd[ENGINE_IN_FD] > 2) {
+		    if (d->fd[ENGINE_IN_FD] > n)
+			n = d->fd[ENGINE_IN_FD];
 
-		    FD_SET(game[i].sockfd, &fds);
+		    FD_SET(d->fd[ENGINE_IN_FD], &rfds);
+		}
+
+		if (d->fd[ICS_FD] > 2) {
+		    if (d->fd[ICS_FD] > n)
+			n = d->fd[ICS_FD];
+
+		    FD_SET(d->fd[ICS_FD], &rfds);
+		    FD_SET(d->fd[ICS_FD], &wfds);
 		}
 	    }
+	}
 
-	    n = (n > enginefd[0]) ? n : enginefd[0];
-
-	    if ((n = select(n + 1, &fds, NULL, NULL, &tv)) > 0) {
-		if (FD_ISSET(enginefd[0], &fds)) {
-		    len = read(enginefd[0], fdbuf, sizeof(fdbuf));
-
-		    if (len == -1) {
-			if (errno != EAGAIN) {
-			    cmessage(ERROR, ANYKEY, "Attempt #%i. read(): %s",
-				    ++error_recover, strerror(errno));
-			    continue;
-			}
-		    }
-		    else {
-			if (len) {
-			    // FIXME engine may be associated with another
-			    // selected game.
-			    parse_engine_output(&game[gindex], fdbuf);
-			    update_all(game[gindex]);
-			}
-		    }
-		}
-
+	if (n) {
+	    if ((n = select(n + 1, &rfds, &wfds, NULL, &tv)) > 0) {
 		for (i = 0; i < gtotal; i++) {
-		    if (game[i].sockfd <= 0)
-			continue;
+		    if (game[i].data) {
+			d = game[i].data;
 
-		    if (FD_ISSET(game[i].sockfd, &fds)) {
-			len = recv(game[i].sockfd, fdbuf, sizeof(fdbuf), 0);
+			if (FD_ISSET(d->fd[ENGINE_IN_FD], &rfds)) {
+			    len = read(d->fd[ENGINE_IN_FD], fdbuf,
+				    sizeof(fdbuf));
 
-			if (len == -1) {
-			    if (errno != EAGAIN) {
-				cmessage(ERROR, ANYKEY, 
-					"Attempt #%i. recv(): %s", 
-					++error_recover, strerror(errno));
-				continue;
+			    if (len == -1) {
+				if (errno != EAGAIN) {
+				    cmessage(ERROR, ANYKEY, "Attempt #%i. read(): %s",
+					    ++error_recover, strerror(errno));
+				    continue;
+				}
 			    }
-			}
-			else {
-			    if (len)
-				parse_ics_output(fdbuf);
-
-			    update_all(game[gindex]);
+			    else {
+				if (len) {
+				    parse_engine_output(&game[gindex], fdbuf);
+				    update_all(game[gindex]);
+				}
+			    }
 			}
 		    }
 		}
@@ -3229,7 +3214,6 @@ void game_loop()
 		}
 	    }
 	}
-#endif
 
 	error_recover = 0;
 	draw_board(&game[gindex], board_details);
@@ -3326,6 +3310,25 @@ static void set_defaults()
 {
     filetype = NO_FILE;
     set_config_defaults();
+}
+
+static void cleanup_all_games()
+{
+    int i;
+
+    for (i = 0; i < gtotal; i++) {
+	struct user_data_s *d;
+
+	if (game[i].data) {
+	    stop_engine(&game[i]);
+	    d = game[i].data;
+
+	    if (d->fd[ICS_FD] > 2)
+		close(d->fd[ICS_FD]);
+
+	    free(game[i].data);
+	}
+    }
 }
 
 int main(int argc, char *argv[])
@@ -3490,9 +3493,8 @@ int main(int argc, char *argv[])
     draw_window_decor();
 
     game_loop();
-    stop_engine();
-
     endwin();
+    cleanup_all_games();
     pgn_free_all();
     del_panel(boardp);
     del_panel(historyp);

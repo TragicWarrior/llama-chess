@@ -41,18 +41,23 @@
 #include "misc.h"
 #include "strings.h"
 #include "window.h"
+#include "common.h"
 #include "engine.h"
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
 
-void send_to_engine(const char *format, ...)
+void send_to_engine(GAME *g, const char *format, ...)
 {
     va_list ap;
     int len;
     char *line;
     int try = 0;
+    struct user_data_s *d = g->data;
+
+    if (!g->data || d->status == ENGINE_OFFLINE)
+	return;
 
     va_start(ap, format);
 #ifdef HAVE_VASPRINTF
@@ -69,23 +74,23 @@ void send_to_engine(const char *format, ...)
 	struct timeval tv;
 
 	FD_ZERO(&fds);
-	FD_SET(enginefd[1], &fds);
+	FD_SET(d->fd[ENGINE_OUT_FD], &fds);
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 
-	if ((n = select(enginefd[1] + 1, NULL, &fds, NULL, &tv)) > 0) {
-	    if (FD_ISSET(enginefd[1], &fds)) {
-		n = write(enginefd[1], line, len);
+	if ((n = select(d->fd[ENGINE_OUT_FD] + 1, NULL, &fds, NULL, &tv)) > 0) {
+	    if (FD_ISSET(d->fd[ENGINE_OUT_FD], &fds)) {
+		n = write(d->fd[ENGINE_OUT_FD], line, len);
 
 		if (n == -1) {
 		    if (errno == EAGAIN)
 			continue;
 
-		    if (kill(enginepid, 0) == -1) {
+		    if (kill(d->pid, 0) == -1) {
 			message(ERROR, ANYKEY, "Could not write to engine. "
 				"Process no longer exists.");
-			engine_initialized = 0;
+			d->status = ENGINE_OFFLINE;
 			//update_status_window(NULL);
 			return;
 		    }
@@ -110,7 +115,6 @@ void send_to_engine(const char *format, ...)
     }
 
     free(line);
-    return;
 }
 
 #ifndef UNIX98
@@ -193,10 +197,11 @@ static char **parseargs(char *str)
 }
 
 /* Is this dangerous if pty permissions are wrong? */
-pid_t init_chess_engine(char **args)
+pid_t init_chess_engine(GAME *g, char **args)
 {
     pid_t pid;
     int from[2], to[2];
+    struct user_data_s *d = NULL;
 #ifndef UNIX98
     char pty[FILENAME_MAX];
 
@@ -222,9 +227,9 @@ pid_t init_chess_engine(char **args)
     errno = 0;
 
 #ifndef UNIX98
-    if ((to[0] = open(pty, O_RDWR | O_NOCTTY)) == -1)
+    if ((to[0] = open(pty, O_RDWR, 0)) == -1)
 #else
-    if ((to[0] = open(ptsname(to[1]), O_RDWR | O_NOCTTY)) == -1)
+    if ((to[0] = open(ptsname(to[1]), O_RDWR, 0)) == -1)
 #endif
 	return -1;
 
@@ -255,43 +260,46 @@ pid_t init_chess_engine(char **args)
 
     close(to[0]);
     close(from[1]);
-    enginefd[0] = from[0];
-    enginefd[1] = to[1];
-    fcntl(enginefd[0], F_SETFL, O_NONBLOCK | O_DIRECT);
-    fcntl(enginefd[1], F_SETFL, O_NONBLOCK | O_DIRECT);
-    engine_initialized = 1;
-    return pid;
+
+    if (!g->data)
+	d = Calloc(1, sizeof(struct user_data_s));
+
+    d->fd[ENGINE_IN_FD] = from[0];
+    d->fd[ENGINE_OUT_FD] = to[1];
+    fcntl(d->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
+    fcntl(d->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
+    d->pid = pid;
+    d->status = ENGINE_READY;
+    g->data = d;
+    return 0;
 }
 
-void set_engine_defaults()
+void stop_engine(GAME *g)
 {
-}
+    struct user_data_s *d = g->data;
 
-void stop_engine()
-{
-    if (!engine_initialized)
+    if (!g->data || d->status == ENGINE_OFFLINE)
 	return;
 
-    SEND_TO_ENGINE("quit\n");
+    send_to_engine(g, "quit\n");
+    d = g->data;
 
-    if (kill(enginepid, 0) != -1)
-	kill(enginepid, SIGTERM);
+    if (kill(d->pid, 0) != -1)
+	kill(d->pid, SIGTERM);
 
-    if (kill(enginepid, 0) != -1)
-	kill(enginepid, SIGKILL);
-
-    return;
+    if (kill(d->pid, 0) != -1)
+	kill(d->pid, SIGKILL);
 }
 
-int start_chess_engine()
+int start_chess_engine(GAME *g)
 {
     char **args;
     int i;
+    int ret = 1;
 
     args = parseargs(config.engine_cmd);
-    enginepid = init_chess_engine(args);
 
-    switch (enginepid) {
+    switch (init_chess_engine(g, args)) {
 	case -1:
 	    /* Pty allocation. */
 	    message(ERROR, ANYKEY, "Could not allocate PTY");
@@ -301,6 +309,9 @@ int start_chess_engine()
 	    message(ERROR, ANYKEY, "%s: %s", args[0], strerror(errno));
 	    break;
 	default:
+	    ret = 0;
+	    // FIXME testing
+	    send_to_engine(g, "depth 1\n");
 	    break;
     }
 
@@ -308,12 +319,8 @@ int start_chess_engine()
 	free(args[i]);
 
     free(args);
-
-    if (enginepid > 0)
-	set_engine_defaults();
-
-    //update_status_window();
-    return enginepid;
+    update_status_window(*g);
+    return ret;
 }
 
 /* Once the PGN parser has been well tested, validate_move() from the human
@@ -350,17 +357,13 @@ void parse_gnuchess_line(GAME *g, char *str)
 	 * need to convert them.
 	 */
 	//FIXME
-	/*
-	if ((p = pgn_a2a4tosan(g, m)) == NULL)
+	if ((p = pgn_a2a4tosan(g, g->b, m)) == NULL)
 	    return;
-	    */
 
-	/*
-	if (validate_move(g, p)) {
+	if (pgn_validate_move(g, g->b, p)) {
 	    invalid_move(0, p);
 	    return;
 	}
-	*/
 
         if (history_total(g->hp) == 0 && g->side == BLACK)
 	    SET_FLAG(g->flags, GF_BLACK_OPENING);
@@ -398,7 +401,6 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    SET_FLAG(g->flags, GF_MODIFIED);
 	}
 
-	set_engine_defaults();
 	return;
     }
 
