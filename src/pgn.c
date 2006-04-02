@@ -1384,7 +1384,9 @@ static int read_file(FILE *fp)
 	    tag_section = 0;
 
 	    if (!done_fen_tag) {
-		if (pgn_init_fen_board(&game[gindex], game[gindex].b, NULL)) {
+		if (pgn_find_tag(game[gindex].tag, "FEN") != -1 && 
+			pgn_init_fen_board(&game[gindex], game[gindex].b,
+			    NULL)) {
 		    parse_error = 1;
 		    continue;
 		}
@@ -1487,8 +1489,10 @@ int pgn_parse(FILE *fp)
 
     gtotal = gindex + 1;
 
-    for (i = 0; i < gtotal; i++)
+    for (i = 0; i < gtotal; i++) {
 	game[i].history = game[i].hp;
+	game[i].hindex = history_total(game[i].hp);
+    }
 
 done:
     return pgn_ret;
