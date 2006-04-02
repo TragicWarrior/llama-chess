@@ -28,6 +28,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_WORDEXP_H
+#include <wordexp.h>
+#endif
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
@@ -108,18 +112,54 @@ int isinteger(const char *str)
     return 1;
 }
 
-char *tilde_expand(char *str)
+char *word_expand(const char *str)
 {
+    wordexp_t w;
     static char buf[FILENAME_MAX];
 
-    if (*str == '~') {
-	strncpy(buf, getenv("HOME"), sizeof(buf));
+    if (wordexp(str, &w, WRDE_NOCMD) != 0)
+	return NULL;
 
-	if (++str)
-	    strncat(buf, str, sizeof(buf));
+    if (w.we_wordc != 1) {
+	wordfree(&w);
+	return NULL;
     }
-    else
-	return str;
+
+    strncpy(buf, w.we_wordv[0], sizeof(buf));
+    wordfree(&w);
+    return buf;
+}
+
+/*
+ * Only space is considered in 'pattern' as the separator. 'c' is what to
+ * append as the last character of 'str' before 'pattern' or 0.
+ */
+char *word_split_append(const char *str, int c, char *pattern)
+{
+    static char buf[FILENAME_MAX], *bp;
+    char *p = pattern;
+    int n = c;
+
+    strncpy(buf, str, sizeof(buf));
+    bp = buf + strlen(buf);
+
+    while (*p) {
+	if (*p == ' ') {
+	    *bp++ = *p++;
+
+	    strncat(buf, str, sizeof(buf));
+	    bp = buf + strlen(buf);
+	    c = n;
+	    continue;
+	}
+
+	if (c) {
+	    *bp++ = c;
+	    c = 0;
+	}
+
+	*bp++ = *p++;
+    }
 
     return buf;
 }

@@ -70,6 +70,7 @@ struct {
     int engine;		// FIXME
     struct color_s color[CONF_MAX_COLORS]; // Color configuration.
     TAG **tag;		// Custom PGN tags.
+    char *pattern;	// Filename filter in the file browser.
 } config;
 
 #endif

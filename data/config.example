@@ -21,7 +21,7 @@ agony		on
 history_agony	off
 
 # If set, the default directory where games will be saved to and opened from.
-# A tilde "~" as the first character will expand to your home directory.
+# Tildes '~' and environment variables are supported.
 #save_directory	/some/path
 
 # When saving a game, prompt to edit PGN data. When saving in history mode,
@@ -52,6 +52,12 @@ mpl		0
 # switch. If an existing tag with the same name exists then the tag will be
 # updated with the new value. You can specify as many tags as needed.
 #tag		White	Ben Kibbey
+
+# When browsing files in the file browser filter files in the current
+# directory according to the specified pattern. If save_directory is defined
+# then the pattern will be appended to that value. Directories (including
+# hidden) are always displayed reguardless of the pattern.
+#pattern		*.pgn
 
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color

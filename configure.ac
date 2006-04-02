@@ -42,7 +42,7 @@ AC_HEADER_SYS_WAIT
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h paths.h sys/socket.h limits.h sys/time.h unistd.h \
 		  stdlib.h string.h ncurses.h panel.h form.h menu.h getopt.h \
-		  sys/param.h regex.h])
+		  sys/param.h regex.h wordexp.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

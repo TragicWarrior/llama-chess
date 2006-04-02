@@ -134,11 +134,8 @@ Enable or disable board line graphics. The default is
 .Ar off .
 .Pp
 .It Cm save_directory Pa path
-If set, the default directory where games will be saved and opened from in the
-file browser. A tilde
-.Pa
-as the first
-character will expand to your home directory.
+If set, the default directory where games will be saved and restored from.
+Tildes `~' and environment variables are supported.
 .Pp
 .It Cm mpl Ar integer
 The maximum number of full moves to write per line when saving. If
@@ -167,6 +164,11 @@ color parameters can specify alternate colors for the valid move squares.
 The
 default is 
 .Ar on .
+.Pp
+.It Cm pattern Ar filter
+When in the file browser you can filter what is displayed with this value.
+Directories, including hidden directories, are always displayed reguardless of
+the pattern. The default is `*.pgn'.
 .El
 .
 .Sh COLORS
@@ -253,6 +255,10 @@ reserved by the PGN standard.
 A FIFO read by the chess engine for resuming games.
 .El
 .
-.Sh AUTHORS
+.Sh SEE ALSO
+.Xr wordexp 3 ,
+.Xr ncurses 3 ,
+.Xr gnuchess 6
 .
+.Sh AUTHORS
 .An "Ben Kibbey" Aq bjk@luxsci.net

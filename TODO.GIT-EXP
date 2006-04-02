@@ -1,6 +1,1 @@
-file globbing patterns in the file browser (breaks config.save_directory) this
-    adds configuration parameter glob_pattern.
-
-more consistant menu help and keys
-
-A move with more than one variation need a way to select which one.
+A move with more than one variation needs a way to select which one.

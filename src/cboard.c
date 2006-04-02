@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_WORDEXP_H
+#include <wordexp.h>
+#endif
+
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #endif
@@ -97,32 +101,6 @@ static char *str_etc(const char *str, int maxlen, int rev)
     }
 
     return buf;
-}
-
-static char *real_filename(char *path)
-{
-    char *tmp;
-    static char buf[FILENAME_MAX];
-    int slash = 0;
-
-    if (!path[0])
-	return NULL;
-
-    strncpy(buf, path, sizeof(buf));
-    tmp = buf;
-
-    if (tmp[strlen(tmp) - 1] == '/') {
-	tmp[strlen(tmp) - 1] = 0;
-	slash = 1;
-    }
-
-    if ((tmp = strrchr(tmp, '/')) == NULL)
-	return path;
-
-    if (slash)
-	buf[strlen(tmp)] = '/';
-
-    return ++tmp;
 }
 
 /* FIXME castling */
@@ -510,83 +488,42 @@ static int sort_entries(const void *s1, const void *s2)
     return strcmp(ss1->name, ss2->name);
 }
 
-static struct d_entries *get_directory_entries(const char *path)
-{
-    DIR *dp;
-    struct dirent *entry;
-    struct d_entries *entries = NULL;
-    int n = 0;
-
-    if ((dp = opendir(path)) == NULL)
-	return NULL;
-
-    while ((entry = readdir(dp)) != NULL) {
-	struct stat st;
-	int len;
-	char tbuf[64 + 1] = {0}; //FIXME
-	struct tm *tp;
-	char buf[FILENAME_MAX];
-	char *tmp;
-	size_t size;
-
-	if (entry->d_name[0] == '.' && entry->d_name[1] == 0)
-	    continue;
-
-	snprintf(buf, sizeof(buf), "%s/%s", path, entry->d_name);
-
-	if (stat(buf, &st) == -1)
-	    continue;
-
-	size = st.st_size ;
-	entries = Realloc(entries, (n + 2) * sizeof(struct d_entries));
-	entries[n].name = strdup(buf);
-	tmp = real_filename(buf);
-	len = strlen(tmp) + 2;
-	entries[n].fancy = Malloc(len);
-	strncpy(entries[n].fancy, tmp, len);
-
-	if (S_ISDIR(st.st_mode))
-	    entries[n].fancy[len - 2] = '/';
-
-	tp = localtime(&st.st_mtime);
-	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
-
-	snprintf(entries[n].desc, sizeof(entries[n].desc), "%-7i %s", 
-		size, tbuf);
-
-	memset(&entries[++n], '\0', sizeof(struct d_entries));
-    }
-
-    closedir(dp);
-    qsort(entries, n, sizeof(struct d_entries), sort_entries);
-    return entries;
-}
-
 char *browse_directory(void *arg)
 {
-    int i;
-    char path[FILENAME_MAX] = {0};
-    static char file[FILENAME_MAX];
-    char *oldwd = getcwd(NULL, 0);
-    DIR *dp;
     char *inputstr = (char *)arg;
     int initkey = (inputstr) ? inputstr[0] : 0;
+    char pattern[FILENAME_MAX];
+    static char path[FILENAME_MAX];
+    static char file[FILENAME_MAX];
+    struct stat st;
+    char *p;
 
-    if (config.savedirectory) {
-	if ((dp = opendir(config.savedirectory)) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
-		    strerror(errno));
+    if (!*path) {
+	if (config.savedirectory) {
+	    if ((p = word_expand(config.savedirectory)) == NULL)
+		return NULL;
+
+	    strncpy(path, p, sizeof(path));
+
+	    if (access(path, R_OK) == -1) {
+		cmessage(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
+		getcwd(path, sizeof(path));
+	    }
+	}
+	else
 	    getcwd(path, sizeof(path));
-	}
-	else {
-	    closedir(dp);
-	    strncpy(path, config.savedirectory, sizeof(path));
-	}
     }
-    else
-	getcwd(path, sizeof(path));
 
 again:
+    /*
+     * First find directories (including hidden) in the working directory.
+     * Then apply the config.pattern to regular files.
+     */
+    if ((p = word_split_append(path, '/', ".* *")) == NULL)
+	return NULL;
+
+    strncpy(pattern, p, sizeof(pattern));
+
     while (1) {
 	WINDOW *win, *subw;
 	PANEL *panel;
@@ -596,36 +533,77 @@ again:
 	int rows, cols;
 	int selected = -1;
 	char *mbuf = NULL;
-	struct d_entries *entries = NULL;
-	struct stat st;
 	int idx = 0;
 	int len = strlen(path);
+	wordexp_t w;
+	int i, n = 0;
+	struct d_entries *entries = NULL;
+	int which = 1;
+	int x = WRDE_NOCMD;
 
-	/* /some/path/blah/../ */
-	if (path[len - 1] == '.' && path[len - 2] == '.' &&
-		path[len - 3] == '/') {
-	    tmp = path;
-	    tmp += strlen(path) - 5;
-
-	    /* /some/path/ */
-	    while (*--tmp != '/')
-		*tmp = '\0';
-
-	    if (!*path) {
-		path[0] = '/';
-		path[1] = '\0';
-	    }
-	}
-
-	if (path[1] && path[strlen(path) - 1] == '/')
-	    path[strlen(path) - 1] = '\0';
-
-	if ((entries = get_directory_entries(path)) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
+new_we:
+	if (wordexp(pattern, &w, x) != 0) {
+	    cmessage(ERROR, ANYKEY, "Error in pattern\n%s", pattern);
 	    return NULL;
 	}
 
-	for (i = 0; entries[i].name; i++) {
+	for (i = 0; i < w.we_wordc; i++) {
+	    struct tm *tp;
+	    char tbuf[16];
+
+	    if (stat(w.we_wordv[i], &st) == -1)
+		continue;
+
+	    if ((p = strrchr(w.we_wordv[i], '/')) != NULL)
+		p++;
+	    else
+		p = w.we_wordv[i];
+
+	    if (which) {
+		if (!S_ISDIR(st.st_mode))
+		    continue;
+
+		if (p[0] == '.' && p[1] == 0)
+		    continue;
+	    }
+	    else {
+		if (S_ISDIR(st.st_mode))
+		    continue;
+	    }
+
+	    len = strlen(p) + 2;
+	    entries = Realloc(entries, (n + 2) * sizeof(struct d_entries));
+	    entries[n].name = strdup(w.we_wordv[i]);
+	    entries[n].fancy = Malloc(len);
+	    strncpy(entries[n].fancy, p, len);
+
+	    if (S_ISDIR(st.st_mode))
+		entries[n].fancy[len - 2] = '/';
+
+	    tp = localtime(&st.st_mtime);
+	    strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
+
+	    snprintf(entries[n].desc, sizeof(entries[n].desc), "%-7i %s", 
+		    (int)st.st_size, tbuf);
+
+	    memset(&entries[++n], '\0', sizeof(struct d_entries));
+	}
+
+	which--;
+
+	if (which == 0) {
+	    if ((p = word_split_append(path, '/', config.pattern)) == NULL)
+		return NULL;
+
+	    strncpy(pattern, p, sizeof(pattern));
+	    x |= WRDE_REUSE;
+	    goto new_we;
+	}
+
+	wordfree(&w);
+	qsort(entries, n, sizeof(struct d_entries), sort_entries);
+
+	for (i = 0; i < n; i++) {
 	    mitems = Realloc(mitems, (idx + 2) * sizeof(ITEM));
 	    mitems[idx++] = new_item(entries[i].fancy, entries[i].desc);
 	}
@@ -703,19 +681,14 @@ again:
 		    break;
 		case KEY_ESCAPE:
 		    cleanup(win, subw, panel, menu, mitems, entries);
-		    file[0] = '\0';
+		    file[0] = 0;
 		    goto done;
 		    break;
 		case KEY_F(1):
 		    help(BROWSER_HELP, ANYKEY, file_browser_help);
 		    break;
 		case '~':
-		    if ((tmp = getenv("HOME")) == NULL) {
-			cmessage(ERROR, ANYKEY, "%s", E_HOME_ENV);
-			break;
-		    }
-
-		    strncpy(path, tmp, sizeof(path));
+		    strncpy(path, "~/", sizeof(path));
 		    cleanup(win, subw, panel, menu, mitems, entries);
 		    goto again;
 		    break;
@@ -724,7 +697,6 @@ again:
 			    == NULL)
 			break;
 
-		    tmp = tilde_expand(tmp);
 		    strncpy(path, tmp, sizeof(path));
 		    cleanup(win, subw, panel, menu, mitems, entries);
 		    goto again;
@@ -746,30 +718,36 @@ again:
 	}
 
 gotitem:
-	snprintf(file, sizeof(file), "%s", entries[selected].name);
+	strncpy(file, entries[selected].name, sizeof(file));
+	cleanup(win, subw, panel, menu, mitems, entries);
 
 	if (stat(file, &st) == -1) {
-	    cmessage(ERROR, ANYKEY, "%s", strerror(errno));
-	    cleanup(win, subw, panel, menu, mitems, entries);
+	    cmessage(ERROR, ANYKEY, "%s\n%s", file, strerror(errno));
 	    continue;
 	}
 
-	cleanup(win, subw, panel, menu, mitems, entries);
-
 	if (S_ISDIR(st.st_mode)) {
+	    p = file + strlen(file) - 2;
+
+	    if (strcmp(p, "..") == 0) {
+		p = file + strlen(file) - 3;
+		*p = 0;
+
+		if ((p = strrchr(file, '/')) != NULL)
+		    file[strlen(file) - strlen(p)] = 0;
+	    }
+
 	    strncpy(path, file, sizeof(path));
-	    continue;
+	    goto again;
 	}
 
 	if (S_ISREG(st.st_mode))
 	    break;
 
-	cmessage(ERROR, ANYKEY, "%s", E_NOTAREGFILE);
+	cmessage(ERROR, ANYKEY, "%s\n%s", file, E_NOTAREGFILE);
     }
 
 done:
-    chdir(oldwd);
-    free(oldwd);
     return (*file) ? file : NULL;
 }
 static int init_country_codes()
@@ -2857,7 +2835,8 @@ static int globalkeys(int c)
 				  -1)) == NULL)
 		      return 1;
 
-		  tmp = tilde_expand(tmp);
+		  if ((tmp = word_expand(tmp)) == NULL)
+		      break;
 
 		  if ((fp = pgn_open(tmp)) == NULL) {
 		      cmessage(ERROR, ANYKEY, "%s\n%s", tmp, strerror(errno));
@@ -2901,7 +2880,8 @@ static int globalkeys(int c)
 		      return 1;
 		  }
 
-		  tmp = tilde_expand(tmp);
+		  if ((tmp = word_expand(tmp)) == NULL)
+		      break;
 
 		  if (pgn_is_compressed(tmp)) {
 		      snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);

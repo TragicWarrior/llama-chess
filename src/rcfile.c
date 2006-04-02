@@ -165,6 +165,7 @@ void set_config_defaults()
 {
     struct stat st;
 
+    config.pattern = strdup("*.pgn");
     config.engine_cmd = strdup("gnuchess --xboard");
     config.jumpcount = 5;
     config.historyagony = 0;
@@ -235,6 +236,10 @@ void parse_rcfile(const char *filename)
 
 	    config.jumpcount = atoi(val);
 	}
+	else if (strcmp(var, "pattern") == 0) {
+	    free(config.pattern);
+	    config.pattern = strdup(val);
+	}
 	else if (strcmp(var, "mpl") == 0) {
 	    if (!isinteger(val))
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
@@ -271,7 +276,7 @@ void parse_rcfile(const char *filename)
 	    pgn_add_tag(&config.tag, token, value);
 	}
 	else if (strcmp(var, "save_directory") == 0)
-	    config.savedirectory = strdup(tilde_expand(val));
+	    config.savedirectory = strdup(val);
 	else if (strcmp(var, "line_graphics") == 0)
 	    config.linegraphics = on_or_off(filename, lines, val);
 	else if (strcmp(var, "save_prompt") == 0)
