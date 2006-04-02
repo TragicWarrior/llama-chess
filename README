@@ -1,4 +1,4 @@
-CBoard is an ncurses frontend to GNU Chess. Only version 5.05 of GNU Chess has
+CBoard is an ncurses frontend to GNU Chess. Only version 5.07 of GNU Chess has
 been tested to work. Other versions might work, but I haven't tested them.
 Support for other engines is planned.
 
@@ -6,10 +6,11 @@ Only version 5.1 has been tested to work with CBoard. Other versions might
 work, or might not.
 
 Read INSTALL for build and installation details. After installing, type
-"cboard -h" for command-line options or just "cboard". Then type CTRL-g for
+"cboard -h" for command-line options or just "cboard". Then type F1 for
 in-game command keys.
 
 Send a description of any bugs you find along with the associated .pgn (if
 any) and feature requests to the address below.
 
-Ben Kibbey <bjk@luxsci.net>
+Benjamin J. Kibbey       bjk/freenode/@luxsci.net
+3019 F5FC AA33 5BC7 BE9F 09D2 393E DBD2 40D5 FA7E
