@@ -3016,12 +3016,10 @@ static int globalkeys(int c)
 		      keycount = n;
 
 		  update_status_notify(game[gindex], "Repeat %i", keycount);
-		  return 1;
+		  return -1;
 	case KEY_UP:
-		  if (game[gindex].mode == MODE_HISTORY) {
-		      historymode_keys(c);
-		      return 1;
-		  }
+		  if (game[gindex].mode == MODE_HISTORY)
+		      return 0;
 
 		  if (keycount) {
 		      c_row += keycount;
@@ -3035,10 +3033,8 @@ static int globalkeys(int c)
 
 		  return 1;
 	case KEY_DOWN:
-		  if (game[gindex].mode == MODE_HISTORY) {
-		      historymode_keys(c);
-		      return 1;
-		  }
+		  if (game[gindex].mode == MODE_HISTORY)
+		      return 0;
 
 		  if (keycount) {
 		      c_row -= keycount;
@@ -3053,10 +3049,8 @@ static int globalkeys(int c)
 
 		  return 1;
 	case KEY_LEFT:
-		  if (game[gindex].mode == MODE_HISTORY) {
-		      historymode_keys(c);
-		      return 1;
-		  }
+		  if (game[gindex].mode == MODE_HISTORY)
+		      return 0;
 
 		  if (keycount) {
 		      c_col -= keycount;
@@ -3070,10 +3064,8 @@ static int globalkeys(int c)
 
 		  return 1;
 	case KEY_RIGHT:
-		  if (game[gindex].mode == MODE_HISTORY) {
-		      historymode_keys(c);
-		      return 1;
-		  }
+		  if (game[gindex].mode == MODE_HISTORY)
+		      return 0;
 
 		  if (keycount) {
 		      c_col += keycount;
@@ -3133,6 +3125,7 @@ static int globalkeys(int c)
 void game_loop()
 {  
     int error_recover = 0;
+    int n;
 
     c_row = 2, c_col = 5;
     gindex = gtotal - 1;
@@ -3259,10 +3252,12 @@ void game_loop()
 	    update_status_notify(game[gindex], NULL);
 
 
-	if (globalkeys(c)) {
+	if ((n = globalkeys(c)) == 1) {
 	    keycount = 0;
 	    continue;
 	}
+	else if (n == -1)
+	    continue;
 
 	switch (game[gindex].mode) {
 	    case MODE_EDIT:
