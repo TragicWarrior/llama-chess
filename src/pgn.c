@@ -1601,7 +1601,7 @@ static void write_move_text(FILE *fp, HISTORY *h, int *len)
     Fputc(' ', fp, len);
     putstring(fp, h->move, len);
 
-    if (pgn_config.reduced)
+    if (!pgn_config.reduced)
 	write_comments_and_nag(fp, h, len);
 }
 
