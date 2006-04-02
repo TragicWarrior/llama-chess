@@ -2624,7 +2624,7 @@ static int globalkeys(int c)
 {
     static char gameexp[255] = {0};
     FILE *fp;
-    char *tmp;
+    char *tmp, *p;
     int n, i;
     char tfile[FILENAME_MAX];
 
@@ -2905,6 +2905,18 @@ static int globalkeys(int c)
 		  if (pgn_is_compressed(tmp)) {
 		      snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
 		      tmp = tfile;
+		  }
+		  else {
+		      if ((p = strchr(tmp, '.')) != NULL) {
+			  if (strcmp(p, ".pgn") != 0) {
+			      snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
+			      tmp = tfile;
+			  }
+		      }
+		      else {
+			  snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
+			  tmp = tfile;
+		      }
 		  }
 
 		  if (save_pgn(tmp, 0, i)) {
