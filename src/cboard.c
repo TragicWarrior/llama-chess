@@ -2342,7 +2342,7 @@ static void playmode_keys(int c)
 	    pushkey = keycount = 0;
 	    update_status_notify(game[gindex], NULL);
 
-	    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
+	    if (!editmode && !TEST_FLAG(d->flags, CF_HUMAN) &&
 		    (!d->engine || d->engine->status == ENGINE_THINKING)) {
 		beep();
 		break;
@@ -2377,9 +2377,19 @@ static void playmode_keys(int c)
 	case ' ':
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine ||
 			d->engine->status == ENGINE_OFFLINE) && !editmode) {
-		if (start_chess_engine(&game[gindex]) < 0) {
+		if (start_chess_engine(&game[gindex])) {
 		    sp.icon = 0;
 		    break;
+		}
+
+		x = pgn_find_tag(game[gindex].tag, "FEN");
+		w = pgn_find_tag(game[gindex].tag, "SetUp");
+
+		if ((w >= 0 && x >= 0 && atoi(game[gindex].tag[w]->value) == 1) 
+			|| (x >= 0 && w == -1)) {
+		    send_to_engine(&game[gindex], "setboard %s\n",
+			    game[gindex].tag[x]->value);
+		    d->engine->status = ENGINE_READY;
 		}
 	    }
 
