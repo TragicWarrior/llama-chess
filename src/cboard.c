@@ -3213,7 +3213,7 @@ void game_loop()
 			    }
 			    else {
 				if (len) {
-				    parse_engine_output(&game[gindex], fdbuf);
+				    parse_engine_output(&game[i], fdbuf);
 				    update_all(game[gindex]);
 				}
 			    }
