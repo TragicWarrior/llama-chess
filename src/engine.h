@@ -19,19 +19,16 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#if 0
-#define RETURN		status.engine = ENGINE_READY; \
-			return
-#endif
-#define RETURN return
+#define RETURN(d)	d->status = ENGINE_READY;\
+				    return
 
 // This is a failsafe when resuming a game.
 int oldhistorytotal;
 
 void send_to_engine(GAME *g, const char *format, ...);
-int start_chess_engine();
-void set_engine_defaults();
-void stop_engine();
+int start_chess_engine(GAME *);
+void set_engine_defaults(char **);
+void stop_engine(GAME *);
 int save_pgn(const char *filename, int isfifo, int saveindex);
 
 #endif

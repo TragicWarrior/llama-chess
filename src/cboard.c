@@ -104,7 +104,7 @@ static char *str_etc(const char *str, int maxlen, int rev)
 }
 
 /* FIXME castling */
-static void update_cursor(GAME g, int idx)
+void update_cursor(GAME g, int idx)
 {
     char *p;
     int len;
@@ -1754,23 +1754,27 @@ void update_status_window(GAME g)
 	    (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) ? " (loop)" : "");
     mvwprintw(statusw, 4, 1, "%-*s", w, buf);
 
-    switch (status.engine) {
-	case ENGINE_THINKING:
-	    engine = ENGINE_THINKING_STR;
-	    break;
-	case ENGINE_READY:
-	    engine = ENGINE_READY_STR;
-	    break;
-	case ENGINE_INITIALIZING:
-	    engine = ENGINE_INITIALIZING_STR;
-	    break;
-	case ENGINE_OFFLINE:
-	    engine = ENGINE_OFFLINE_STR;
-	    break;
-	default:
-	    engine = UNKNOWN;
-	    break;
+    if (d) {
+	switch (d->status) {
+	    case ENGINE_THINKING:
+		engine = ENGINE_THINKING_STR;
+		break;
+	    case ENGINE_READY:
+		engine = ENGINE_READY_STR;
+		break;
+	    case ENGINE_INITIALIZING:
+		engine = ENGINE_INITIALIZING_STR;
+		break;
+	    case ENGINE_OFFLINE:
+		engine = ENGINE_OFFLINE_STR;
+		break;
+	    default:
+		engine = UNKNOWN;
+		break;
+	}
     }
+    else
+	engine = ENGINE_OFFLINE_STR;
 
     mvwprintw(statusw, 5, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
@@ -2297,20 +2301,25 @@ static void playmode_keys(int c)
 	    TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
 	    update_all(game[gindex]);
 	    break;
-	case 'c':
-	    if (status.engine == ENGINE_THINKING || status.engine ==
-		    ENGINE_OFFLINE)
+	case '|':
+	    if (!d)
 		break;
+
+	    if (d->status == ENGINE_OFFLINE)
+		break;
+	    
+	    x = d->status;
 
 	    if ((tmp = get_input_str_clear(ENGINE_CMD_TITLE, NULL)) != NULL)
 		send_to_engine(&game[gindex], "%s\n", tmp);
+	    d->status = x;
 	    break;
 	case '\015':
 	case '\n':
 	    pushkey = keycount = 0;
 	    update_status_notify(game[gindex], NULL);
 
-	    if (status.engine == ENGINE_THINKING) {
+	    if (!noengine && (!d || d->status == ENGINE_THINKING)) {
 		beep();
 		break;
 	    }
@@ -2351,7 +2360,7 @@ static void playmode_keys(int c)
 	    if (!editmode)
 		wtimeout(boardw, 70);
 
-	    if (sp.icon || (!editmode && status.engine == ENGINE_THINKING)) {
+	    if (sp.icon || (!editmode && d && d->status == ENGINE_THINKING)) {
 		beep();
 		break;
 	    }
@@ -2410,6 +2419,12 @@ static void playmode_keys(int c)
 	    break;
 	case 'p':
 	    paused = (paused) ? 0 : 1;
+	    break;
+	case 'g':
+	    if (!d || d->status == ENGINE_OFFLINE)
+		start_chess_engine(&game[gindex]);
+
+	    send_to_engine(&game[gindex], "go\n");
 	    break;
 	default:
 	    break;
@@ -2620,8 +2635,8 @@ static int globalkeys(int c)
     switch (c) {
 	case 'h':
 	    if (game[gindex].mode != MODE_HISTORY) {
-		if (!history_total(game[gindex].hp) || status.engine ==
-			ENGINE_THINKING)
+		if (!history_total(game[gindex].hp) || 
+			(d && d->status == ENGINE_THINKING))
 		    return 1;
 
 		game[gindex].mode = MODE_HISTORY;
@@ -2649,7 +2664,7 @@ static int globalkeys(int c)
 	    }
 
 	    if (!noengine && (!d || d->status == ENGINE_OFFLINE)) {
-		if (start_chess_engine() < 0)
+		if (start_chess_engine(&game[gindex]) < 0)
 		    return 1;
 
 		pushkey = 'h';
@@ -2659,7 +2674,6 @@ static int globalkeys(int c)
 	    pushkey = 0;
 	    oldhistorytotal = history_total(game[gindex].hp);
 	    game[gindex].mode = MODE_PLAY;
-	    status.engine = ENGINE_READY;
 	    update_all(game[gindex]);
 	    return 1;
 	case '>':
@@ -2972,7 +2986,6 @@ static int globalkeys(int c)
 		  }
 
 		  send_to_engine(&game[gindex], "\nnew\n");
-		  status.engine = ENGINE_READY;
 		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
 		  update_tag_window(game[gindex].tag);
@@ -3268,40 +3281,6 @@ void usage(const char *pn, int ret)
     exit(ret);
 }
 
-void catch_signal(int which)
-{
-    switch (which) {
-	case SIGINT:
-	    stop_engine();
-	    endwin();
-	    exit(EXIT_FAILURE);
-	    break;
-	case SIGPIPE:
-	    if (quit)
-		break;
-
-	    cmessage(NULL, ANYKEY, "%s", E_BROKEN_PIPE);
-	    endwin();
-	    exit(EXIT_FAILURE);
-	    break;
-	case SIGSTOP:
-	    savetty();
-	    break;
-	case SIGCONT:
-	    resetty();
-	    keypad(boardw, TRUE);
-	    break;
-	default:
-	    break;
-    }
-}
-
-static void set_defaults()
-{
-    filetype = NO_FILE;
-    set_config_defaults();
-}
-
 static void cleanup_all_games()
 {
     int i;
@@ -3319,6 +3298,56 @@ static void cleanup_all_games()
 	    free(game[i].data);
 	}
     }
+}
+
+void cleanup_all()
+{
+    cleanup_all_games();
+    pgn_free_all();
+    del_panel(boardp);
+    del_panel(historyp);
+    del_panel(statusp);
+    del_panel(tagp);
+    delwin(boardw);
+    delwin(historyw);
+    delwin(statusw);
+    delwin(tagw);
+    endwin();
+}
+
+void catch_signal(int which)
+{
+    switch (which) {
+	case SIGINT:
+	case SIGPIPE:
+	    if (which == SIGPIPE && quit)
+		break;
+
+	    if (which == SIGPIPE)
+		cmessage(NULL, ANYKEY, "%s", E_BROKEN_PIPE);
+
+	    cleanup_all();
+	    exit(EXIT_FAILURE);
+	    break;
+	case SIGSTOP:
+	    savetty();
+	    break;
+	case SIGCONT:
+	    resetty();
+	    keypad(boardw, TRUE);
+	    curs_set(0);
+	    cbreak();
+	    noecho();
+	    break;
+	default:
+	    break;
+    }
+}
+
+static void set_defaults()
+{
+    filetype = NO_FILE;
+    set_config_defaults();
 }
 
 int main(int argc, char *argv[])
@@ -3481,18 +3510,7 @@ int main(int argc, char *argv[])
     cbreak();
     noecho();
     draw_window_decor();
-
     game_loop();
-    endwin();
-    cleanup_all_games();
-    pgn_free_all();
-    del_panel(boardp);
-    del_panel(historyp);
-    del_panel(statusp);
-    del_panel(tagp);
-    delwin(boardw);
-    delwin(historyw);
-    delwin(statusw);
-    delwin(tagw);
+    cleanup_all();
     exit(EXIT_SUCCESS);
 }

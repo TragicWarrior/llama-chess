@@ -246,9 +246,9 @@ int history_add(GAME *g, const char *m)
     if ((g->hp[t] = calloc(1, sizeof(HISTORY))) == NULL)
 	return 1;
 
-    g->hindex = t;
     g->hp[t++]->move = strdup(m);
     g->hp[t] = NULL;
+    g->hindex = history_total(g->hp);
     return 0;
 }
 

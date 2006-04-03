@@ -150,7 +150,7 @@ const char *playhelp[] = {
     "                 w - switch playing side",
     "                 u - undo previous move *",
     "                 g - force engine to make the next move",
-    "                 c - send a command to the chess engine",
+    "                 | - send a command to the chess engine",
     "                 o - toggle engine looping",
     NULL
 };
@@ -235,7 +235,6 @@ struct nag_s {
 
 // Status window.
 struct {
-    char engine;	// Chess engine status: ENGINE_[READY/OFFLINE].
     char *notify;	// The status window notification line buffer.
 } status;
 

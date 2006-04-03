@@ -59,6 +59,11 @@ void send_to_engine(GAME *g, const char *format, ...)
     if (!g->data || d->status == ENGINE_OFFLINE)
 	return;
 
+    d->status = ENGINE_THINKING;
+    update_status_window(*g);
+    update_panels();
+    doupdate();
+
     va_start(ap, format);
 #ifdef HAVE_VASPRINTF
     len = vasprintf(&line, format, ap);
@@ -197,11 +202,11 @@ static char **parseargs(char *str)
 }
 
 /* Is this dangerous if pty permissions are wrong? */
-pid_t init_chess_engine(GAME *g, char **args)
+static pid_t init_chess_engine(GAME *g, char **args)
 {
     pid_t pid;
     int from[2], to[2];
-    struct user_data_s *d = NULL;
+    struct user_data_s *d = g->data;
 #ifndef UNIX98
     char pty[FILENAME_MAX];
 
@@ -261,16 +266,11 @@ pid_t init_chess_engine(GAME *g, char **args)
     close(to[0]);
     close(from[1]);
 
-    if (!g->data)
-	d = Calloc(1, sizeof(struct user_data_s));
-
     d->fd[ENGINE_IN_FD] = from[0];
     d->fd[ENGINE_OUT_FD] = to[1];
     fcntl(d->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
     fcntl(d->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
     d->pid = pid;
-    d->status = ENGINE_READY;
-    g->data = d;
     return 0;
 }
 
@@ -278,11 +278,10 @@ void stop_engine(GAME *g)
 {
     struct user_data_s *d = g->data;
 
-    if (!g->data || d->status == ENGINE_OFFLINE)
+    if (!d || d->status == ENGINE_OFFLINE)
 	return;
 
     send_to_engine(g, "quit\n");
-    d = g->data;
 
     if (kill(d->pid, 0) != -1)
 	kill(d->pid, SIGTERM);
@@ -296,20 +295,34 @@ int start_chess_engine(GAME *g)
     char **args;
     int i;
     int ret = 1;
+    struct user_data_s *d = NULL;
 
     args = parseargs(config.engine_cmd);
+
+    if (!g->data) {
+	d = Calloc(1, sizeof(struct user_data_s));
+	g->data = d;
+    }
+
+    d->status = ENGINE_INITIALIZING;
+    update_status_window(*g);
+    update_panels();
+    doupdate();
 
     switch (init_chess_engine(g, args)) {
 	case -1:
 	    /* Pty allocation. */
 	    message(ERROR, ANYKEY, "Could not allocate PTY");
+	    d->status = ENGINE_OFFLINE;
 	    break;
 	case -2:
 	    /* Could not execute engine. */
 	    message(ERROR, ANYKEY, "%s: %s", args[0], strerror(errno));
+	    d->status = ENGINE_OFFLINE;
 	    break;
 	default:
 	    ret = 0;
+	    d->status = ENGINE_READY;
 	    break;
     }
 
@@ -361,7 +374,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	if (pgn_validate_move(g, g->b, p)) {
 	    invalid_move(0, p);
-	    return;
+	    RETURN(d);
 	}
 
         if (history_total(g->hp) == 0 && g->side == BLACK)
@@ -374,18 +387,21 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 	    //history_update_board(g, g.htotal); FIXME
-	    RETURN;
+	    RETURN(d);
 	}
 
-	if (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP))
+	if (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
 	    send_to_engine(g, "go\n");
+	    update_cursor(*g, g->hindex);
+	    return;
+	}
 
-	RETURN;
+	RETURN(d);
     }
 
     if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 	//history_update_board(g); FIXME
-	RETURN;
+	RETURN(d);
     }
 
     /* Miscellaneous one-liners. */
@@ -409,16 +425,16 @@ void parse_gnuchess_line(GAME *g, char *str)
     /* 'switch' command. */
     if (strncmp(str, "White to move", 13) == 0) {
 	g->side = g->turn = WHITE;
-	RETURN;
+	RETURN(d);
     }
     else if (strncmp(str, "Black to move", 13) == 0) {
 	g->side = g->turn = BLACK;
-	RETURN;
+	RETURN(d);
     }
 
     /* Bad engine command or move. */
     if (strncmp(str, "Illegal move: ", 14) == 0) {
-	RETURN;
+	RETURN(d);
     }
 }
 

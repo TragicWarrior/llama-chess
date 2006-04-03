@@ -1434,8 +1434,14 @@ again:
 	if (val_piece_side(g->turn, piece))
 	    return 2;
 
+	/* FIXME
+	 * this doesn't belong in the library. This should update a capture
+	 * count or something.
+	 */
+	/*
 	if (!validate)
 	    update_status_notify(*g, random_agony(*g));
+	    */
     }
 
     if (!validate) {
