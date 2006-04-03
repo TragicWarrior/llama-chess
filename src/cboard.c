@@ -1679,7 +1679,7 @@ void update_status_window(GAME g)
     char *p;
     int maxy, maxx;
     int len;
-    struct user_data_s *d = g.data;
+    struct userdata_s *d = g.data;
 
     getmaxyx(statusw, maxy, maxx);
     w = maxx - 2 - 8;
@@ -1745,8 +1745,8 @@ void update_status_window(GAME g)
 	    (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) ? " (loop)" : "");
     mvwprintw(statusw, 4, 1, "%-*s", w, buf);
 
-    if (d) {
-	switch (d->status) {
+    if (d->engine) {
+	switch (d->engine->status) {
 	    case ENGINE_THINKING:
 		engine = ENGINE_THINKING_STR;
 		break;
@@ -2288,7 +2288,7 @@ static void playmode_keys(int c)
     chtype p;
     int w, x, y, z;
     char *tmp;
-    struct user_data_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex].data;
 
     switch (c) {
 	case 'o':
@@ -2299,24 +2299,25 @@ static void playmode_keys(int c)
 	    update_all(game[gindex]);
 	    break;
 	case '|':
-	    if (!d)
+	    if (!d->engine)
 		break;
 
-	    if (d->status == ENGINE_OFFLINE)
+	    if (d->engine->status == ENGINE_OFFLINE)
 		break;
 	    
-	    x = d->status;
+	    x = d->engine->status;
 
 	    if ((tmp = get_input_str_clear(ENGINE_CMD_TITLE, NULL)) != NULL)
 		send_to_engine(&game[gindex], "%s\n", tmp);
-	    d->status = x;
+	    d->engine->status = x;
 	    break;
 	case '\015':
 	case '\n':
 	    pushkey = keycount = 0;
 	    update_status_notify(game[gindex], NULL);
 
-	    if (!noengine && (!d || d->status == ENGINE_THINKING)) {
+	    if (!noengine && (!d->engine ||
+			d->engine->status == ENGINE_THINKING)) {
 		beep();
 		break;
 	    }
@@ -2347,7 +2348,8 @@ static void playmode_keys(int c)
 
 	    break;
 	case ' ':
-	    if (!noengine && (!d || d->status == ENGINE_OFFLINE) && !editmode) {
+	    if (!noengine && (!d->engine ||
+			d->engine->status == ENGINE_OFFLINE) && !editmode) {
 		if (start_chess_engine(&game[gindex]) < 0) {
 		    sp.icon = 0;
 		    break;
@@ -2357,7 +2359,8 @@ static void playmode_keys(int c)
 	    if (!editmode)
 		wtimeout(boardw, 70);
 
-	    if (sp.icon || (!editmode && d && d->status == ENGINE_THINKING)) {
+	    if (sp.icon || (!editmode && d->engine &&
+			d->engine->status == ENGINE_THINKING)) {
 		beep();
 		break;
 	    }
@@ -2418,7 +2421,7 @@ static void playmode_keys(int c)
 	    paused = (paused) ? 0 : 1;
 	    break;
 	case 'g':
-	    if (!d || d->status == ENGINE_OFFLINE)
+	    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
 		start_chess_engine(&game[gindex]);
 
 	    send_to_engine(&game[gindex], "go\n");
@@ -2624,15 +2627,11 @@ static void cleanup_all_games()
     int i;
 
     for (i = 0; i < gtotal; i++) {
-	struct user_data_s *d;
+	struct userdata_s *d;
 
 	if (game[i].data) {
 	    stop_engine(&game[i]);
 	    d = game[i].data;
-
-	    if (d->fd[ICS_FD] > 2)
-		close(d->fd[ICS_FD]);
-
 	    free(game[i].data);
 	    game[i].data = NULL;
 	}
@@ -2647,13 +2646,13 @@ static int globalkeys(int c)
     char *tmp, *p;
     int n, i;
     char tfile[FILENAME_MAX];
-    struct user_data_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex].data;
 
     switch (c) {
 	case 'h':
 	    if (game[gindex].mode != MODE_HISTORY) {
 		if (!history_total(game[gindex].hp) || 
-			(d && d->status == ENGINE_THINKING))
+			(d->engine && d->engine->status == ENGINE_THINKING))
 		    return 1;
 
 		game[gindex].mode = MODE_HISTORY;
@@ -2680,7 +2679,8 @@ static int globalkeys(int c)
 		    return 1;
 	    }
 
-	    if (!noengine && (!d || d->status == ENGINE_OFFLINE)) {
+	    if (!noengine && (!d->engine || 
+			d->engine->status == ENGINE_OFFLINE)) {
 		if (start_chess_engine(&game[gindex]) < 0)
 		    return 1;
 
@@ -2986,12 +2986,16 @@ static int globalkeys(int c)
 		  if (c == 'n') {
 		      pgn_new_game();
 		      add_custom_tags(&game[gindex].tag);
+		      d = Calloc(1, sizeof(struct userdata_s));
+		      game[gindex].data = d;
 		  }
 		  else {
 		      cleanup_all_games();
 		      pgn_parse(NULL);
 		      add_custom_tags(&game[gindex].tag);
 		      pgn_init_board(game[gindex].b);
+		      d = Calloc(1, sizeof(struct userdata_s));
+		      game[gindex].data = d;
 		  }
 
 		  game[gindex].mode = MODE_PLAY;
@@ -3165,48 +3169,41 @@ void game_loop()
 	char fdbuf[8192] = {0};
 	int len;
 	struct timeval tv = {0, 0};
-	fd_set rfds, wfds;
-	struct user_data_s *d = NULL;
+	fd_set rfds;
+	struct userdata_s *d = NULL;
 
 	FD_ZERO(&rfds);
-	FD_ZERO(&wfds);
 
 	for (i = 0; i < gtotal; i++) {
-	    if (game[i].data) {
-		d = game[i].data;
+	    d = game[i].data;
 
-		if (d->fd[ENGINE_IN_FD] > 2) {
-		    if (d->fd[ENGINE_IN_FD] > n)
-			n = d->fd[ENGINE_IN_FD];
+	    if (d->engine) {
+		if (d->engine->fd[ENGINE_IN_FD] > 2) {
+		    if (d->engine->fd[ENGINE_IN_FD] > n)
+			n = d->engine->fd[ENGINE_IN_FD];
 
-		    FD_SET(d->fd[ENGINE_IN_FD], &rfds);
-		}
-
-		if (d->fd[ICS_FD] > 2) {
-		    if (d->fd[ICS_FD] > n)
-			n = d->fd[ICS_FD];
-
-		    FD_SET(d->fd[ICS_FD], &rfds);
-		    FD_SET(d->fd[ICS_FD], &wfds);
+		    FD_SET(d->engine->fd[ENGINE_IN_FD], &rfds);
 		}
 	    }
 	}
 
 	if (n) {
-	    if ((n = select(n + 1, &rfds, &wfds, NULL, &tv)) > 0) {
+	    if ((n = select(n + 1, &rfds, NULL, NULL, &tv)) > 0) {
 		for (i = 0; i < gtotal; i++) {
-		    if (game[i].data) {
-			d = game[i].data;
+		    d = game[i].data;
 
-			if (FD_ISSET(d->fd[ENGINE_IN_FD], &rfds)) {
-			    len = read(d->fd[ENGINE_IN_FD], fdbuf,
+		    if (d->engine) {
+			if (FD_ISSET(d->engine->fd[ENGINE_IN_FD], &rfds)) {
+			    len = read(d->engine->fd[ENGINE_IN_FD], fdbuf,
 				    sizeof(fdbuf));
 
 			    if (len == -1) {
 				if (errno != EAGAIN) {
-				    cmessage(ERROR, ANYKEY, "Attempt #%i. read(): %s",
-					    ++error_recover, strerror(errno));
-				    continue;
+				    cmessage(ERROR, ANYKEY, "Engine read(): %s",
+					    strerror(errno));
+				    free(d->engine);
+				    d->engine = NULL;
+				    break;
 				}
 			    }
 			    else {
@@ -3350,6 +3347,7 @@ int main(int argc, char *argv[])
     int validate_only = 0, validate_and_write = 0, reduced = 0;
     int write_custom_tags = 0;
     FILE *fp;
+    int i;
 
     if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
@@ -3453,8 +3451,6 @@ int main(int argc, char *argv[])
 
     if (validate_only || validate_and_write) {
 	if (validate_and_write) {
-	    int i;
-
 	    for (i = 0; i < gtotal; i++) {
 		if (write_custom_tags)
 		    add_custom_tags(&game[i].tag);
@@ -3468,6 +3464,13 @@ int main(int argc, char *argv[])
     }
     else if (ret)
 	exit(ret);
+
+    for (i = 0; i < gtotal; i++) {
+	struct userdata_s *d = NULL;
+
+	d = Calloc(1, sizeof(struct userdata_s));
+	game[i].data = d;
+    }
 
     if (initscr() == NULL)
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);

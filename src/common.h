@@ -30,15 +30,18 @@ enum {
 enum {
     ENGINE_IN_FD,
     ENGINE_OUT_FD,
-    ICS_FD
 };
 
 #define CF_ENGINE_LOOP	0x001
 
-struct user_data_s {
-    int fd[3];
+struct engine_s {
+    int fd[2];
     pid_t pid;
     int status;
+};
+
+struct userdata_s {
+    struct engine_s *engine;
     unsigned short flags;
 };
 

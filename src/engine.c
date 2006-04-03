@@ -54,12 +54,12 @@ void send_to_engine(GAME *g, const char *format, ...)
     int len;
     char *line;
     int try = 0;
-    struct user_data_s *d = g->data;
+    struct userdata_s *d = g->data;
 
-    if (!g->data || d->status == ENGINE_OFFLINE)
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
 	return;
 
-    d->status = ENGINE_THINKING;
+    d->engine->status = ENGINE_THINKING;
     update_status_window(*g);
     refresh_all();
 
@@ -78,23 +78,24 @@ void send_to_engine(GAME *g, const char *format, ...)
 	struct timeval tv;
 
 	FD_ZERO(&fds);
-	FD_SET(d->fd[ENGINE_OUT_FD], &fds);
+	FD_SET(d->engine->fd[ENGINE_OUT_FD], &fds);
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 
-	if ((n = select(d->fd[ENGINE_OUT_FD] + 1, NULL, &fds, NULL, &tv)) > 0) {
-	    if (FD_ISSET(d->fd[ENGINE_OUT_FD], &fds)) {
-		n = write(d->fd[ENGINE_OUT_FD], line, len);
+	if ((n = select(d->engine->fd[ENGINE_OUT_FD] + 1, NULL, &fds, NULL,
+			&tv)) > 0) {
+	    if (FD_ISSET(d->engine->fd[ENGINE_OUT_FD], &fds)) {
+		n = write(d->engine->fd[ENGINE_OUT_FD], line, len);
 
 		if (n == -1) {
 		    if (errno == EAGAIN)
 			continue;
 
-		    if (kill(d->pid, 0) == -1) {
+		    if (kill(d->engine->pid, 0) == -1) {
 			message(ERROR, ANYKEY, "Could not write to engine. "
 				"Process no longer exists.");
-			d->status = ENGINE_OFFLINE;
+			d->engine->status = ENGINE_OFFLINE;
 			//update_status_window(NULL);
 			return;
 		    }
@@ -205,7 +206,7 @@ static pid_t init_chess_engine(GAME *g, char **args)
 {
     pid_t pid;
     int from[2], to[2];
-    struct user_data_s *d = g->data;
+    struct userdata_s *d = g->data;
 #ifndef UNIX98
     char pty[FILENAME_MAX];
 
@@ -265,28 +266,28 @@ static pid_t init_chess_engine(GAME *g, char **args)
     close(to[0]);
     close(from[1]);
 
-    d->fd[ENGINE_IN_FD] = from[0];
-    d->fd[ENGINE_OUT_FD] = to[1];
-    fcntl(d->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
-    fcntl(d->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
-    d->pid = pid;
+    d->engine->fd[ENGINE_IN_FD] = from[0];
+    d->engine->fd[ENGINE_OUT_FD] = to[1];
+    fcntl(d->engine->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
+    fcntl(d->engine->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK | O_DIRECT);
+    d->engine->pid = pid;
     return 0;
 }
 
 void stop_engine(GAME *g)
 {
-    struct user_data_s *d = g->data;
+    struct userdata_s *d = g->data;
 
-    if (!d || d->status == ENGINE_OFFLINE)
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
 	return;
 
     send_to_engine(g, "quit\n");
 
-    if (kill(d->pid, 0) != -1)
-	kill(d->pid, SIGTERM);
+    if (kill(d->engine->pid, 0) != -1)
+	kill(d->engine->pid, SIGTERM);
 
-    if (kill(d->pid, 0) != -1)
-	kill(d->pid, SIGKILL);
+    if (kill(d->engine->pid, 0) != -1)
+	kill(d->engine->pid, SIGKILL);
 }
 
 void set_engine_defaults(GAME *g, char **init)
@@ -305,16 +306,12 @@ int start_chess_engine(GAME *g)
     char **args;
     int i;
     int ret = 1;
-    struct user_data_s *d = NULL;
+    struct userdata_s *d = g->data;
 
     args = parseargs(config.engine_cmd);
 
-    if (!g->data) {
-	d = Calloc(1, sizeof(struct user_data_s));
-	g->data = d;
-    }
-
-    d->status = ENGINE_INITIALIZING;
+    d->engine = Calloc(1, sizeof(struct engine_s));
+    d->engine->status = ENGINE_INITIALIZING;
     update_status_window(*g);
     refresh_all();
 
@@ -322,17 +319,17 @@ int start_chess_engine(GAME *g)
 	case -1:
 	    /* Pty allocation. */
 	    message(ERROR, ANYKEY, "Could not allocate PTY");
-	    d->status = ENGINE_OFFLINE;
+	    d->engine->status = ENGINE_OFFLINE;
 	    break;
 	case -2:
 	    /* Could not execute engine. */
 	    message(ERROR, ANYKEY, "%s: %s", args[0], strerror(errno));
-	    d->status = ENGINE_OFFLINE;
+	    d->engine->status = ENGINE_OFFLINE;
 	    break;
 	default:
 	    ret = 0;
 	    set_engine_defaults(g, config.einit);
-	    d->status = ENGINE_READY;
+	    d->engine->status = ENGINE_READY;
 	    break;
     }
 
@@ -351,7 +348,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
     int count;
-    struct user_data_s *d = g->data;
+    struct userdata_s *d = g->data;
 
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
