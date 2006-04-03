@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #ifdef HAVE_WORDEXP_H
 #include <wordexp.h>
 #endif
@@ -3206,6 +3210,7 @@ void game_loop()
 				if (errno != EAGAIN) {
 				    cmessage(ERROR, ANYKEY, "Engine read(): %s",
 					    strerror(errno));
+				    waitpid(d->engine->pid, &n, 0);
 				    free(d->engine);
 				    d->engine = NULL;
 				    break;

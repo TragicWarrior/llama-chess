@@ -19,10 +19,6 @@
 #ifndef CHESS_H
 #define CHESS_H
 
-#ifdef HAVE_CONFIG_H
-#include <sys/select.h>		// fd_set
-#endif
-
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 
 #define VALIDRANK	VALIDFILE

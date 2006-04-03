@@ -277,6 +277,7 @@ static pid_t init_chess_engine(GAME *g, char **args)
 void stop_engine(GAME *g)
 {
     struct userdata_s *d = g->data;
+    int s;
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE)
 	return;
@@ -288,6 +289,8 @@ void stop_engine(GAME *g)
 
     if (kill(d->engine->pid, 0) != -1)
 	kill(d->engine->pid, SIGKILL);
+
+    waitpid(d->engine->pid, &s, 0);
 }
 
 void set_engine_defaults(GAME *g, char **init)
