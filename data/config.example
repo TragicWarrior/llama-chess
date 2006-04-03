@@ -9,6 +9,10 @@
 # protocol should work.
 #engine_cmd	gnuchess --xboard
 
+# Send a command to the chess engine each time a new game is started or reset.
+# Can be used more than once to specify as many commands as needed.
+#engine_init	depth 3
+
 # The number of moves to jump when browsing move history and pressing the UP
 # or DOWN keys.
 jump_count	5

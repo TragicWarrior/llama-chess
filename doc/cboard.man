@@ -108,6 +108,10 @@ The chess engine command to execute with any arguments. The default is
 \&". Others haven\&'t been tested but any engine that supports the XBoard
 protocol should work.
 .Pp
+.It Cm engine_init Ar command
+A command to send to the chess engine each time a new game or round is started
+or reset. Can be specified more than once.
+.Pp
 .It Cm jump_count Ar integer
 When viewing move history, you can jump more than one move to the next or
 previous move with the UP and DOWN keys. This sets the number of moves to

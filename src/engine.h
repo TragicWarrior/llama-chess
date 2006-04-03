@@ -27,8 +27,10 @@ int oldhistorytotal;
 
 void send_to_engine(GAME *g, const char *format, ...);
 int start_chess_engine(GAME *);
-void set_engine_defaults(char **);
+void set_engine_defaults(GAME *, char **);
 void stop_engine(GAME *);
 int save_pgn(const char *filename, int isfifo, int saveindex);
+void update_cursor(GAME, int);
+void refresh_all(void);
 
 #endif

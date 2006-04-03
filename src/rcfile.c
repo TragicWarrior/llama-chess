@@ -207,6 +207,7 @@ void parse_rcfile(const char *filename)
     char *line, buf[LINE_MAX];
     int lines = 0;
     char *altengine = NULL;
+    int i = 0;
 
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
@@ -235,6 +236,11 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.jumpcount = atoi(val);
+	}
+	else if (strcmp(var, "engine_init") == 0) {
+	    config.einit = Realloc(config.einit, (i + 2) * sizeof(char *));
+	    config.einit[i++] = strdup(val);
+	    config.einit[i] = NULL;
 	}
 	else if (strcmp(var, "pattern") == 0) {
 	    free(config.pattern);

@@ -61,8 +61,7 @@ void send_to_engine(GAME *g, const char *format, ...)
 
     d->status = ENGINE_THINKING;
     update_status_window(*g);
-    update_panels();
-    doupdate();
+    refresh_all();
 
     va_start(ap, format);
 #ifdef HAVE_VASPRINTF
@@ -290,6 +289,17 @@ void stop_engine(GAME *g)
 	kill(d->pid, SIGKILL);
 }
 
+void set_engine_defaults(GAME *g, char **init)
+{
+    int i;
+
+    if (!init)
+	return;
+
+    for (i = 0; init[i]; i++)
+	send_to_engine(g, "%s\n", init[i]);
+}
+
 int start_chess_engine(GAME *g)
 {
     char **args;
@@ -306,8 +316,7 @@ int start_chess_engine(GAME *g)
 
     d->status = ENGINE_INITIALIZING;
     update_status_window(*g);
-    update_panels();
-    doupdate();
+    refresh_all();
 
     switch (init_chess_engine(g, args)) {
 	case -1:
@@ -322,6 +331,7 @@ int start_chess_engine(GAME *g)
 	    break;
 	default:
 	    ret = 0;
+	    set_engine_defaults(g, config.einit);
 	    d->status = ENGINE_READY;
 	    break;
     }

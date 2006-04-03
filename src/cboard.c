@@ -254,9 +254,7 @@ char *history_edit_nag(void *arg)
 	 * for some reason after the first selection.
 	 */
 	nl();
-	update_panels();
-	doupdate();
-
+	refresh_all();
 	c = wgetch(win);
 
 	switch (c) {
@@ -654,9 +652,7 @@ new_we:
 	     * for some reason after the first selection.
 	     */
 	    nl();
-	    update_panels();
-	    doupdate();
-
+	    refresh_all();
 	    c = wgetch(win);
 
 	    switch (c) {
@@ -853,9 +849,7 @@ char *country_codes(void *arg)
 	 * for some reason after the first selection.
 	 */
 	nl();
-	update_panels();
-	doupdate();
-
+	refresh_all();
 	c = wgetch(win);
 
 	switch (c) {
@@ -1023,10 +1017,7 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    item_index(current_item(menu)) + 1, N_OF_N_STR,
 		    item_count(menu), HELP_PROMPT);
 	    draw_prompt(win, rows + 2, cols + 4, buf, CP_MESSAGE_PROMPT);
-
-	    update_panels();
-	    doupdate();
-
+	    refresh_all();
 	    c = wgetch(win);
 
 	    switch (c) {
@@ -1925,6 +1916,12 @@ void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
     wattroff(win, battr);
 }
 
+void refresh_all()
+{
+    update_panels();
+    doupdate();
+}
+
 void update_all(GAME g)
 {
     update_status_window(g);
@@ -2622,6 +2619,26 @@ static void historymode_keys(int c)
     }
 }
 
+static void cleanup_all_games()
+{
+    int i;
+
+    for (i = 0; i < gtotal; i++) {
+	struct user_data_s *d;
+
+	if (game[i].data) {
+	    stop_engine(&game[i]);
+	    d = game[i].data;
+
+	    if (d->fd[ICS_FD] > 2)
+		close(d->fd[ICS_FD]);
+
+	    free(game[i].data);
+	    game[i].data = NULL;
+	}
+    }
+}
+
 // Global and other keys.
 static int globalkeys(int c)
 {
@@ -2971,6 +2988,7 @@ static int globalkeys(int c)
 		      add_custom_tags(&game[gindex].tag);
 		  }
 		  else {
+		      cleanup_all_games();
 		      pgn_parse(NULL);
 		      add_custom_tags(&game[gindex].tag);
 		      pgn_init_board(game[gindex].b);
@@ -2979,13 +2997,6 @@ static int globalkeys(int c)
 		  game[gindex].mode = MODE_PLAY;
 		  c_row = (game[gindex].side == WHITE) ? 2 : 7;
 		  c_col = 4;
-
-		  if (!noengine && (!d || d->status == ENGINE_OFFLINE)) {
-		      if (start_chess_engine(&game[gindex]) < 0)
-			  return 1;
-		  }
-
-		  send_to_engine(&game[gindex], "\nnew\n");
 		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
 		  update_tag_window(game[gindex].tag);
@@ -2993,8 +3004,7 @@ static int globalkeys(int c)
 	case CTRL('L'):
 		  endwin();
 		  keypad(boardw, TRUE);
-		  update_panels();
-		  doupdate();
+		  refresh_all();
 		  return 1;
 	case KEY_ESCAPE:
 		  sp.icon = sp.row = sp.col = 0;
@@ -3225,8 +3235,7 @@ void game_loop()
 	if (!paused) {
 	}
 
-	update_panels();
-	doupdate();
+	refresh_all();
 
 	if (pushkey)
 	    c = pushkey;
@@ -3279,25 +3288,6 @@ void usage(const char *pn, int ret)
     "  -h  This help text.\n");
 
     exit(ret);
-}
-
-static void cleanup_all_games()
-{
-    int i;
-
-    for (i = 0; i < gtotal; i++) {
-	struct user_data_s *d;
-
-	if (game[i].data) {
-	    stop_engine(&game[i]);
-	    d = game[i].data;
-
-	    if (d->fd[ICS_FD] > 2)
-		close(d->fd[ICS_FD]);
-
-	    free(game[i].data);
-	}
-    }
 }
 
 void cleanup_all()
