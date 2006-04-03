@@ -19,6 +19,10 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 enum {
     ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
 };
@@ -32,7 +36,8 @@ enum {
     ENGINE_OUT_FD,
 };
 
-#define CF_ENGINE_LOOP	0x001
+#define CF_ENGINE_LOOP	0x01
+#define CF_HUMAN	0x02
 
 struct engine_s {
     int fd[2];

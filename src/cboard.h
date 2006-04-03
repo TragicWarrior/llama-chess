@@ -151,7 +151,8 @@ const char *playhelp[] = {
     "                 u - undo previous move *",
     "                 g - force engine to make the next move",
     "                 | - send a command to the chess engine",
-    "                 o - toggle engine looping",
+    "                 o - toggle engine move looping",
+    "                 U - toggle two human play",
     NULL
 };
 
@@ -243,8 +244,6 @@ enum {
 };
 
 int curses_initialized;
-// Two human players. FIXME
-int noengine;
 
 // When in history mode a full step is to the next move of the same playing
 // side. Half stepping is alternating sides.

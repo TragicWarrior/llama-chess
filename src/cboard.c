@@ -36,10 +36,6 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
-
 #ifdef HAVE_WORDEXP_H
 #include <wordexp.h>
 #endif
@@ -1646,13 +1642,14 @@ static char *board_to_san(GAME *g, BOARD b)
 static int move_to_engine(GAME *g, BOARD b)
 {
     char *p;
+    struct userdata_s *d = g->data;
 
     if ((p = board_to_san(g, b)) == NULL)
 	return 0;
 
     sp.row = sp.col = sp.icon = 0;
 
-    if (noengine) {
+    if (TEST_FLAG(d->flags, CF_HUMAN)) {
 	history_add(g, p);
 	pgn_switch_turn(g);
 	SET_FLAG(g->flags, GF_MODIFIED);
@@ -1745,7 +1742,9 @@ void update_status_window(GAME g)
 	    break;
     }
 
-    mvwprintw(statusw, 4, 1, "%*s %-*s", 7, STATUS_MODE_STR, w, mode);
+    snprintf(buf, len - 1, "%*s %s %s", 7, STATUS_MODE_STR, mode, 
+	    TEST_FLAG(d->flags, CF_HUMAN) ? "(human)" : "");
+    mvwprintw(statusw, 4, 1, "%-*s", 7 + w, buf);
 
     if (d->engine) {
 	switch (d->engine->status) {
@@ -2300,6 +2299,24 @@ static void playmode_keys(int c)
     struct userdata_s *d = game[gindex].data;
 
     switch (c) {
+	case 'U':
+	    TOGGLE_FLAG(d->flags, CF_HUMAN);
+
+	    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
+		    history_total(game[gindex].hp)) {
+		pgn_add_tag(&game[gindex].tag, "FEN", 
+			pgn_game_to_fen(game[gindex], game[gindex].b));
+		x = pgn_find_tag(game[gindex].tag, "FEN");
+
+		if (start_chess_engine(&game[gindex]) <= 0) {
+		    send_to_engine(&game[gindex], "setboard %s\n",
+			    game[gindex].tag[x]->value);
+		    d->engine->status = ENGINE_READY;
+		}
+	    }
+
+	    update_all(game[gindex]);
+	    break;
 	case 'o':
 	    if (!d)
 		break;
@@ -2325,8 +2342,8 @@ static void playmode_keys(int c)
 	    pushkey = keycount = 0;
 	    update_status_notify(game[gindex], NULL);
 
-	    if (!noengine && (!d->engine ||
-			d->engine->status == ENGINE_THINKING)) {
+	    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
+		    (!d->engine || d->engine->status == ENGINE_THINKING)) {
 		beep();
 		break;
 	    }
@@ -2340,7 +2357,8 @@ static void playmode_keys(int c)
 	    if (editmode) {
 		p = game[gindex].b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon;
 		game[gindex].b[ROWTOBOARD(sp.destrow)][COLTOBOARD(sp.destcol)].icon = p;
-		game[gindex].b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+		game[gindex].b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon =
+		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 		sp.icon = sp.row = sp.col = 0;
 		break;
 	    }
@@ -2357,7 +2375,7 @@ static void playmode_keys(int c)
 
 	    break;
 	case ' ':
-	    if (!noengine && (!d->engine ||
+	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine ||
 			d->engine->status == ENGINE_OFFLINE) && !editmode) {
 		if (start_chess_engine(&game[gindex]) < 0) {
 		    sp.icon = 0;
@@ -2688,7 +2706,7 @@ static int globalkeys(int c)
 		    return 1;
 	    }
 
-	    if (!noengine && (!d->engine || 
+	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine || 
 			d->engine->status == ENGINE_OFFLINE)) {
 		if (start_chess_engine(&game[gindex]) < 0)
 		    return 1;
@@ -3283,13 +3301,12 @@ void game_loop()
 void usage(const char *pn, int ret)
 {
     fprintf((ret) ? stderr : stdout, "%s",
-    "Usage: cboard [-hvNE] [-VtRS] [-p <file>]\n"
+    "Usage: cboard [-hvE] [-VtRS] [-p <file>]\n"
     "  -p  Load PGN file.\n"
     "  -V  Validate a game file.\n"
     "  -S  Validate and output a PGN formatted game.\n"
     "  -R  Like -S but write a reduced PGN formatted game.\n"
     "  -t  Also write custom PGN tags from config file.\n"
-    "  -N  Don't enable the chess engine (two human players).\n"
     "  -E  Stop processing on file parsing error (overrides config).\n"
     "  -v  Version information.\n"
     "  -h  This help text.\n");
@@ -3395,16 +3412,13 @@ int main(int argc, char *argv[])
 
     set_defaults();
 
-    while ((opt = getopt(argc, argv, "ENVtSRhp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "EVtSRhp:v")) != -1) {
 	switch (opt) {
 	    case 't':
 		write_custom_tags = 1;
 		break;
 	    case 'E':
 		config.stoponerror = 1;
-		break;
-	    case 'N':
-		noengine = 1;
 		break;
 	    case 'R':
 		reduced = 1;

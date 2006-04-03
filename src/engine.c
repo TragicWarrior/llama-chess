@@ -56,7 +56,8 @@ void send_to_engine(GAME *g, const char *format, ...)
     int try = 0;
     struct userdata_s *d = g->data;
 
-    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE || 
+	    TEST_FLAG(d->flags, CF_HUMAN))
 	return;
 
     d->engine->status = ENGINE_THINKING;
@@ -311,6 +312,9 @@ int start_chess_engine(GAME *g)
     int ret = 1;
     struct userdata_s *d = g->data;
 
+    if (d->engine)
+	return -1;
+
     args = parseargs(config.engine_cmd);
 
     d->engine = Calloc(1, sizeof(struct engine_s));
@@ -356,9 +360,9 @@ void parse_gnuchess_line(GAME *g, char *str)
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
 	/*
-	if (validate_move(g, m)) {
+	if (pgn_validate_move(g, g->b, p)) {
 	    invalid_move(0, m);
-	    return;
+	    RETURN(d);
 	}
 	*/
 
@@ -400,7 +404,8 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    RETURN(d);
 	}
 
-	if (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
+	if (TEST_FLAG(d->flags, CF_ENGINE_LOOP) && 
+		!TEST_FLAG(d->flags, CF_HUMAN)) {
 	    send_to_engine(g, "go\n");
 	    return;
 	}
