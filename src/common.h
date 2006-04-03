@@ -33,10 +33,13 @@ enum {
     ICS_FD
 };
 
+#define CF_ENGINE_LOOP	0x001
+
 struct user_data_s {
     int fd[3];
     pid_t pid;
     int status;
+    unsigned short flags;
 };
 
 void invalid_move(int n, const char *m);

@@ -151,6 +151,7 @@ const char *playhelp[] = {
     "                 u - undo previous move *",
     "                 g - force engine to make the next move",
     "                 c - send a command to the chess engine",
+    "                 o - toggle engine looping",
     NULL
 };
 

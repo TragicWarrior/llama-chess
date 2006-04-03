@@ -1688,6 +1688,7 @@ void update_status_window(GAME g)
     char *p;
     int maxy, maxx;
     int len;
+    struct user_data_s *d = g.data;
 
     getmaxyx(statusw, maxy, maxx);
     w = maxx - 2 - 8;
@@ -1749,7 +1750,9 @@ void update_status_window(GAME g)
 	    break;
     }
 
-    mvwprintw(statusw, 4, 1, "%*s %-*s", 7, STATUS_MODE_STR, w, mode);
+    snprintf(buf, len - 1, "%*s %s%s", 7, STATUS_MODE_STR, mode,
+	    (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) ? " (loop)" : "");
+    mvwprintw(statusw, 4, 1, "%-*s", w, buf);
 
     switch (status.engine) {
 	case ENGINE_THINKING:
@@ -2287,6 +2290,13 @@ static void playmode_keys(int c)
     struct user_data_s *d = game[gindex].data;
 
     switch (c) {
+	case 'o':
+	    if (!d)
+		break;
+
+	    TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
+	    update_all(game[gindex]);
+	    break;
 	case 'c':
 	    if (status.engine == ENGINE_THINKING || status.engine ==
 		    ENGINE_OFFLINE)

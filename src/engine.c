@@ -310,8 +310,6 @@ int start_chess_engine(GAME *g)
 	    break;
 	default:
 	    ret = 0;
-	    // FIXME testing
-	    send_to_engine(g, "depth 1\n");
 	    break;
     }
 
@@ -330,6 +328,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
     int count;
+    struct user_data_s *d = g->data;
 
     /* Human move. Add it to the move history. */
     if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
@@ -377,6 +376,9 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    //history_update_board(g, g.htotal); FIXME
 	    RETURN;
 	}
+
+	if (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP))
+	    send_to_engine(g, "go\n");
 
 	RETURN;
     }
