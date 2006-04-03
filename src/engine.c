@@ -412,23 +412,6 @@ void parse_gnuchess_line(GAME *g, char *str)
     }
 
     /* Miscellaneous one-liners. */
-
-    /* The engine is now reading a FIFO. Dump what we need to it. */
-    // FIXME FEN
-    if (strncmp(str, "pgnload ", 8) == 0) {
-	if (save_pgn(config.fifo, 1, gindex)) {
-	    oldhistorytotal = 0;
-	    return;
-	}
-	else {
-	    history_free(g->hp, g->hindex + 1);
-	    CLEAR_FLAG(g->flags, GF_GAMEOVER);
-	    SET_FLAG(g->flags, GF_MODIFIED);
-	}
-
-	return;
-    }
-
     /* 'switch' command. */
     if (strncmp(str, "White to move", 13) == 0) {
 	g->side = g->turn = WHITE;
@@ -441,6 +424,7 @@ void parse_gnuchess_line(GAME *g, char *str)
 
     /* Bad engine command or move. */
     if (strncmp(str, "Illegal move: ", 14) == 0) {
+	invalid_move(0, p);
 	RETURN(d);
     }
 }

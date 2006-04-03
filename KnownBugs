@@ -10,3 +10,7 @@ The 'draw' game result isn't recognized.
 
 Valid moves (when a piece is selected) wont check for certain things like
 check and others, giving false moves.
+
+If you have one game that is using a chess engine that isn't the selected
+game, cboard seems to try and update the board of the selected game which
+results in invalid moves.

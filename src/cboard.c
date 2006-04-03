@@ -1741,9 +1741,7 @@ void update_status_window(GAME g)
 	    break;
     }
 
-    snprintf(buf, len - 1, "%*s %s%s", 7, STATUS_MODE_STR, mode,
-	    (d && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) ? " (loop)" : "");
-    mvwprintw(statusw, 4, 1, "%-*s", w, buf);
+    mvwprintw(statusw, 4, 1, "%*s %-*s", 7, STATUS_MODE_STR, w, mode);
 
     if (d->engine) {
 	switch (d->engine->status) {
@@ -1769,7 +1767,14 @@ void update_status_window(GAME g)
 
     mvwprintw(statusw, 5, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
-    mvwaddstr(statusw, 5, 9, engine);
+
+    if (TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
+	snprintf(buf, len - 1, "%s (loop)", engine);
+	mvwaddstr(statusw, 5, 9, buf);
+    }
+    else
+	mvwaddstr(statusw, 5, 9, engine);
+
     wattroff(statusw, CP_STATUS_ENGINE);
 
     mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
