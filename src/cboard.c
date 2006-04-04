@@ -1447,6 +1447,9 @@ static void draw_board(GAME *g, int details)
     int ncols = 0, offset = 1;
     unsigned coords_y = 8;
 
+    if (g->mode != MODE_PLAY && g->mode != MODE_EDIT)
+	update_cursor(*g, g->hindex);
+
     for (row = 0; row < maxy; row++) {
 	bcol = 0;
 
@@ -2528,26 +2531,22 @@ static void historymode_keys(int c)
 	    history_next(&game[gindex], game[gindex].b, (keycount > 0) ?
 		    config.jumpcount * keycount * movestep : 
 		    config.jumpcount * movestep);
-	    update_cursor(game[gindex], game[gindex].hindex);
 	    update_all(game[gindex]);
 	    break;
 	case KEY_DOWN:
 	    history_previous(&game[gindex], game[gindex].b, (keycount) ?
 		    config.jumpcount * keycount * movestep : 
 		    config.jumpcount * movestep);
-	    update_cursor(game[gindex], game[gindex].hindex);
 	    update_all(game[gindex]);
 	    break;
 	case KEY_LEFT:
 	    history_previous(&game[gindex], game[gindex].b, (keycount) ?
 		    keycount * movestep : movestep);
-	    update_cursor(game[gindex], game[gindex].hindex);
 	    update_all(game[gindex]);
 	    break;
 	case KEY_RIGHT:
 	    history_next(&game[gindex], game[gindex].b, (keycount) ? 
 		    keycount * movestep : movestep);
-	    update_cursor(game[gindex], game[gindex].hindex);
 	    update_all(game[gindex]);
 	    break;
 	case 'a':
@@ -2606,7 +2605,6 @@ static void historymode_keys(int c)
 	    game[gindex].hindex = n;
 	    history_update_board(&game[gindex], game[gindex].b, game[gindex].hindex);
 	    update_all(game[gindex]);
-	    update_cursor(game[gindex], game[gindex].hindex);
 	    break;
 	case 'v':
 	    view_annotation(*game[gindex].hp[game[gindex].hindex]);
@@ -2651,7 +2649,6 @@ static void historymode_keys(int c)
 	    history_update_board(&game[gindex], game[gindex].b,
 		    game[gindex].hindex);
 	    update_all(game[gindex]);
-	    update_cursor(game[gindex], game[gindex].hindex);
 	    break;
 	default: 
 	    break;
@@ -2724,6 +2721,7 @@ static int globalkeys(int c)
 
 		game[gindex].mode = MODE_HISTORY;
 		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		update_all(game[gindex]);
 		return 1;
 	    }
 
@@ -2773,7 +2771,6 @@ static int globalkeys(int c)
 
 	    if (game[gindex].mode != MODE_EDIT) {
 		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
-		update_cursor(game[gindex], game[gindex].hindex);
 	    }
 	    update_all(game[gindex]);
 	    update_tag_window(game[gindex].tag);
@@ -2853,7 +2850,6 @@ static int globalkeys(int c)
 
 		  gindex = i;
 		  history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
-		  update_cursor(game[gindex], game[gindex].hindex);
 		  update_all(game[gindex]);
 		  update_tag_window(game[gindex].tag);
 		  return 1;
@@ -3225,7 +3221,6 @@ void game_loop()
     if (game[gindex].mode == MODE_HISTORY) {
 	history_update_board(&game[gindex], game[gindex].b,
 		history_total(game[gindex].hp));
-	update_cursor(game[gindex], game[gindex].hindex);
     }
 
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
