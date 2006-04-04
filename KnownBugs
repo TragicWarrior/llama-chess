@@ -1,10 +1,9 @@
 SAN move format is broken with ambiguities and more.
 
-The first menu item isn't initially highlighted.
+Speed up the move validator. It's alot slower since 0.1.6. I need suggestions 
+on this.
 
-Linux: Resuming a game specified on the command line is broken and the cursor
-needs moving to update the pieces (sometimes). Won't do it on Debian so I'm
-guessing it's RedHat specific.
+The first menu item isn't initially highlighted.
 
 The 'draw' game result isn't recognized.
 
