@@ -337,7 +337,7 @@ int piece_by_col(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
 	int n = b[ROWTOBOARD(row)][COLTOBOARD(i)].icon;
 
 	if (pgn_piece_to_int(n) != OPEN_SQUARE) {
-	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.side, n)) {
+	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*c = i;
 		*r = row;
 		count++;
@@ -351,7 +351,7 @@ int piece_by_col(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
 	int n = b[ROWTOBOARD(row)][COLTOBOARD(i)].icon;
 
 	if (pgn_piece_to_int(n) != OPEN_SQUARE) {
-	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.side, n)) {
+	    if (pgn_piece_to_int(n) == piece && val_piece_side(g.turn, n)) {
 		*c = i;
 		*r = row;
 		count++;
