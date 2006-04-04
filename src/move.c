@@ -1252,7 +1252,6 @@ int pgn_validate_move(GAME *g, BOARD b, char *m)
 	return 1;
 
     capture = 0;
-    update_status_notify(*g, NULL);
     srow = row = col = scol = promo = piece = 0;
 again:
     p = (m) + strlen(m);

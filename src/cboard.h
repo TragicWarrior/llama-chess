@@ -45,6 +45,8 @@ WINDOW *statusw;
 PANEL *statusp;
 WINDOW *historyw;
 PANEL *historyp;
+WINDOW *loadingw;
+PANEL *loadingp;
 
 int delete_count = 0;
 int markstart = -1, markend = -1;

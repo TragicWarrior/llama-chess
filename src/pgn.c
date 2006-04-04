@@ -1219,6 +1219,9 @@ void pgn_new_game()
 	    GF_BK_CASTLE|GF_BQ_CASTLE);
     pgn_init_board(game[gindex].b);
     set_default_tags(&game[gindex]);
+
+    if (!(gtotal % 50))
+	kill(getpid(), SIGUSR1);
 }
 
 static int read_file(FILE *fp)
@@ -1474,7 +1477,8 @@ int pgn_parse(FILE *fp)
     if (!fp) {
 	reset_game_data();
 	pgn_new_game();
-	return 0;
+	pgn_ret = 0;
+	goto done;
     }
 
     reset_game_data();
@@ -1485,11 +1489,10 @@ int pgn_parse(FILE *fp)
     if (rav)
 	free(rav);
 
-    if (gtotal < 1) {
+    if (gtotal < 1)
 	pgn_new_game();
-	goto done;
-    }
 
+done:
     gtotal = gindex + 1;
 
     for (i = 0; i < gtotal; i++) {
@@ -1497,7 +1500,6 @@ int pgn_parse(FILE *fp)
 	game[i].hindex = history_total(game[i].hp);
     }
 
-done:
     return pgn_ret;
 }
 

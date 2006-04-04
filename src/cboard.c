@@ -2674,6 +2674,37 @@ static void cleanup_all_games()
     }
 }
 
+void update_loading_window()
+{
+    if (!loadingw) {
+	loadingw = newwin(3, COLS / 2, CALCPOSY(3), CALCPOSX(COLS / 2));
+	loadingp = new_panel(loadingw);
+	wbkgd(loadingw, CP_MESSAGE_WINDOW);
+    }
+
+    wmove(loadingw, 0, 0);
+    wclrtobot(loadingw);
+    wattron(loadingw, CP_MESSAGE_BORDER);
+    box(loadingw, ACS_VLINE, ACS_HLINE);
+    wattroff(loadingw, CP_MESSAGE_BORDER);
+    mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
+		11 + strlen(itoa(gtotal))), "Loading... %i", gtotal);
+    update_panels();
+    doupdate();
+}
+
+void init_userdata()
+{
+    int i;
+
+    for (i = 0; i < gtotal; i++) {
+	struct userdata_s *d = NULL;
+
+	d = Calloc(1, sizeof(struct userdata_s));
+	game[i].data = d;
+    }
+}
+
 // Global and other keys.
 static int globalkeys(int c)
 {
@@ -2923,6 +2954,11 @@ static int globalkeys(int c)
 		  if (pgn_parse(fp))
 		      return 1;
 
+		  del_panel(loadingp);
+		  delwin(loadingw);
+		  loadingw = NULL;
+		  loadingp = NULL;
+		  init_userdata();
 		  strncpy(loadfile, tmp, sizeof(loadfile));
 
 		  if (history_total(game[gindex].hp))
@@ -3362,6 +3398,15 @@ void catch_signal(int which)
 	    cbreak();
 	    noecho();
 	    break;
+	case SIGUSR1:
+	    if (curses_initialized) {
+		update_loading_window(game[gindex]);
+		break;
+	    }
+
+	    fprintf(stderr, "Loading... %i\r", gtotal);
+	    fflush(stderr);
+	    break;
 	default:
 	    break;
     }
@@ -3460,6 +3505,7 @@ int main(int argc, char *argv[])
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
     signal(SIGINT, catch_signal);
+    signal(SIGUSR1, catch_signal);
 
     srandom(getpid());
 
@@ -3498,12 +3544,7 @@ int main(int argc, char *argv[])
     else if (ret)
 	exit(ret);
 
-    for (i = 0; i < gtotal; i++) {
-	struct userdata_s *d = NULL;
-
-	d = Calloc(1, sizeof(struct userdata_s));
-	game[i].data = d;
-    }
+    init_userdata();
 
     if (initscr() == NULL)
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);

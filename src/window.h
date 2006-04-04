@@ -40,5 +40,6 @@ int dump_message(const char *, const char *, int, const char *,
 #define CALCPOSY(y)		((y > LINES - 1) ? 0 : LINES / 2 - y / 2)
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
 #define CENTERX(x, str)		abs((x / 2 - strlen(str) / 2))
+#define CENTER_INT(x, n)	abs((x / 2 - n / 2))
 
 #endif
