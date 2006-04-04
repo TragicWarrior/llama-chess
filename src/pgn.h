@@ -25,8 +25,6 @@
 extern char *strptime(const char *, const char *, struct tm *);
 #endif
 
-#define TIME_FORMAT	"%B %d, %Y" /* When displayed in-game. */
-
 struct {
     int mpl;
     int stop;
@@ -43,8 +41,5 @@ int pgn_ret;
 int pgn_write_turn;
 int pgn_mpl;
 int pgn_lastc;
-int pgn_stop;
-
-void switch_turn(char *);
 
 #endif

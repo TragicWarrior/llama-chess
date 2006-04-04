@@ -1046,7 +1046,7 @@ int checktest(GAME *g, BOARD b, int kr, int kc, int okr, int okc, int matetest)
     return 0;
 }
 
-void board_reset_valid_moves(BOARD b)
+void pgn_reset_valid_moves(BOARD b)
 {
     int row, col;
 
@@ -1056,12 +1056,11 @@ void board_reset_valid_moves(BOARD b)
     }
 }
 
-void board_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *minr, int *maxr, int *minc, int *maxc)
+void pgn_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol)
 {
     int row, col;
 
     validate = 1;
-    *minr = *maxr = *minc = *maxc = 1;
 
     for (row = 1; VALIDFILE(row); row++) {
 	for (col = 1; VALIDFILE(col); col++) {
@@ -1085,20 +1084,6 @@ void board_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *min
 		continue;
 
 	    b[ROWTOBOARD(row)][COLTOBOARD(col)].valid = 1;
-
-	    /*
-	    if (row < *minr)
-		*minr = row;
-
-	    if (row > *maxr)
-		*maxr = row;
-
-	    if (col < *minc)
-		*minc = col;
-
-	    if (col > *maxc)
-		*maxc = col;
-	    */
 	}
     }
 

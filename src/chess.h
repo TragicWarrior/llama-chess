@@ -125,9 +125,19 @@ typedef struct games {
 				 * be freed by the user. */
 } GAME;
 
+/*
+ * Global GAME array. pgn_new_game() appends to this array.
+ */
 GAME *game;
+
+/*
+ * 'gindex' and 'gtotal' are the current and total number of games in 'game'.
+ */
 int gindex, gtotal;
 
+/*
+ * Library configuration flags.
+ */
 typedef enum {
     /*
      * When pgn_write() is called to write a game, write reduced PGN format.
@@ -152,7 +162,8 @@ typedef enum {
 } pgn_config_flag;
 
 /*
- * Set game flags. See chess.h for available flags.
+ * Sets config flag 'f' to 'val'. Returns 0 on success or 1 if 'f' is an
+ * invalid flag or 'val' is an invalid value.
  */
 int pgn_config_set(pgn_config_flag f, int val);
 
@@ -161,69 +172,10 @@ int pgn_config_set(pgn_config_flag f, int val);
  */
 int pgn_config_get(pgn_config_flag f);
 
-/*
- * Converts the character piece 'p' to an integer.
+/* 
+ * Returns 1 if 'filename' is a recognized compressed filetype or 0 if not.
  */
-int pgn_piece_to_int(int p);
-
-/*
- * Converts the integer piece 'n' to a character whose turn is 'turn'. WHITE
- * piece are uppercase and BLACK pieces are lowercase.
- */
-int pgn_int_to_piece(char turn, int n);
-
-/*
- * Returns the total number of tags in 't' or 0 if 't' is NULL.
- */
-int pgn_tag_total(TAG **t);
-
-/*
- * Finds a tag 'name' in the structure array 't'. Returns the location in the
- * array of the found tag or -1 on failure.
- */
-int pgn_find_tag(TAG **t, const char *name);
-
-/*
- * Sorts a tag array. The first seven tags are in order of the PGN standard so
- * don't sort'em.
- */
-void pgn_sort_tags(TAG **t);
-
-/*
- * Adds a tag 'name' with value 'value' to the pointer to array of TAG
- * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
- * is updated to the new 'value'. Returns 1 if a duplicate tag was found or 0
- * otherwise.
- */
-int pgn_add_tag(TAG ***dst, char *name, char *value);
-
-/*
- * Resets or initializes a new game board 'b'.
- */
-void pgn_init_board(BOARD b);
-
-/*
- * This is called at the EOG marker and the beginning of the move text
- * section. So at least a move or EOG marker has to exist. It initializes the
- * board (b) to the FEN tag (if found) and sets the castling and enpassant
- * info for the game 'g'. If 'fen' is set it should be a fen tag and will be
- * parsed rather than the game 'g'.tag FEN tag. Returns 0 on success or if
- * there was both a FEN and SetUp tag with the SetUp tag set to 0. Returns 1
- * if there was a FEN parse error or no FEN tag at all.
- */
-int pgn_init_fen_board(GAME *g, BOARD b, char *fen);
-
-/*
- * Creates a FEN tag from the current game 'g' and board 'b'. Returns a FEN
- * tag.
- */
-char *pgn_game_to_fen(GAME g, BOARD b);
-
-/*
- * Allocates a new game and increments gindex (the current game) and gtotal
- * (the total number of games).
- */
-void pgn_new_game();
+int pgn_is_compressed(const char *filename);
 
 /*
  * Returns a file pointer associated with 'filename' or NULL on error with
@@ -244,32 +196,102 @@ FILE *pgn_open(const char *filename);
 int pgn_parse(FILE *fp);
 
 /*
+ * Allocates a new game and increments 'gtotal'. 'gindex' is then set to the
+ * new game.
+ */
+void pgn_new_game();
+
+/*
  * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. Returns 1
  * if the written move count doesn't match the game's ply count (FEN tag) or 0
- * on success.
+ * on success. See 'pgn_config_flag' for output options.
  */
 void pgn_write(FILE *fp, GAME g);
 
-/* 
- * Returns 1 if 'filename' is a recognized compressed filetype or 0 if not.
+/*
+ * Frees all games in the global 'game' array.
  */
-int pgn_is_compressed(const char *filename);
+void pgn_free_all(void);
+
+/*
+ * Frees a single game 'g'.
+ */
+void pgn_free(GAME g);
+
+/*
+ * Adds a tag 'name' with value 'value' to the pointer to array of TAG
+ * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
+ * is updated to the new 'value'. Returns 1 if a duplicate tag was found or 0
+ * otherwise.
+ */
+int pgn_tag_add(TAG ***dst, char *name, char *value);
+
+/*
+ * Returns the total number of tags in 't' or 0 if 't' is NULL.
+ */
+int pgn_tag_total(TAG **t);
+
+/*
+ * Finds a tag 'name' in the structure array 't'. Returns the location in the
+ * array of the found tag or -1 on failure.
+ */
+int pgn_tag_find(TAG **t, const char *name);
+
+/*
+ * Sorts a tag array. The first seven tags are in order of the PGN standard so
+ * don't sort'em.
+ */
+void pgn_tag_sort(TAG **t);
+
+/*
+ * Frees a TAG array.
+ */
+void pgn_tag_free(TAG **);
+
+/*
+ * It initializes the board (b) to the FEN tag (if found) and sets the
+ * castling and enpassant info for the game 'g'. If 'fen' is set it should be
+ * a fen tag and will be parsed rather than the game 'g'.tag FEN tag. Returns
+ * 0 on success or if there was both a FEN and SetUp tag with the SetUp tag
+ * set to 0. Returns 1 if there was a FEN parse error or no FEN tag at all.
+ */
+int pgn_board_init_fen(GAME *g, BOARD b, char *fen);
+
+/*
+ * Creates a FEN tag from the current game 'g', history move (g.hindex) and
+ * board 'b'. Returns a FEN tag.
+ */
+char *pgn_game_to_fen(GAME g, BOARD b);
+
+/*
+ * Resets or initializes a new game board 'b'.
+ */
+void pgn_board_init(BOARD b);
+
+/* 
+ * Validate a move. Move 'm' is validated against the current game state of
+ * 'g' and board 'b'. Returns 1 if the move 'm' is invalid or 0 if successful.
+ */
+int pgn_validate_move(GAME *g, BOARD b, char *m);
+
+/*
+ * Converts an a2a4 formatted move to SAN format. Only minimal validation is
+ * done in this function. Use pgn_validate_move() to validate the returned
+ * value. Returns a SAN formatted move or the original move if a2a4 format is
+ * not recognized.
+ */
+char *pgn_a2a4tosan(GAME *g, BOARD b, char *m);
 
 /*
  * Returns the total number of moves in 'h' or 0 if none.
  */
-int history_total(HISTORY **h);
-
-/* 
- * Deallocates the all the data for 'h' from position 'start' in the array.
- */
-void history_free(HISTORY **h, int start);
+int pgn_history_total(HISTORY **h);
 
 /*
  * Returns the history ply 'n' from 'h'. If 'n' is out of range then NULL is
  * returned.
  */
-HISTORY *history_by_n(HISTORY **h, int n);
+HISTORY *pgn_history_by_n(HISTORY **h, int n);
 
 /*
  * Appends move 'm' to game 'g' history pointer. The history pointer may be a
@@ -277,32 +299,58 @@ HISTORY *history_by_n(HISTORY **h, int n);
  * not in a RAV then g->history will be updated. Returns 1 if realloc() failed
  * or 0 on success.
  */
-int history_add(GAME *g, const char *m);
+int pgn_history_add(GAME *g, const char *m);
 
 /*
- * Resets the game 'g' using board 'b' up to history move 'n'.
+ * Deallocates all of the history data from position 'start' in the array 'h'.
  */
-int history_update_board(GAME *g, BOARD b, int n);
+void pgn_history_free(HISTORY **h, int start);
+
+/*
+ * Resets the game 'g' using board 'b' up to history move (g.hindex) 'n'.
+ */
+int pgn_board_update(GAME *g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the next 'n'th history move.
  */
-void history_previous(GAME *g, BOARD b, int n);
+void pgn_history_prev(GAME *g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the previous 'n'th history move.
  */
-void history_next(GAME *g, BOARD b, int n);
+void pgn_history_next(GAME *g, BOARD b, int n);
 
-int pgn_validate_move(GAME *g, BOARD b, char *m);
+/*
+ * Converts the character piece 'p' to an integer.
+ */
+int pgn_piece_to_int(int p);
 
+/*
+ * Converts the integer piece 'n' to a character whose turn is 'turn'. WHITE
+ * piece are uppercase and BLACK pieces are lowercase.
+ */
+int pgn_int_to_piece(char turn, int n);
+
+/*
+ * Toggles g->turn.
+ */
 void pgn_switch_turn(GAME *);
-char *pgn_a2a4tosan(GAME *g, BOARD b, char *m);
-void board_reset_valid_moves(BOARD b);
-void board_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol, int *minr, int *maxr, int *minc, int *maxc);
-void pgn_free_all(void);
-void pgn_free(GAME);
-void pgn_tag_free(TAG **);
+
+/*
+ * Clears the enpassant flag for all positions on board 'b'.
+ */
 void pgn_reset_enpassant(BOARD b);
+
+/*
+ * Clears the valid move flag for all positions on board 'b'.
+ */
+void pgn_reset_valid_moves(BOARD b);
+
+/* 
+ * Sets valid moves from game 'g' in board 'b' for piece 'p' which is at
+ * 'rank' and 'file'.
+ */
+void pgn_get_valid_moves(GAME *g, BOARD b, int p, int rank, int file);
 
 #endif

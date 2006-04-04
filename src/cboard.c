@@ -107,7 +107,7 @@ void update_cursor(GAME g, int idx)
 {
     char *p;
     int len;
-    int t = history_total(g.hp);
+    int t = pgn_history_total(g.hp);
 
     /*
      * If not deincremented then r and c would be the next move.
@@ -923,9 +923,9 @@ static void add_custom_tags(TAG ***t)
 	return;
 
     for (i = 0; config.tag[i]; i++)
-	pgn_add_tag(t, config.tag[i]->name, config.tag[i]->value);
+	pgn_tag_add(t, config.tag[i]->name, config.tag[i]->value);
 
-    pgn_sort_tags(*t);
+    pgn_tag_sort(*t);
 }
 
 TAG **edit_tags(GAME g, BOARD b, int edit)
@@ -938,7 +938,7 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 
     /* Edit the backup copy, not the original in case the save fails. */
     for (n = 0; g.tag[n]; n++)
-	pgn_add_tag(&data, g.tag[n]->name, g.tag[n]->value);
+	pgn_tag_add(&data, g.tag[n]->name, g.tag[n]->value);
 
     data_index = pgn_tag_total(data);
 
@@ -1047,14 +1047,14 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 			if (i == selected)
 			    continue;
 
-			pgn_add_tag(&tmppgn, data[i]->name, data[i]->value);
+			pgn_tag_add(&tmppgn, data[i]->name, data[i]->value);
 		    }
 
 		    pgn_tag_free(data);
 		    data = NULL;
 
 		    for (i = 0; tmppgn[i]; i++)
-			pgn_add_tag(&data, tmppgn[i]->name, tmppgn[i]->value);
+			pgn_tag_add(&data, tmppgn[i]->name, tmppgn[i]->value);
 
 		    pgn_tag_free(tmppgn);
 		    goto cleanup;
@@ -1083,7 +1083,7 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 			}
 		    }
 
-		    pgn_add_tag(&data, newtag, NULL);
+		    pgn_tag_add(&data, newtag, NULL);
 		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
 		    goto gotitem;
@@ -1098,7 +1098,7 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    if (!edit)
 			break;
 
-		    pgn_add_tag(&data, "FEN", pgn_game_to_fen(g, b));
+		    pgn_tag_add(&data, "FEN", pgn_game_to_fen(g, b));
 		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
 		    goto gotitem;
@@ -1652,7 +1652,7 @@ static int move_to_engine(GAME *g, BOARD b)
     sp.row = sp.col = sp.icon = 0;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	history_add(g, p);
+	pgn_history_add(g, p);
 	pgn_switch_turn(g);
 	SET_FLAG(g->flags, GF_MODIFIED);
 	update_all(*g);
@@ -1815,7 +1815,7 @@ void update_history_window(GAME g)
     char buf[HISTORY_WIDTH - 1];
     HISTORY *h = NULL;
     int n, total;
-    int t = history_total(g.hp);
+    int t = pgn_history_total(g.hp);
 
     n = (g.hindex + 1) / 2;
 
@@ -1833,7 +1833,7 @@ void update_history_window(GAME g)
     mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    h = history_by_n(g.hp, g.hindex);
+    h = pgn_history_by_n(g.hp, g.hindex);
     snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
     n = 0;
 
@@ -1858,7 +1858,7 @@ void update_history_window(GAME g)
     mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    h = history_by_n(g.hp, game[gindex].hindex - 1);
+    h = pgn_history_by_n(g.hp, game[gindex].hindex - 1);
     snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
     n = 0;
 
@@ -2031,10 +2031,10 @@ static int find_move_exp(GAME g, const char *str, int init, int which,
 	if (i == g.hindex - 1)
 	    break;
 
-	if (i >= history_total(g.hp))
+	if (i >= pgn_history_total(g.hp))
 	    i = 0;
 	else if (i < 0)
-	    i = history_total(g.hp) - 1;
+	    i = pgn_history_total(g.hp) - 1;
 
 	// FIXME RAV
 	ret = regexec(&r, g.hp[i]->move, 0, 0, 0);
@@ -2086,7 +2086,7 @@ static void edit_save_tags(GAME *g)
     pgn_tag_free(g->tag);
     g->tag = t;
     SET_FLAG(g->flags, GF_MODIFIED);
-    pgn_sort_tags(g->tag);
+    pgn_tag_sort(g->tag);
 }
 
 static int find_game_exp(char *str, int which, int count)
@@ -2247,7 +2247,7 @@ int rav_next_prev(GAME *g, BOARD b, int n)
 
     // Previous RAV.
     g->ravlevel--;
-    pgn_init_fen_board(g, b, g->rav[g->ravlevel].fen);
+    pgn_board_init_fen(g, b, g->rav[g->ravlevel].fen);
     free(g->rav[g->ravlevel].fen);
     g->hp = g->rav[g->ravlevel].hp;
     g->flags = g->rav[g->ravlevel].flags;
@@ -2296,7 +2296,7 @@ static void playmode_keys(int c)
     // More keys in MODE_EDIT share keys with MODE_PLAY than don't.
     int editmode = (game[gindex].mode == MODE_EDIT) ? 1 : 0;
     chtype p;
-    int w, x, y, z;
+    int w, x;
     char *tmp;
     struct userdata_s *d = game[gindex].data;
 
@@ -2305,10 +2305,10 @@ static void playmode_keys(int c)
 	    TOGGLE_FLAG(d->flags, CF_HUMAN);
 
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
-		    history_total(game[gindex].hp)) {
-		pgn_add_tag(&game[gindex].tag, "FEN", 
+		    pgn_history_total(game[gindex].hp)) {
+		pgn_tag_add(&game[gindex].tag, "FEN", 
 			pgn_game_to_fen(game[gindex], game[gindex].b));
-		x = pgn_find_tag(game[gindex].tag, "FEN");
+		x = pgn_tag_find(game[gindex].tag, "FEN");
 
 		if (start_chess_engine(&game[gindex]) <= 0) {
 		    send_to_engine(&game[gindex], "setboard %s\n",
@@ -2367,7 +2367,7 @@ static void playmode_keys(int c)
 
 	    if (move_to_engine(&game[gindex], game[gindex].b)) {
 		if (config.validmoves)
-		    board_reset_valid_moves(game[gindex].b);
+		    pgn_reset_valid_moves(game[gindex].b);
 
 		if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
 		    CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
@@ -2384,8 +2384,8 @@ static void playmode_keys(int c)
 		    break;
 		}
 
-		x = pgn_find_tag(game[gindex].tag, "FEN");
-		w = pgn_find_tag(game[gindex].tag, "SetUp");
+		x = pgn_tag_find(game[gindex].tag, "FEN");
+		w = pgn_tag_find(game[gindex].tag, "SetUp");
 
 		if ((w >= 0 && x >= 0 && atoi(game[gindex].tag[w]->value) == 1) 
 			|| (x >= 0 && w == -1)) {
@@ -2423,8 +2423,8 @@ static void playmode_keys(int c)
 	    sp.col = c_col;
 
 	    if (!editmode && config.validmoves)
-		board_get_valid_moves(&game[gindex], game[gindex].b,
-			pgn_piece_to_int(sp.icon), sp.row, sp.col, &w, &x, &y, &z);
+		pgn_get_valid_moves(&game[gindex], game[gindex].b,
+			pgn_piece_to_int(sp.icon), sp.row, sp.col);
 
 	    paused = 0;
 	    break;
@@ -2435,10 +2435,10 @@ static void playmode_keys(int c)
 	    break;
 	case 'u':
 	    /* FIXME dies reading FIFO sometimes. */
-	    if (!history_total(game[gindex].hp))
+	    if (!pgn_history_total(game[gindex].hp))
 		break;
 
-	    history_previous(&game[gindex], game[gindex].b, (keycount) ? keycount * 2 :
+	    pgn_history_prev(&game[gindex], game[gindex].b, (keycount) ? keycount * 2 :
 		    2);
 
 #if 0
@@ -2528,24 +2528,24 @@ static void historymode_keys(int c)
 	    update_history_window(game[gindex]);
 	    break;
 	case KEY_UP:
-	    history_next(&game[gindex], game[gindex].b, (keycount > 0) ?
+	    pgn_history_next(&game[gindex], game[gindex].b, (keycount > 0) ?
 		    config.jumpcount * keycount * movestep : 
 		    config.jumpcount * movestep);
 	    update_all(game[gindex]);
 	    break;
 	case KEY_DOWN:
-	    history_previous(&game[gindex], game[gindex].b, (keycount) ?
+	    pgn_history_prev(&game[gindex], game[gindex].b, (keycount) ?
 		    config.jumpcount * keycount * movestep : 
 		    config.jumpcount * movestep);
 	    update_all(game[gindex]);
 	    break;
 	case KEY_LEFT:
-	    history_previous(&game[gindex], game[gindex].b, (keycount) ?
+	    pgn_history_prev(&game[gindex], game[gindex].b, (keycount) ?
 		    keycount * movestep : movestep);
 	    update_all(game[gindex]);
 	    break;
 	case KEY_RIGHT:
-	    history_next(&game[gindex], game[gindex].b, (keycount) ? 
+	    pgn_history_next(&game[gindex], game[gindex].b, (keycount) ? 
 		    keycount * movestep : movestep);
 	    update_all(game[gindex]);
 	    break;
@@ -2584,7 +2584,7 @@ static void historymode_keys(int c)
 	case ']':
 	case '[':
 	case '/':
-	    if (history_total(game[gindex].hp) < 2)
+	    if (pgn_history_total(game[gindex].hp) < 2)
 		break;
 
 	    n = 0;
@@ -2603,7 +2603,7 @@ static void historymode_keys(int c)
 		break;
 
 	    game[gindex].hindex = n;
-	    history_update_board(&game[gindex], game[gindex].b, game[gindex].hindex);
+	    pgn_board_update(&game[gindex], game[gindex].b, game[gindex].hindex);
 	    update_all(game[gindex]);
 	    break;
 	case 'v':
@@ -2619,7 +2619,7 @@ static void historymode_keys(int c)
 	    update_all(game[gindex]);
 	    break;
 	case 'j':
-	    if (history_total(game[gindex].hp) < 2)
+	    if (pgn_history_total(game[gindex].hp) < 2)
 		break;
 
 	    /* FIXME field validation
@@ -2642,11 +2642,11 @@ static void historymode_keys(int c)
 	    else
 		n = keycount;
 
-	    if (n < 0 || n > (history_total(game[gindex].hp) / 2))
+	    if (n < 0 || n > (pgn_history_total(game[gindex].hp) / 2))
 		break;
 
 	    game[gindex].hindex = (n) ? n * 2 - 1 : n * 2;
-	    history_update_board(&game[gindex], game[gindex].b,
+	    pgn_board_update(&game[gindex], game[gindex].b,
 		    game[gindex].hindex);
 	    update_all(game[gindex]);
 	    break;
@@ -2715,12 +2715,12 @@ static int globalkeys(int c)
     switch (c) {
 	case 'h':
 	    if (game[gindex].mode != MODE_HISTORY) {
-		if (!history_total(game[gindex].hp) || 
+		if (!pgn_history_total(game[gindex].hp) || 
 			(d->engine && d->engine->status == ENGINE_THINKING))
 		    return 1;
 
 		game[gindex].mode = MODE_HISTORY;
-		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		update_all(game[gindex]);
 		return 1;
 	    }
@@ -2732,7 +2732,7 @@ static int globalkeys(int c)
 	    }
 
 	    // FIXME Resuming from previous history could append to a RAV.
-	    if (game[gindex].hindex != history_total(game[gindex].hp)) {
+	    if (game[gindex].hindex != pgn_history_total(game[gindex].hp)) {
 		if (!pushkey) {
 		    if ((c = message(NULL, YESNO, "%s",
 				    GAME_RESUME_HISTORY_TEXT)) != 'y')
@@ -2754,7 +2754,7 @@ static int globalkeys(int c)
 	    }
 
 	    pushkey = 0;
-	    oldhistorytotal = history_total(game[gindex].hp);
+	    oldhistorytotal = pgn_history_total(game[gindex].hp);
 	    game[gindex].mode = MODE_PLAY;
 	    update_all(game[gindex]);
 	    return 1;
@@ -2770,7 +2770,7 @@ static int globalkeys(int c)
 	    }
 
 	    if (game[gindex].mode != MODE_EDIT) {
-		history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 	    }
 	    update_all(game[gindex]);
 	    update_tag_window(game[gindex].tag);
@@ -2814,10 +2814,10 @@ static int globalkeys(int c)
 
 		  gindex = n;
 
-		  if (history_total(game[gindex].hp))
+		  if (pgn_history_total(game[gindex].hp))
 		      game[gindex].mode = MODE_HISTORY;
 
-		  history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
 		  update_tag_window(game[gindex].tag);
 		  return 1;
@@ -2849,7 +2849,7 @@ static int globalkeys(int c)
 		      return 1;
 
 		  gindex = i;
-		  history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
 		  update_tag_window(game[gindex].tag);
 		  return 1;
@@ -2918,10 +2918,10 @@ static int globalkeys(int c)
 
 		  delete_game((!n) ? gindex : -1);
 
-		  if (history_total(game[gindex].hp))
+		  if (pgn_history_total(game[gindex].hp))
 		      game[gindex].mode = MODE_HISTORY;
 
-		  history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
 		  update_tag_window(game[gindex].tag);
 		  return 1;
@@ -2957,10 +2957,10 @@ static int globalkeys(int c)
 		  init_userdata();
 		  strncpy(loadfile, tmp, sizeof(loadfile));
 
-		  if (history_total(game[gindex].hp))
+		  if (pgn_history_total(game[gindex].hp))
 		      game[gindex].mode = MODE_HISTORY;
 
-		  history_update_board(&game[gindex], game[gindex].b, history_total(game[gindex].hp));
+		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
 		  update_tag_window(game[gindex].tag);
 		  return 1;
@@ -3061,7 +3061,7 @@ static int globalkeys(int c)
 		      cleanup_all_games();
 		      pgn_parse(NULL);
 		      add_custom_tags(&game[gindex].tag);
-		      pgn_init_board(game[gindex].b);
+		      pgn_board_init(game[gindex].b);
 		      d = Calloc(1, sizeof(struct userdata_s));
 		      game[gindex].data = d;
 		  }
@@ -3088,7 +3088,7 @@ static int globalkeys(int c)
 		  }
 
 		  if (config.validmoves)
-		      board_reset_valid_moves(game[gindex].b);
+		      pgn_reset_valid_moves(game[gindex].b);
 
 		  return 1;
 	case '0' ... '9':
@@ -3168,11 +3168,11 @@ static int globalkeys(int c)
 		      return 1;
 
 		  // Don't edit a running game (for now).
-		  if (history_total(game[gindex].hp))
+		  if (pgn_history_total(game[gindex].hp))
 		      return 1;
 
 		  if (game[gindex].mode != MODE_EDIT) {
-		      pgn_init_fen_board(&game[gindex], game[gindex].b, NULL);
+		      pgn_board_init_fen(&game[gindex], game[gindex].b, NULL);
 		      board_details++;
 		      game[gindex].mode = MODE_EDIT;
 		      update_all(game[gindex]);
@@ -3180,10 +3180,10 @@ static int globalkeys(int c)
 		  }
 
 		  board_details--;
-		  pgn_add_tag(&game[gindex].tag, "FEN", 
+		  pgn_tag_add(&game[gindex].tag, "FEN", 
 			  pgn_game_to_fen(game[gindex], game[gindex].b));
-		  pgn_add_tag(&game[gindex].tag, "SetUp", "1");
-		  pgn_sort_tags(game[gindex].tag);
+		  pgn_tag_add(&game[gindex].tag, "SetUp", "1");
+		  pgn_tag_sort(game[gindex].tag);
 		  game[gindex].mode = MODE_PLAY;
 		  update_all(game[gindex]);
 		  return 1;
@@ -3213,14 +3213,14 @@ void game_loop()
     c_row = 2, c_col = 5;
     gindex = gtotal - 1;
 
-    if (history_total(game[gindex].hp))
+    if (pgn_history_total(game[gindex].hp))
 	game[gindex].mode = MODE_HISTORY;
     else
 	game[gindex].mode = MODE_PLAY;
 
     if (game[gindex].mode == MODE_HISTORY) {
-	history_update_board(&game[gindex], game[gindex].b,
-		history_total(game[gindex].hp));
+	pgn_board_update(&game[gindex], game[gindex].b,
+		pgn_history_total(game[gindex].hp));
     }
 
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);

@@ -376,10 +376,10 @@ void parse_gnuchess_line(GAME *g, char *str)
 	}
 	*/
 
-        if (history_total(g->hp) == 0 && g->side == BLACK)
+        if (pgn_history_total(g->hp) == 0 && g->side == BLACK)
 	    SET_FLAG(g->flags, GF_BLACK_OPENING);
 
-	history_add(g, p);
+	pgn_history_add(g, p);
 	SET_FLAG(g->flags, GF_MODIFIED);
 	pgn_switch_turn(g);
 	str += count;
@@ -401,16 +401,16 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    RETURN(d);
 	}
 
-        if (history_total(g->hp) == 0 && g->side == BLACK)
+        if (pgn_history_total(g->hp) == 0 && g->side == BLACK)
 	    SET_FLAG(g->flags, GF_BLACK_OPENING);
 
-	history_add(g, p);
+	pgn_history_add(g, p);
 	SET_FLAG(g->flags, GF_MODIFIED);
 	pgn_switch_turn(g);
 	str += count;
 
 	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-	    //history_update_board(g, g.htotal); FIXME
+	    //pgn_board_update(g, g.htotal); FIXME
 	    RETURN(d);
 	}
 
@@ -425,7 +425,7 @@ void parse_gnuchess_line(GAME *g, char *str)
     }
 
     if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-	//history_update_board(g); FIXME
+	//pgn_board_update(g); FIXME
 	RETURN(d);
     }
 

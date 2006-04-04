@@ -279,7 +279,7 @@ void parse_rcfile(const char *filename)
 	    }
 
 	    token[0] = toupper(token[0]);
-	    pgn_add_tag(&config.tag, token, value);
+	    pgn_tag_add(&config.tag, token, value);
 	}
 	else if (strcmp(var, "save_directory") == 0)
 	    config.savedirectory = strdup(val);

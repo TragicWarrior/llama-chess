@@ -45,6 +45,9 @@ struct engine_s {
     int status;
 };
 
+/*
+ * Attached to game[n].data.
+ */
 struct userdata_s {
     struct engine_s *engine;
     unsigned short flags;
