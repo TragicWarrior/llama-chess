@@ -48,6 +48,14 @@
 #include <dmalloc.h>
 #endif
 
+int send_signal_to_engine(pid_t pid, int sig)
+{
+    if (kill(pid, sig) == -1)
+	return 1;
+
+    return 0;
+}
+
 void send_to_engine(GAME *g, const char *format, ...)
 {
     va_list ap;
@@ -58,6 +66,9 @@ void send_to_engine(GAME *g, const char *format, ...)
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE || 
 	    TEST_FLAG(d->flags, CF_HUMAN))
+	return;
+
+    if (send_signal_to_engine(d->engine->pid, SIGINT))
 	return;
 
     d->engine->status = ENGINE_THINKING;
@@ -285,11 +296,10 @@ void stop_engine(GAME *g)
 
     send_to_engine(g, "quit\n");
 
-    if (kill(d->engine->pid, 0) != -1)
-	kill(d->engine->pid, SIGTERM);
-
-    if (kill(d->engine->pid, 0) != -1)
-	kill(d->engine->pid, SIGKILL);
+    if (!send_signal_to_engine(d->engine->pid, 0)) {
+	if (!send_signal_to_engine(d->engine->pid, SIGTERM))
+	    send_signal_to_engine(d->engine->pid, SIGKILL);
+    }
 
     waitpid(d->engine->pid, &s, 0);
 }
