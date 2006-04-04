@@ -103,7 +103,6 @@ static char *str_etc(const char *str, int maxlen, int rev)
     return buf;
 }
 
-/* FIXME castling */
 void update_cursor(GAME g, int idx)
 {
     char *p;
@@ -129,7 +128,7 @@ void update_cursor(GAME g, int idx)
 	else
 	    c_col = 3;
 
-	c_row = (g.turn == WHITE) ? 8 : 1;
+	c_row = (g.turn == WHITE) ? 1 : 8;
 	return;
     }
 

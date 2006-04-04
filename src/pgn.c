@@ -282,6 +282,8 @@ int history_update_board(GAME *g, BOARD b, int n)
     g->flags = flags;
 #endif
 
+    SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
+	    GF_BK_CASTLE|GF_BQ_CASTLE);
     pgn_init_board(tb);
 
     if (pgn_find_tag(g->tag, "FEN") != -1 &&
@@ -1213,7 +1215,8 @@ void pgn_new_game()
     game[gindex].hp[0] = NULL;
     game[gindex].history = game[gindex].hp;
     game[gindex].side = game[gindex].turn = WHITE;
-    SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|GF_BK_CASTLE|GF_BQ_CASTLE);
+    SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
+	    GF_BK_CASTLE|GF_BQ_CASTLE);
     pgn_init_board(game[gindex].b);
     set_default_tags(&game[gindex]);
 }

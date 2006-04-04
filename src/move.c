@@ -549,8 +549,9 @@ int castle_move(GAME *g, BOARD b, char which)
 	p3 = b[ROWTOBOARD(row)][COLTOBOARD((n - 3))].icon;
 	p4 = b[ROWTOBOARD(row)][COLTOBOARD((n - 4))].icon;
 
-	if (pgn_piece_to_int(p) != OPEN_SQUARE || pgn_piece_to_int(p2) != OPEN_SQUARE
-		|| pgn_piece_to_int(p3) != OPEN_SQUARE ||
+	if (pgn_piece_to_int(p) != OPEN_SQUARE ||
+		pgn_piece_to_int(p2) != OPEN_SQUARE || 
+		pgn_piece_to_int(p3) != OPEN_SQUARE ||
 		(pgn_piece_to_int(p4) != ROOK && val_piece_side(g->turn, p4)))
 	    return 1;
 
@@ -563,7 +564,7 @@ int castle_move(GAME *g, BOARD b, char which)
 
 	    if (g->turn == WHITE)
 		CLEAR_FLAG(g->flags, GF_WQ_CASTLE);
-	    else if (g->turn == BLACK)
+	    else
 		CLEAR_FLAG(g->flags, GF_BQ_CASTLE);
 	}
     }
