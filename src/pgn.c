@@ -1627,6 +1627,9 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 	    if (m > 1 && i > 0)
 		Fputc(' ', fp, len);
 
+	    if (strlen(itoa(m)) + 1 + *len > 80)
+		Fputc('\n', fp, len);
+
 	    putstring(fp, itoa(m), len);
 	    Fputc('.', fp, len);
 	    pgn_mpl++;
