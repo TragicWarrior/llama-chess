@@ -3298,6 +3298,12 @@ void game_loop()
 	    }
 	}
 
+	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER) && game[gindex].mode 
+		!= MODE_HISTORY) {
+	    game[gindex].mode = MODE_HISTORY;
+	    update_all(game[gindex]);
+	}
+
 	error_recover = 0;
 	draw_board(&game[gindex], board_details);
 	wmove(boardw, ROWTOMATRIX(c_row), COLTOMATRIX(c_col));
