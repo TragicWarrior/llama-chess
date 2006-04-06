@@ -1,2 +1,2 @@
 EXTRA_DIST = KnownBugs
-SUBDIRS = src doc data test
+SUBDIRS = libchess src doc data test

@@ -26,9 +26,7 @@
 #endif
 
 #include "chess.h"
-#include "conf.h"
 #include "pgn.h"
-#include "misc.h"
 #include "move.h"
 
 #ifdef DEBUG
@@ -39,7 +37,7 @@
 #include <dmalloc.h>
 #endif
 
-int piece_side(GAME g, int c)
+static int piece_side(GAME g, int c)
 {
     if (c == pgn_int_to_piece(g.turn, OPEN_SQUARE))
 	return -1;
@@ -50,7 +48,7 @@ int piece_side(GAME g, int c)
     return (isupper(c)) ? WHITE : BLACK;
 }
 
-int val_piece_side(char turn, int c)
+static int val_piece_side(char turn, int c)
 {
     if ((isupper(c) && turn == WHITE) ||
 	    (islower(c) && turn == BLACK))
@@ -67,7 +65,7 @@ int val_piece_side(char turn, int c)
  * value is the number of 'piece' found (on the current g.side) or zero.
  * Search for 'piece' stops when a non-empty square is found.
  */
-int count_by_diag(GAME g, BOARD b, int piece, int row, int col)
+static int count_by_diag(GAME g, BOARD b, int piece, int row, int col)
 {
     int count = 0;
     int ul = 0, ur = 0, dl = 0, dr = 0;
@@ -137,7 +135,7 @@ int count_by_diag(GAME g, BOARD b, int piece, int row, int col)
     return count;
 }
 
-int count_knight(GAME g, BOARD b, int row, int col)
+static int count_knight(GAME g, BOARD b, int row, int col)
 {
     int r, c;
     unsigned char p;
@@ -225,7 +223,7 @@ int count_knight(GAME g, BOARD b, int row, int col)
     return count;
 }
 
-int count_by_rank(GAME g, BOARD b, int piece, int row, int col)
+static int count_by_rank(GAME g, BOARD b, int piece, int row, int col)
 {
     int i;
     int count = 0;
@@ -260,7 +258,7 @@ int count_by_rank(GAME g, BOARD b, int piece, int row, int col)
     return count;
 }
 
-int count_by_file(GAME g, BOARD b, int piece, int row, int col)
+static int count_by_file(GAME g, BOARD b, int piece, int row, int col)
 {
     int i;
     int count = 0;
@@ -295,7 +293,7 @@ int count_by_file(GAME g, BOARD b, int piece, int row, int col)
     return count;
 }
 
-int count_by_rank_file(GAME g, BOARD b, int piece, int row, int col)
+static int count_by_rank_file(GAME g, BOARD b, int piece, int row, int col)
 {
     int count;
 
@@ -303,7 +301,7 @@ int count_by_rank_file(GAME g, BOARD b, int piece, int row, int col)
     return count + count_by_file(g, b, piece, row, col);
 }
 
-int piece_count(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
+static int piece_count(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
 {
     int count = 0;
 
@@ -328,7 +326,7 @@ int piece_count(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
     return count;
 }
 
-int piece_by_col(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
+static int piece_by_col(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
 {
     int i;
     int count = 0;
@@ -364,7 +362,7 @@ int piece_by_col(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
     return count;
 }
 
-int piece_by_row(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
+static int piece_by_row(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
 {
     int i;
     int count = 0;
@@ -400,7 +398,7 @@ int piece_by_row(GAME g, BOARD b, int piece, int row, int col, int *r, int *c)
     return count;
 }
 
-int piece_by_xy(GAME g, BOARD b, int piece, int row, int col, int *srow, int *scol)
+static int piece_by_xy(GAME g, BOARD b, int piece, int row, int col, int *srow, int *scol)
 {
     int count = 0;
 
@@ -409,7 +407,7 @@ int piece_by_xy(GAME g, BOARD b, int piece, int row, int col, int *srow, int *sc
     return (count != 1) ? 0 : 1;
 }
 
-int piece_test(GAME g, BOARD b, int piece, int row, int col, int *dstr, int *dstc)
+static int piece_test(GAME g, BOARD b, int piece, int row, int col, int *dstr, int *dstc)
 {
     int p;
 
@@ -431,7 +429,7 @@ int piece_test(GAME g, BOARD b, int piece, int row, int col, int *dstr, int *dst
     return 0;
 }
 
-int piece_by_diag(GAME g, BOARD b, int piece, int row, int col, int *srow, int *scol)
+static int piece_by_diag(GAME g, BOARD b, int piece, int row, int col, int *srow, int *scol)
 {
     int i, n;
     int ul = 1, ur = 1, dl = 1, dr = 1;
@@ -478,7 +476,7 @@ int piece_by_diag(GAME g, BOARD b, int piece, int row, int col, int *srow, int *
     return (count) ? 1 : 0;
 }
 
-int valid_move(GAME g, BOARD b, int row, int col, int srow, int scol)
+static int valid_move(GAME g, BOARD b, int row, int col, int srow, int scol)
 {
     int p1, p2;
 
@@ -504,7 +502,7 @@ int valid_move(GAME g, BOARD b, int row, int col, int srow, int scol)
     return 1;
 }
 
-int castle_move(GAME *g, BOARD b, char which)
+static int castle_move(GAME *g, BOARD b, char which)
 {
     int row;
     int n;
@@ -572,7 +570,7 @@ int castle_move(GAME *g, BOARD b, char which)
     return 0;
 }
 
-int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int *scol)
+static int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int *scol)
 {
     int p = 0;
     int count = 0;
@@ -978,11 +976,6 @@ static char *pgn_a2a4tosan(GAME *g, BOARD b, char *m)
     return buf;
 }
 
-void pgn_switch_turn(GAME *g)
-{
-    g->turn = (g->turn == WHITE) ? BLACK : WHITE;
-}
-
 static void kingsquare(GAME g, BOARD b, int *kr, int *kc, int *okr, int *okc)
 {
     int row, col;
@@ -1006,7 +999,7 @@ static void kingsquare(GAME g, BOARD b, int *kr, int *kc, int *okr, int *okc)
     }
 }
 
-int checktest(GAME *g, BOARD b, int kr, int kc, int okr, int okc, int matetest)
+static int checktest(GAME *g, BOARD b, int kr, int kc, int okr, int okc, int matetest)
 {
     int row, col;
 
@@ -1044,54 +1037,6 @@ int checktest(GAME *g, BOARD b, int kr, int kc, int okr, int okc, int matetest)
 
     pgn_switch_turn(g);
     return 0;
-}
-
-void pgn_reset_valid_moves(BOARD b)
-{
-    int row, col;
-
-    for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++)
-	    b[row][col].valid = 0;
-    }
-}
-
-void pgn_get_valid_moves(GAME *g, BOARD b, int r, int f)
-{
-    int row, col;
-    int p = pgn_piece_to_int(b[ROWTOBOARD(r)][COLTOBOARD(f)].icon);
-
-    /*
-     * Don't update board 'b'. Only check for valid moves.
-     */
-    validate = 1;
-
-    for (row = 1; VALIDFILE(row); row++) {
-	for (col = 1; VALIDFILE(col); col++) {
-	    int sr = 0, sc = 0;
-
-	    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
-		sr = 0;
-		sc = f;
-
-		if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
-		    sc = 0;
-		    sr = r;
-
-		    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
-			continue;
-		    }
-		}
-	    }
-
-	    if (sr != r || sc != f)
-		continue;
-
-	    b[ROWTOBOARD(row)][COLTOBOARD(col)].valid = 1;
-	}
-    }
-
-    validate = 0;
 }
 
 static int checkmate_pawn_test(GAME *g, BOARD b, int row, int col, int *srow, int *scol)
@@ -1215,293 +1160,4 @@ static int drawtest(BOARD b)
 	return 1;
 
     return 0;
-}
-
-void pgn_reset_enpassant(BOARD b)
-{
-    int r, c;
-
-    for (r = 0; r < 8; r++) {
-	for (c = 0; c < 8; c++)
-	    b[r][c].enpassant = 0;
-    }
-}
-
-int pgn_validate_move(GAME *g, BOARD b, char **mp)
-{
-    char *p;
-    int piece, dstpiece;
-    int i = 0;
-    int srow = 0, scol = 0, row, col;
-    int dist = 0;
-    int promo = -1;
-    int kr = 0, kc = 0, okr = 0, okc = 0;
-    char *m = *mp;
-
-    if ((m = pgn_a2a4tosan(g, b, m)) == NULL)
-	return E_PGN_PARSE;
-
-    if (strlen(m) < 2)
-	return E_PGN_PARSE;
-
-    capture = 0;
-    srow = row = col = scol = promo = piece = 0;
-again:
-    p = (m) + strlen(m);
-
-    while (!isdigit(*--p) && *p != 'O') {
-	if (*p == '=') {
-	    promo = pgn_piece_to_int(i);
-	    i = 0;
-	    break;
-	}
-
-	i = *p;
-	*p = '\0';
-    }
-
-    // Old promotion text (e8Q). Convert to SAN.
-    if (pgn_piece_to_int(i) != -1) {
-	p = (m) + strlen(m);
-	*p++ = '=';
-	*p++ = i;
-	*p = '\0';
-	goto again;
-    }
-
-    if (strlen(m) < 2)
-	return E_PGN_PARSE;
-
-    p = m;
-
-    /* Skip 'P'. */
-    if (pgn_piece_to_int(*p) == PAWN)
-	p++;
-    /* Pawn. */
-    if (VALIDCOL(*p)) {
-	for (i = 0; *p; i++) {
-	    if (VALIDCOL(*p)) {
-		if (i > 0)
-		    col = COLTOINT(*p++);
-		else
-		    col = scol = COLTOINT(*p++);
-	    }
-	    else if (VALIDROW(*p)) {
-		if (1 > 1)
-		    row = ROWTOINT(*p++);
-		else
-		    row = ROWTOINT(*p++);
-	    }
-	    else if (*p == 'x') {
-		col = COLTOINT(*++p);
-		row = ROWTOINT(*++p);
-		capture++;
-	    }
-	    else if (*p == '=') {
-		if (promo == -1 || promo == KING || promo == PAWN)
-		    return E_PGN_PARSE;
-
-		*p++ = '=';
-		*p++ = toupper(pgn_int_to_piece(g->turn, promo));
-		*p = '\0';
-		break;
-	    }
-	    else {
-#ifdef DEBUG
-		DUMP("Pawn (move: '%s'): %c\n", m, *p++);
-#else
-		p++;
-#endif
-	    }
-	}
-
-	if (get_source_yx(g, b, PAWN, row, col, &srow, &scol))
-	    return E_PGN_INVALID;
-    }
-    /* Not a pawn. */
-    else {
-	if (strcmp(m, "O-O") == 0)
-	    g->castle = KINGSIDE;
-	else if (strcmp(m, "O-O-O") == 0)
-	    g->castle = QUEENSIDE;
-	else {
-	    p = m;
-
-	    if ((piece = pgn_piece_to_int(*p++)) == -1)
-		return E_PGN_PARSE;
-
-	    if (strlen(m) > 3) {
-		if (isdigit(*p))
-		    srow = ROWTOINT(*p++);
-		else if (VALIDCOL(*p))
-		    scol = COLTOINT(*p++);
-
-		if (*p == 'x') {
-		    capture++;
-		    p++;
-		}
-	    }
-
-	    col = COLTOINT(*p++);
-	    row = ROWTOINT(*p++);
-
-	    /* Get the source row and column. */
-	    if (srow == 0) {
-		if (scol > 0) {
-		    for (i = 1; VALIDFILE(i); i++) {
-			int fpiece = b[ROWTOBOARD(i)][COLTOBOARD(scol)].icon;
-
-			if (piece == pgn_piece_to_int(fpiece) && 
-				val_piece_side(g->turn, fpiece)) {
-			    srow = i;
-			    break;
-			}
-		    }
-
-		    if (srow == 0)
-			return E_PGN_INVALID;
-		}
-		else {
-		    if (get_source_yx(g, b, piece, row, col, &srow, &scol))
-			return E_PGN_INVALID;
-		}
-	    }
-	    else if (scol == 0) {
-		if (srow > 0) {
-		    for (i = 1; VALIDFILE(i); i++) {
-			int fpiece = pgn_piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(i)].icon);
-
-			if (piece == fpiece) {
-			    scol = i;
-			    break;
-			}
-		    }
-
-		    if (scol == 0)
-			return E_PGN_INVALID;
-		}
-		else {
-		    if (get_source_yx(g, b, piece, row, col, &srow, &scol))
-			return E_PGN_INVALID;
-		}
-	    }
-	}
-    }
-
-    piece = pgn_piece_to_int(b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon);
-    dist = abs(srow - row);
-
-    if (!validate) {
-	if (piece == PAWN || capture)
-	    g->ply = 0;
-	else
-	    g->ply++;
-
-	pgn_reset_enpassant(b);
-
-	if (piece == PAWN && dist == 2) {
-	    if (g->turn == WHITE)
-		b[ROWTOBOARD(srow - 1)][COLTOBOARD(scol)].enpassant = 1;
-	    else
-		b[ROWTOBOARD(srow + 1)][COLTOBOARD(scol)].enpassant = 1;
-
-	    SET_FLAG(g->flags, GF_ENPASSANT);
-	}
-	else {
-	    CLEAR_FLAG(g->flags, GF_ENPASSANT);
-	}
-    }
-
-    dstpiece = piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
-
-    if (g->castle) {
-	if (castle_move(g, b, g->castle)) {
-	    g->castle = 0;
-	    return E_PGN_INVALID;
-	}
-
-	goto done;
-    }
-
-    if (pgn_piece_to_int(piece) != OPEN_SQUARE) {
-	if (val_piece_side(g->turn, piece))
-	    return E_PGN_INVALID;
-    }
-
-    if (!validate) {
-	if (promo)
-	    piece = pgn_int_to_piece(g->turn, promo);
-	else 
-	    piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
-    }
-    else 
-	piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
-
-    b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = pgn_int_to_piece(g->turn, OPEN_SQUARE);
-    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
-
-done:
-    if (!validate && capture && pgn_piece_to_int(dstpiece) == ROOK) {
-	if (row == 1 && col == 1)
-	    CLEAR_FLAG(g->flags, GF_WQ_CASTLE);
-	else if (row == 8 && col == 1)
-	    CLEAR_FLAG(g->flags, GF_BQ_CASTLE);
-	else if (row == 1 && col == 8)
-	    CLEAR_FLAG(g->flags, GF_WK_CASTLE);
-	else if (row == 8 && col == 8)
-	    CLEAR_FLAG(g->flags, GF_BK_CASTLE);
-    }
-
-    kingsquare(*g, b, &kr, &kc, &okr, &okc);
-    pgn_switch_turn(g);
-
-    if (g->castle) {
-	p = m + strlen(m);
-	g->castle = 0;
-    }
-
-    CLEAR_FLAG(g->flags, GF_GAMEOVER);
-    i = validate;
-    validate = 1;
-
-    if (drawtest(b)) {
-	g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 8);
-	strncpy(g->tag[TAG_RESULT]->value, "1/2-1/2", 8);
-	SET_FLAG(g->flags, GF_GAMEOVER);
-    }
-    else {
-	switch (checktest(g, b, kr, kc, okr, okc, 0)) {
-	    case 0:
-		break;
-	    case -1:
-		validate = i;
-		pgn_switch_turn(g);
-		return E_PGN_INVALID;
-	    default:
-		if (checkmatetest(g, b, kr, kc, okr, okc)) {
-		    *p++ = '#';
-
-		    if (result == WHITEWINS) {
-			g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 4);
-			strncpy(g->tag[TAG_RESULT]->value, "1-0", 4);
-		    }
-		    else if (result == BLACKWINS) {
-			g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 4);
-			strncpy(g->tag[TAG_RESULT]->value, "0-1", 4);
-		    }
-
-		    SET_FLAG(g->flags, GF_GAMEOVER);
-		}
-		else
-		    *p++ = '+';
-
-		*p = '\0';
-		break;
-	}
-    }
-
-    pgn_switch_turn(g);
-    validate = i;
-    *mp = m;
-    return E_PGN_OK;
 }

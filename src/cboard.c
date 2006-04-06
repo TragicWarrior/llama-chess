@@ -426,7 +426,7 @@ static void view_nag(void *arg)
 
 void view_annotation(HISTORY h)
 {
-    char buf[MAX_SAN_MOVE_LEN + strlen(ANNOTATION_VIEW_TITLE) + 4];
+    char buf[strlen(h.move) + strlen(ANNOTATION_VIEW_TITLE) + 4];
     int nag = 0, comment = 0;
 
     if (h.comment && h.comment[0])

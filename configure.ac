@@ -8,6 +8,7 @@ AM_INIT_AUTOMAKE([foreign])
 AC_PROG_MAKE_SET
 AC_CONFIG_SRCDIR([src/cboard.c])
 AM_CONFIG_HEADER([config.h])
+AC_CONFIG_SUBDIRS([libchess])
 
 case "$target_os" in
     darwin*)
@@ -53,7 +54,6 @@ AC_HEADER_TIME
 AC_STRUCT_TM
 
 dnl Checks for library functions.
-AC_FUNC_CLOSEDIR_VOID
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
@@ -64,19 +64,6 @@ AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
 		select socket strcasecmp strdup strerror strrchr strstr \
 		vasprintf])
-
-AC_ARG_ENABLE([compressed],
-	      [  --disable-compressed    disable compressed file support (enabled)],
-	      ,[AC_DEFINE_UNQUOTED([WITH_COMPRESSED], 1, [Enable compressed file support])])
-
-AH_TOP([/* Maximum line length in a PGN file. */
-#define MAX_PGN_LINE_LEN 255])
-
-AH_TOP([/* Maximum SAN move length without terminating NULL. */
-#define MAX_SAN_MOVE_LEN 7])
-
-AH_TOP([/* Maximum number of NAG entries per move. */
-#define MAX_PGN_NAG 5])
 
 AC_DEFUN([AC_DEBUG],
 [

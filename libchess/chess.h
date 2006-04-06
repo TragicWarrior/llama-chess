@@ -20,6 +20,9 @@
 #define CHESS_H
 
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
+#define MAX_PGN_LINE_LEN 255
+#define MAX_SAN_MOVE_LEN 7
+#define MAX_PGN_NAG 5
 
 #define VALIDRANK	VALIDFILE
 #define VALIDFILE(f)	(f >= 1 && f <= 8)
