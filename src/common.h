@@ -53,6 +53,8 @@ struct userdata_s {
     unsigned short flags;
 };
 
+char **enginebuf;
+
 void invalid_move(int n, const char *m);
 void update_status_window(GAME g);
 

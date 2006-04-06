@@ -47,6 +47,8 @@ WINDOW *historyw;
 PANEL *historyp;
 WINDOW *loadingw;
 PANEL *loadingp;
+WINDOW *enginew;
+PANEL *enginep;
 
 int delete_count = 0;
 int markstart = -1, markend = -1;
@@ -123,6 +125,7 @@ const char *edithelp[] = {
 
 const char *gamehelp[] = {
     " 0...9 - command repeat count",
+    "     E - toggle engine input/output window",
     "     T - edit the current games roster tags",
     "     t - view the current games roster tags",
     "     ? - specify a new roster tag expression *",

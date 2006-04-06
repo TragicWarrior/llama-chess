@@ -453,6 +453,7 @@ static void parse_engine_line(GAME *g, char *line)
     if (!*line)
 	return;
 
+    append_enginebuf(line);
     parse_gnuchess_line(g, line);
 }
 

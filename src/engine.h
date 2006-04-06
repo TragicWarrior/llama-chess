@@ -33,5 +33,6 @@ void stop_engine(GAME *);
 int save_pgn(const char *filename, int isfifo, int saveindex);
 void update_cursor(GAME, int);
 void refresh_all(void);
+void append_enginebuf(char *);
 
 #endif

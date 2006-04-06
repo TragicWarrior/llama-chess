@@ -1923,6 +1923,68 @@ void draw_window_title(WINDOW *win, const char *title, int width, chtype attr,
     wattroff(win, battr);
 }
 
+void append_enginebuf(char *line)
+{
+    int i = 0;
+
+    if (enginebuf)
+	for (i = 0; enginebuf[i]; i++);
+
+    if (i >= LINES - 3) {
+	free(enginebuf[0]);
+
+	for (i = 0; enginebuf[i+1]; i++)
+	    enginebuf[i] = enginebuf[i+1];
+
+	enginebuf[i] = strdup(line);
+    }
+    else {
+	enginebuf = Realloc(enginebuf, (i + 2) * sizeof(char *));
+	enginebuf[i++] = strdup(line);
+	enginebuf[i] = NULL;
+    }
+}
+
+void update_engine_window()
+{
+    int i;
+
+    if (!enginebuf || panel_hidden(enginep))
+	return;
+
+    wmove(enginew, 0, 0);
+    wclrtobot(enginew);
+
+    if (enginebuf) {
+	for (i = 0; enginebuf[i]; i++)
+	    mvwprintw(enginew, i + 2, 1, "%s", enginebuf[i]);
+    }
+
+    draw_window_title(enginew, "Engine IO Window", COLS, CP_MESSAGE_TITLE,
+	    CP_MESSAGE_BORDER);
+}
+
+void toggle_engine_window()
+{
+    if (!enginew) {
+	enginew = newwin(LINES, COLS, 0, 0);
+	enginep = new_panel(enginew);
+	draw_window_title(enginew, "Engine IO Window", COLS, CP_MESSAGE_TITLE,
+		CP_MESSAGE_BORDER);
+	hide_panel(enginep);
+    }
+
+    if (panel_hidden(enginep)) {
+	update_engine_window();
+	top_panel(enginep);
+	refresh_all();
+    }
+    else {
+	hide_panel(enginep);
+	refresh_all();
+    }
+}
+
 void refresh_all()
 {
     update_panels();
@@ -1934,6 +1996,7 @@ void update_all(GAME g)
     update_status_window(g);
     update_history_window(g);
     update_tag_window(g.tag);
+    update_engine_window();
 }
 
 static void game_next_prev(GAME g, int n, int count)
@@ -2719,6 +2782,9 @@ static int globalkeys(chtype c)
     struct userdata_s *d = game[gindex].data;
 
     switch (c) {
+	case 'E':
+	    toggle_engine_window();
+	    break;
 	case KEY_F(10):
 	    cmessage("ABOUT", ANYKEY, "%s\n%s with %i colors and %i "
 		    "color pairs\nCopyright 2002-2006 %s", PACKAGE_STRING,
@@ -3371,6 +3437,8 @@ void usage(const char *pn, int ret)
 
 void cleanup_all()
 {
+    int i;
+
     cleanup_all_games();
     pgn_free_all();
     del_panel(boardp);
@@ -3381,6 +3449,19 @@ void cleanup_all()
     delwin(historyw);
     delwin(statusw);
     delwin(tagw);
+
+    if (enginew) {
+	del_panel(enginep);
+	delwin(enginew);
+
+	if (enginebuf) {
+	    for (i = 0; enginebuf[i]; i++)
+		free(enginebuf[i]);
+
+	    free(enginebuf);
+	}
+    }
+
     endwin();
 }
 
