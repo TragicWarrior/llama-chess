@@ -208,6 +208,7 @@ void parse_rcfile(const char *filename)
     int lines = 0;
     char *altengine = NULL;
     int i = 0;
+    int k = 0;
 
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
@@ -236,6 +237,15 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.jumpcount = atoi(val);
+	}
+	else if (strcmp(var, "key") == 0) {
+	    config.keys = Realloc(config.keys, (k + 2) *
+		    sizeof(struct key_s *));
+	    config.keys[i] = Calloc(1, sizeof(struct key_s));
+	    p = val;
+	    config.keys[i]->c = *p++;
+	    config.keys[i++]->str = strdup(p);
+	    config.keys[i] = NULL;
 	}
 	else if (strcmp(var, "engine_init") == 0) {
 	    config.einit = Realloc(config.einit, (i + 2) * sizeof(char *));

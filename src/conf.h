@@ -45,6 +45,11 @@ struct color_s {
     int nattrs;		// Attributes for a non-color terminal.
 };
 
+struct key_s {
+    int c;
+    char *str;
+};
+
 struct {
     int mpl;		// When saving, the number of full moves per line.
     int stoponerror;	// Stop processing when a parse error occurs.
@@ -74,6 +79,7 @@ struct {
     char **einit;	/* Strings to send to the chess engine upon each reset
                          * or new game.
 			 */
+    struct key_s **keys; // Custom commands to send to the engine.
 } config;
 
 #endif

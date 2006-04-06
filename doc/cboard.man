@@ -104,13 +104,21 @@ OR
 .It Cm engine_cmd Ar command Op args ...
 The chess engine command to execute with any arguments. The default is
 \&"
-.Ar gnuchess xboard
+.Ar gnuchess --xboard
 \&". Others haven\&'t been tested but any engine that supports the XBoard
 protocol should work.
 .Pp
 .It Cm engine_init Ar command
 A command to send to the chess engine each time a new game or round is started
 or reset. Can be specified more than once.
+.Pp
+.It Cm key Ar key Ar command
+Bind the specified
+.Ar key
+to the engine command
+.Ar command .
+The bound key will only be available in play mode and will only be sent to the
+engine if it doesn't conflict with other play mode keys.
 .Pp
 .It Cm jump_count Ar integer
 When viewing move history, you can jump more than one move to the next or

@@ -108,7 +108,6 @@ const char *mainhelp[] = {
 const char *edithelp[] = {
     "              0..9 - cursor repeat count",
     "UP/DOWN/LEFT/RIGHT - position cursor *",
-    "            !-*A-H - position cursor at rank or file",
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
@@ -148,7 +147,6 @@ const char *gamehelp[] = {
 const char *playhelp[] = {
     "             0...9 - cursor repeat count",
     "UP/DOWN/LEFT/RIGHT - position cursor *",
-    "            !-*A-H - position cursor at rank or file",
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",

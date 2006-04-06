@@ -2461,6 +2461,15 @@ static int playmode_keys(chtype c)
 	    send_to_engine(&game[gindex], "go\n");
 	    break;
 	default:
+	    if (config.keys) {
+		for (x = 0; config.keys[x]; x++) {
+		    if (config.keys[x]->c == c) {
+			send_to_engine(&game[gindex], "%s\n",
+				config.keys[x]->str);
+			break;
+		    }
+		}
+	    }
 	    break;
     }
 
@@ -2777,23 +2786,6 @@ static int globalkeys(chtype c)
 	    update_all(game[gindex]);
 	    update_tag_window(game[gindex].tag);
 	    return 1;
-	    // Not sure whether to keep these.
-	case '!': c_row = 1; return 1;
-	case '@': c_row = 2; return 1;
-	case '#': c_row = 3; return 1;
-	case '$': c_row = 4; return 1;
-	case '%': c_row = 5; return 1;
-	case '^': c_row = 6; return 1;
-	case '&': c_row = 7; return 1;
-	case '*': c_row = 8; return 1;
-	case 'A': c_col = 1; return 1;
-	case 'B': c_col = 2; return 1;
-	case 'C': c_col = 3; return 1;
-	case 'D': c_col = 4; return 1;
-	case 'E': c_col = 5; return 1;
-	case 'F': c_col = 6; return 1;
-	case 'G': c_col = 7; return 1;
-	case 'H': c_col = 8; return 1;
 	case '}':
 	case '{':
 	case '?':
