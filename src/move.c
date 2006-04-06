@@ -884,7 +884,7 @@ int get_source_yx(GAME *g, BOARD b, int piece, int row, int col, int *srow, int 
  * are performed here. The real checks are in validate_move() after the
  * conversion.
  */
-char *pgn_a2a4tosan(GAME *g, BOARD b, char *m)
+static char *pgn_a2a4tosan(GAME *g, BOARD b, char *m)
 {
     static char buf[MAX_SAN_MOVE_LEN + 1] = {0}, *cp = buf;
     char *p = m;
@@ -1056,10 +1056,14 @@ void pgn_reset_valid_moves(BOARD b)
     }
 }
 
-void pgn_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol)
+void pgn_get_valid_moves(GAME *g, BOARD b, int r, int f)
 {
     int row, col;
+    int p = pgn_piece_to_int(b[ROWTOBOARD(r)][COLTOBOARD(f)].icon);
 
+    /*
+     * Don't update board 'b'. Only check for valid moves.
+     */
     validate = 1;
 
     for (row = 1; VALIDFILE(row); row++) {
@@ -1068,11 +1072,11 @@ void pgn_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol)
 
 	    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
 		sr = 0;
-		sc = scol;
+		sc = f;
 
 		if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
 		    sc = 0;
-		    sr = srow;
+		    sr = r;
 
 		    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
 			continue;
@@ -1080,7 +1084,7 @@ void pgn_get_valid_moves(GAME *g, BOARD b, int p, int srow, int scol)
 		}
 	    }
 
-	    if (sr != srow || sc != scol)
+	    if (sr != r || sc != f)
 		continue;
 
 	    b[ROWTOBOARD(row)][COLTOBOARD(col)].valid = 1;
@@ -1223,7 +1227,7 @@ void pgn_reset_enpassant(BOARD b)
     }
 }
 
-int pgn_validate_move(GAME *g, BOARD b, char *m)
+int pgn_validate_move(GAME *g, BOARD b, char **mp)
 {
     char *p;
     int piece, dstpiece;
@@ -1232,6 +1236,10 @@ int pgn_validate_move(GAME *g, BOARD b, char *m)
     int dist = 0;
     int promo = -1;
     int kr = 0, kc = 0, okr = 0, okc = 0;
+    char *m = *mp;
+
+    if ((m = pgn_a2a4tosan(g, b, m)) == NULL)
+	return 1;
 
     if (strlen(m) < 2)
 	return 1;
@@ -1503,5 +1511,6 @@ done:
 
     pgn_switch_turn(g);
     validate = i;
+    *mp = m;
     return 0;
 }

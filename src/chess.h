@@ -269,18 +269,12 @@ char *pgn_game_to_fen(GAME g, BOARD b);
 void pgn_board_init(BOARD b);
 
 /* 
- * Validate a move. Move 'm' is validated against the current game state of
- * 'g' and board 'b'. Returns 1 if the move 'm' is invalid or 0 if successful.
+ * Valididate move 'mp' against the game state 'g' and game board 'b' and
+ * update board 'b'. 'mp' is updated to SAN format for moves which aren't
+ * (a2a4 or e8Q for example). Returns 1 if the move is invalid or 0 if
+ * successful.
  */
-int pgn_validate_move(GAME *g, BOARD b, char *m);
-
-/*
- * Converts an a2a4 formatted move to SAN format. Only minimal validation is
- * done in this function. Use pgn_validate_move() to validate the returned
- * value. Returns a SAN formatted move or the original move if a2a4 format is
- * not recognized.
- */
-char *pgn_a2a4tosan(GAME *g, BOARD b, char *m);
+int pgn_validate_move(GAME *g, BOARD b, char **mp);
 
 /*
  * Returns the total number of moves in 'h' or 0 if none.
@@ -348,9 +342,9 @@ void pgn_reset_enpassant(BOARD b);
 void pgn_reset_valid_moves(BOARD b);
 
 /* 
- * Sets valid moves from game 'g' in board 'b' for piece 'p' which is at
- * 'rank' and 'file'.
+ * Sets valid moves from game 'g' in board 'b' for the piece on board 'b'
+ * which is at 'rank' and 'file'.
  */
-void pgn_get_valid_moves(GAME *g, BOARD b, int p, int rank, int file);
+void pgn_get_valid_moves(GAME *g, BOARD b, int rank, int file);
 
 #endif

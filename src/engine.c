@@ -392,12 +392,11 @@ void parse_gnuchess_line(GAME *g, char *str)
 	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
 	 * need to convert them.
 	 */
-	//FIXME
-	if ((p = pgn_a2a4tosan(g, g->b, m)) == NULL)
-	    return;
 
-	if (pgn_validate_move(g, g->b, p)) {
-	    invalid_move(0, p);
+	p = m;
+
+	if (pgn_validate_move(g, g->b, &p)) {
+	    invalid_move(0, m);
 	    RETURN(d);
 	}
 

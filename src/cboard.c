@@ -1625,14 +1625,9 @@ static char *board_to_san(GAME *g, BOARD b)
     }
 
     memcpy(oldboard, b, sizeof(BOARD));
+    p = str;
 
-    if ((p = pgn_a2a4tosan(g, b, str)) == NULL) {
-	cmessage(p, ANYKEY, "%s", E_A2A4_PARSE);
-	memcpy(b, oldboard, sizeof(BOARD));
-	return NULL;
-    }
-
-    if (pgn_validate_move(g, b, p)) {
+    if (pgn_validate_move(g, b, &p)) {
 	invalid_move(gindex + 1, p);
 	memcpy(b, oldboard, sizeof(BOARD));
 	return NULL;
@@ -2423,8 +2418,8 @@ static void playmode_keys(int c)
 	    sp.col = c_col;
 
 	    if (!editmode && config.validmoves)
-		pgn_get_valid_moves(&game[gindex], game[gindex].b,
-			pgn_piece_to_int(sp.icon), sp.row, sp.col);
+		pgn_get_valid_moves(&game[gindex], game[gindex].b, sp.row,
+			sp.col);
 
 	    paused = 0;
 	    break;

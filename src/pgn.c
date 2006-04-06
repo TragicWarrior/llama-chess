@@ -292,12 +292,14 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 
     for (i = 0; i < n; i++) {
 	HISTORY *h;
-
+	char *p;
 
 	if ((h = pgn_history_by_n(g->hp, i)) == NULL)
 	    break;
 	
-	if (pgn_validate_move(g, tb, h->move)) {
+	p = h->move;
+
+	if (pgn_validate_move(g, tb, &p)) {
 	    ret = 1;
 	    break;
 	}
@@ -739,11 +741,7 @@ static int move_text(GAME *g, FILE *fp)
 
     p = m;
 
-    // In case the file is in a2a4 format, convert this move to SAN format.
-    if ((p = pgn_a2a4tosan(g, g->b, m)) == NULL)
-	return 1;
-
-    if (pgn_validate_move(g, g->b, p)) {
+    if (pgn_validate_move(g, g->b, &p)) {
 	pgn_switch_turn(g);
 	return 1;
     }
