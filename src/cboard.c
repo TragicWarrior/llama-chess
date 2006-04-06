@@ -2287,8 +2287,8 @@ static void do_window_resize()
     update_all(game[gindex]);
 }
 
-static void historymode_keys(int);
-static int playmode_keys(int c)
+static void historymode_keys(chtype);
+static int playmode_keys(chtype c)
 {
     // More keys in MODE_EDIT share keys with MODE_PLAY than don't.
     int editmode = (game[gindex].mode == MODE_EDIT) ? 1 : 0;
@@ -2467,7 +2467,7 @@ static int playmode_keys(int c)
     return 0;
 }
 
-static void editmode_keys(int c)
+static void editmode_keys(chtype c)
 {
     switch (c) {
 	case '\015':
@@ -2513,7 +2513,7 @@ static void editmode_keys(int c)
     }
 }
 
-static void historymode_keys(int c)
+static void historymode_keys(chtype c)
 {
     int n, len;
     char *tmp, *buf;
@@ -2700,7 +2700,7 @@ void init_userdata()
 }
 
 // Global and other keys.
-static int globalkeys(int c)
+static int globalkeys(chtype c)
 {
     static char gameexp[255] = {0};
     FILE *fp;
@@ -2710,6 +2710,11 @@ static int globalkeys(int c)
     struct userdata_s *d = game[gindex].data;
 
     switch (c) {
+	case KEY_F(10):
+	    cmessage("ABOUT", ANYKEY, "%s\n%s with %i colors and %i "
+		    "color pairs\nCopyright 2002-2006 %s", PACKAGE_STRING,
+		    curses_version(), COLORS, COLOR_PAIRS, PACKAGE_BUGREPORT);
+	    break;
 	case 'h':
 	    if (game[gindex].mode != MODE_HISTORY) {
 		if (!pgn_history_total(game[gindex].hp) || 
@@ -3017,26 +3022,39 @@ static int globalkeys(int c)
 	case KEY_F(1):
 		  n = 0;
 
-		  while (n != 'q') {
-		      n = help(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT,
+		  switch (game[gindex].mode) {
+		      case MODE_PLAY:
+			  c = help(GAME_HELP_PLAY_TITLE, ANYKEY, playhelp);
+			  break;
+		      case MODE_HISTORY:
+			  c = help(GAME_HELP_HISTORY_TITLE, ANYKEY, historyhelp);
+			  break;
+		      case MODE_EDIT:
+			  c = help(GAME_HELP_EDIT_TITLE, ANYKEY, edithelp);
+			  break;
+		      default:
+			  break;
+		  }
+
+		  while (c == KEY_F(1)) {
+		      c = help(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT,
 			      mainhelp);
 
-		      switch (n) {
+		      switch (c) {
 			  case 'h':
-			      help(GAME_HELP_HISTORY_TITLE, ANYKEY, historyhelp);
-			      return 1;
+			      c = help(GAME_HELP_HISTORY_TITLE, ANYKEY, historyhelp);
+			      break;
 			  case 'p':
-			      help(GAME_HELP_PLAY_TITLE, ANYKEY, playhelp);
-			      return 1;
+			      c = help(GAME_HELP_PLAY_TITLE, ANYKEY, playhelp);
+			      break;
 			  case 'e':
-			      help(GAME_HELP_EDIT_TITLE, ANYKEY, edithelp);
-			      return 1;
+			      c = help(GAME_HELP_EDIT_TITLE, ANYKEY, edithelp);
+			      break;
 			  case 'g':
-			      help(GAME_HELP_GAME_TITLE, ANYKEY, gamehelp);
-			      return 1;
+			      c = help(GAME_HELP_GAME_TITLE, ANYKEY, gamehelp);
+			      break;
 			  default:
-			      n = 'q';
-			      return 1;
+			      break;
 		      }
 		  }
 

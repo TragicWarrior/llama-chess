@@ -36,13 +36,13 @@
 void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
 void draw_prompt(WINDOW *win, int, int, const char *, chtype);
 
-int help(const char *title, const char *prompt, const char **text)
+chtype help(const char *title, const char *prompt, const char **text)
 {
     WINDOW *win;
     PANEL *panel;
     int y = 2, x = 0, n;
     int i;
-    int c;
+    chtype c;
 
     for (i = 0; text[i]; i++) {
 	if ((n = strlen(text[i])) > x)
@@ -57,6 +57,7 @@ int help(const char *title, const char *prompt, const char **text)
 
     win = newwin(n, x, LINES / 2 - n / 2, CALCPOSX(x));
     panel = new_panel(win);
+    keypad(win, TRUE);
     wbkgd(win, CP_MESSAGE_WINDOW);
     draw_window_title(win, title, x, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
 

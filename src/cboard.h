@@ -93,6 +93,7 @@ const char *historyhelp[] = {
     "         + - next variation for the previous move",
     "         - - previous variation for the previous move",
     "         h - exit history mode",
+    "        F1 - global and other key help",
     NULL
 };
 
@@ -100,7 +101,7 @@ const char *mainhelp[] = {
     "p - play mode keys",
     "h - history mode keys",
     "e - board edit mode keys",
-    "g - other game keys",
+    "g - global game keys",
     NULL
 };
 
@@ -117,6 +118,7 @@ const char *edithelp[] = {
     "                 p - this square is the en passant one",
     "                 w - switch turn",
     "                 e - exit edit mode",
+    "                F1 - global and other key help",
     NULL,
 };
 
@@ -138,6 +140,8 @@ const char *gamehelp[] = {
     "     s - save game",
     "     S - save game and prompt",
     "     Q - quit",
+    "   F10 - About",
+    "    F1 - global and other key help",
     NULL
 };
 
@@ -155,6 +159,7 @@ const char *playhelp[] = {
     "                 | - send a command to the chess engine",
     "                 o - toggle engine move looping",
     "                 U - toggle two human play",
+    "                F1 - global and other key help",
     NULL
 };
 
