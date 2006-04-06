@@ -186,7 +186,7 @@
 
 /* Engine status strings. */
 #define ENGINE_READY_STR	"ready"
-#define ENGINE_THINKING_STR	"thinking..."
+#define ENGINE_PONDER_STR	"pondering..."
 #define ENGINE_OFFLINE_STR	"offline"
 #define ENGINE_INITIALIZING_STR	"initializing..."
 

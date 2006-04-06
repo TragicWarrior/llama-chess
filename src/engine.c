@@ -415,8 +415,8 @@ void parse_gnuchess_line(GAME *g, char *str)
 
 	if (TEST_FLAG(d->flags, CF_ENGINE_LOOP) && 
 		!TEST_FLAG(d->flags, CF_HUMAN)) {
-	    update_cursor(*g, g->hindex);
 	    send_to_engine(g, "go\n");
+	    update_cursor(*g, g->hindex);
 	    return;
 	}
 

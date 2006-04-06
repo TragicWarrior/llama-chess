@@ -1739,14 +1739,23 @@ void update_status_window(GAME g)
 	    break;
     }
 
-    snprintf(buf, len - 1, "%*s %s %s", 7, STATUS_MODE_STR, mode, 
-	    TEST_FLAG(d->flags, CF_HUMAN) ? "(human)" : "");
-    mvwprintw(statusw, 4, 1, "%-*s", 7 + w, buf);
+    snprintf(buf, len - 1, "%*s %s", 7, STATUS_MODE_STR, mode);
+
+    if (g.mode == MODE_PLAY) {
+	if (TEST_FLAG(d->flags, CF_HUMAN))
+	    strncat(buf, " (human/human)", len - 1);
+	else if (TEST_FLAG(d->flags, CF_ENGINE_LOOP))
+	    strncat(buf, " (engine/engine)", len - 1);
+	else
+	    strncat(buf, " (human/engine)", len - 1);
+    }
+
+    mvwprintw(statusw, 4, 1, "%-*s", len, buf);
 
     if (d->engine) {
 	switch (d->engine->status) {
 	    case ENGINE_THINKING:
-		engine = ENGINE_THINKING_STR;
+		engine = ENGINE_PONDER_STR;
 		break;
 	    case ENGINE_READY:
 		engine = ENGINE_READY_STR;
@@ -1767,14 +1776,7 @@ void update_status_window(GAME g)
 
     mvwprintw(statusw, 5, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
-
-    if (TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
-	snprintf(buf, len - 1, "%s (loop)", engine);
-	mvwaddstr(statusw, 5, 9, buf);
-    }
-    else
-	mvwaddstr(statusw, 5, 9, engine);
-
+    mvwaddstr(statusw, 5, 9, engine);
     wattroff(statusw, CP_STATUS_ENGINE);
 
     mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
@@ -2286,7 +2288,7 @@ static void do_window_resize()
 }
 
 static void historymode_keys(int);
-static void playmode_keys(int c)
+static int playmode_keys(int c)
 {
     // More keys in MODE_EDIT share keys with MODE_PLAY than don't.
     int editmode = (game[gindex].mode == MODE_EDIT) ? 1 : 0;
@@ -2312,6 +2314,7 @@ static void playmode_keys(int c)
 		}
 	    }
 
+	    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
 	    update_all(game[gindex]);
 	    break;
 	case 'o':
@@ -2319,6 +2322,7 @@ static void playmode_keys(int c)
 		break;
 
 	    TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
+	    CLEAR_FLAG(d->flags, CF_HUMAN);
 	    update_all(game[gindex]);
 	    break;
 	case '|':
@@ -2390,9 +2394,6 @@ static void playmode_keys(int c)
 		}
 	    }
 
-	    if (!editmode)
-		wtimeout(boardw, 70);
-
 	    if (sp.icon || (!editmode && d->engine &&
 			d->engine->status == ENGINE_THINKING)) {
 		beep();
@@ -2463,6 +2464,8 @@ static void playmode_keys(int c)
 	default:
 	    break;
     }
+
+    return 0;
 }
 
 static void editmode_keys(int c)
@@ -3224,6 +3227,7 @@ void game_loop()
     flushinp();
     update_all(game[gindex]);
     update_tag_window(game[gindex].tag);
+    wtimeout(boardw, 70);
 
     while (!quit) {
 	int c = 0;
@@ -3326,7 +3330,8 @@ void game_loop()
 		editmode_keys(c);
 		break;
 	    case MODE_PLAY:
-		playmode_keys(c);
+		if (playmode_keys(c))
+		    continue;
 		break;
 	    case MODE_HISTORY:
 		historymode_keys(c);
