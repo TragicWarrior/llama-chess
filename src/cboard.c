@@ -2766,7 +2766,7 @@ static int globalkeys(chtype c)
 		    keycount : 1);
 
 	    if (delete_count) {
-		markend = gindex;
+		markend = delete_count;
 		pushkey = 'x';
 		delete_count = 0;
 	    }
@@ -2863,7 +2863,7 @@ static int globalkeys(chtype c)
 
 		  if (keycount && !delete_count) {
 		      markstart = gindex;
-		      delete_count = 1;
+		      delete_count = keycount;
 		      update_status_notify(game[gindex], "%s (delete)",
 			      status.notify);
 		      return 1;

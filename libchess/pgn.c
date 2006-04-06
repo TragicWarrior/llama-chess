@@ -762,6 +762,7 @@ static void reset_game_data()
 {
     pgn_free_all();
     gtotal = gindex = 0;
+    pgn_isfile = 0;
 }
 
 static void skip_leading_space(FILE *fp)
@@ -1310,7 +1311,7 @@ void pgn_new_game()
     pgn_board_init(game[gindex].b);
     set_default_tags(&game[gindex]);
 
-    if (!(gtotal % 50))
+    if (pgn_isfile && !(gtotal % 50))
 	kill(getpid(), SIGUSR1);
 }
 
@@ -1573,6 +1574,7 @@ int pgn_parse(FILE *fp)
 
     reset_game_data();
     nulltags = 1;
+    pgn_isfile = 1;
     pgn_ret = read_file(fp);
     fclose(fp);
 
