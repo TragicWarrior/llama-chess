@@ -124,8 +124,7 @@ const char *edithelp[] = {
 };
 
 const char *gamehelp[] = {
-    " 0...9 - command repeat count",
-    "     E - toggle engine input/output window",
+    "  0..9 - command repeat count",
     "     T - edit the current games roster tags",
     "     t - view the current games roster tags",
     "     ? - specify a new roster tag expression *",
@@ -148,7 +147,7 @@ const char *gamehelp[] = {
 };
 
 const char *playhelp[] = {
-    "             0...9 - cursor repeat count",
+    "              0..9 - cursor repeat count",
     "UP/DOWN/LEFT/RIGHT - position cursor *",
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
@@ -158,8 +157,9 @@ const char *playhelp[] = {
     "                 u - undo previous move *",
     "                 g - force engine to make the next move",
     "                 | - send a command to the chess engine",
-    "                 o - toggle engine move looping",
-    "                 U - toggle two human play",
+    "                 E - toggle engine/engine play",
+    "                 W - toggle engine input/output window",
+    "                 H - toggle human/human play",
     "                F1 - global and other key help",
     NULL
 };

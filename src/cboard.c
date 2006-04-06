@@ -2361,7 +2361,7 @@ static int playmode_keys(chtype c)
     struct userdata_s *d = game[gindex].data;
 
     switch (c) {
-	case 'U':
+	case 'H':
 	    TOGGLE_FLAG(d->flags, CF_HUMAN);
 
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
@@ -2380,7 +2380,7 @@ static int playmode_keys(chtype c)
 	    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
 	    update_all(game[gindex]);
 	    break;
-	case 'o':
+	case 'E':
 	    if (!d)
 		break;
 
@@ -2782,7 +2782,7 @@ static int globalkeys(chtype c)
     struct userdata_s *d = game[gindex].data;
 
     switch (c) {
-	case 'E':
+	case 'W':
 	    toggle_engine_window();
 	    break;
 	case KEY_F(10):
@@ -3267,7 +3267,7 @@ static int globalkeys(chtype c)
 		  do_window_resize();
 		  return 1;
 #ifdef DEBUG
-	case 'O':
+	case 'D':
 		  message("DEBUG BOARD", ANYKEY, "%s", debug_board(game[gindex].b));
 		  return 1;
 #endif
