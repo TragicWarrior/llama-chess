@@ -295,21 +295,26 @@ void pgn_history_free(HISTORY **h, int start)
 {
     int i;
 
-    if (!h)
+    if (!h || start > pgn_history_total(h))
 	return;
+
+    if (start < 0)
+	start = 0;
 
     for (i = start; h[i]; i++) {
 	if (h[i]->comment)
 	    free(h[i]->comment);
 
-	if (h[i]->rav)
+	if (h[i]->rav) {
 	    pgn_history_free(h[i]->rav, 0);
+	    free(h[i]->rav);
+	}
 
 	if (h[i]->move)
 	    free(h[i]->move);
     }
 
-    free(h);
+    h[start] = NULL;
 }
 
 /*
@@ -728,6 +733,7 @@ void pgn_tag_free(TAG **tags)
 void pgn_free(GAME g)
 {
     pgn_history_free(g.history, 0);
+    free(g.history);
     pgn_tag_free(g.tag);
     memset(&g, 0, sizeof(GAME));
 }

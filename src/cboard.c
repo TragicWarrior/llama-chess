@@ -2430,20 +2430,19 @@ static int playmode_keys(int c)
 	    update_status_window(game[gindex]);
 	    break;
 	case 'u':
-	    /* FIXME dies reading FIFO sometimes. */
 	    if (!pgn_history_total(game[gindex].hp))
 		break;
 
-	    pgn_history_prev(&game[gindex], game[gindex].b, (keycount) ? keycount * 2 :
-		    2);
+	    if (d->engine && d->engine->status == ENGINE_READY) {
+		send_to_engine(&game[gindex], "remove\n");
+		d->engine->status = ENGINE_READY;
+	    }
 
-#if 0
-	    if (status.engine == CRAFTY)
-		SEND_TO_ENGINE("read %s\n", config.fifo);
-	    else
-		SEND_TO_ENGINE("\npgnload %s\n", config.fifo);
-#endif
-
+	    game[gindex].hindex -= 2;
+	    pgn_history_free(game[gindex].hp, game[gindex].hindex);
+	    game[gindex].hindex = pgn_history_total(game[gindex].hp);
+	    pgn_board_update(&game[gindex], game[gindex].b, 
+		    game[gindex].hindex);
 	    update_history_window(game[gindex]);
 	    break;
 	case 'a':
