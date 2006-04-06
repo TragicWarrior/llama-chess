@@ -234,7 +234,7 @@ int pgn_history_add(GAME *g, const char *m)
 	o = g->history - g->hp;
 
     if ((h = realloc(g->hp, (t + 2) * sizeof(HISTORY *))) == NULL)
-	return 1;
+	return E_PGN_ERR;
 
     g->hp = h;
 
@@ -244,12 +244,12 @@ int pgn_history_add(GAME *g, const char *m)
 	g->history = g->hp + o;
 
     if ((g->hp[t] = calloc(1, sizeof(HISTORY))) == NULL)
-	return 1;
+	return E_PGN_ERR;
 
     g->hp[t++]->move = strdup(m);
     g->hp[t] = NULL;
     g->hindex = pgn_history_total(g->hp);
-    return 0;
+    return E_PGN_OK;
 }
 
 /*
@@ -259,7 +259,7 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 {
     int i = 0;
     BOARD tb;
-    int ret = 0;
+    int ret = E_PGN_OK;
 
     if (TEST_FLAG(g->flags, GF_BLACK_OPENING))
 	g->turn = BLACK;
@@ -288,7 +288,7 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 
     if (pgn_tag_find(g->tag, "FEN") != -1 &&
 	    pgn_board_init_fen(g, tb, NULL))
-	return 1;
+	return E_PGN_PARSE;
 
     for (i = 0; i < n; i++) {
 	HISTORY *h;
@@ -299,10 +299,8 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 	
 	p = h->move;
 
-	if (pgn_validate_move(g, tb, &p)) {
-	    ret = 1;
+	if ((ret = pgn_validate_move(g, tb, &p)) != E_PGN_OK)
 	    break;
-	}
 
 	pgn_switch_turn(g);
     }
@@ -375,7 +373,7 @@ int pgn_piece_to_int(int p)
 	    break;
     }
 
-    return -1;
+    return E_PGN_ERR;
 }
 
 /*
@@ -408,6 +406,7 @@ int pgn_int_to_piece(char turn, int n)
 	    p = '.';
 	    break;
 	default:
+	    return E_PGN_ERR;
 	    break;
     }
 
@@ -427,7 +426,7 @@ int pgn_tag_find(TAG **t, const char *name)
 	    return i;
     }
 
-    return -1;
+    return E_PGN_ERR;
 }
 
 static int tag_compare(const void *a, const void *b)
@@ -506,7 +505,7 @@ int pgn_tag_add(TAG ***dst, char *name, char *value)
 	    tdata[i]->value = Realloc(tdata[i]->value, len);
 	    strncpy(tdata[i]->value, (value) ? value : "", len);
 	    *dst = tdata;
-	    return 1;
+	    return E_PGN_ERR;
 	}
     }
 
@@ -526,7 +525,7 @@ int pgn_tag_add(TAG ***dst, char *name, char *value)
 
     tdata[++t] = NULL;
     *dst = tdata;
-    return 0;
+    return E_PGN_OK;
 }
 
 static char *remove_tag_escapes(const char *str)
@@ -1181,7 +1180,7 @@ int pgn_board_init_fen(GAME *g, BOARD b, char *fen)
 	    || (i >= 0 && n == -1) || fen) {
 	if ((n = parse_fen_line(tmpboard, &flags, &turn, &ply,
 			(fen) ? fen : g->tag[i]->value)) == -1)
-	    return 1;
+	    return E_PGN_PARSE;
 	else {
 	    memcpy(b, tmpboard, sizeof(BOARD));
 	    CLEAR_FLAG(g->flags, GF_WK_CASTLE);
@@ -1194,9 +1193,9 @@ int pgn_board_init_fen(GAME *g, BOARD b, char *fen)
 	}
     }
     else
-	return (i >= 0 && n >= 0) ? 0 : 1;
+	return (i >= 0 && n >= 0) ? E_PGN_OK : E_PGN_ERR;
 
-    return 0;
+    return E_PGN_OK;
 }
 
 /*
@@ -1260,7 +1259,7 @@ static int read_file(FILE *fp)
 	 * of the current game discarding the data.
 	 */
 	if (parse_error) {
-	    pgn_ret = 1;
+	    pgn_ret = E_PGN_PARSE;
 	    
 	    if (ravlevel)
 		return 1;
@@ -1474,7 +1473,7 @@ int pgn_parse(FILE *fp)
     if (!fp) {
 	reset_game_data();
 	pgn_new_game();
-	pgn_ret = 0;
+	pgn_ret = E_PGN_OK;
 	goto done;
     }
 
@@ -1784,10 +1783,10 @@ int pgn_is_compressed(const char *filename)
 {
 #ifdef WITH_COMPRESSED
     if (compression_cmd(filename, 0))
-	return 1;
+	return E_PGN_OK;
 #endif
 
-    return 0;
+    return E_PGN_ERR;
 }
 
 /*
@@ -1796,7 +1795,7 @@ int pgn_is_compressed(const char *filename)
 int pgn_config_set(pgn_config_flag f, int val)
 {
     if (val < 0)
-	return 1;
+	return E_PGN_ERR;
 
     switch (f) {
 	case PGN_REDUCED:
@@ -1805,7 +1804,7 @@ int pgn_config_set(pgn_config_flag f, int val)
 	    else if (val == 0)
 		pgn_config.reduced = 0;
 	    else
-		return 1;
+		return E_PGN_ERR;
 	    break;
 	case PGN_MPL:
 	    pgn_config.mpl = val;
@@ -1816,13 +1815,13 @@ int pgn_config_set(pgn_config_flag f, int val)
 	    else if (val == 0)
 		pgn_config.stop = 0;
 	    else
-		return 1;
+		return E_PGN_ERR;
 	    break;
 	default:
-	    return 1;
+	    return E_PGN_ERR;
     }
 
-    return 0;
+    return E_PGN_OK;
 }
 
 /*
@@ -1841,7 +1840,7 @@ int pgn_config_get(pgn_config_flag f)
 	    break;
     }
 
-    return -1;
+    return E_PGN_ERR;
 }
 
 /*

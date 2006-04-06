@@ -162,18 +162,19 @@ typedef enum {
 } pgn_config_flag;
 
 /*
- * Sets config flag 'f' to 'val'. Returns 0 on success or 1 if 'f' is an
- * invalid flag or 'val' is an invalid value.
+ * Sets config flag 'f' to 'val'. Returns E_PGN_OK on success or E_PGN_ERR if
+ * 'f' is an invalid flag or 'val' is an invalid value.
  */
 int pgn_config_set(pgn_config_flag f, int val);
 
 /*
- * Returns the value accociated with 'f' or -1 if 'f' is invalid.
+ * Returns the value accociated with 'f' or E_PGN_ERR if 'f' is invalid.
  */
 int pgn_config_get(pgn_config_flag f);
 
 /* 
- * Returns 1 if 'filename' is a recognized compressed filetype or 0 if not.
+ * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
+ * E_PGN_ERR if not.
  */
 int pgn_is_compressed(const char *filename);
 
@@ -188,41 +189,40 @@ FILE *pgn_open(const char *filename);
 /*
  * Parses a file whose file pointer is 'fp'. 'fp' may have been returned by
  * pgn_open(). If 'fp' is NULL then a single empty game will be allocated. If
- * there is a parsing error 1 is returned otherwise 0 is returned and the
- * global 'gindex' is set to the last parsed game in the file and the global
- * 'gtotal' is set to the total number of games in the file. The file will be
- * closed when the parsing is done.
+ * there is a parsing error E_PGN_PARSE is returned otherwise E_PGN_OK is
+ * returned and the global 'gindex' is set to the last parsed game in the file
+ * and the global 'gtotal' is set to the total number of games in the file.
+ * The file will be closed when the parsing is done.
  */
 int pgn_parse(FILE *fp);
 
 /*
  * Allocates a new game and increments 'gtotal'. 'gindex' is then set to the
- * new game.
+ * new game. Returns nothing.
  */
 void pgn_new_game();
 
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. Returns 1
- * if the written move count doesn't match the game's ply count (FEN tag) or 0
- * on success. See 'pgn_config_flag' for output options.
+ * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. See
+ * 'pgn_config_flag' for output options. Returns nothing.
  */
 void pgn_write(FILE *fp, GAME g);
 
 /*
- * Frees all games in the global 'game' array.
+ * Frees all games in the global 'game' array. Returns nothing.
  */
 void pgn_free_all(void);
 
 /*
- * Frees a single game 'g'.
+ * Frees a single game 'g'. Returns nothing.
  */
 void pgn_free(GAME g);
 
 /*
  * Adds a tag 'name' with value 'value' to the pointer to array of TAG
  * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
- * is updated to the new 'value'. Returns 1 if a duplicate tag was found or 0
- * otherwise.
+ * is updated to the new 'value'. Returns E_PGN_ERR if a duplicate tag was
+ * found or E_PGN_OK on success.
  */
 int pgn_tag_add(TAG ***dst, char *name, char *value);
 
@@ -233,18 +233,18 @@ int pgn_tag_total(TAG **t);
 
 /*
  * Finds a tag 'name' in the structure array 't'. Returns the location in the
- * array of the found tag or -1 on failure.
+ * array of the found tag or E_PGN_ERR on failure.
  */
 int pgn_tag_find(TAG **t, const char *name);
 
 /*
  * Sorts a tag array. The first seven tags are in order of the PGN standard so
- * don't sort'em.
+ * don't sort'em. Returns nothing.
  */
 void pgn_tag_sort(TAG **t);
 
 /*
- * Frees a TAG array.
+ * Frees a TAG array. Returns nothing.
  */
 void pgn_tag_free(TAG **);
 
@@ -252,8 +252,10 @@ void pgn_tag_free(TAG **);
  * It initializes the board (b) to the FEN tag (if found) and sets the
  * castling and enpassant info for the game 'g'. If 'fen' is set it should be
  * a fen tag and will be parsed rather than the game 'g'.tag FEN tag. Returns
- * 0 on success or if there was both a FEN and SetUp tag with the SetUp tag
- * set to 0. Returns 1 if there was a FEN parse error or no FEN tag at all.
+ * E_PGN_OK on success or if there was both a FEN and SetUp tag with the SetUp
+ * tag set to 0. Returns E_PGN_PARSE if there was a FEN parse error, E_PGN_ERR
+ * if there was no FEN tag or there was a SetUp tag with a value of 0. Returns
+ * E_PGN_OK on success.
  */
 int pgn_board_init_fen(GAME *g, BOARD b, char *fen);
 
@@ -264,20 +266,21 @@ int pgn_board_init_fen(GAME *g, BOARD b, char *fen);
 char *pgn_game_to_fen(GAME g, BOARD b);
 
 /*
- * Resets or initializes a new game board 'b'.
+ * Resets or initializes a new game board 'b'. Returns nothing.
  */
 void pgn_board_init(BOARD b);
 
 /* 
  * Valididate move 'mp' against the game state 'g' and game board 'b' and
  * update board 'b'. 'mp' is updated to SAN format for moves which aren't
- * (a2a4 or e8Q for example). Returns 1 if the move is invalid or 0 if
+ * (a2a4 or e8Q for example). Returns E_PGN_PARSE if there was a move text
+ * parsing error, E_PGN_INVALID if the move is invalid or E_PGN_OK if
  * successful.
  */
 int pgn_validate_move(GAME *g, BOARD b, char **mp);
 
 /*
- * Returns the total number of moves in 'h' or 0 if none.
+ * Returns the total number of moves in 'h' or 0 if there are none.
  */
 int pgn_history_total(HISTORY **h);
 
@@ -290,61 +293,80 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n);
 /*
  * Appends move 'm' to game 'g' history pointer. The history pointer may be a
  * in a RAV so g->rav.hp is also updated to the new (realloc()'ed) pointer. If
- * not in a RAV then g->history will be updated. Returns 1 if realloc() failed
- * or 0 on success.
+ * not in a RAV then g->history will be updated. Returns E_PGN_FAILED if
+ * realloc() failed or E_PGN_OK on success.
  */
 int pgn_history_add(GAME *g, const char *m);
 
 /*
  * Deallocates all of the history data from position 'start' in the array 'h'.
+ * Returns nothing.
  */
 void pgn_history_free(HISTORY **h, int start);
 
 /*
  * Resets the game 'g' using board 'b' up to history move (g.hindex) 'n'.
+ * Returns E_PGN_OK on success or E_PGN_PARSE if there was a FEN tag but the
+ * parsing of it failed. Or returns E_PGN_INVALID if somehow the move failed
+ * validation while resetting.
  */
 int pgn_board_update(GAME *g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the next 'n'th history move.
+ * Returns nothing.
  */
 void pgn_history_prev(GAME *g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the previous 'n'th history move.
+ * Returns nothing.
  */
 void pgn_history_next(GAME *g, BOARD b, int n);
 
 /*
- * Converts the character piece 'p' to an integer.
+ * Converts the character piece 'p' to an integer. Returns the integer
+ * associated with 'p' or E_PGN_ERR if 'p' is invalid.
  */
 int pgn_piece_to_int(int p);
 
 /*
  * Converts the integer piece 'n' to a character whose turn is 'turn'. WHITE
- * piece are uppercase and BLACK pieces are lowercase.
+ * piece are uppercase and BLACK pieces are lowercase. Returns the character
+ * associated with 'n' or E_PGN_ERR if 'n' is an invalid piece.
  */
 int pgn_int_to_piece(char turn, int n);
 
 /*
- * Toggles g->turn.
+ * Toggles g->turn. Returns nothing.
  */
 void pgn_switch_turn(GAME *);
 
 /*
- * Clears the enpassant flag for all positions on board 'b'.
+ * Clears the enpassant flag for all positions on board 'b'. Returns nothing.
  */
 void pgn_reset_enpassant(BOARD b);
 
 /*
- * Clears the valid move flag for all positions on board 'b'.
+ * Clears the valid move flag for all positions on board 'b'. Returns nothing.
  */
 void pgn_reset_valid_moves(BOARD b);
 
 /* 
  * Sets valid moves from game 'g' in board 'b' for the piece on board 'b'
- * which is at 'rank' and 'file'.
+ * which is at 'rank' and 'file'. Returns nothing.
  */
 void pgn_get_valid_moves(GAME *g, BOARD b, int rank, int file);
+
+/*
+ * Errors returned from the above functions.
+ */
+typedef enum {
+    E_PGN_ERR = -1,
+    E_PGN_OK,
+    E_PGN_PARSE,
+    E_PGN_INVALID,
+    E_MAX_PGN_ERRORS
+} pgn_error;
 
 #endif

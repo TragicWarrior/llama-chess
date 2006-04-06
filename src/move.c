@@ -1239,10 +1239,10 @@ int pgn_validate_move(GAME *g, BOARD b, char **mp)
     char *m = *mp;
 
     if ((m = pgn_a2a4tosan(g, b, m)) == NULL)
-	return 1;
+	return E_PGN_PARSE;
 
     if (strlen(m) < 2)
-	return 1;
+	return E_PGN_PARSE;
 
     capture = 0;
     srow = row = col = scol = promo = piece = 0;
@@ -1270,7 +1270,7 @@ again:
     }
 
     if (strlen(m) < 2)
-	return 1;
+	return E_PGN_PARSE;
 
     p = m;
 
@@ -1299,7 +1299,7 @@ again:
 	    }
 	    else if (*p == '=') {
 		if (promo == -1 || promo == KING || promo == PAWN)
-		    return 1;
+		    return E_PGN_PARSE;
 
 		*p++ = '=';
 		*p++ = toupper(pgn_int_to_piece(g->turn, promo));
@@ -1316,7 +1316,7 @@ again:
 	}
 
 	if (get_source_yx(g, b, PAWN, row, col, &srow, &scol))
-	    return 1;
+	    return E_PGN_INVALID;
     }
     /* Not a pawn. */
     else {
@@ -1328,7 +1328,7 @@ again:
 	    p = m;
 
 	    if ((piece = pgn_piece_to_int(*p++)) == -1)
-		return 1;
+		return E_PGN_PARSE;
 
 	    if (strlen(m) > 3) {
 		if (isdigit(*p))
@@ -1359,11 +1359,11 @@ again:
 		    }
 
 		    if (srow == 0)
-			return 1;
+			return E_PGN_INVALID;
 		}
 		else {
 		    if (get_source_yx(g, b, piece, row, col, &srow, &scol))
-			return 1;
+			return E_PGN_INVALID;
 		}
 	    }
 	    else if (scol == 0) {
@@ -1378,11 +1378,11 @@ again:
 		    }
 
 		    if (scol == 0)
-			return 1;
+			return E_PGN_INVALID;
 		}
 		else {
 		    if (get_source_yx(g, b, piece, row, col, &srow, &scol))
-			return 1;
+			return E_PGN_INVALID;
 		}
 	    }
 	}
@@ -1417,7 +1417,7 @@ again:
     if (g->castle) {
 	if (castle_move(g, b, g->castle)) {
 	    g->castle = 0;
-	    return 1;
+	    return E_PGN_INVALID;
 	}
 
 	goto done;
@@ -1425,16 +1425,7 @@ again:
 
     if (pgn_piece_to_int(piece) != OPEN_SQUARE) {
 	if (val_piece_side(g->turn, piece))
-	    return 2;
-
-	/* FIXME
-	 * this doesn't belong in the library. This should update a capture
-	 * count or something.
-	 */
-	/*
-	if (!validate)
-	    update_status_notify(*g, random_agony(*g));
-	    */
+	    return E_PGN_INVALID;
     }
 
     if (!validate) {
@@ -1485,7 +1476,7 @@ done:
 	    case -1:
 		validate = i;
 		pgn_switch_turn(g);
-		return 1;
+		return E_PGN_INVALID;
 	    default:
 		if (checkmatetest(g, b, kr, kc, okr, okc)) {
 		    *p++ = '#';
@@ -1512,5 +1503,5 @@ done:
     pgn_switch_turn(g);
     validate = i;
     *mp = m;
-    return 0;
+    return E_PGN_OK;
 }
