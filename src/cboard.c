@@ -2787,6 +2787,7 @@ void init_userdata()
 
 	d = Calloc(1, sizeof(struct userdata_s));
 	game[i].data = d;
+	d->n = i;
     }
 }
 

@@ -51,6 +51,7 @@ struct engine_s {
 struct userdata_s {
     struct engine_s *engine;
     unsigned short flags;
+    unsigned n;
 };
 
 char **enginebuf;
