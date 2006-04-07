@@ -756,6 +756,7 @@ done:
     curs_set(cursor);
     return (*file) ? file : NULL;
 }
+
 static int init_country_codes()
 {
     FILE *fp;
@@ -793,72 +794,74 @@ static int init_country_codes()
 
 char *country_codes(void *arg)
 {
-    WINDOW *win, *subw;
+    WINDOW *win;
     PANEL *panel;
-    ITEM **mitems = NULL;
-    MENU *menu;
     int i = 0, n;
     int rows, cols;
-    char *mbuf = NULL;
     char *tmp = NULL;
+    int len = 0;
+    int total;
+    int selected = 0;
+    int toppos = 0;
 
     if (!ccodes) {
 	if (init_country_codes())
 	    return NULL;
     }
 
-    for (n = i = 0; ccodes[n].code[0]; n++, i++) {
-	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	mitems[i] = new_item(ccodes[n].country, ccodes[n].code);
+    for (i = n = 0; ccodes[i].code && ccodes[i].code[0]; i++) {
+	n = strlen(ccodes[i].code) + strlen(ccodes[i].country);
+
+	if (len < n)
+	    len = n;
     }
 
-    mitems[i] = NULL;
-    menu = new_menu(mitems);
-    scale_menu(menu, &rows, &cols);
+    total = i;
+    cols = len;
 
     if (cols < strlen(HELP_PROMPT) + 21)
 	cols = strlen(HELP_PROMPT) + 21;
 
-    win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
-    set_menu_win(menu, win);
-    subw = derwin(win, rows, cols + 2, 2, 1);
-    set_menu_sub(menu, subw);
-    set_menu_fore(menu, A_REVERSE);
-    set_menu_grey(menu, A_NORMAL);
-    set_menu_mark(menu, NULL);
-    set_menu_spacing(menu, 0, 0, 0);
-    menu_opts_off(menu, O_NONCYCLIC);
-    post_menu(menu);
+    cols += 1;
+
+    if (cols > COLS)
+	cols = COLS - 4;
+
+    cols += 2;
+    rows = (i + 4 > (LINES / 5) * 4) ? (LINES / 5) * 4 : i + 4;
+    win = newwin(rows, cols, CALCPOSY(rows) - 2, CALCPOSX(cols));
     panel = new_panel(win);
     cbreak();
     noecho();
     keypad(win, TRUE);
-    set_menu_pattern(menu, mbuf);
+    nl();
     wbkgd(win, CP_MESSAGE_WINDOW);
-    draw_window_title(win, CC_TITLE, cols + 4, CP_MESSAGE_TITLE,
-	    CP_MESSAGE_BORDER);
 
     while (1) {
 	int c;
 	char buf[cols - 4];
 
-	wattron(win, A_REVERSE);
+	wmove(win, 0, 0);
+	wclrtobot(win);
 
-	for (c = 1; c < (cols + 2) - 1; c++)
-	    mvwprintw(win, rows + 2, c, " ");
+	draw_window_title(win, CC_TITLE, cols, CP_MESSAGE_TITLE,
+		CP_MESSAGE_BORDER);
 
-	c = item_index(current_item(menu)) + 1;
+	for (i = toppos, c = 2; i < total && c < rows - 2; i++, c++) {
+	    if (i == selected) {
+		wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		mvwprintw(win, c, 1, "%3s %s", ccodes[i].code, 
+			ccodes[i].country);
+		wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		continue;
+	    }
 
-	snprintf(buf, sizeof(buf), "%s %i %s %i %s", MENU_ITEM_STR, c, 
-		N_OF_N_STR, item_count(menu), HELP_PROMPT);
-	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
+	    mvwprintw(win, c, 1, "%3s %s", ccodes[i].code, ccodes[i].country);
+	}
 
-	wattroff(win, A_REVERSE);
-
-	/* This nl() statement needs to be here because NL is recognized
-	 * for some reason after the first selection.
-	 */
-	nl();
+	snprintf(buf, sizeof(buf), "%s %i %s %i %s", MENU_ITEM_STR, 
+		selected + 1, N_OF_N_STR, total, HELP_PROMPT);
+	draw_prompt(win, rows - 2, cols, buf, CP_MESSAGE_PROMPT);
 	refresh_all();
 	c = wgetch(win);
 
@@ -867,30 +870,13 @@ char *country_codes(void *arg)
 		help(CC_KEY_HELP, ANYKEY, cc_help);
 		break;
 	    case KEY_HOME:
-		menu_driver(menu, REQ_FIRST_ITEM);
-		break;
 	    case KEY_END:
-		menu_driver(menu, REQ_LAST_ITEM);
-		break;
 	    case KEY_UP:
-		menu_driver(menu, REQ_UP_ITEM);
-		break;
 	    case KEY_DOWN:
-		menu_driver(menu, REQ_DOWN_ITEM);
-		break;
-	    case KEY_PPAGE:
-	    case CTRL('P'):
-		if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
-		    menu_driver(menu, REQ_FIRST_ITEM);
-		break;
-	    case ' ':
-	    case KEY_NPAGE:
-	    case CTRL('N'):
-		if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
-		    menu_driver(menu, REQ_LAST_ITEM);
+		set_menu_vars(c, rows - 4, total - 1, &selected, &toppos);
 		break;
 	    case '\n':
-		tmp = (char *)item_description(current_item(menu));
+		tmp = ccodes[selected].code;
 		goto done;
 		break;
 	    case KEY_ESCAPE:
@@ -898,30 +884,12 @@ char *country_codes(void *arg)
 		goto done;
 		break;
 	    default:
-		tmp = menu_pattern(menu);
-
-		if (tmp && tmp[strlen(tmp) - 1] != c) {
-		    menu_driver(menu, REQ_CLEAR_PATTERN);
-		    menu_driver(menu, c);
-		}
-		else {
-		    if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
-			menu_driver(menu, c);
-		}
-
 		break;
 	}
     }
 
 done:
-    unpost_menu(menu);
-    free_menu(menu);
-
-    for (i = 0; mitems[i]; i++)
-	free_item(mitems[i]);
-
     del_panel(panel);
-    delwin(subw);
     delwin(win);
     return tmp;
 }
@@ -1001,6 +969,7 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 	cbreak();
 	noecho();
 	keypad(win, TRUE);
+	nl();
 	wbkgd(win, CP_MESSAGE_WINDOW);
 	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
 		cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
