@@ -7,6 +7,11 @@ order):
 
 + Fix all the KnownBugs (priority)
 
+- My own menu code. Colors get botched when an item is highlights. Probably
+  end up pulling it from NCast.
+
+- A WINDOW stack that doesn't block.
+
 - A clock.
 
 - ICS network game support.
