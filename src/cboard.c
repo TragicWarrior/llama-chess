@@ -918,11 +918,12 @@ done:
 static void add_custom_tags(TAG ***t)
 {
     int i;
+    int total = pgn_tag_total(config.tag);
 
     if (!config.tag)
 	return;
 
-    for (i = 0; config.tag[i]; i++)
+    for (i = 0; i < total; i++)
 	pgn_tag_add(t, config.tag[i]->name, config.tag[i]->value);
 
     pgn_tag_sort(*t);
@@ -932,96 +933,105 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 {
     TAG **data = NULL;
     struct tm tp;
-    unsigned char data_index = 0;
-    int n, lastindex = 0;
+    int data_index = 0;
     int len;
+    int selected = 0;
+    int n;
+    int toppos = 0;
 
     /* Edit the backup copy, not the original in case the save fails. */
-    for (n = 0; g.tag[n]; n++)
+    len = pgn_tag_total(g.tag);
+
+    for (n = 0; n < len; n++)
 	pgn_tag_add(&data, g.tag[n]->name, g.tag[n]->value);
 
     data_index = pgn_tag_total(data);
 
     while (1) {
-	WINDOW *win, *subw;
+	WINDOW *win;
 	PANEL *panel;
-	ITEM **mitems = NULL;
-	MENU *menu;
 	int i;
 	char buf[76] = {0};
 	char *tmp = NULL;
 	int rows, cols;
-	int selected = -1;
-	char *mbuf = NULL;
-	int nlen = 0, vlen = 0;
+	int nlen = 0;
 
 	data_index = pgn_tag_total(data);
 
-	for (i = 0; i < data_index; i++) {
-	    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
+	for (i = cols = 0, n = 4; i < data_index; i++) {
+	    n = strlen(data[i]->name);
 
-	    if (data[i]->value) {
-		nlen = strlen(data[i]->name);
-		vlen = strlen(data[i]->value);
+	    if (nlen < n)
+		nlen = n;
 
-		/* The +6 is for the menu padding. */
-		mitems[i] = new_item(data[i]->name,
-			(nlen + vlen + 6 >= MAX_VALUE_WIDTH)
-			? PRESS_ENTER : data[i]->value);
-	    }
+	    if (data[i]->value)
+		n += strlen(data[i]->value);
 	    else
-		mitems[i] = new_item(data[i]->name, UNKNOWN);
+		n += strlen(UNKNOWN);
+	    
+	    if (cols < n)
+		cols = n;
 	}
 
-	mitems[i] = NULL;
-	menu = new_menu(mitems);
-	scale_menu(menu, &rows, &cols);
+	cols += nlen + 2;
+
+	if (cols > COLS)
+	    cols = COLS - 2;
 
 	/* +14 for the extra prompt info. */
-	if (cols < strlen(HELP_PROMPT) + 14)
-	    cols = strlen(HELP_PROMPT) + 14;
+	if (cols < strlen(HELP_PROMPT) + 14 + 2)
+	    cols = strlen(HELP_PROMPT) + 14 + 2;
 
-	win = newwin(rows + 4, cols + 4, CALCPOSY(rows) - 2, CALCPOSX(cols));
-	set_menu_win(menu, win);
-	subw = derwin(win, rows, cols + 2, 2, 1);
-	set_menu_sub(menu, subw);
-	set_menu_fore(menu, A_REVERSE);
-	set_menu_grey(menu, A_NORMAL);
-	set_menu_mark(menu, NULL);
-	set_menu_pad(menu, '-');
-	set_menu_spacing(menu, 3, 0, 0);
-	menu_opts_off(menu, O_NONCYCLIC);
-	post_menu(menu);
+	rows = (data_index + 4 > (LINES / 5) * 4) ? (LINES / 5) * 4 : 
+	    data_index + 4;
+
+	win = newwin(rows, cols, CALCPOSY(rows), CALCPOSX(cols));
 	panel = new_panel(win);
 	cbreak();
 	noecho();
 	nl();
 	keypad(win, TRUE);
-	set_menu_pattern(menu, mbuf);
 	wbkgd(win, CP_MESSAGE_WINDOW);
 	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
-		cols + 4, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+		cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+	
+	if (selected >= data_index - 1)
+	    selected = data_index - 1;
 
 	while (1) {
 	    int c;
 	    TAG **tmppgn = NULL;
 	    char *newtag = NULL;
 
-	    if (set_current_item(menu, mitems[lastindex]) != E_OK) {
-		lastindex = item_count(menu) - 1;
-		continue;
+	    for (i = toppos, c = 2; i < data_index && c < rows - 2; i++, c++) {
+		if (i == selected) {
+		    wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		    mvwprintw(win, c, 1, "%*s: %-*s", nlen, data[i]->name,
+			    cols - nlen - 2 - 2, (data[i]->value && 
+				data[i]->value[0]) ? data[i]->value : UNKNOWN);
+		    wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		    continue;
+		}
+
+		mvwprintw(win, c, 1, "%*s: %-*s", nlen, data[i]->name,
+			cols - nlen - 2 - 2, (data[i]->value && 
+			    data[i]->value[0]) ? data[i]->value : UNKNOWN);
 	    }
 
 	    snprintf(buf, sizeof(buf), "%s %i %s %i  %s", MENU_TAG_STR,
-		    item_index(current_item(menu)) + 1, N_OF_N_STR,
-		    item_count(menu), HELP_PROMPT);
-	    draw_prompt(win, rows + 2, cols + 4, buf, CP_MESSAGE_PROMPT);
+		    selected + 1, N_OF_N_STR, data_index, HELP_PROMPT);
+	    draw_prompt(win, rows - 2, cols, buf, CP_MESSAGE_PROMPT);
 	    refresh_all();
 	    c = wgetch(win);
 
 	    switch (c) {
 		case CTRL('T'):
+		    if (!edit)
+			break;
+
 		    add_custom_tags(&data);
+		    selected = data_index - 1;
+		    toppos = data_index - (rows - 4);
 		    goto cleanup;
 		    break;
 		case KEY_F(1):
@@ -1033,8 +1043,6 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		case CTRL('R'):
 		    if (!edit)
 			break;
-
-		    selected = item_index(current_item(menu));
 
 		    if (selected <= 6) {
 			cmessage(NULL, ANYKEY, "%s", E_REMOVE_STR);
@@ -1057,6 +1065,11 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 			pgn_tag_add(&data, tmppgn[i]->name, tmppgn[i]->value);
 
 		    pgn_tag_free(tmppgn);
+		    
+		    if (selected >= data_index)
+			selected = data_index - 1;
+
+		    toppos -= (toppos) ? 1 : 0;
 		    goto cleanup;
 		    break;
 		case CTRL('A'):
@@ -1086,13 +1099,15 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    pgn_tag_add(&data, newtag, NULL);
 		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
+		    toppos = (data_index > rows) ? data_index - (rows - 4) : 0;
 		    goto gotitem;
 		    break;
 		case KEY_HOME:
-		    menu_driver(menu, REQ_FIRST_ITEM);
+		    selected = toppos = 0;
 		    break;
 		case KEY_END:
-		    menu_driver(menu, REQ_LAST_ITEM);
+		    selected = data_index - 1;
+		    toppos = data_index - (rows - 4);
 		    break;
 		case CTRL('F'):
 		    if (!edit)
@@ -1101,53 +1116,47 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    pgn_tag_add(&data, "FEN", pgn_game_to_fen(g, b));
 		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
+		    toppos = (data_index > rows) ? data_index - (rows - 4) : 0;
 		    goto gotitem;
 		    break;
-		case KEY_NPAGE:
-		case CTRL('N'):
-		    if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
-			menu_driver(menu, REQ_LAST_ITEM);
-		    break;
-		case KEY_PPAGE:
-		case CTRL('P'):
-		    if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
-			menu_driver(menu, REQ_FIRST_ITEM);
-		    break;
 		case KEY_UP:
-		    menu_driver(menu, REQ_UP_ITEM);
+		    if (selected - 1 < 0) {
+			selected = data_index - 1;
+
+			toppos = selected - (rows - 5);
+		    }
+		    else {
+			selected--;
+
+			if (toppos && selected <= toppos)
+			    toppos = selected;
+		    }
 		    break;
 		case KEY_DOWN:
-		    menu_driver(menu, REQ_DOWN_ITEM);
+		    if (selected + 1 >= data_index)
+			selected = toppos = 0;
+		    else {
+			selected++;
+
+			if (selected - toppos > rows - 5)
+			    toppos++;
+		    }
 		    break;
 		case '\n':
-		    selected = item_index(current_item(menu));
 		    goto gotitem;
 		    break;
 		case KEY_ESCAPE:
-		    cleanup(win, subw, panel, menu, mitems, NULL);
+		    del_panel(panel);
+		    delwin(win);
 		    goto done;
 		    break;
 		default:
-		    tmp = menu_pattern(menu);
-
-		    if (tmp && tmp[strlen(tmp) - 1] != c) {
-			menu_driver(menu, REQ_CLEAR_PATTERN);
-			menu_driver(menu, c);
-		    }
-		    else {
-			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
-			    menu_driver(menu, c);
-		    }
-
 		    break;
 	    }
-
-	    lastindex = item_index(current_item(menu));
 	}
 
 gotitem:
-	lastindex = selected;
-	nlen = strlen(data[selected]->name) + 3;
+	nlen = strlen(data[selected]->name) + 2;
 	nlen += (edit) ? strlen(TAG_EDIT_TAG_TITLE) : strlen(TAG_VIEW_TAG_TITLE);
 
 	if (nlen > MAX_VALUE_WIDTH)
@@ -1158,7 +1167,7 @@ gotitem:
 		    data[selected]->name);
 
 	if (!edit) {
-	    if (strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
+	    if (!data[selected]->value)
 		goto cleanup;
 
 	    cmessage(buf, ANYKEY, "%s", data[selected]->value);
@@ -1204,12 +1213,7 @@ gotitem:
 		tmp = "*";
 	}
 	else {
-	    if (item_description(mitems[selected]) && 
-		    strcmp(item_description(mitems[selected]), UNKNOWN) == 0)
-		tmp = NULL;
-	    else
-		tmp = data[selected]->value;
-
+	    tmp = (data[selected]->value) ? data[selected]->value : NULL;
 	    tmp = get_input(buf, tmp, 0, 0, NULL, NULL, NULL, 0, -1);
 	}
 
@@ -1218,7 +1222,8 @@ gotitem:
 	strncpy(data[selected]->value, (tmp) ? tmp : "", len);
 
 cleanup:
-	cleanup(win, subw, panel, menu, mitems, NULL);
+	del_panel(panel);
+	delwin(win);
     }
 
 done:
