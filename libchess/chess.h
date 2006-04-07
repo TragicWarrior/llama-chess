@@ -283,6 +283,11 @@ void pgn_board_init(BOARD b);
 int pgn_validate_move(GAME *g, BOARD b, char **mp);
 
 /*
+ * Like pgn_validate_move() but don't modify 'b' or 'g'.
+ */
+int pgn_validate_only(GAME *g, BOARD b, char **mp);
+
+/*
  * Returns the total number of moves in 'h' or 0 if there are none.
  */
 int pgn_history_total(HISTORY **h);

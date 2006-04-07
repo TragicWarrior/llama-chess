@@ -2267,8 +2267,11 @@ again:
     else 
 	piece = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
 
-    b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = pgn_int_to_piece(g->turn, OPEN_SQUARE);
-    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
+    if (!validate) {
+	b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon = 
+	    pgn_int_to_piece(g->turn, OPEN_SQUARE);
+	b[ROWTOBOARD(row)][COLTOBOARD(col)].icon = piece;
+    }
 
 done:
     if (!validate && capture && pgn_piece_to_int(dstpiece) == ROOK) {
@@ -2334,4 +2337,14 @@ done:
     validate = i;
     *mp = m;
     return E_PGN_OK;
+}
+
+int pgn_validate_only(GAME *g, BOARD b, char **m)
+{
+    int ret;
+
+    validate = 1;
+    ret = pgn_validate_move(g, b, m);
+    validate = 0;
+    return ret;
 }

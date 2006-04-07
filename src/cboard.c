@@ -1604,7 +1604,7 @@ static char *board_to_san(GAME *g, BOARD b)
     static char str[MAX_SAN_MOVE_LEN + 1], *p;
     int piece;
     int promo;
-    BOARD oldboard;
+    struct userdata_s *d = g->data;
 
     snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[sp.col - 1], 
 	    sp.row, x_grid_chars[sp.destcol - 1], sp.destrow);
@@ -1624,12 +1624,19 @@ static char *board_to_san(GAME *g, BOARD b)
 	*p = '\0';
     }
 
-    memcpy(oldboard, b, sizeof(BOARD));
     p = str;
 
-    if (pgn_validate_move(g, b, &p)) {
+    if (TEST_FLAG(d->flags, CF_HUMAN)) {
+	if (pgn_validate_move(g, b, &p)) {
+	    invalid_move(gindex + 1, p);
+	    return NULL;
+	}
+
+	return p;
+    }
+
+    if (pgn_validate_only(g, b, &p)) {
 	invalid_move(gindex + 1, p);
-	memcpy(b, oldboard, sizeof(BOARD));
 	return NULL;
     }
 
@@ -1949,7 +1956,7 @@ void update_engine_window()
 {
     int i;
 
-    if (!enginebuf || panel_hidden(enginep))
+    if (!enginebuf)
 	return;
 
     wmove(enginew, 0, 0);
@@ -2378,6 +2385,10 @@ static int playmode_keys(chtype c)
 	    }
 
 	    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+
+	    if (d->engine)
+		d->engine->status = ENGINE_READY;
+
 	    update_all(game[gindex]);
 	    break;
 	case 'E':
@@ -2386,6 +2397,10 @@ static int playmode_keys(chtype c)
 
 	    TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
 	    CLEAR_FLAG(d->flags, CF_HUMAN);
+
+	    if (d->engine && !TEST_FLAG(d->flags, CF_ENGINE_LOOP))
+		d->engine->status = ENGINE_READY;
+
 	    update_all(game[gindex]);
 	    break;
 	case '|':
@@ -2524,11 +2539,15 @@ static int playmode_keys(chtype c)
 	    send_to_engine(&game[gindex], "go\n");
 	    break;
 	default:
+	    if (!d->engine)
+		break;
+
 	    if (config.keys) {
 		for (x = 0; config.keys[x]; x++) {
 		    if (config.keys[x]->c == c) {
 			send_to_engine(&game[gindex], "%s\n",
 				config.keys[x]->str);
+			d->engine->status = ENGINE_READY;
 			break;
 		    }
 		}

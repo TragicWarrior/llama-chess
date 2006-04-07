@@ -209,6 +209,7 @@ void parse_rcfile(const char *filename)
     char *altengine = NULL;
     int i = 0;
     int k = 0;
+    int init = 0;
 
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
@@ -248,9 +249,9 @@ void parse_rcfile(const char *filename)
 	    config.keys[i] = NULL;
 	}
 	else if (strcmp(var, "engine_init") == 0) {
-	    config.einit = Realloc(config.einit, (i + 2) * sizeof(char *));
-	    config.einit[i++] = strdup(val);
-	    config.einit[i] = NULL;
+	    config.einit = Realloc(config.einit, (init + 2) * sizeof(char *));
+	    config.einit[init++] = strdup(val);
+	    config.einit[init] = NULL;
 	}
 	else if (strcmp(var, "pattern") == 0) {
 	    free(config.pattern);

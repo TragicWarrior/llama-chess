@@ -358,40 +358,43 @@ int start_chess_engine(GAME *g)
     return ret;
 }
 
-/* Once the PGN parser has been well tested, validate_move() from the human
- * move can disappear.
- */
-void parse_gnuchess_line(GAME *g, char *str)
+static void parse_xboard_line(GAME *g, char *str)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
     int count;
     struct userdata_s *d = g->data;
 
-    /* Human move. Add it to the move history. */
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
-	/*
-	if (pgn_validate_move(g, g->b, p)) {
-	    invalid_move(0, m);
-	    RETURN(d);
-	}
-	*/
+    p = str;
 
-        if (pgn_history_total(g->hp) == 0 && g->side == BLACK)
-	    SET_FLAG(g->flags, GF_BLACK_OPENING);
+    // 1. a2a4 (gnuchess)
+    while (isdigit(*p))
+	p++;
 
-	pgn_history_add(g, p);
-	SET_FLAG(g->flags, GF_MODIFIED);
-	pgn_switch_turn(g);
-	str += count;
+    // gnuchess echos our input move so we don't need the duplicate (above).
+    if (*p == '.' && *(p + 1) == ' ' && *(p + 2) != '.')
 	return;
+
+    // 1. ... a2a4 (gnuchess/engine move)
+    if (*p == '.' && *(p + 1) == ' ' && *(p + 2) == '.') {
+	while (*p == ' ' || *p == '.')
+	    p++;
     }
 
-    /* Engine move. */
-    if (sscanf(str, "%*d%*1[.]%*1[ ]%*3[.]%*1[ ]%[a-zA-Z0-9+=#-]%n", m, 
-		&count) == 1) {
-	/* Moves from the engine are in a2a4 format (Xboard protocol) so we
-	 * need to convert them.
-	 */
+    if (strncmp(str, "move ", 5) == 0)
+	p = str + 5;
+
+    if (strlen(p) > MAX_SAN_MOVE_LEN)
+	return;
+
+    // We should now have the real move which may be in SAN or a2a4 format.
+    if (sscanf(p, "%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
+	p = m + strlen(m) - 1;
+
+	// Test SAN or a2a4 format.
+	if (!isdigit(*p) && *p != 'O' && *p != '+' && *p != '#' &&
+		((*(p - 1) != '=' || !isdigit(*(p - 1))) && 
+		 pgn_piece_to_int(*p) == -1))
+	    return;
 
 	p = m;
 
@@ -400,82 +403,46 @@ void parse_gnuchess_line(GAME *g, char *str)
 	    RETURN(d);
 	}
 
-        if (pgn_history_total(g->hp) == 0 && g->side == BLACK)
-	    SET_FLAG(g->flags, GF_BLACK_OPENING);
-
 	pgn_history_add(g, p);
 	SET_FLAG(g->flags, GF_MODIFIED);
 	pgn_switch_turn(g);
-	str += count;
 
-	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-	    //pgn_board_update(g, g.htotal); FIXME
-	    RETURN(d);
-	}
-
-	if (TEST_FLAG(d->flags, CF_ENGINE_LOOP) && 
-		!TEST_FLAG(d->flags, CF_HUMAN)) {
-	    send_to_engine(g, "go\n");
+	if (TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
 	    update_cursor(*g, g->hindex);
-	    return;
+
+	    if (!TEST_FLAG(g->flags, GF_GAMEOVER)) {
+		send_to_engine(g, "go\n");
+		return;
+	    }
+	    else
+		RETURN(d);
 	}
 
-	RETURN(d);
+	if (g->side == g->turn)
+	    RETURN(d);
     }
 
-    if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-	//pgn_board_update(g); FIXME
-	RETURN(d);
-    }
-
-    /* Miscellaneous one-liners. */
-    /* 'switch' command. */
-    if (strncmp(str, "White to move", 13) == 0) {
-	g->side = g->turn = WHITE;
-	RETURN(d);
-    }
-    else if (strncmp(str, "Black to move", 13) == 0) {
-	g->side = g->turn = BLACK;
-	RETURN(d);
-    }
-
-    /* Bad engine command or move. */
-    if (strncmp(str, "Illegal move: ", 14) == 0) {
-	invalid_move(0, p);
-	RETURN(d);
-    }
-}
-
-static void parse_engine_line(GAME *g, char *line)
-{
-    line = trim(line);
-
-    if (!*line)
-	return;
-
-    append_enginebuf(line);
-    parse_gnuchess_line(g, line);
+    return;
 }
 
 void parse_engine_output(GAME *g, char *str)
 {
-    char buf[LINE_MAX], *p = buf;
+    char buf[255], *p = buf;
 
     while (*str) {
-	*p = '\0';
-
-	/* FIXME test this ("White ... : ", "Black ... : "). Needed for the
-	 * 'g'o command. */
-	if (*str == ':') {
-	    p = buf;
-	    str++;
-	    continue;
-	}
-
-	if (*str == '\n') {
+	if (*str == '\n' || *str == '\r') {
 	    *p = '\0';
-	    parse_engine_line(g, buf);
+
+	    if (*buf) {
+		append_enginebuf(buf);
+		parse_xboard_line(g, buf);
+	    }
+
 	    str++;
+
+	    if (*str == '\n')
+		str++;
+
 	    p = buf;
 	    continue;
 	}
