@@ -450,50 +450,84 @@ void view_annotation(HISTORY h)
 		view_nag, (void *)&h, 'n', "%s", "No annotations for this move");
 }
 
-static void cleanup(WINDOW *win, WINDOW *subw, PANEL *panel, MENU *menu, 
-	ITEM **items, struct d_entries *entries)
+static void cleanup(WINDOW *win, PANEL *panel, struct file_s *files)
 {
     int i;
 
-    unpost_menu(menu);
-    free_menu(menu);
-
-    for (i = 0; items[i]; i++)
-	free_item(items[i]);
-
-    free(items);
-
-    if (entries) {
-	for (i = 0; entries[i].name; i++) {
-	    free(entries[i].name);
-	    free(entries[i].fancy);
+    if (files) {
+	for (i = 0; files[i].name; i++) {
+	    free(files[i].path);
+	    free(files[i].name);
 	}
 
-	free(entries);
+	free(files);
     }
 
     del_panel(panel);
-    delwin(subw);
     delwin(win);
 }
 
-static int sort_entries(const void *s1, const void *s2)
+void set_menu_vars(int c, int rows, int items, int *item, int *top)
 {
-    const struct d_entries *ss1 = s1;
-    const struct d_entries *ss2 = s2;
+    int selected = *item;
+    int toppos = *top;
 
-    return strcmp(ss1->name, ss2->name);
+    switch (c) {
+	case KEY_HOME:
+	    selected = toppos = 0;
+	    break;
+	case KEY_END:
+	    selected = items;
+	    toppos = items - rows + 1;
+	    break;
+	case KEY_UP:
+	    if (selected - 1 < 0) {
+		selected = items;
+
+		toppos = selected - rows + 1;
+	    }
+	    else {
+		selected--;
+
+		if (toppos && selected <= toppos)
+		    toppos = selected;
+	    }
+	    break;
+	case KEY_DOWN:
+	    if (selected + 1 > items )
+		selected = toppos = 0;
+	    else {
+		selected++;
+
+		if (selected - toppos >= rows)
+		    toppos++;
+	    }
+	    break;
+	default:
+	    toppos = (items > rows) ? items - rows + 1 : 0;
+	    break;
+    }
+
+    *item = selected;
+    *top = toppos;
 }
 
-char *browse_directory(void *arg)
+static int sort_files(const void *a, const void *b)
 {
-    char *inputstr = (char *)arg;
-    int initkey = (inputstr) ? inputstr[0] : 0;
+    const struct file_s *aa = a;
+    const struct file_s *bb = b;
+
+    return strcmp(aa->name, bb->name);
+}
+
+char *file_browser(void *arg)
+{
     char pattern[FILENAME_MAX];
     static char path[FILENAME_MAX];
     static char file[FILENAME_MAX];
     struct stat st;
     char *p;
+    int cursor = curs_set(0);
 
     if (!*path) {
 	if (config.savedirectory) {
@@ -522,21 +556,19 @@ again:
     strncpy(pattern, p, sizeof(pattern));
 
     while (1) {
-	WINDOW *win, *subw;
+	WINDOW *win;
 	PANEL *panel;
-	ITEM **mitems = NULL;
-	MENU *menu;
 	char *tmp = NULL;
-	int rows, cols;
-	int selected = -1;
-	char *mbuf = NULL;
-	int idx = 0;
+	int rows, cols = 0;
+	int selected = 0;
+	int toppos = 0;
 	int len = strlen(path);
 	wordexp_t w;
 	int i, n = 0;
-	struct d_entries *entries = NULL;
+	struct file_s *files = NULL;
 	int which = 1;
 	int x = WRDE_NOCMD;
+	int nlen = 0;
 
 new_we:
 	if (wordexp(pattern, &w, x) != 0) {
@@ -547,6 +579,7 @@ new_we:
 	for (i = 0; i < w.we_wordc; i++) {
 	    struct tm *tp;
 	    char tbuf[16];
+	    char sbuf[64];
 
 	    if (stat(w.we_wordv[i], &st) == -1)
 		continue;
@@ -569,21 +602,19 @@ new_we:
 	    }
 
 	    len = strlen(p) + 2;
-	    entries = Realloc(entries, (n + 2) * sizeof(struct d_entries));
-	    entries[n].name = strdup(w.we_wordv[i]);
-	    entries[n].fancy = Malloc(len);
-	    strncpy(entries[n].fancy, p, len);
+	    files = Realloc(files, (n + 2) * sizeof(struct file_s));
+	    files[n].path = strdup(w.we_wordv[i]);
+	    files[n].name = Malloc(len);
+	    strncpy(files[n].name, p, len);
 
 	    if (S_ISDIR(st.st_mode))
-		entries[n].fancy[len - 2] = '/';
+		files[n].name[len - 2] = '/';
 
 	    tp = localtime(&st.st_mtime);
 	    strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
-
-	    snprintf(entries[n].desc, sizeof(entries[n].desc), "%-7i %s", 
-		    (int)st.st_size, tbuf);
-
-	    memset(&entries[++n], '\0', sizeof(struct d_entries));
+	    snprintf(sbuf, sizeof(sbuf), "%i %s", (int)st.st_size, tbuf);
+	    files[n].st = strdup(sbuf);
+	    memset(&files[++n], '\0', sizeof(struct file_s));
 	}
 
 	which--;
@@ -598,16 +629,17 @@ new_we:
 	}
 
 	wordfree(&w);
-	qsort(entries, n, sizeof(struct d_entries), sort_entries);
+	qsort(files, n, sizeof(struct file_s), sort_files);
 
-	for (i = 0; i < n; i++) {
-	    mitems = Realloc(mitems, (idx + 2) * sizeof(ITEM));
-	    mitems[idx++] = new_item(entries[i].fancy, entries[i].desc);
+	for (i = x = nlen = 0; i < n; i++) {
+	    if (strlen(files[i].name) > nlen)
+		nlen = strlen(files[i].name);
+
+	    if (x < nlen + strlen(files[i].st))
+		x = nlen + strlen(files[i].st);
 	}
 
-	mitems[idx] = NULL;
-	menu = new_menu(mitems);
-	scale_menu(menu, &rows, &cols);
+	cols = x + 1;
 
 	if (cols < strlen(path))
 	    cols = strlen(path);
@@ -615,67 +647,53 @@ new_we:
 	if (cols < strlen(HELP_PROMPT))
 	    cols = strlen(HELP_PROMPT);
 
-	rows = (LINES / 5) * 4;
+	if (cols > COLS)
+	    cols = COLS - 4;
+
 	cols += 2;
+	rows = (n + 4 > (LINES / 5) * 4) ? (LINES / 5) * 4 : n + 4;
 
-	win = newwin(rows + 4, cols, CALCPOSY(rows) - 2, CALCPOSX(cols));
-	set_menu_format(menu, rows, 0);
-	set_menu_win(menu, win);
-	subw = derwin(win, rows, cols - 2, 2, 1);
-	set_menu_sub(menu, subw);
-	set_menu_fore(menu, A_REVERSE);
-	set_menu_grey(menu, A_NORMAL);
-	set_menu_mark(menu, NULL);
-	set_menu_spacing(menu, 2, 0, 0);
-	menu_opts_off(menu, O_NONCYCLIC);
-	post_menu(menu);
+	win = newwin(rows, cols, CALCPOSY(rows) - 2, CALCPOSX(cols));
+	wbkgd(win, CP_MESSAGE_WINDOW);
 	panel = new_panel(win);
-
 	draw_window_title(win, path, cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-	draw_prompt(win, rows + 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
-
+	draw_prompt(win, rows - 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
 	cbreak();
 	noecho();
 	keypad(win, TRUE);
-	set_menu_pattern(menu, mbuf);
-
-	if (isgraph(initkey)) {
-	    menu_driver(menu, initkey);
-	    initkey = '\0';
-	}
+	nl();
 
 	while (1) {
 	    int c;
 
-	    /* This nl() statement needs to be here because NL is recognized
-	     * for some reason after the first selection.
-	     */
-	    nl();
+	    for (i = toppos, c = 2; i < n && c < rows - 2; i++, c++) {
+		if (i == selected) {
+		    wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		    mvwprintw(win, c, 1, "%-*s %-*s", nlen, files[i].name,
+			    cols - nlen - 2 - 2, files[i].st);
+		    wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		    continue;
+		}
+
+		mvwprintw(win, c, 1, "%-*s %-*s", nlen, files[i].name,
+			cols - nlen - 2 - 2, files[i].st);
+	    }
+
 	    refresh_all();
 	    c = wgetch(win);
 
 	    switch (c) {
-		case CTRL('P'):
-		case KEY_PPAGE:
-		    menu_driver(menu, REQ_SCR_UPAGE);
-		    break;
-		case ' ':
-		case CTRL('N'):
-		case KEY_NPAGE:
-		    menu_driver(menu, REQ_SCR_DPAGE);
-		    break;
+		case KEY_HOME:
+		case KEY_END:
 		case KEY_UP:
-		    menu_driver(menu, REQ_UP_ITEM);
-		    break;
 		case KEY_DOWN:
-		    menu_driver(menu, REQ_DOWN_ITEM);
+		    set_menu_vars(c, rows - 4, n - 1, &selected, &toppos);
 		    break;
 		case '\n':
-		    selected = item_index(current_item(menu));
 		    goto gotitem;
 		    break;
 		case KEY_ESCAPE:
-		    cleanup(win, subw, panel, menu, mitems, entries);
+		    cleanup(win, panel, files);
 		    file[0] = 0;
 		    goto done;
 		    break;
@@ -683,8 +701,8 @@ new_we:
 		    help(BROWSER_HELP, ANYKEY, file_browser_help);
 		    break;
 		case '~':
-		    strncpy(path, "~/", sizeof(path));
-		    cleanup(win, subw, panel, menu, mitems, entries);
+		    strncpy(path, "~", sizeof(path));
+		    cleanup(win, panel, files);
 		    goto again;
 		    break;
 		case CTRL('X'):
@@ -692,29 +710,21 @@ new_we:
 			    == NULL)
 			break;
 
+		    if (tmp[strlen(tmp) - 1] == '/')
+			tmp[strlen(tmp) - 1] = 0;
+
 		    strncpy(path, tmp, sizeof(path));
-		    cleanup(win, subw, panel, menu, mitems, entries);
+		    cleanup(win, panel, files);
 		    goto again;
 		    break;
 		default:
-		    tmp = menu_pattern(menu);
-
-		    if (tmp && tmp[strlen(tmp) - 1] != c) {
-			menu_driver(menu, REQ_CLEAR_PATTERN);
-			menu_driver(menu, c);
-		    }
-		    else {
-			if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
-			    menu_driver(menu, c);
-		    }
-
 		    break;
 	    }
 	}
 
 gotitem:
-	strncpy(file, entries[selected].name, sizeof(file));
-	cleanup(win, subw, panel, menu, mitems, entries);
+	strncpy(file, files[selected].path, sizeof(file));
+	cleanup(win, panel, files);
 
 	if (stat(file, &st) == -1) {
 	    cmessage(ERROR, ANYKEY, "%s\n%s", file, strerror(errno));
@@ -743,6 +753,7 @@ gotitem:
     }
 
 done:
+    curs_set(cursor);
     return (*file) ? file : NULL;
 }
 static int init_country_codes()
@@ -989,7 +1000,6 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 	panel = new_panel(win);
 	cbreak();
 	noecho();
-	nl();
 	keypad(win, TRUE);
 	wbkgd(win, CP_MESSAGE_WINDOW);
 	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
@@ -1069,7 +1079,11 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    if (selected >= data_index)
 			selected = data_index - 1;
 
-		    toppos -= (toppos) ? 1 : 0;
+		    if (selected > rows - 5)
+			toppos = selected - (rows - 5);
+		    else
+			toppos -= (toppos) ? 1 : 0;
+
 		    goto cleanup;
 		    break;
 		case CTRL('A'):
@@ -1099,15 +1113,16 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    pgn_tag_add(&data, newtag, NULL);
 		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
-		    toppos = (data_index > rows) ? data_index - (rows - 4) : 0;
+		    set_menu_vars(c, rows - 4, data_index - 1, &selected,
+			    &toppos);
 		    goto gotitem;
 		    break;
 		case KEY_HOME:
-		    selected = toppos = 0;
-		    break;
 		case KEY_END:
-		    selected = data_index - 1;
-		    toppos = data_index - (rows - 4);
+		case KEY_UP:
+		case KEY_DOWN:
+		    set_menu_vars(c, rows - 4, data_index - 1, &selected,
+			    &toppos);
 		    break;
 		case CTRL('F'):
 		    if (!edit)
@@ -1116,31 +1131,9 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    pgn_tag_add(&data, "FEN", pgn_game_to_fen(g, b));
 		    data_index = pgn_tag_total(data);
 		    selected = data_index - 1;
-		    toppos = (data_index > rows) ? data_index - (rows - 4) : 0;
+		    set_menu_vars(c, rows - 4, data_index - 1, &selected,
+			    &toppos);
 		    goto gotitem;
-		    break;
-		case KEY_UP:
-		    if (selected - 1 < 0) {
-			selected = data_index - 1;
-
-			toppos = selected - (rows - 5);
-		    }
-		    else {
-			selected--;
-
-			if (toppos && selected <= toppos)
-			    toppos = selected;
-		    }
-		    break;
-		case KEY_DOWN:
-		    if (selected + 1 >= data_index)
-			selected = toppos = 0;
-		    else {
-			selected++;
-
-			if (selected - toppos > rows - 5)
-			    toppos++;
-		    }
 		    break;
 		case '\n':
 		    goto gotitem;
@@ -3020,7 +3013,7 @@ static int globalkeys(chtype c)
 		  return 1;
 	case 'r':
 		  if ((tmp = get_input(GAME_LOAD_TITLE, NULL, 1, 1,
-				  BROWSER_PROMPT, browse_directory, NULL, '\t',
+				  BROWSER_PROMPT, file_browser, NULL, '\t',
 				  -1)) == NULL)
 		      return 1;
 
@@ -3068,7 +3061,7 @@ static int globalkeys(chtype c)
 		  }
 
 		  if ((tmp = get_input(GAME_SAVE_TITLE, loadfile, 1, 1,
-				  BROWSER_PROMPT, browse_directory, NULL, 
+				  BROWSER_PROMPT, file_browser, NULL, 
 				  '\t', -1)) == NULL) {
 		      update_status_notify(game[gindex], "%s", NOTIFY_SAVE_ABORTED);
 		      return 1;
@@ -3078,8 +3071,13 @@ static int globalkeys(chtype c)
 		      break;
 
 		  if (pgn_is_compressed(tmp)) {
-		      snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
-		      tmp = tfile;
+		      p = tmp + strlen(tmp) - 1;
+
+		      if (*p != 'n' || *(p-1) != 'g' || *(p-2) != 'p' ||
+			      *(p-3) != '.') {
+			  snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
+			  tmp = tfile;
+		      }
 		  }
 		  else {
 		      if ((p = strchr(tmp, '.')) != NULL) {

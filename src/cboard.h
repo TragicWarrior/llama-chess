@@ -204,10 +204,10 @@ const char *pgn_edit_help[] = {
     NULL
 };
 
-struct d_entries {
+struct file_s {
+    char *path;
     char *name;
-    char *fancy;
-    char desc[25];
+    char *st;
 };
 
 const char *file_browser_help[] = {
