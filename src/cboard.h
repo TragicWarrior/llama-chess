@@ -238,9 +238,7 @@ const char *naghelp[] = {
     NULL
 };
 
-struct nag_s {
-    char *line;
-} *nags;
+char **nags;
 
 // Status window.
 struct {

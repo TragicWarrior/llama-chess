@@ -947,11 +947,13 @@ static void nag_text(GAME *g, FILE *fp)
     if (!nag || nag < 0 || nag > 255)
 	return;
 
+    // FIXME -1 is because move_text() increments g.hindex. The NAG
+    // annoatation isnt guaranteed to be after the move text in import format.
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (g->hp[g->hindex]->nag[i])
+	if (g->hp[g->hindex - 1]->nag[i])
 	    continue;
 
-	g->hp[g->hindex]->nag[i] = nag;
+	g->hp[g->hindex - 1]->nag[i] = nag;
 	break;
     }
 

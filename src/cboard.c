@@ -152,106 +152,145 @@ static int init_nag()
 	return 1;
     }
 
+    nags = Realloc(nags, 2 * sizeof(char *));
+    nags[0] = NULL;
+    i++;
+
     while (!feof(fp)) {
 	if (fscanf(fp, " %[^\n] ", line) == 1) {
-	    nags = Realloc(nags, (i + 2) * sizeof(struct nag_s));
-	    nags[i].line = strdup(line);
-	    i++;
+	    nags = Realloc(nags, (i + 2) * sizeof(char *));
+	    nags[i++] = strdup(line);
 	}
     }
 
-    if (nags)
-	nags[i].line = NULL;
     return 0;
+}
+
+void set_menu_vars(int c, int rows, int items, int *item, int *top)
+{
+    int selected = *item;
+    int toppos = *top;
+
+    switch (c) {
+	case KEY_HOME:
+	    selected = toppos = 0;
+	    break;
+	case KEY_END:
+	    selected = items;
+	    toppos = items - rows + 1;
+	    break;
+	case KEY_UP:
+	    if (selected - 1 < 0) {
+		selected = items;
+
+		toppos = selected - rows + 1;
+	    }
+	    else {
+		selected--;
+
+		if (toppos && selected <= toppos)
+		    toppos = selected;
+	    }
+	    break;
+	case KEY_DOWN:
+	    if (selected + 1 > items )
+		selected = toppos = 0;
+	    else {
+		selected++;
+
+		if (selected - toppos >= rows)
+		    toppos++;
+	    }
+	    break;
+	default:
+	    toppos = (items > rows) ? items - rows + 1 : 0;
+	    break;
+    }
+
+    *item = selected;
+    *top = toppos;
+}
+
+int test_nag_selected(unsigned char nag[], int s)
+{
+    int i;
+
+    for (i = 0; i < MAX_PGN_NAG; i++) {
+	if (nag[i] == s)
+	    return i;
+    }
+
+    return -1;
 }
 
 char *history_edit_nag(void *arg)
 {
-    WINDOW *win, *subw;
+    WINDOW *win;
     PANEL *panel;
-    ITEM **mitems = NULL;
-    MENU *menu;
     int i = 0, n;
     int itemcount = 0;
     int rows, cols;
-    char *mbuf = NULL;
     HISTORY *anno = (HISTORY *)arg;
+    int selected = 0;
+    int toppos = 0;
+    int len = 0;
+    int total = 0;
+    unsigned char nag[MAX_PGN_NAG] = {0};
 
     if (!nags) {
 	if (init_nag())
 	    return NULL;
     }
 
-    i = 0;
-    mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-    mitems[i++] = new_item(NONE, NULL);
+    for (i = 1, n = 0; nags[i]; i++) {
+	n = strlen(nags[i]);
 
-    for (n = 0; nags[n].line; n++, i++) {
-	mitems = Realloc(mitems, (i + 2) * sizeof(ITEM));
-	mitems[i] = new_item(nags[n].line, NULL);
+	if (len < n)
+	    len = n;
     }
 
-    mitems[i] = NULL;
-    menu = new_menu(mitems);
-    scale_menu(menu, &rows, &cols);
+    total = i;
+    cols = len + 2;
+    rows = (total + 4 > (LINES / 5) * 4) ? (LINES / 5) * 4 : total + 4;
 
-    win = newwin(rows + 4, cols + 2, CALCPOSY(rows) - 2, CALCPOSX(cols));
-    set_menu_win(menu, win);
-    subw = derwin(win, rows, cols, 2, 1);
-    set_menu_sub(menu, subw);
-    set_menu_fore(menu, A_REVERSE);
-    set_menu_grey(menu, A_NORMAL);
-    set_menu_mark(menu, NULL);
-    set_menu_spacing(menu, 0, 0, 0);
-    menu_opts_off(menu, O_NONCYCLIC|O_SHOWDESC|O_ONEVALUE);
-    post_menu(menu);
+    win = newwin(rows, cols, CALCPOSY(rows), CALCPOSX(cols));
     panel = new_panel(win);
     cbreak();
     noecho();
     keypad(win, TRUE);
-    set_menu_pattern(menu, mbuf);
+    nl();
     wbkgd(win, CP_MESSAGE_WINDOW);
-    draw_window_title(win, NAG_EDIT_TITLE, cols + 2, CP_HISTORY_TITLE,
-	    CP_HISTORY_BORDER);
+    memcpy(&nag, &anno->nag, sizeof(nag));
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
-	if (anno->nag[i] && anno->nag[i] <= item_count(menu)) {
-	    set_item_value(mitems[anno->nag[i]], TRUE);
-	    set_current_item(menu, mitems[anno->nag[i]]);
+	if (nag[i])
 	    itemcount++;
-	}
     }
 
     while (1) {
 	int c;
-	char *tmp;
 	char buf[cols - 4];
 
-	wattron(win, A_REVERSE);
+	wmove(win, 0, 0);
+	wclrtobot(win);
+	draw_window_title(win, NAG_EDIT_TITLE, cols, CP_HISTORY_TITLE,
+		CP_HISTORY_BORDER);
 
-	for (c = 1; c < (cols + 2) - 1; c++)
-	    mvwprintw(win, rows + 2, c, " ");
+	for (i = toppos, c = 2; i < total && c < rows - 2; i++, c++) {
+	    if ((i == selected && i != 0)|| test_nag_selected(nag, i) != -1) {
+		wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		mvwprintw(win, c, 1, "%s", (nags[i]) ? nags[i] : "none");
+		wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		continue;
+	    }
 
-	c = item_index(current_item(menu)) + 1;
-
-	snprintf(buf, sizeof(buf), "Item %i of %i (%i of %i selected) %s", c, 
-		item_count(menu), itemcount, MAX_PGN_NAG, NAG_EDIT_PROMPT);
-	draw_prompt(win, rows + 2, cols + 2, buf, CP_MESSAGE_PROMPT);
-
-	wattroff(win, A_REVERSE);
-
-	if (!itemcount) {
-	    for (i = 0; mitems[i]; i++)
-		set_item_value(mitems[i], FALSE);
-
-	    set_item_value(mitems[0], TRUE);
+	    mvwprintw(win, c, 1, "%s", (nags[i]) ? nags[i] : "none");
 	}
-	else
-	    set_item_value(mitems[0], FALSE);
 
-	/* This nl() statement needs to be here because NL is recognized
-	 * for some reason after the first selection.
-	 */
+	snprintf(buf, sizeof(buf), "NAG %i of %i (%i of %i selected) %s", 
+		selected + 1, total, itemcount, MAX_PGN_NAG, NAG_EDIT_PROMPT);
+	draw_prompt(win, rows - 2, cols, buf, CP_MESSAGE_PROMPT);
+
 	nl();
 	refresh_all();
 	c = wgetch(win);
@@ -262,138 +301,54 @@ char *history_edit_nag(void *arg)
 	    case KEY_F(1):
 		help(NAG_EDIT_HELP, ANYKEY, naghelp);
 		break;
-	    case KEY_RIGHT:
-		if (!itemcount)
-		    break;
-
-		found = 0;
-
-		for (i = item_index(current_item(menu)) + 1; mitems[i]; i++) {
-		    if (item_value(mitems[i]) == TRUE) {
-			found = i;
-			break;
-		    }
-		}
-
-		if (!found) {
-		    for (i = 0; mitems[i]; i++) {
-			if (item_value(mitems[i]) == TRUE) {
-			    found = i;
-			    break;
-			}
-		    }
-		}
-
-		set_current_item(menu, mitems[found]);
-		break;
-	    case KEY_LEFT:
-		if (!itemcount)
-		    break;
-
-		found = 0;
-
-		for (i = item_index(current_item(menu)) - 1; i > 0; i--) {
-		    if (item_value(mitems[i]) == TRUE) {
-			found = i;
-			break;
-		    }
-		}
-
-		if (!found) {
-		    for (i = item_count(menu) - 1; i > 0; i--) {
-			if (item_value(mitems[i]) == TRUE) {
-			    found = i;
-			    break;
-			}
-		    }
-		}
-
-		set_current_item(menu, mitems[found]);
-		break;
 	    case KEY_HOME:
-		menu_driver(menu, REQ_FIRST_ITEM);
-		break;
 	    case KEY_END:
-		menu_driver(menu, REQ_LAST_ITEM);
-		break;
 	    case KEY_UP:
-		menu_driver(menu, REQ_UP_ITEM);
-		break;
 	    case KEY_DOWN:
-		menu_driver(menu, REQ_DOWN_ITEM);
-		break;
-	    case KEY_PPAGE:
-	    case CTRL('P'):
-		if (menu_driver(menu, REQ_SCR_UPAGE) == E_REQUEST_DENIED)
-		    menu_driver(menu, REQ_FIRST_ITEM);
-		break;
-	    case KEY_NPAGE:
-	    case CTRL('N'):
-		if (menu_driver(menu, REQ_SCR_DPAGE) == E_REQUEST_DENIED)
-		    menu_driver(menu, REQ_LAST_ITEM);
+		set_menu_vars(c, rows - 4, total - 1, &selected, &toppos);
 		break;
 	    case ' ':
-		if (item_index(current_item(menu)) == 0 && 
-			item_value(current_item(menu)) == FALSE) {
+		if (selected == 0) {
+		    for (i = 0; i < MAX_PGN_NAG; i++)
+			nag[i] = 0;
+
 		    itemcount = 0;
 		    break;
 		}
 
-		if (item_value(current_item(menu)) == TRUE) {
-		    set_item_value(current_item(menu), FALSE);
+		if ((found = test_nag_selected(nag, selected)) != -1) {
+		    nag[found] = 0;
 		    itemcount--;
 		}
 		else {
 		    if (itemcount + 1 > MAX_PGN_NAG)
 			break;
 
-		    set_item_value(current_item(menu), TRUE);
+		    for (i = 0; i < MAX_PGN_NAG; i++) {
+			if (nag[i] == 0) {
+			    nag[i] = selected;
+			    break;
+			}
+		    }
+
 		    itemcount++;
 		}
 
-		SET_FLAG(game[gindex].flags, GF_MODIFIED);
 		break;
 	    case '\n':
-		goto gotitem;
+		goto done;
 		break;
 	    case KEY_ESCAPE:
 		goto done;
 		break;
 	    default:
-		tmp = menu_pattern(menu);
-
-		if (tmp && tmp[strlen(tmp) - 1] != c) {
-		    menu_driver(menu, REQ_CLEAR_PATTERN);
-		    menu_driver(menu, c);
-		}
-		else {
-		    if (menu_driver(menu, REQ_NEXT_MATCH) == E_NO_MATCH)
-			menu_driver(menu, c);
-		}
-
 		break;
 	}
     }
 
-gotitem:
-    for (i = 0; i < MAX_PGN_NAG; i++)
-	anno->nag[i] = 0;
-
-    for (i = 0, n = 0; mitems[i] && n < MAX_PGN_NAG; i++) {
-	if (item_value(mitems[i]) == TRUE)
-	    anno->nag[n++] = i;
-    }
-
 done:
-    unpost_menu(menu);
-    free_menu(menu);
-
-    for (i = 0; mitems[i]; i++)
-	free_item(mitems[i]);
-
-    free(mitems);
+    memcpy(&anno->nag, &nag, sizeof(nag));
     del_panel(panel);
-    delwin(subw);
     delwin(win);
     return NULL;
 }
@@ -416,7 +371,7 @@ static void view_nag(void *arg)
 	if (!h->nag[i])
 	    break;
 
-	strncat(line, nags[h->nag[i] - 1].line, sizeof(line));
+	strncat(line, nags[h->nag[i]], sizeof(line));
 	strncat(line, "\n", sizeof(line));
     }
 
@@ -465,51 +420,6 @@ static void cleanup(WINDOW *win, PANEL *panel, struct file_s *files)
 
     del_panel(panel);
     delwin(win);
-}
-
-void set_menu_vars(int c, int rows, int items, int *item, int *top)
-{
-    int selected = *item;
-    int toppos = *top;
-
-    switch (c) {
-	case KEY_HOME:
-	    selected = toppos = 0;
-	    break;
-	case KEY_END:
-	    selected = items;
-	    toppos = items - rows + 1;
-	    break;
-	case KEY_UP:
-	    if (selected - 1 < 0) {
-		selected = items;
-
-		toppos = selected - rows + 1;
-	    }
-	    else {
-		selected--;
-
-		if (toppos && selected <= toppos)
-		    toppos = selected;
-	    }
-	    break;
-	case KEY_DOWN:
-	    if (selected + 1 > items )
-		selected = toppos = 0;
-	    else {
-		selected++;
-
-		if (selected - toppos >= rows)
-		    toppos++;
-	    }
-	    break;
-	default:
-	    toppos = (items > rows) ? items - rows + 1 : 0;
-	    break;
-    }
-
-    *item = selected;
-    *top = toppos;
 }
 
 static int sort_files(const void *a, const void *b)
