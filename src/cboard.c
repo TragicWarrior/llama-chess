@@ -44,10 +44,6 @@
 #include <dirent.h>
 #endif
 
-#ifdef HAVE_MENU_H
-#include <menu.h>
-#endif
-
 #ifdef HAVE_REGEX_H
 #include <regex.h>
 #endif

@@ -34,15 +34,13 @@ AC_CHECK_LIB(panel, new_panel, ,
 	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
 AC_CHECK_LIB(form, new_form, ,
 	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
-AC_CHECK_LIB(menu, new_menu, , 
-	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h paths.h sys/socket.h limits.h sys/time.h unistd.h \
-		  stdlib.h string.h ncurses.h panel.h form.h menu.h getopt.h \
+		  stdlib.h string.h ncurses.h panel.h form.h getopt.h \
 		  sys/param.h regex.h wordexp.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
