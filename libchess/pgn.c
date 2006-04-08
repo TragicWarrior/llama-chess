@@ -863,8 +863,9 @@ static int move_text(GAME *g, FILE *fp)
 
     p = m + strlen(m) - 1;
 
-    if (!pgn_history_total(g->hp) && g->ravlevel == 0 && VALIDRANK(ROWTOINT(*p)) && 
-	    VALIDFILE(COLTOINT(*(p-1))) && ROWTOINT(*p) > 4) {
+    if (!pgn_history_total(g->hp) && g->ravlevel == 0 && 
+	    VALIDRANK(ROWTOINT(*p)) && VALIDFILE(COLTOINT(*(p-1))) && 
+	    ROWTOINT(*p) > 4 && pgn_tag_find(g->tag, "FEN") == E_PGN_ERR) {
 	g->turn = BLACK;
 	SET_FLAG(g->flags, GF_BLACK_OPENING);
     }
@@ -1190,9 +1191,10 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 }
 
 /*
- * See pgn_board_init_fen(). Returns -1 on parse error. 0 may be returned on
- * success when there is no move count in the FEN tag otherwise the move count
- * is returned.
+ * FIXME
+ * See pgn_board_init_fen(). Returns E_PGN_PARSE on parse error. 0 may be
+ * returned on success when there is no move count in the FEN tag otherwise
+ * the move count is returned.
  */
 static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply, 
 	char *str)
@@ -1210,7 +1212,7 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
 	int n;
 
 	if (!VALIDFILE(row))
-	    return -1;
+	    return E_PGN_PARSE;
 
 	while (*tmp) {
 	    if (*tmp == ' ')
@@ -1220,7 +1222,7 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
 		n = *tmp - '0';
 
 		if (!VALIDFILE(n))
-		    return -1;
+		    return E_PGN_PARSE;
 
 		for (; n; --n, col++)
 		    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
@@ -1229,7 +1231,7 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
 	    else if (pgn_piece_to_int(*tmp) != -1)
 		b[ROWTOBOARD(row)][COLTOBOARD(col++)].icon = *tmp;
 	    else
-		return -1;
+		return E_PGN_PARSE;
 
 	    tmp++;
 	}
@@ -1249,7 +1251,7 @@ other:
 	    *turn = WHITE;
 	    break;
 	default:
-	    return -1;
+	    return E_PGN_PARSE;
     }
 	
     tmp++;
@@ -1268,24 +1270,30 @@ other:
 	    case 'q':
 		SET_FLAG(*flags, GF_BQ_CASTLE);
 		break;
+	    case '-':
+		break;
 	    default:
-		return -1;
+		return E_PGN_PARSE;
 	}
     }
 
+    tmp++;
+    
     // En passant.
-    if (*++tmp != '-') {
+    if (*tmp != '-') {
 	if (!VALIDCOL(*tmp))
-	    return -1;
+	    return E_PGN_PARSE;
 
 	col = *tmp++ - 'a';
 
 	if (!VALIDROW(*tmp))
-	    return -1;
+	    return E_PGN_PARSE;
 
 	row = 8 - atoi(tmp++);
 	b[row][col].enpassant = 1;
     }
+    else 
+	tmp++;
 
     if (*tmp)
 	tmp++;
@@ -1300,7 +1308,7 @@ other:
 	tmp++;
 
     moven = atoi(tmp);
-    return moven;
+    return E_PGN_OK;
 }
 
 /*
@@ -1334,7 +1342,7 @@ int pgn_board_init_fen(GAME *g, BOARD b, char *fen)
     if ((n >= 0 && i >= 0 && atoi(g->tag[n]->value) == 1) 
 	    || (i >= 0 && n == -1) || fen) {
 	if ((n = parse_fen_line(tmpboard, &flags, &turn, &ply,
-			(fen) ? fen : g->tag[i]->value)) == -1)
+			(fen) ? fen : g->tag[i]->value)) != E_PGN_OK)
 	    return E_PGN_PARSE;
 	else {
 	    memcpy(b, tmpboard, sizeof(BOARD));
@@ -1347,7 +1355,7 @@ int pgn_board_init_fen(GAME *g, BOARD b, char *fen)
 	    g->ply = ply;
 	}
     }
-    else
+    else 
 	return (i >= 0 && n >= 0) ? E_PGN_OK : E_PGN_ERR;
 
     return E_PGN_OK;
@@ -1403,6 +1411,7 @@ static int read_file(FILE *fp)
     while (1) {
 	int nextchar = 0;
 	int lastchar = c;
+	int n;
 
 	if ((c = fgetc(fp)) == EOF) {
 	    if (feof(fp))
@@ -1449,10 +1458,8 @@ static int read_file(FILE *fp)
 
 	// New game reached.
 	if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
-	    if (tag_section) {
-		tag_section = 0;
+	    if (tag_section)
 		continue;
-	    }
 
 	    nulltags = 1;
 	    tag_section = 0;
@@ -1582,9 +1589,9 @@ static int read_file(FILE *fp)
 
 	    // PGN: If a FEN tag exists, initialize the board to the value.
 	    if (tag_section) {
-		if (pgn_tag_find(game[gindex].tag, "FEN") != -1 && 
-			pgn_board_init_fen(&game[gindex], game[gindex].b,
-			    NULL)) {
+		if (pgn_tag_find(game[gindex].tag, "FEN") != E_PGN_ERR && 
+			(n = pgn_board_init_fen(&game[gindex], game[gindex].b,
+			    NULL)) == E_PGN_PARSE) {
 		    parse_error = 1;
 		    continue;
 		}
