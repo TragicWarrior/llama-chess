@@ -2757,7 +2757,7 @@ static void historymode_keys(chtype c)
     }
 }
 
-static void cleanup_all_games()
+static void free_userdata()
 {
     int i;
 
@@ -2765,8 +2765,13 @@ static void cleanup_all_games()
 	struct userdata_s *d;
 
 	if (game[i].data) {
-	    stop_engine(&game[i]);
 	    d = game[i].data;
+
+	    if (d->engine) {
+		stop_engine(&game[i]);
+		free(d->engine);
+	    }
+
 	    free(game[i].data);
 	    game[i].data = NULL;
 	}
@@ -3044,6 +3049,8 @@ static int globalkeys(chtype c)
 		      return 1;
 		  }
 
+		  free_userdata();
+
 		  if (pgn_parse(fp))
 		      return 1;
 
@@ -3173,7 +3180,7 @@ static int globalkeys(chtype c)
 		      game[gindex].data = d;
 		  }
 		  else {
-		      cleanup_all_games();
+		      free_userdata();
 		      pgn_parse(NULL);
 		      add_custom_tags(&game[gindex].tag);
 		      pgn_board_init(game[gindex].b);
@@ -3481,30 +3488,45 @@ void cleanup_all()
 {
     int i;
 
-    cleanup_all_games();
+    free_userdata();
     pgn_free_all();
-    del_panel(boardp);
-    del_panel(historyp);
-    del_panel(statusp);
-    del_panel(tagp);
-    delwin(boardw);
-    delwin(historyw);
-    delwin(statusw);
-    delwin(tagw);
+    free(config.engine_cmd);
+    free(config.pattern);
 
-    if (enginew) {
-	del_panel(enginep);
-	delwin(enginew);
+    if (config.einit) {
+	for (i = 0; config.einit[i]; i++)
+	    free(config.einit[i]);
 
-	if (enginebuf) {
-	    for (i = 0; enginebuf[i]; i++)
-		free(enginebuf[i]);
-
-	    free(enginebuf);
-	}
+	free(config.einit);
     }
 
-    endwin();
+    if (config.tag)
+	pgn_tag_free(config.tag);
+
+    if (curses_initialized) {
+	del_panel(boardp);
+	del_panel(historyp);
+	del_panel(statusp);
+	del_panel(tagp);
+	delwin(boardw);
+	delwin(historyw);
+	delwin(statusw);
+	delwin(tagw);
+
+	if (enginew) {
+	    del_panel(enginep);
+	    delwin(enginew);
+
+	    if (enginebuf) {
+		for (i = 0; enginebuf[i]; i++)
+		    free(enginebuf[i]);
+
+		free(enginebuf);
+	    }
+	}
+
+	endwin();
+    }
 }
 
 void catch_signal(int which)
@@ -3664,7 +3686,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 
-	pgn_free_all();
+	cleanup_all();
 	exit(ret);
     }
     else if (ret)

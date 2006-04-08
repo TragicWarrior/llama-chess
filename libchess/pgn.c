@@ -292,6 +292,8 @@ void pgn_history_free(HISTORY **h, int start)
 
 	if (h[i]->move)
 	    free(h[i]->move);
+
+	free(h[i]);
     }
 
     h[start] = NULL;
@@ -744,11 +746,12 @@ static void set_default_tags(GAME *g)
 void pgn_tag_free(TAG **tags)
 {
     int i;
+    int t = pgn_tag_total(tags);
 
     if (!tags)
 	return;
 
-    for (i = 0; tags[i]; i++) {
+    for (i = 0; i < t; i++) {
 	free(tags[i]->name);
 	free(tags[i]->value);
 	free(tags[i]);
