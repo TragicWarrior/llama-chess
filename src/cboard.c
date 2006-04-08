@@ -198,6 +198,28 @@ void set_menu_vars(int c, int rows, int items, int *item, int *top)
 		    toppos++;
 	    }
 	    break;
+	case KEY_PPAGE:
+	    selected -= rows;
+
+	    if (selected < 0)
+		selected = 0;
+
+	    toppos = selected - rows + 1;
+
+	    if (toppos < 0)
+		toppos = 0;
+	    break;
+	case KEY_NPAGE:
+	    selected += rows;
+
+	    if (selected > items)
+		selected = items;
+
+	    toppos = selected - rows + 1;
+
+	    if (toppos < 0)
+		toppos = 0;
+	    break;
 	default:
 	    toppos = (items > rows) ? items - rows + 1 : 0;
 	    break;
@@ -301,6 +323,8 @@ char *history_edit_nag(void *arg)
 	    case KEY_END:
 	    case KEY_UP:
 	    case KEY_DOWN:
+	    case KEY_PPAGE:
+	    case KEY_NPAGE:
 		set_menu_vars(c, rows - 4, total - 1, &selected, &toppos);
 		break;
 	    case ' ':
@@ -593,6 +617,8 @@ new_we:
 		case KEY_END:
 		case KEY_UP:
 		case KEY_DOWN:
+		case KEY_PPAGE:
+		case KEY_NPAGE:
 		    set_menu_vars(c, rows - 4, n - 1, &selected, &toppos);
 		    break;
 		case '\n':
@@ -779,6 +805,8 @@ char *country_codes(void *arg)
 	    case KEY_END:
 	    case KEY_UP:
 	    case KEY_DOWN:
+	    case KEY_PPAGE:
+	    case KEY_NPAGE:
 		set_menu_vars(c, rows - 4, total - 1, &selected, &toppos);
 		break;
 	    case '\n':
@@ -996,6 +1024,8 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		case KEY_END:
 		case KEY_UP:
 		case KEY_DOWN:
+		case KEY_NPAGE:
+		case KEY_PPAGE:
 		    set_menu_vars(c, rows - 4, data_index - 1, &selected,
 			    &toppos);
 		    break;
