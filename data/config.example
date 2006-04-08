@@ -115,3 +115,7 @@ color_input_window	white	black
 color_input_title	white	magenta	none	reverse
 color_input_border	cyan	black
 color_input_prompt	white	magenta	none	bold
+
+color_menu		white	blue	none	none
+color_menu_selected	white	red	none	bold
+color_menu_highlight	yellow	red	bold	bold

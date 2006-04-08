@@ -135,6 +135,18 @@
 	COLOR_PAIR(29) | config.color[CONF_BDWINDOW].attrs : \
 	config.color[CONF_BDWINDOW].nattrs)
 
+#define CP_MENU	((COLORS) ? \
+	COLOR_PAIR(30) | config.color[CONF_MENU].attrs : \
+	config.color[CONF_MENU].nattrs)
+
+#define CP_MENU_SELECTED	((COLORS) ? \
+	COLOR_PAIR(31) | config.color[CONF_MENUS].attrs : \
+	config.color[CONF_MENUS].nattrs)
+
+#define CP_MENU_HIGHLIGHT	((COLORS) ? \
+	COLOR_PAIR(32) | config.color[CONF_MENUH].attrs : \
+	config.color[CONF_MENUH].nattrs)
+
 void init_color_pairs();
 void set_default_colors();
 

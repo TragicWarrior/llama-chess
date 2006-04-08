@@ -92,6 +92,12 @@ void init_color_pairs()
 	    config.color[CONF_BCOUNT].bg);
     init_pair(29, config.color[CONF_BDWINDOW].fg, 
 	    config.color[CONF_BDWINDOW].bg);
+    init_pair(30, config.color[CONF_MENU].fg, 
+	    config.color[CONF_MENU].bg);
+    init_pair(31, config.color[CONF_MENUS].fg, 
+	    config.color[CONF_MENUS].bg);
+    init_pair(32, config.color[CONF_MENUH].fg, 
+	    config.color[CONF_MENUH].bg);
 }
 
 void set_default_colors()
@@ -170,4 +176,13 @@ void set_default_colors()
     config.color[CONF_IPROMPT].fg = COLOR_WHITE;
     config.color[CONF_IPROMPT].bg = COLOR_MAGENTA;
     config.color[CONF_IPROMPT].nattrs = A_BOLD;
+    config.color[CONF_MENU].fg = COLOR_WHITE;
+    config.color[CONF_MENU].bg = COLOR_BLUE;
+    config.color[CONF_MENUS].fg = COLOR_WHITE;
+    config.color[CONF_MENUS].bg = COLOR_RED;
+    config.color[CONF_MENUS].nattrs = A_BOLD;
+    config.color[CONF_MENUH].fg = COLOR_YELLOW;
+    config.color[CONF_MENUH].bg = COLOR_RED;
+    config.color[CONF_MENUH].attrs = A_BOLD;
+    config.color[CONF_MENUH].nattrs = A_BOLD;
 }

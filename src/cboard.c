@@ -281,7 +281,7 @@ char *history_edit_nag(void *arg)
     noecho();
     keypad(win, TRUE);
     nl();
-    wbkgd(win, CP_MESSAGE_WINDOW);
+    wbkgd(win, CP_MENU);
     memcpy(&nag, &anno->nag, sizeof(nag));
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
@@ -295,14 +295,21 @@ char *history_edit_nag(void *arg)
 
 	wmove(win, 0, 0);
 	wclrtobot(win);
-	draw_window_title(win, NAG_EDIT_TITLE, cols, CP_HISTORY_TITLE,
-		CP_HISTORY_BORDER);
+	draw_window_title(win, NAG_EDIT_TITLE, cols, CP_INPUT_TITLE,
+		CP_INPUT_BORDER);
 
 	for (i = toppos, c = 2; i < total && c < rows - 2; i++, c++) {
-	    if ((i == selected && i != 0)|| test_nag_selected(nag, i) != -1) {
-		wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+	    if (i == selected) {
+		wattron(win, CP_MENU_HIGHLIGHT);
 		mvwprintw(win, c, 1, "%s", (nags[i]) ? nags[i] : "none");
-		wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		wattroff(win, CP_MENU_HIGHLIGHT);
+		continue;
+	    }
+
+	    if (test_nag_selected(nag, i) != -1) {
+		wattron(win, CP_MENU_SELECTED);
+		mvwprintw(win, c, 1, "%s", (nags[i]) ? nags[i] : "none");
+		wattroff(win, CP_MENU_SELECTED);
 		continue;
 	    }
 
@@ -311,7 +318,7 @@ char *history_edit_nag(void *arg)
 
 	snprintf(buf, sizeof(buf), "NAG %i of %i (%i of %i selected) %s", 
 		selected + 1, total, itemcount, MAX_PGN_NAG, NAG_EDIT_PROMPT);
-	draw_prompt(win, rows - 2, cols, buf, CP_MESSAGE_PROMPT);
+	draw_prompt(win, rows - 2, cols, buf, CP_INPUT_PROMPT);
 
 	nl();
 	refresh_all();
@@ -464,6 +471,7 @@ static void cleanup(WINDOW *win, PANEL *panel, struct file_s *files)
 	for (i = 0; files[i].name; i++) {
 	    free(files[i].path);
 	    free(files[i].name);
+	    free(files[i].st);
 	}
 
 	free(files);
@@ -574,7 +582,7 @@ new_we:
 
 	    tp = localtime(&st.st_mtime);
 	    strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
-	    snprintf(sbuf, sizeof(sbuf), "%i %s", (int)st.st_size, tbuf);
+	    snprintf(sbuf, sizeof(sbuf), "%9i %s", (int)st.st_size, tbuf);
 	    files[n].st = strdup(sbuf);
 	    memset(&files[++n], '\0', sizeof(struct file_s));
 	}
@@ -616,10 +624,10 @@ new_we:
 	rows = (n + 4 > (LINES / 5) * 4) ? (LINES / 5) * 4 : n + 4;
 
 	win = newwin(rows, cols, CALCPOSY(rows) - 2, CALCPOSX(cols));
-	wbkgd(win, CP_MESSAGE_WINDOW);
+	wbkgd(win, CP_MENU);
 	panel = new_panel(win);
-	draw_window_title(win, path, cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-	draw_prompt(win, rows - 2, cols, HELP_PROMPT, CP_MESSAGE_PROMPT);
+	draw_window_title(win, path, cols, CP_INPUT_TITLE, CP_INPUT_BORDER);
+	draw_prompt(win, rows - 2, cols, HELP_PROMPT, CP_INPUT_PROMPT);
 	cbreak();
 	noecho();
 	keypad(win, TRUE);
@@ -630,15 +638,15 @@ new_we:
 
 	    for (i = toppos, c = 2; i < n && c < rows - 2; i++, c++) {
 		if (i == selected) {
-		    wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		    wattron(win, CP_MENU_HIGHLIGHT);
 		    mvwprintw(win, c, 1, "%-*s %-*s", nlen, files[i].name,
-			    cols - nlen - 2 - 2, files[i].st);
-		    wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+			    cols - nlen - 2 - 1, files[i].st);
+		    wattroff(win, CP_MENU_HIGHLIGHT);
 		    continue;
 		}
 
 		mvwprintw(win, c, 1, "%-*s %-*s", nlen, files[i].name,
-			cols - nlen - 2 - 2, files[i].st);
+			cols - nlen - 2 - 1, files[i].st);
 	    }
 
 	    refresh_all();
@@ -827,7 +835,7 @@ char *country_codes(void *arg)
     noecho();
     keypad(win, TRUE);
     nl();
-    wbkgd(win, CP_MESSAGE_WINDOW);
+    wbkgd(win, CP_MENU);
 
     while (1) {
 	int c;
@@ -836,15 +844,14 @@ char *country_codes(void *arg)
 	wmove(win, 0, 0);
 	wclrtobot(win);
 
-	draw_window_title(win, CC_TITLE, cols, CP_MESSAGE_TITLE,
-		CP_MESSAGE_BORDER);
+	draw_window_title(win, CC_TITLE, cols, CP_INPUT_TITLE, CP_INPUT_BORDER);
 
 	for (i = toppos, c = 2; i < total && c < rows - 2; i++, c++) {
 	    if (i == selected) {
-		wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		wattron(win, CP_MENU_HIGHLIGHT);
 		mvwprintw(win, c, 1, "%3s %s", ccodes[i].code, 
 			ccodes[i].country);
-		wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		wattroff(win, CP_MENU_HIGHLIGHT);
 		continue;
 	    }
 
@@ -853,7 +860,7 @@ char *country_codes(void *arg)
 
 	snprintf(buf, sizeof(buf), "%s %i %s %i %s", MENU_ITEM_STR, 
 		selected + 1, N_OF_N_STR, total, HELP_PROMPT);
-	draw_prompt(win, rows - 2, cols, buf, CP_MESSAGE_PROMPT);
+	draw_prompt(win, rows - 2, cols, buf, CP_INPUT_PROMPT);
 	refresh_all();
 	c = wgetch(win);
 
@@ -990,9 +997,10 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 	noecho();
 	keypad(win, TRUE);
 	nl();
-	wbkgd(win, CP_MESSAGE_WINDOW);
+	wbkgd(win, CP_MENU);
 	draw_window_title(win, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 
-		cols, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+		cols, (edit) ? CP_INPUT_TITLE : CP_MESSAGE_TITLE,
+		(edit) ? CP_INPUT_BORDER : CP_MESSAGE_BORDER);
 	
 	if (selected >= data_index - 1)
 	    selected = data_index - 1;
@@ -1004,11 +1012,11 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 
 	    for (i = toppos, c = 2; i < data_index && c < rows - 2; i++, c++) {
 		if (i == selected) {
-		    wattron(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		    wattron(win, CP_MENU_HIGHLIGHT);
 		    mvwprintw(win, c, 1, "%*s: %-*s", nlen, data[i]->name,
 			    cols - nlen - 2 - 2, (data[i]->value && 
 				data[i]->value[0]) ? data[i]->value : UNKNOWN);
-		    wattroff(win, CP_MESSAGE_WINDOW | A_REVERSE);
+		    wattroff(win, CP_MENU_HIGHLIGHT);
 		    continue;
 		}
 
@@ -1019,7 +1027,8 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 
 	    snprintf(buf, sizeof(buf), "%s %i %s %i  %s", MENU_TAG_STR,
 		    selected + 1, N_OF_N_STR, data_index, HELP_PROMPT);
-	    draw_prompt(win, rows - 2, cols, buf, CP_MESSAGE_PROMPT);
+	    draw_prompt(win, rows - 2, cols, buf,
+		    (edit) ? CP_INPUT_PROMPT : CP_MESSAGE_PROMPT);
 	    refresh_all();
 	    c = wgetch(win);
 
