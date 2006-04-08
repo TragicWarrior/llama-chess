@@ -243,11 +243,11 @@ void parse_rcfile(const char *filename)
 	else if (strcmp(var, "key") == 0) {
 	    config.keys = Realloc(config.keys, (k + 2) *
 		    sizeof(struct key_s *));
-	    config.keys[i] = Calloc(1, sizeof(struct key_s));
+	    config.keys[k] = Calloc(1, sizeof(struct key_s));
 	    p = val;
-	    config.keys[i]->c = *p++;
-	    config.keys[i++]->str = strdup(p);
-	    config.keys[i] = NULL;
+	    config.keys[k]->c = *p++;
+	    config.keys[k++]->str = strdup(p);
+	    config.keys[k] = NULL;
 	}
 	else if (strcmp(var, "engine_init") == 0) {
 	    config.einit = Realloc(config.einit, (init + 2) * sizeof(char *));
