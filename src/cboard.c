@@ -3054,8 +3054,11 @@ static int globalkeys(chtype c)
 
 		  free_userdata();
 
-		  if (pgn_parse(fp))
+		  if (pgn_parse(fp)) {
+		      init_userdata();
+		      update_all(game[gindex]);
 		      return 1;
+		  }
 
 		  del_panel(loadingp);
 		  delwin(loadingw);
