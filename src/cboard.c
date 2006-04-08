@@ -2625,6 +2625,9 @@ static void historymode_keys(chtype c)
     static char moveexp[255] = {0};
 
     switch (c) {
+	case 'd':
+	    board_details = (board_details) ? 0 : 1;
+	    break;
 	case ' ':
 	    movestep = (movestep == 1) ? 2 : 1;
 	    update_history_window(game[gindex]);

@@ -205,7 +205,6 @@ void parse_rcfile(const char *filename)
     char *line, buf[LINE_MAX];
     int lines = 0;
     char *altengine = NULL;
-    int i = 0;
     int k = 0;
     int init = 0;
 

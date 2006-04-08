@@ -94,6 +94,7 @@ const char *historyhelp[] = {
     "         V - view annotation for the previous move",
     "         + - next variation for the previous move",
     "         - - previous variation for the previous move",
+    "         d - toggle board details",
     "         h - exit history mode",
     "        F1 - global and other key help",
     NULL
@@ -152,7 +153,7 @@ const char *playhelp[] = {
     "             SPACE - select piece under cursor for movement",
     "             ENTER - commit selected piece",
     "            ESCAPE - cancel selected piece",
-    "                 d - show game board details",
+    "                 d - toggle board details",
     "                 w - switch playing side",
     "                 u - undo previous move *",
     "                 g - force engine to make the next move",
