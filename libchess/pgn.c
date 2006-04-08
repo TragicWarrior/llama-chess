@@ -40,6 +40,7 @@
 #endif
 
 #include "chess.h"
+#include "move.h"
 #include "pgn.h"
 
 #ifdef DEBUG
@@ -49,8 +50,6 @@
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
-
-#include "move.c"
 
 static void *Malloc(size_t size)
 {
@@ -130,15 +129,15 @@ void pgn_get_valid_moves(GAME *g, BOARD b, int r, int f)
 	for (col = 1; VALIDFILE(col); col++) {
 	    int sr = 0, sc = 0;
 
-	    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
+	    if (_get_source_yx(g, b, p, row, col, &sr, &sc)) {
 		sr = 0;
 		sc = f;
 
-		if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
+		if (_get_source_yx(g, b, p, row, col, &sr, &sc)) {
 		    sc = 0;
 		    sr = r;
 
-		    if (get_source_yx(g, b, p, row, col, &sr, &sc)) {
+		    if (_get_source_yx(g, b, p, row, col, &sr, &sc)) {
 			continue;
 		    }
 		}
@@ -2061,7 +2060,7 @@ int pgn_validate_move(GAME *g, BOARD b, char **mp)
     int kr = 0, kc = 0, okr = 0, okc = 0;
     char *m = *mp;
 
-    if ((m = pgn_a2a4tosan(g, b, m)) == NULL)
+    if ((m = _a2a4tosan(g, b, m)) == NULL)
 	return E_PGN_PARSE;
 
     if (strlen(m) < 2)
@@ -2138,7 +2137,7 @@ again:
 	    }
 	}
 
-	if (get_source_yx(g, b, PAWN, row, col, &srow, &scol))
+	if (_get_source_yx(g, b, PAWN, row, col, &srow, &scol))
 	    return E_PGN_INVALID;
     }
     /* Not a pawn. */
@@ -2175,7 +2174,7 @@ again:
 			int fpiece = b[ROWTOBOARD(i)][COLTOBOARD(scol)].icon;
 
 			if (piece == pgn_piece_to_int(fpiece) && 
-				val_piece_side(g->turn, fpiece)) {
+				_val_piece_side(g->turn, fpiece)) {
 			    srow = i;
 			    break;
 			}
@@ -2185,7 +2184,7 @@ again:
 			return E_PGN_INVALID;
 		}
 		else {
-		    if (get_source_yx(g, b, piece, row, col, &srow, &scol))
+		    if (_get_source_yx(g, b, piece, row, col, &srow, &scol))
 			return E_PGN_INVALID;
 		}
 	    }
@@ -2204,7 +2203,7 @@ again:
 			return E_PGN_INVALID;
 		}
 		else {
-		    if (get_source_yx(g, b, piece, row, col, &srow, &scol))
+		    if (_get_source_yx(g, b, piece, row, col, &srow, &scol))
 			return E_PGN_INVALID;
 		}
 	    }
@@ -2238,7 +2237,7 @@ again:
     dstpiece = piece = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
 
     if (g->castle) {
-	if (castle_move(g, b, g->castle)) {
+	if (_castle_move(g, b, g->castle)) {
 	    g->castle = 0;
 	    return E_PGN_INVALID;
 	}
@@ -2247,7 +2246,7 @@ again:
     }
 
     if (pgn_piece_to_int(piece) != OPEN_SQUARE) {
-	if (val_piece_side(g->turn, piece))
+	if (_val_piece_side(g->turn, piece))
 	    return E_PGN_INVALID;
     }
 
@@ -2278,7 +2277,7 @@ done:
 	    CLEAR_FLAG(g->flags, GF_BK_CASTLE);
     }
 
-    kingsquare(*g, b, &kr, &kc, &okr, &okc);
+    _kingsquare(*g, b, &kr, &kc, &okr, &okc);
     pgn_switch_turn(g);
 
     if (g->castle) {
@@ -2290,13 +2289,13 @@ done:
     i = validate;
     validate = 1;
 
-    if (drawtest(g, b)) {
+    if (_drawtest(g, b)) {
 	g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 8);
 	strncpy(g->tag[TAG_RESULT]->value, "1/2-1/2", 8);
 	SET_FLAG(g->flags, GF_GAMEOVER);
     }
     else {
-	switch (checktest(g, b, kr, kc, okr, okc, 0)) {
+	switch (_checktest(g, b, kr, kc, okr, okc, 0)) {
 	    case 0:
 		break;
 	    case -1:
@@ -2304,7 +2303,7 @@ done:
 		pgn_switch_turn(g);
 		return E_PGN_INVALID;
 	    default:
-		if (checkmatetest(g, b, kr, kc, okr, okc)) {
+		if (_checkmatetest(g, b, kr, kc, okr, okc)) {
 		    *p++ = '#';
 
 		    if (result == WHITEWINS) {
