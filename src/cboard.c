@@ -2872,6 +2872,9 @@ static int globalkeys(chtype c)
 		if (start_chess_engine(&game[gindex]) < 0)
 		    return 1;
 
+		send_to_engine(&game[gindex], "setboard %s\n",
+			pgn_game_to_fen(game[gindex], game[gindex].b));
+		d->engine->status = ENGINE_READY;
 		pushkey = 'h';
 		return 1;
 	    }
