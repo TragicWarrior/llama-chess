@@ -1130,12 +1130,12 @@ done:
 }
 
 /* FIXME */
-static int drawtest(BOARD b)
+static int drawtest(GAME *g, BOARD b)
 {
     int row, col;
     int other = 0;
 
-    if (game[gindex].ply >= 50)
+    if (pgn_config.fmd && g->ply >= 50)
 	return 1;
 
     for (row = 1; VALIDFILE(row); row++) {

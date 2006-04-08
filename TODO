@@ -7,8 +7,8 @@ order):
 
 + Fix all the KnownBugs (priority)
 
-- My own menu code. Colors get botched when an item is highlights. Probably
-  end up pulling it from NCast.
++ The 'draw' game result needs better handling. Parsing works and the 50 move
+  draw rule works, but offering and accepting draws isn't implemented.
 
 - A WINDOW stack that doesn't block.
 

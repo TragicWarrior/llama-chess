@@ -3570,7 +3570,7 @@ int main(int argc, char *argv[])
     char buf[FILENAME_MAX];
     char datadir[FILENAME_MAX];
     int ret = EXIT_SUCCESS;
-    int validate_only = 0, validate_and_write = 0, reduced = 0;
+    int validate_only = 0, validate_and_write = 0;
     int write_custom_tags = 0;
     FILE *fp;
     int i;
@@ -3617,10 +3617,10 @@ int main(int argc, char *argv[])
 		write_custom_tags = 1;
 		break;
 	    case 'E':
-		config.stoponerror = 1;
+		pgn_config_set(PGN_STOP_ON_ERROR, 1);
 		break;
 	    case 'R':
-		reduced = 1;
+		pgn_config_set(PGN_REDUCED, 1);
 	    case 'S':
 		validate_and_write = 1;
 	    case 'V':

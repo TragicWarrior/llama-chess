@@ -29,6 +29,7 @@ struct {
     int mpl;
     int stop;
     int reduced;
+    int fmd;
 } pgn_config;
 
 int done_fen_tag;

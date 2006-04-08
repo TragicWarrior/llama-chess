@@ -174,8 +174,6 @@ void set_config_defaults()
     config.saveprompt = 1;
     config.deleteprompt = 1;
     config.validmoves = 1;
-    config.stoponerror = 0;
-    config.mpl = 0;
 
     set_default_colors();
 
@@ -239,6 +237,9 @@ void parse_rcfile(const char *filename)
 
 	    config.jumpcount = atoi(val);
 	}
+	else if (strcmp(var, "fifty_move_draw") == 0)
+	    pgn_config_set(PGN_FIFTY_MOVE_DRAW, on_or_off(filename, lines, 
+			val));
 	else if (strcmp(var, "key") == 0) {
 	    config.keys = Realloc(config.keys, (k + 2) *
 		    sizeof(struct key_s *));
@@ -261,14 +262,14 @@ void parse_rcfile(const char *filename)
 	    if (!isinteger(val))
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
 			lines);
-	    config.mpl = atoi(val);
+	    pgn_config_set(PGN_MPL, atoi(val));
 	}
 	else if (strcmp(var, "history_agony") == 0)
 	    config.historyagony = on_or_off(filename, lines, val);
 	else if (strcmp(var, "agony") == 0)
 	    config.agony = on_or_off(filename, lines, val);
 	else if (strcmp(var, "stop_on_error") == 0)
-	    config.stoponerror = on_or_off(filename, lines, val);
+	    pgn_config_set(PGN_STOP_ON_ERROR, on_or_off(filename, lines, val));
 	else if (strcmp(var, "tag") == 0) {
 	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
 		    n > 2)

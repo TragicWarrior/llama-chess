@@ -100,7 +100,7 @@ typedef struct history {
 typedef struct {
     char *fen;		// Game board state.
     unsigned short flags;
-    unsigned char hindex;
+    unsigned short hindex;
     HISTORY **hp;	// Pointer to the root move.
 } RAV;
 
@@ -116,14 +116,14 @@ typedef struct games {
     				// in *history used mainly for RAV.
     RAV *rav;			// Saved game states for the root move of RAV.
     int ravlevel;		// An index to *rav.
-    unsigned char hindex;	// Current move in *hp.
+    unsigned short hindex;	// Current move in *hp.
     unsigned moveclock;		// Move clock. FIXME
     unsigned short flags;	// Game flags.
     unsigned char castle: 2,	// The current move is a castling move. FIXME
                   side: 1,      // This playing side. BLACK or WHITE.
                   turn: 1,      // BLACK or WHITE.
     	          mode: 2;      // MODE_[HISTORY/EDIT/PLAY]
-    unsigned char ply;          // Move count.
+    unsigned short ply;         // Move count.
     void *data;			/* User data associated with this game. Must
 				 * be freed by the user. */
 } GAME;
@@ -161,7 +161,12 @@ typedef enum {
      * next game is done. When set and a parse error occurs the rest of the
      * entire file will be discarded.
      */
-    PGN_STOP_ON_ERROR
+    PGN_STOP_ON_ERROR,
+
+    /*
+     * Enable the 50 move draw rule.
+     */
+    PGN_FIFTY_MOVE_DRAW
 } pgn_config_flag;
 
 /*

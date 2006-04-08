@@ -1,11 +1,7 @@
 SAN move format is broken with ambiguities and more.
 
+Valid moves (when a piece is selected) wont check for certain things like
+check and others, giving false moves (see above).
+
 Speed up the move validator. It's alot slower since 0.1.6. I need suggestions 
 on this.
-
-The first menu item isn't initially highlighted.
-
-The 'draw' game result isn't recognized.
-
-Valid moves (when a piece is selected) wont check for certain things like
-check and others, giving false moves.

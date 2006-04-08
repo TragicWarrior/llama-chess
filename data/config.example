@@ -68,6 +68,11 @@ mpl		0
 # hidden) are always displayed reguardless of the pattern.
 #pattern		*.pgn
 
+# Enable the fifty move draw rule. The fifty move draw is a drawing rule that
+# causes a game to be ended when no captures or pawn advances have occured in
+# the last fifty moves on either playing side.
+fifty_move_draw		off
+
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
 # names which must be one of: black, white, red, magenta, yellow, blue, cyan

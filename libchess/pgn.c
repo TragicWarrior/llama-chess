@@ -395,7 +395,7 @@ int pgn_board_update(GAME *g, BOARD b, int n)
     g->flags = flags;
 #endif
 
-    SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
+    SET_FLAG(g->flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
 	    GF_BK_CASTLE|GF_BQ_CASTLE);
     pgn_board_init(tb);
 
@@ -1915,6 +1915,9 @@ int pgn_config_set(pgn_config_flag f, int val)
 	    else
 		return E_PGN_ERR;
 	    break;
+	case PGN_FIFTY_MOVE_DRAW:
+	    pgn_config.fmd = val;
+	    break;
 	default:
 	    return E_PGN_ERR;
     }
@@ -1934,6 +1937,8 @@ int pgn_config_get(pgn_config_flag f)
 	    return pgn_config.stop;
 	case PGN_MPL:
 	    return pgn_config.mpl;
+	case PGN_FIFTY_MOVE_DRAW:
+	    return pgn_config.fmd;
 	default:
 	    break;
     }
@@ -2299,7 +2304,7 @@ done:
     i = validate;
     validate = 1;
 
-    if (drawtest(b)) {
+    if (drawtest(g, b)) {
 	g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 8);
 	strncpy(g->tag[TAG_RESULT]->value, "1/2-1/2", 8);
 	SET_FLAG(g->flags, GF_GAMEOVER);

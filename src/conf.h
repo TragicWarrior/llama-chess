@@ -52,8 +52,6 @@ struct key_s {
 };
 
 struct {
-    int mpl;		// When saving, the number of full moves per line.
-    int stoponerror;	// Stop processing when a parse error occurs.
     int jumpcount;	// KEY_UP and KEY_DOWN in history mode.
     int historyagony;	// Whether to display agony strings on capture when in 
     			// history mode.
