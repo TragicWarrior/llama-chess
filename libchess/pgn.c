@@ -51,36 +51,6 @@
 #include <dmalloc.h>
 #endif
 
-static void *Malloc(size_t size)
-{
-    void *ptr;
-
-    if ((ptr = malloc(size)) == NULL)
-	err(EXIT_FAILURE, "malloc()");
-
-    return ptr;
-}
-
-static void *Realloc(void *ptr, size_t size)
-{
-    void *ptr2;
-
-    if ((ptr2 = realloc(ptr, size)) == NULL)
-	err(EXIT_FAILURE, "realloc()");
-
-    return ptr2;
-}
-
-static void *Calloc(size_t n, size_t size)
-{
-    void *p;
-
-    if ((p = calloc(n, size)) == NULL)
-	err(EXIT_FAILURE, "calloc()");
-
-    return p;
-}
-
 static char *trim(char *str)
 {
     int i = 0;
@@ -105,6 +75,9 @@ static char *itoa(long n)
     return buf;
 }
 
+/*
+ * Clears the valid move flag for all positions on board 'b'. Returns nothing.
+ */
 void pgn_reset_valid_moves(BOARD b)
 {
     int row, col;
@@ -115,6 +88,10 @@ void pgn_reset_valid_moves(BOARD b)
     }
 }
 
+/* 
+ * Sets valid moves from game 'g' using board 'b'. The valid moves are for the
+ * piece on the board 'b' at 'rank' and 'file'. Returns nothing.
+ */
 void pgn_get_valid_moves(GAME *g, BOARD b, int r, int f)
 {
     int row, col;
@@ -153,14 +130,17 @@ void pgn_get_valid_moves(GAME *g, BOARD b, int r, int f)
     validate = 0;
 }
 
+/*
+ * Toggles g->turn. Returns nothing.
+ */
 void pgn_switch_turn(GAME *g)
 {
     g->turn = (g->turn == WHITE) ? BLACK : WHITE;
 }
 
 /*
- * Creates a FEN tag from the current game 'g' and board 'b'. Returns a FEN
- * tag.
+ * Creates a FEN tag from the current game 'g', history move (g.hindex) and
+ * board 'b'. Returns a FEN tag.
  */
 char *pgn_game_to_fen(GAME g, BOARD b)
 {
@@ -274,7 +254,7 @@ char *pgn_game_to_fen(GAME g, BOARD b)
 }
 
 /*
- * Returns the total number of moves in 'h' or 0 if none.
+ * Returns the total number of moves in 'h' or 0 if there are none.
  */
 int pgn_history_total(HISTORY **h)
 {
@@ -287,8 +267,9 @@ int pgn_history_total(HISTORY **h)
     return i;
 }
 
-/* 
- * Deallocates the all the data for 'h' from position 'start' in the array.
+/*
+ * Deallocates all of the history data from position 'start' in the array 'h'.
+ * Returns nothing.
  */
 void pgn_history_free(HISTORY **h, int start)
 {
@@ -331,8 +312,8 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n)
 /*
  * Appends move 'm' to game 'g' history pointer. The history pointer may be a
  * in a RAV so g->rav.hp is also updated to the new (realloc()'ed) pointer. If
- * not in a RAV then g->history will be updated. Returns 1 if realloc() failed
- * or 0 on success.
+ * not in a RAV then g->history will be updated. Returns E_PGN_ERR if
+ * realloc() failed or E_PGN_OK on success.
  */
 int pgn_history_add(GAME *g, const char *m)
 {
@@ -358,14 +339,22 @@ int pgn_history_add(GAME *g, const char *m)
     if ((g->hp[t] = calloc(1, sizeof(HISTORY))) == NULL)
 	return E_PGN_ERR;
 
-    g->hp[t++]->move = strdup(m);
+    if ((g->hp[t]->move = strdup(m)) == NULL) {
+	g->hp[t] = NULL;
+	return E_PGN_ERR;
+    }
+
+    t++;
     g->hp[t] = NULL;
     g->hindex = pgn_history_total(g->hp);
     return E_PGN_OK;
 }
 
 /*
- * Resets the game 'g' using board 'b' up to history move 'n'.
+ * Resets the game 'g' using board 'b' up to history move (g.hindex) 'n'.
+ * Returns E_PGN_OK on success or E_PGN_PARSE if there was a FEN tag but the
+ * parsing of it failed. Or returns E_PGN_INVALID if somehow the move failed
+ * validation while resetting.
  */
 int pgn_board_update(GAME *g, BOARD b, int n)
 {
@@ -424,8 +413,8 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 }
 
 /*
- * Updates the game 'g' using board 'b' to the next 'n'th history move. The
- * 's' parameter is either 2 for a wholestep or 1 for a halfstep.
+ * Updates the game 'g' using board 'b' to the next 'n'th history move.
+ * Returns nothing.
  */
 void pgn_history_prev(GAME *g, BOARD b, int n)
 {
@@ -443,7 +432,7 @@ void pgn_history_prev(GAME *g, BOARD b, int n)
 
 /*
  * Updates the game 'g' using board 'b' to the previous 'n'th history move.
- * 's' parameter is either 2 for a wholestep or 1 for a halfstep.
+ * Returns nothing.
  */
 void pgn_history_next(GAME *g, BOARD b, int n)
 {
@@ -458,8 +447,10 @@ void pgn_history_next(GAME *g, BOARD b, int n)
 
     pgn_board_update(g, b, g->hindex);
 }
+
 /*
- * Converts the character piece 'p' to an integer.
+ * Converts the character piece 'p' to an integer. Returns the integer
+ * associated with 'p' or E_PGN_ERR if 'p' is invalid.
  */
 int pgn_piece_to_int(int p)
 {
@@ -489,7 +480,9 @@ int pgn_piece_to_int(int p)
 }
 
 /*
- * Converts the integer piece 'n' to a character.
+ * Converts the integer piece 'n' to a character whose turn is 'turn'. WHITE
+ * piece are uppercase and BLACK pieces are lowercase. Returns the character
+ * associated with 'n' or E_PGN_ERR if 'n' is an invalid piece.
  */
 int pgn_int_to_piece(char turn, int n)
 {
@@ -527,7 +520,7 @@ int pgn_int_to_piece(char turn, int n)
 
 /*
  * Finds a tag 'name' in the structure array 't'. Returns the location in the
- * array of the found tag or -1 on failure.
+ * array of the found tag or E_PGN_ERR if the tag could not be found.
  */
 int pgn_tag_find(TAG **t, const char *name)
 {
@@ -551,7 +544,7 @@ static int tag_compare(const void *a, const void *b)
 
 /*
  * Sorts a tag array. The first seven tags are in order of the PGN standard so
- * don't sort'em.
+ * don't sort'em. Returns nothing.
  */
 void pgn_tag_sort(TAG **tags)
 {
@@ -561,6 +554,9 @@ void pgn_tag_sort(TAG **tags)
     qsort(tags + 7, pgn_tag_total(tags) - 7, sizeof(TAG *), tag_compare);
 }
 
+/*
+ * Returns the total number of tags in 't' or 0 if 't' is NULL.
+ */
 int pgn_tag_total(TAG **tags)
 {
     int i = 0;
@@ -575,15 +571,16 @@ int pgn_tag_total(TAG **tags)
 }
 
 /*
- * Adds a tag 'name' with value 'value' to the pointer to array 'dst'. The 'n'
- * parameter is incremented to the new total of array 'dst'. If a duplicate
- * tag 'name' was found then the existing tag is updated to the new 'value'.
- * Returns 1 if a duplicate tag was found or 0 otherwise.
+ * Adds a tag 'name' with value 'value' to the pointer to array of TAG
+ * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
+ * is updated to the new 'value'. Returns E_PGN_ERR if there was a memory
+ * allocation error or E_PGN_OK on success.
  */
 int pgn_tag_add(TAG ***dst, char *name, char *value)
 {
     int i;
     TAG **tdata = *dst;
+    TAG **a = NULL;
     int len = 0;
     int t = pgn_tag_total(tdata);
 
@@ -592,25 +589,40 @@ int pgn_tag_add(TAG ***dst, char *name, char *value)
 
     // Find an existing tag with 'name'.
     for (i = 0; i < t; i++) {
+	char *tmp;
+
 	if (strcasecmp(tdata[i]->name, name) == 0) {
-	    len = (value) ? strlen(value) + 1 : 1;
-	    tdata[i]->value = Realloc(tdata[i]->value, len);
-	    strncpy(tdata[i]->value, (value) ? value : "", len);
+	    if ((tmp = strdup(value)) == NULL)
+		return E_PGN_ERR;
+
+	    free(tdata[i]->value);
+	    tdata[i]->value = tmp;
 	    *dst = tdata;
-	    return E_PGN_ERR;
+	    return E_PGN_OK;
 	}
     }
 
-    tdata = Realloc(tdata, (t + 2) * sizeof(TAG *));
-    tdata[t] = Malloc(sizeof(TAG));
+    if ((a = realloc(tdata, (t + 2) * sizeof(TAG *))) == NULL)
+	return E_PGN_ERR;
+
+    tdata = a;
+
+    if ((tdata[t] = malloc(sizeof(TAG))) == NULL)
+	return E_PGN_ERR;
+
     len = strlen(name) + 1;
-    tdata[t]->name = Malloc(len);
-    strncpy(tdata[t]->name, name, len);
+
+    if ((tdata[t]->name = strdup(name)) == NULL) {
+	tdata[t] = NULL;
+	return E_PGN_ERR;
+    }
 
     if (value) {
-	len = strlen(value) + 1;
-	tdata[t]->value = Malloc(len);
-	strncpy(tdata[t]->value, value, len);
+	if ((tdata[t]->value = strdup(value)) == NULL) {
+	    free(tdata[t]->name);
+	    tdata[t] = NULL;
+	    return E_PGN_ERR;
+	}
     }
     else
 	tdata[t]->value = NULL;
@@ -642,7 +654,7 @@ static char *remove_tag_escapes(const char *str)
 }
 
 /*
- * Initializes a new game board.
+ * Resets or initializes a new game board 'b'. Returns nothing.
  */
 void pgn_board_init(BOARD b)
 {
@@ -704,15 +716,31 @@ static void set_default_tags(GAME *g)
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    pgn_tag_add(&g->tag, "Event", "?");
-    pgn_tag_add(&g->tag, "Site", "?");
-    pgn_tag_add(&g->tag, "Date", tbuf);
-    pgn_tag_add(&g->tag, "Round", "-");
-    pgn_tag_add(&g->tag, "White", pw->pw_gecos);
-    pgn_tag_add(&g->tag, "Black", "?");
-    pgn_tag_add(&g->tag, "Result", "*");
+    if (pgn_tag_add(&g->tag, "Event", "?"))
+	warn("pgn_tag_add()");
+
+    if (pgn_tag_add(&g->tag, "Site", "?"))
+	warn("pgn_tag_add()");
+	
+    if (pgn_tag_add(&g->tag, "Date", tbuf))
+	warn("pgn_tag_add()");
+	
+    if (pgn_tag_add(&g->tag, "Round", "-"))
+	warn("pgn_tag_add()");
+
+    if (pgn_tag_add(&g->tag, "White", pw->pw_gecos))
+	warn("pgn_tag_add()");
+
+    if (pgn_tag_add(&g->tag, "Black", "?"))
+	warn("pgn_tag_add()");
+
+    if (pgn_tag_add(&g->tag, "Result", "*"))
+	warn("pgn_tag_add()");
 }
 
+/*
+ * Frees a TAG array. Returns nothing.
+ */
 void pgn_tag_free(TAG **tags)
 {
     int i;
@@ -729,6 +757,9 @@ void pgn_tag_free(TAG **tags)
     free(tags);
 }
 
+/*
+ * Frees a single game 'g'. Returns nothing.
+ */
 void pgn_free(GAME g)
 {
     pgn_history_free(g.history, 0);
@@ -737,6 +768,9 @@ void pgn_free(GAME g)
     memset(&g, 0, sizeof(GAME));
 }
 
+/*
+ * Frees all games in the global 'game' array. Returns nothing.
+ */
 void pgn_free_all()
 {
     int i;
@@ -962,7 +996,7 @@ static void nag_text(GAME *g, FILE *fp)
 /*
  * PGN move annotation.
  */
-static void annotation_text(GAME *g, FILE *fp, int terminator)
+static int annotation_text(GAME *g, FILE *fp, int terminator)
 {
     int c, lastchar = 0;
     int len = 0;
@@ -986,8 +1020,11 @@ static void annotation_text(GAME *g, FILE *fp, int terminator)
     }
 
     *a = '\0';
-    g->hp[hindex]->comment = Realloc(g->hp[hindex]->comment, ++len);
-    strncpy(g->hp[hindex]->comment, buf, len);
+
+    if ((g->hp[hindex]->comment = strdup(buf)) == NULL)
+	return E_PGN_ERR;
+
+    return E_PGN_OK;
 }
 
 /*
@@ -1045,7 +1082,10 @@ static int tag_text(GAME *g, FILE *fp)
     }
 
     strncpy(value, remove_tag_escapes(value), sizeof(value));
-    pgn_tag_add(&g->tag, name, value);
+
+    if (pgn_tag_add(&g->tag, name, value) != E_PGN_OK)
+	warn("pgn_tag_add()");
+
     return 0;
 }
 
@@ -1064,8 +1104,10 @@ static int eog_text(GAME *g, FILE *fp)
 	ungetc(c, fp);
 
     *p = 0;
-    g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, strlen(buf) + 1);
-    strcpy(g->tag[TAG_RESULT]->value, buf);
+
+    if (pgn_tag_add(&g->tag, "Result", buf) != E_PGN_OK)
+	warn("pgn_tag_add()");
+
     return 1;
 }
 
@@ -1078,19 +1120,33 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 {
     int ravindex = ravlevel;
     GAME tg;
+    RAV *r;
 
     // Begin RAV for the current move.
     if (which == '(') {
 	/*
 	 * Save the current game state for this RAV depth/level.
 	 */
-	rav = Realloc(rav, (ravindex + 1) * sizeof(RAV));
-	rav[ravindex].fen = strdup(pgn_game_to_fen((*g), g->b));
+	if ((r = realloc(rav, (ravindex + 1) * sizeof(RAV))) == NULL) {
+	    warn("realloc()");
+	    return 1;
+	}
+
+	rav = r;
+	
+	if ((rav[ravindex].fen = strdup(pgn_game_to_fen((*g), g->b))) == NULL) {
+	    warn("strdup()");
+	    return 1;
+	}
+
 	rav[ravindex].hp = g->hp;
 	memcpy(&tg, g, sizeof(GAME));
 	memcpy(g->b, o, sizeof(BOARD));
 
-	g->hp[g->hindex]->rav = Calloc(1, sizeof(HISTORY));
+	if ((g->hp[g->hindex]->rav = calloc(1, sizeof(HISTORY))) == NULL) {
+	    warn("calloc()");
+	    return 1;
+	}
 
 	// pgn_history_add() will now append to this new RAV.
 	g->hp = g->hp[g->hindex]->rav;
@@ -1245,13 +1301,13 @@ other:
 }
 
 /*
- * This is called at the EOG marker and the beginning of the move text
- * section. So at least a move or EOG marker has to exist. It initializes the
- * board (b) to the FEN tag (if found) and sets the castling and enpassant
- * info for the game 'g'. If 'fen' is set it should be a fen tag and will be
- * parsed rather than the game 'g'.tag FEN tag. Returns 0 on success or if
- * there was both a FEN and SetUp tag with the SetUp tag set to 0. Returns 1
- * if there was a FEN parse error or no FEN tag at all.
+ * It initializes the board (b) to the FEN tag (if found) and sets the
+ * castling and enpassant info for the game 'g'. If 'fen' is set it should be
+ * a fen tag and will be parsed rather than the game 'g'.tag FEN tag. Returns
+ * E_PGN_OK on success or if there was both a FEN and SetUp tag with the SetUp
+ * tag set to 0. Returns E_PGN_PARSE if there was a FEN parse error, E_PGN_ERR
+ * if there was no FEN tag or there was a SetUp tag with a value of 0. Returns
+ * E_PGN_OK on success.
  */
 int pgn_board_init_fen(GAME *g, BOARD b, char *fen)
 {
@@ -1295,15 +1351,29 @@ int pgn_board_init_fen(GAME *g, BOARD b, char *fen)
 }
 
 /*
- * Allocates a new game and increments gindex (the current game) and gtotal
- * (the total number of games).
+ * Allocates a new game and increments 'gtotal'. 'gindex' is then set to the
+ * new game. Returns E_PGN_ERR if there was a memory allocation error or
+ * E_PGN_OK on success.
  */
-void pgn_new_game()
+int pgn_new_game()
 {
+    GAME *g;
+
     gindex = ++gtotal - 1;
-    game = Realloc(game, gtotal * sizeof(GAME));
+
+    if ((g = realloc(game, gtotal * sizeof(GAME))) == NULL) {
+	warn("realloc()");
+	return E_PGN_ERR;
+    }
+
+    game = g;
     memset(&game[gindex], 0, sizeof(GAME));
-    game[gindex].hp = Calloc(1, sizeof(HISTORY *));
+    
+    if ((game[gindex].hp = calloc(1, sizeof(HISTORY *))) == NULL) {
+	warn("calloc()");
+	return E_PGN_ERR;
+    }
+
     game[gindex].hp[0] = NULL;
     game[gindex].history = game[gindex].hp;
     game[gindex].side = game[gindex].turn = WHITE;
@@ -1314,6 +1384,8 @@ void pgn_new_game()
 
     if (pgn_isfile && !(gtotal % 50))
 	kill(getpid(), SIGUSR1);
+
+    return E_PGN_OK;
 }
 
 static int read_file(FILE *fp)
@@ -1464,7 +1536,11 @@ static int read_file(FILE *fp)
 		if (gtotal && pgn_history_total(game[gindex].hp))
 		    game[gindex].hindex = pgn_history_total(game[gindex].hp) - 1;
 
-		pgn_new_game();
+		if (pgn_new_game() != E_PGN_OK) {
+		    pgn_ret = E_PGN_ERR;
+		    break;
+		}
+
 		memcpy(old, game[gindex].b, sizeof(BOARD));
 	    }
 
@@ -1524,7 +1600,11 @@ static int read_file(FILE *fp)
 		if (gtotal)
 		    game[gindex].hindex = pgn_history_total(game[gindex].hp) - 1;
 
-		pgn_new_game(game[gindex].b);
+		if (pgn_new_game() != E_PGN_OK) {
+		    pgn_ret = E_PGN_ERR;
+		    break;
+		}
+
 		memcpy(old, game[gindex].b, sizeof(BOARD));
 		nulltags = 0;
 	    }
@@ -1557,10 +1637,11 @@ static int read_file(FILE *fp)
 /*
  * Parses a file whose file pointer is 'fp'. 'fp' may have been returned by
  * pgn_open(). If 'fp' is NULL then a single empty game will be allocated. If
- * there is a parsing error 1 is returned otherwise 0 is returned and the
- * global 'gindex' is set to the last parsed game in the file and the global
- * 'gtotal' is set to the total number of games in the file. The file will be
- * closed when the parsing is done.
+ * there is a parsing error E_PGN_PARSE is returned, if there was a memory
+ * allocation error E_PGN_ERR is returned, otherwise E_PGN_OK is returned and
+ * the global 'gindex' is set to the last parsed game in the file and the
+ * global 'gtotal' is set to the total number of games in the file. The file
+ * will be closed when the parsing is done.
  */
 int pgn_parse(FILE *fp)
 {
@@ -1568,8 +1649,7 @@ int pgn_parse(FILE *fp)
 
     if (!fp) {
 	reset_game_data();
-	pgn_new_game();
-	pgn_ret = E_PGN_OK;
+	pgn_ret = pgn_new_game();
 	goto done;
     }
 
@@ -1874,7 +1954,8 @@ FILE *pgn_open(const char *filename)
 }
 
 /* 
- * Returns 1 if 'filename' is a recognized compressed filetype.
+ * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
+ * E_PGN_ERR if not.
  */
 int pgn_is_compressed(const char *filename)
 {
@@ -1887,7 +1968,8 @@ int pgn_is_compressed(const char *filename)
 }
 
 /*
- * Set game flags. See chess.h for available flags.
+ * Sets config flag 'f' to 'val'. Returns E_PGN_OK on success or E_PGN_ERR if
+ * 'f' is an invalid flag or 'val' is an invalid value.
  */
 int pgn_config_set(pgn_config_flag f, int val)
 {
@@ -1925,7 +2007,7 @@ int pgn_config_set(pgn_config_flag f, int val)
 }
 
 /*
- * Returns the value accociated with 'f' or -1 if 'f' is invalid.
+ * Returns the value accociated with 'f' or E_PGN_ERR if 'f' is invalid.
  */
 int pgn_config_get(pgn_config_flag f)
 {
@@ -1946,11 +2028,11 @@ int pgn_config_get(pgn_config_flag f)
 }
 
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. Returns 1
- * if the written move count doesn't match the game's ply count (FEN tag) or 0
- * on success.
+ * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. See
+ * 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
+ * memory allocation or write error and E_PGN_OK on success.
  */
-void pgn_write(FILE *fp, GAME g)
+int pgn_write(FILE *fp, GAME g)
 {
     int i;
     int len = 0;
@@ -1961,6 +2043,7 @@ void pgn_write(FILE *fp, GAME g)
     for (i = 0; g.tag[i]; i++) {
 	struct tm tp;
 	char tbuf[11] = {0};
+	char *tmp;
 
 	if (pgn_config.reduced && i == 7)
 	    break;
@@ -1968,50 +2051,66 @@ void pgn_write(FILE *fp, GAME g)
 	if (strcmp(g.tag[i]->name, "Date") == 0) {
 	    if (strptime(g.tag[i]->value, PGN_TIME_FORMAT, &tp) != NULL) {
 		len = strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, &tp) + 1;
-		g.tag[i]->value = Realloc(g.tag[i]->value, len);
-		strncpy(g.tag[i]->value, tbuf, len);
+
+		if ((tmp = strdup(tbuf)) == NULL)
+		    return E_PGN_ERR;
+
+		free(g.tag[i]->value);
+		g.tag[i]->value = tmp;
 	    }
 	}
 	else if (strcmp(g.tag[i]->name, "Event") == 0) {
 	    if (g.tag[i]->value[0] == '\0') {
-		g.tag[i]->value = Realloc(g.tag[i]->value, 2);
-		g.tag[i]->value[0] = '?';
-		g.tag[i]->value[1] = '\0';
+		if ((tmp = strdup("?")) == NULL)
+		    return E_PGN_ERR;
+
+		free(g.tag[i]->value);
+		g.tag[i]->value = tmp;
 	    }
 	}
 	else if (strcmp(g.tag[i]->name, "Site") == 0) {
 	    if (g.tag[i]->value[0] == '\0') {
-		g.tag[i]->value = Realloc(g.tag[i]->value, 2);
-		g.tag[i]->value[0] = '?';
-		g.tag[i]->value[1] = '\0';
+		if ((tmp = strdup("?")) == NULL)
+		    return E_PGN_ERR;
+
+		free(g.tag[i]->value);
+		g.tag[i]->value = tmp;
 	    }
 	}
 	else if (strcmp(g.tag[i]->name, "Round") == 0) {
 	    if (g.tag[i]->value[0] == '\0') {
-		g.tag[i]->value = Realloc(g.tag[i]->value, 2);
-		g.tag[i]->value[0] = '?';
-		g.tag[i]->value[1] = '\0';
+		if ((tmp = strdup("?")) == NULL)
+		    return E_PGN_ERR;
+
+		free(g.tag[i]->value);
+		g.tag[i]->value = tmp;
 	    }
 	}
 	else if (strcmp(g.tag[i]->name, "Result") == 0) {
 	    if (g.tag[i]->value[0] == '\0') {
-		g.tag[i]->value = Realloc(g.tag[i]->value, 2);
-		g.tag[i]->value[0] = '*';
-		g.tag[i]->value[1] = '\0';
+		if ((tmp = strdup("*")) == NULL)
+		    return E_PGN_ERR;
+
+		free(g.tag[i]->value);
+		g.tag[i]->value = tmp;
 	    }
 	}
 	else if (strcmp(g.tag[i]->name, "Black") == 0) {
 	    if (g.tag[i]->value[0] == '\0') {
-		g.tag[i]->value = Realloc(g.tag[i]->value, 2);
-		g.tag[i]->value[0] = '?';
-		g.tag[i]->value[1] = '\0';
+		if ((tmp = strdup("?")) == NULL)
+		    return E_PGN_ERR;
+
+		free(g.tag[i]->value);
+		g.tag[i]->value = tmp;
 	    }
 	}
 	else if (strcmp(g.tag[i]->name, "White") == 0) {
 	    if (g.tag[i]->value[0] == '\0') {
-		g.tag[i]->value = Realloc(g.tag[i]->value, 2);
-		g.tag[i]->value[0] = '?';
-		g.tag[i]->value[1] = '\0';
+		if ((tmp = strdup("?")) == NULL)
+		    return E_PGN_ERR;
+
+		free(g.tag[i]->value);
+		g.tag[i]->value = tmp;
 	    }
 	}
 
@@ -2030,15 +2129,20 @@ void pgn_write(FILE *fp, GAME g)
     write_all_move_text(fp, g.hp, 1, &len);
 
     Fputc(' ', fp, &len);
-    putstring(fp, g.tag[TAG_RESULT]->value, &len);
+    putstring(fp, g.tag[pgn_tag_find(g.tag, "Result")]->value, &len);
     putstring(fp, "\n\n", &len);
 
     if (!pgn_config.reduced) {
 	CLEAR_FLAG(g.flags, GF_MODIFIED);
 	CLEAR_FLAG(g.flags, GF_PERROR);
     }
+
+    return E_PGN_OK;
 }
 
+/*
+ * Clears the enpassant flag for all positions on board 'b'. Returns nothing.
+ */
 void pgn_reset_enpassant(BOARD b)
 {
     int r, c;
@@ -2049,6 +2153,13 @@ void pgn_reset_enpassant(BOARD b)
     }
 }
 
+/* 
+ * Valididate move 'mp' against the game state 'g' and game board 'b' and
+ * update board 'b'. 'mp' is updated to SAN format for moves which aren't
+ * (a2a4 or e8Q for example). Returns E_PGN_PARSE if there was a move text
+ * parsing error, E_PGN_INVALID if the move is invalid or E_PGN_OK if
+ * successful.
+ */
 int pgn_validate_move(GAME *g, BOARD b, char **mp)
 {
     char *p;
@@ -2290,8 +2401,7 @@ done:
     validate = 1;
 
     if (_drawtest(g, b)) {
-	g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 8);
-	strncpy(g->tag[TAG_RESULT]->value, "1/2-1/2", 8);
+	pgn_tag_add(&g->tag, "Result", "1/2-1/2");
 	SET_FLAG(g->flags, GF_GAMEOVER);
     }
     else {
@@ -2306,14 +2416,10 @@ done:
 		if (_checkmatetest(g, b, kr, kc, okr, okc)) {
 		    *p++ = '#';
 
-		    if (result == WHITEWINS) {
-			g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 4);
-			strncpy(g->tag[TAG_RESULT]->value, "1-0", 4);
-		    }
-		    else if (result == BLACKWINS) {
-			g->tag[TAG_RESULT]->value = Realloc(g->tag[TAG_RESULT]->value, 4);
-			strncpy(g->tag[TAG_RESULT]->value, "0-1", 4);
-		    }
+		    if (result == WHITEWINS)
+			pgn_tag_add(&g->tag, "Result", "1-0");
+		    else if (result == BLACKWINS)
+			pgn_tag_add(&g->tag, "Result", "1-0");
 
 		    SET_FLAG(g->flags, GF_GAMEOVER);
 		}
@@ -2331,6 +2437,9 @@ done:
     return E_PGN_OK;
 }
 
+/*
+ * Like pgn_validate_move() but don't modify game flags in 'g' or board 'b'.
+ */
 int pgn_validate_only(GAME *g, BOARD b, char **m)
 {
     int ret;

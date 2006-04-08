@@ -46,10 +46,6 @@ enum {
     WHITE, BLACK
 };
 
-enum {
-    TAG_EVENT, TAG_SITE, TAG_DATE, TAG_ROUND, TAG_WHITE, TAG_BLACK, TAG_RESULT
-};
-
 /* Game flags. */
 #define GF_PERROR	0x01	/* Parse error for this game. */
 #define GF_DELETE	0x02	/* Flagged for deletion ('x' command). */
@@ -139,7 +135,7 @@ GAME *game;
 int gindex, gtotal;
 
 /*
- * Library configuration flags.
+ * Library configuration flags. These will affect all games.
  */
 typedef enum {
     /*
@@ -197,24 +193,27 @@ FILE *pgn_open(const char *filename);
 /*
  * Parses a file whose file pointer is 'fp'. 'fp' may have been returned by
  * pgn_open(). If 'fp' is NULL then a single empty game will be allocated. If
- * there is a parsing error E_PGN_PARSE is returned otherwise E_PGN_OK is
- * returned and the global 'gindex' is set to the last parsed game in the file
- * and the global 'gtotal' is set to the total number of games in the file.
- * The file will be closed when the parsing is done.
+ * there is a parsing error E_PGN_PARSE is returned, if there was a memory
+ * allocation error E_PGN_ERR is returned, otherwise E_PGN_OK is returned and
+ * the global 'gindex' is set to the last parsed game in the file and the
+ * global 'gtotal' is set to the total number of games in the file. The file
+ * will be closed when the parsing is done.
  */
 int pgn_parse(FILE *fp);
 
 /*
  * Allocates a new game and increments 'gtotal'. 'gindex' is then set to the
- * new game. Returns nothing.
+ * new game. Returns E_PGN_ERR if there was a memory allocation error or
+ * E_PGN_OK on success.
  */
-void pgn_new_game();
+int pgn_new_game();
 
 /*
  * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. See
- * 'pgn_config_flag' for output options. Returns nothing.
+ * 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
+ * memory allocation or write error and E_PGN_OK on success.
  */
-void pgn_write(FILE *fp, GAME g);
+int pgn_write(FILE *fp, GAME g);
 
 /*
  * Frees all games in the global 'game' array. Returns nothing.
@@ -229,8 +228,8 @@ void pgn_free(GAME g);
 /*
  * Adds a tag 'name' with value 'value' to the pointer to array of TAG
  * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
- * is updated to the new 'value'. Returns E_PGN_ERR if a duplicate tag was
- * found or E_PGN_OK on success.
+ * is updated to the new 'value'. Returns E_PGN_ERR if there was a memory
+ * allocation error or E_PGN_OK on success.
  */
 int pgn_tag_add(TAG ***dst, char *name, char *value);
 
@@ -241,7 +240,7 @@ int pgn_tag_total(TAG **t);
 
 /*
  * Finds a tag 'name' in the structure array 't'. Returns the location in the
- * array of the found tag or E_PGN_ERR on failure.
+ * array of the found tag or E_PGN_ERR if the tag could not be found.
  */
 int pgn_tag_find(TAG **t, const char *name);
 
@@ -288,7 +287,7 @@ void pgn_board_init(BOARD b);
 int pgn_validate_move(GAME *g, BOARD b, char **mp);
 
 /*
- * Like pgn_validate_move() but don't modify 'b' or 'g'.
+ * Like pgn_validate_move() but don't modify game flags in 'g' or board 'b'.
  */
 int pgn_validate_only(GAME *g, BOARD b, char **mp);
 
@@ -306,7 +305,7 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n);
 /*
  * Appends move 'm' to game 'g' history pointer. The history pointer may be a
  * in a RAV so g->rav.hp is also updated to the new (realloc()'ed) pointer. If
- * not in a RAV then g->history will be updated. Returns E_PGN_FAILED if
+ * not in a RAV then g->history will be updated. Returns E_PGN_ERR if
  * realloc() failed or E_PGN_OK on success.
  */
 int pgn_history_add(GAME *g, const char *m);
@@ -366,8 +365,8 @@ void pgn_reset_enpassant(BOARD b);
 void pgn_reset_valid_moves(BOARD b);
 
 /* 
- * Sets valid moves from game 'g' in board 'b' for the piece on board 'b'
- * which is at 'rank' and 'file'. Returns nothing.
+ * Sets valid moves from game 'g' using board 'b'. The valid moves are for the
+ * piece on the board 'b' at 'rank' and 'file'. Returns nothing.
  */
 void pgn_get_valid_moves(GAME *g, BOARD b, int rank, int file);
 
