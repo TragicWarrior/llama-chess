@@ -1259,7 +1259,7 @@ done:
 /* If the saveindex argument is -1, all games will be saved. Otherwise it's a
  * game index number.
  */
-int save_pgn(const char *filename, int isfifo, int saveindex)
+int save_pgn(const char *filename, int saveindex)
 {
     FILE *fp;
     char *mode = NULL;
@@ -1270,7 +1270,7 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
     char *command = NULL;
     int saveindex_max = (saveindex == -1) ? gtotal : saveindex + 1;
 
-    if (filename[0] != '/' && config.savedirectory && !isfifo) {
+    if (filename[0] != '/' && config.savedirectory) {
 	if (stat(config.savedirectory, &st) == -1) {
 	    if (errno == ENOENT) {
 		if (mkdir(config.savedirectory, 0755) == -1) {
@@ -1297,36 +1297,28 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	filename = buf;
     }
 
-    /* This is a hack to resume an existing game when more than one game is
-     * available. Also resuming a saved game and a game from history.
-     */
-    // FIXME: may not need this when a FEN tag is supported (by the engine).
-    if (isfifo)
-	mode = "w";
-    else {
-	if (access(filename, W_OK) == 0) {
-	    c = cmessage(NULL, GAME_SAVE_OVERWRITE_PROMPT,
-		    "%s \"%s\"", E_FILEEXISTS, filename);
+    if (access(filename, W_OK) == 0) {
+	c = cmessage(NULL, GAME_SAVE_OVERWRITE_PROMPT,
+		"%s \"%s\"", E_FILEEXISTS, filename);
 
-	    switch (c) {
-		case 'a':
-		    if (pgn_is_compressed(filename) == E_PGN_OK) {
-			cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
-			return 1;
-		    }
-
-		    mode = "a";
-		    break;
-		case 'o':
-		    mode = "w+";
-		    break;
-		default:
+	switch (c) {
+	    case 'a':
+		if (pgn_is_compressed(filename) == E_PGN_OK) {
+		    cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
 		    return 1;
-	    }
+		}
+
+		mode = "a";
+		break;
+	    case 'o':
+		mode = "w+";
+		break;
+	    default:
+		return 1;
 	}
-	else
-	    mode = "a";
     }
+    else
+	mode = "a";
 
     if (command) {
 	if ((fp = popen(command, "w")) == NULL) {
@@ -1341,19 +1333,15 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 	}
     }
 
-    if (isfifo)
-	pgn_write(fp, game[saveindex]);
-    else {
-	for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
-	    pgn_write(fp, game[i]);
-    }
+    for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
+	pgn_write(fp, game[i]);
 
     if (command)
 	pclose(fp);
     else
 	fclose(fp);
 
-    if (!isfifo && saveindex == -1)
+    if (saveindex == -1)
 	strncpy(loadfile, filename, sizeof(loadfile));
 
     return 0;
@@ -3123,7 +3111,7 @@ static int globalkeys(chtype c)
 		      }
 		  }
 
-		  if (save_pgn(tmp, 0, i)) {
+		  if (save_pgn(tmp, i)) {
 		      update_status_notify(game[gindex], "%s", NOTIFY_SAVE_FAILED);
 		      return 1;
 		  }
@@ -3587,8 +3575,6 @@ int main(int argc, char *argv[])
     config.agonyfile = strdup(buf);
     snprintf(buf, sizeof(buf), "%s/config", datadir);
     config.configfile = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/fifo", datadir);
-    config.fifo = strdup(buf);
 
     if (stat(datadir, &st) == -1) {
 	if (errno == ENOENT) {
@@ -3603,11 +3589,6 @@ int main(int argc, char *argv[])
 
     if (!S_ISDIR(st.st_mode))
 	errx(EXIT_FAILURE, "%s: %s", datadir, E_NOTADIR);
-
-    if (access(config.fifo, R_OK) == -1 && errno == ENOENT) {
-	if (mkfifo(config.fifo, 0600) == -1)
-	    err(EXIT_FAILURE, "%s", config.fifo);
-    }
 
     set_defaults();
 

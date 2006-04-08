@@ -1957,20 +1957,6 @@ void pgn_write(FILE *fp, GAME g)
     int len = 0;
 
     pgn_write_turn = (TEST_FLAG(g.flags, GF_BLACK_OPENING)) ? BLACK : WHITE;
-
-    //FIXME
-    /*
-    if (!isfifo && g.hindex != g.htotal) {
-	snprintf(buf, sizeof(buf), "%s (#%i)", GAME_SAVE_FROM_HISTORY_TITLE,
-		idx + 1);
-	i = message(buf, GAME_SAVE_FROM_HISTORY_PROMPT, "%s", 
-			GAME_SAVE_FROM_HISTORY_TEXT);
-
-	if (i == 'c')
-	    g.htotal = g.hindex;
-    }
-    */
-
     pgn_tag_sort(g.tag);
 
     for (i = 0; g.tag[i]; i++) {
