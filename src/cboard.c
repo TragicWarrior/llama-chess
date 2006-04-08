@@ -221,7 +221,10 @@ void set_menu_vars(int c, int rows, int items, int *item, int *top)
 		toppos = 0;
 	    break;
 	default:
-	    toppos = (items > rows) ? items - rows + 1 : 0;
+	    toppos = selected - rows + 1;
+
+	    if (toppos < 0)
+		toppos = 0;
 	    break;
     }
 
@@ -254,6 +257,7 @@ char *history_edit_nag(void *arg)
     int len = 0;
     int total = 0;
     unsigned char nag[MAX_PGN_NAG] = {0};
+    char menubuf[64] = {0}, *mp = menubuf;
 
     if (!nags) {
 	if (init_nag())
@@ -326,6 +330,8 @@ char *history_edit_nag(void *arg)
 	    case KEY_PPAGE:
 	    case KEY_NPAGE:
 		set_menu_vars(c, rows - 4, total - 1, &selected, &toppos);
+		menubuf[0] = 0;
+		mp = menubuf;
 		break;
 	    case ' ':
 		if (selected == 0) {
@@ -362,6 +368,31 @@ char *history_edit_nag(void *arg)
 		goto done;
 		break;
 	    default:
+		if (strlen(menubuf) + 1 > sizeof(menubuf) - 1) {
+		    menubuf[0] = 0;
+		    mp = menubuf;
+		}
+
+		*mp++ = c;
+		*mp = 0;
+		n = selected;
+
+		for (i = 0; i < total; i++) {
+		    if (!nags[i])
+			continue;
+
+		    if (strncasecmp(menubuf, nags[i], strlen(menubuf)) == 0) {
+			selected = i;
+			break;
+		    }
+		}
+
+		if (n == selected) {
+		    menubuf[0] = 0;
+		    mp = menubuf;
+		}
+
+		set_menu_vars(c, rows - 4, total - 1, &selected, &toppos);
 		break;
 	}
     }
@@ -458,6 +489,7 @@ char *file_browser(void *arg)
     struct stat st;
     char *p;
     int cursor = curs_set(0);
+    char menubuf[64] = {0}, *mp = menubuf;
 
     if (!*path) {
 	if (config.savedirectory) {
@@ -620,6 +652,8 @@ new_we:
 		case KEY_PPAGE:
 		case KEY_NPAGE:
 		    set_menu_vars(c, rows - 4, n - 1, &selected, &toppos);
+		    menubuf[0] = 0;
+		    mp = menubuf;
 		    break;
 		case '\n':
 		    goto gotitem;
@@ -650,11 +684,36 @@ new_we:
 		    goto again;
 		    break;
 		default:
+		    if (strlen(menubuf) + 1 > sizeof(menubuf) - 1) {
+			menubuf[0] = 0;
+			mp = menubuf;
+		    }
+
+		    *mp++ = c;
+		    *mp = 0;
+		    x = selected;
+
+		    for (i = 0; i < n; i++) {
+			if (strncasecmp(menubuf, files[i].name, 
+				    strlen(menubuf)) == 0) {
+			    selected = i;
+			    break;
+			}
+		    }
+
+		    if (x == selected) {
+			menubuf[0] = 0;
+			mp = menubuf;
+		    }
+
+		    set_menu_vars(c, rows - 4, n - 1, &selected, &toppos);
 		    break;
 	    }
 	}
 
 gotitem:
+	menubuf[0] = 0;
+	mp = menubuf;
 	strncpy(file, files[selected].path, sizeof(file));
 	cleanup(win, panel, files);
 
@@ -735,6 +794,7 @@ char *country_codes(void *arg)
     int total;
     int selected = 0;
     int toppos = 0;
+    char menubuf[64] = {0}, *mp = menubuf;
 
     if (!ccodes) {
 	if (init_country_codes())
@@ -808,6 +868,8 @@ char *country_codes(void *arg)
 	    case KEY_PPAGE:
 	    case KEY_NPAGE:
 		set_menu_vars(c, rows - 4, total - 1, &selected, &toppos);
+		menubuf[0] = 0;
+		mp = menubuf;
 		break;
 	    case '\n':
 		tmp = ccodes[selected].code;
@@ -818,6 +880,29 @@ char *country_codes(void *arg)
 		goto done;
 		break;
 	    default:
+		if (strlen(menubuf) + 1 > sizeof(menubuf) - 1) {
+		    menubuf[0] = 0;
+		    mp = menubuf;
+		}
+
+		*mp++ = c;
+		*mp = 0;
+		n = selected;
+
+		for (i = 0; i < total; i++) {
+		    if (strncasecmp(menubuf, ccodes[i].code, 
+				strlen(menubuf)) == 0) {
+			selected = i;
+			break;
+		    }
+		}
+
+		if (n == selected) {
+		    menubuf[0] = 0;
+		    mp = menubuf;
+		}
+
+		set_menu_vars(c, rows - 4, n - 1, &selected, &toppos);
 		break;
 	}
     }
@@ -851,6 +936,7 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
     int selected = 0;
     int n;
     int toppos = 0;
+    char menubuf[64] = {0}, *mp = menubuf;
 
     /* Edit the backup copy, not the original in case the save fails. */
     len = pgn_tag_total(g.tag);
@@ -1028,6 +1114,8 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		case KEY_PPAGE:
 		    set_menu_vars(c, rows - 4, data_index - 1, &selected,
 			    &toppos);
+		    menubuf[0] = 0;
+		    mp = menubuf;
 		    break;
 		case CTRL('F'):
 		    if (!edit)
@@ -1049,6 +1137,30 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    goto done;
 		    break;
 		default:
+		    if (strlen(menubuf) + 1 > sizeof(menubuf) - 1) {
+			menubuf[0] = 0;
+			mp = menubuf;
+		    }
+
+		    *mp++ = c;
+		    *mp = 0;
+		    n = selected;
+
+		    for (i = 0; i < data_index; i++) {
+			if (strncasecmp(menubuf, data[i]->name, strlen(menubuf))
+				== 0) {
+			    selected = i;
+			    break;
+			}
+		    }
+
+		    if (n == selected) {
+			menubuf[0] = 0;
+			mp = menubuf;
+		    }
+
+		    set_menu_vars(c, rows - 4, data_index - 1, &selected,
+			    &toppos);
 		    break;
 	    }
 	}
@@ -1122,6 +1234,8 @@ gotitem:
 cleanup:
 	del_panel(panel);
 	delwin(win);
+	menubuf[0] = 0;
+	mp = menubuf;
     }
 
 done:

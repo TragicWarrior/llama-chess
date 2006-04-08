@@ -165,37 +165,31 @@ const char *playhelp[] = {
 };
 
 const char *cc_help[] = {
-    "    UP/DOWN - previous/next menu entry",
-    "       HOME - first entry",
-    "        END - last entry",
-    "CTRL-n/PGDN - next page",
-    "CTRL-p/PGUP - previous page",
-    "  a-zA-Z0-9 - jump to entry",
-    "      ENTER - selected entry",
+    "    UP/DOWN - previous/next menu item",
+    "   HOME/END - first/last menu item",
+    "  PGDN/PGUP - next/previous page",
+    "  a-zA-Z0-9 - jump to item",
+    "      ENTER - select item",
     "     ESCAPE - cancel",
     NULL
 };
 
 const char *pgn_info_help[] = {
-    "    UP/DOWN - select menu entry",
-    "       HOME - first entry",
-    "        END - last entry",
-    "CTRL-n/PGDN - next page",
-    "CTRL-p/PGUP - previous page",
-    "  a-zA-Z0-9 - jump to entry",
-    "      ENTER - view selected entry",
-    "     ESCAPE - quit",
+    "    UP/DOWN - previous/next menu item",
+    "   HOME/END - first/last menu item",
+    "  PGDN/PGUP - next/previous page",
+    "  a-zA-Z0-9 - jump to item",
+    "      ENTER - view selected item",
+    "     ESCAPE - cancel",
     NULL
 };
 
 const char *pgn_edit_help[] = {
-    "    UP/DOWN - select menu entry",
-    "       HOME - first entry",
-    "        END - last entry",
-    "CTRL-n/PGDN - next page",
-    "CTRL-p/PGUP - previous page",
-    "  a-zA-Z0-9 - jump to entry",
-    "      ENTER - edit selected entry",
+    "    UP/DOWN - previous/next menu item",
+    "   HOME/END - first/last menu item",
+    "  PGDN/PGUP - next/previous page",
+    "  a-zA-Z0-9 - jump to item",
+    "      ENTER - edit select item",
     "     CTRL-a - add an entry",
     "     CTRL-f - add FEN tag from current position",
     "     CTRL-r - remove selected entry",
@@ -211,28 +205,23 @@ struct file_s {
 };
 
 const char *file_browser_help[] = {
-    "    UP/DOWN - select menu entry",
-    "       HOME - first entry",
-    "        END - last entry",
-    "CTRL-n/PGDN - next page",
-    "CTRL-p/PGUP - previous page",
-    "  a-zA-Z0-9 - jump to entry",
+    "    UP/DOWN - previous/next menu item",
+    "   HOME/END - first/last menu item",
+    "  PGDN/PGUP - next/previous page",
+    "  a-zA-Z0-9 - jump to item",
+    "      ENTER - select item",
     "     CTRL-x - change directory",
     "          ~ - change to home directory",
-    "      ENTER - commit selected entry",
-    "     ESCAPE - quit",
+    "     ESCAPE - abort",
     NULL
 };
 
 const char *naghelp[] = {
-    "    UP/DOWN - previous/next item",
-    " LEFT/RIGHT - previous/next selected item",
-    "       HOME - first item",
-    "        END - last item",
-    "CTRL-p/PGUP - previous page",
-    "CTRL-n/PGDN - next page",
+    "    UP/DOWN - previous/next menu item",
+    "   HOME/END - first/last menu item",
+    "  PGDN/PGUP - next/previous page",
     "  a-zA-Z0-9 - jump to item",
-    "      SPACE - toggle current item",
+    "      SPACE - toggle selected item",
     "      ENTER - quit with changes",
     "     ESCAPE - quit without changes",
     NULL
