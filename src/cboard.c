@@ -1310,7 +1310,7 @@ int save_pgn(const char *filename, int isfifo, int saveindex)
 
 	    switch (c) {
 		case 'a':
-		    if (pgn_is_compressed(filename)) {
+		    if (pgn_is_compressed(filename) == E_PGN_OK) {
 			cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
 			return 1;
 		    }
