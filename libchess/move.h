@@ -19,11 +19,8 @@
 #ifndef MOVE_H
 #define MOVE_H
 
-#define INTTOROW(r)	(r + '0')
-#define INTTOCOL(c)	(c + ('a' - 1))
-
-int result;
-int capture;
+static int capture;
+static int castle;
 
 enum {
     WHITEWINS, BLACKWINS, DRAW
@@ -32,14 +29,5 @@ enum {
 enum {
     KINGSIDE = 1, QUEENSIDE
 };
-
-int _get_source_yx(GAME *, BOARD, int, int, int, int *, int *);
-char *_a2a4tosan(GAME *, BOARD, char *);
-int _val_piece_side(char, int);
-int _castle_move(GAME *, BOARD, char);
-void _kingsquare(GAME, BOARD, int *, int *, int *, int *);
-int _drawtest(GAME *, BOARD);
-int _checktest(GAME *, BOARD, int, int, int, int, int);
-int _checkmatetest(GAME *, BOARD, int, int, int, int);
 
 #endif

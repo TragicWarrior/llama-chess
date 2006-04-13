@@ -26,12 +26,18 @@
 
 #define VALIDRANK	VALIDFILE
 #define VALIDFILE(f)	(f >= 1 && f <= 8)
+#define RANKTOBOARD ROWTOBOARD
+#define FILETOBOARD COLTOBOARD
+#define RANKTOINT ROWTOINT
+#define FILETOINT COLTOINT
 #define ROWTOBOARD(r)	(8 - r)
 #define COLTOBOARD(c)	(c - 1)
 #define ROWTOINT(r)	(r - '0')
 #define COLTOINT(c)	(c - ('a' - 1))
 #define VALIDROW(r)	(r >= '1' && r <= '8')
 #define VALIDCOL(c)	(c >= 'a' && c <= 'h')
+#define INTTORANK(r)	(r + '0')
+#define INTTOFILE(f)	(f + ('a' - 1))
 
 #define SET_FLAG(var, f)	(var |= f)
 #define CLEAR_FLAG(var, f)	(var &= ~(f))
@@ -115,8 +121,7 @@ typedef struct games {
     unsigned short hindex;	// Current move in *hp.
     unsigned moveclock;		// Move clock. FIXME
     unsigned short flags;	// Game flags.
-    unsigned char castle: 2,	// The current move is a castling move. FIXME
-                  side: 1,      // This playing side. BLACK or WHITE.
+    unsigned char side: 1,      // This playing side. BLACK or WHITE.
                   turn: 1,      // BLACK or WHITE.
     	          mode: 2;      // MODE_[HISTORY/EDIT/PLAY]
     unsigned short ply;         // Move count.
@@ -281,15 +286,15 @@ void pgn_board_init(BOARD b);
  * Valididate move 'mp' against the game state 'g' and game board 'b' and
  * update board 'b'. 'mp' is updated to SAN format for moves which aren't
  * (a2a4 or e8Q for example). Returns E_PGN_PARSE if there was a move text
- * parsing error, E_PGN_INVALID if the move is invalid or E_PGN_OK if
- * successful.
+ * parsing error, E_PGN_INVALID if the move is invalid, E_PGN_AMBIGUOUS if the
+ * move is invalid with ambiguities or E_PGN_OK if * successful.
  */
-int pgn_validate_move(GAME *g, BOARD b, char **mp);
+int pgn_parse_move(GAME *g, BOARD b, char **mp);
 
 /*
- * Like pgn_validate_move() but don't modify game flags in 'g' or board 'b'.
+ * Like pgn_parse_move() but don't modify game flags in 'g' or board 'b'.
  */
-int pgn_validate_only(GAME *g, BOARD b, char **mp);
+int pgn_validate_move(GAME *g, BOARD b, char **mp);
 
 /*
  * Returns the total number of moves in 'h' or 0 if there are none.
@@ -368,7 +373,7 @@ void pgn_reset_valid_moves(BOARD b);
  * Sets valid moves from game 'g' using board 'b'. The valid moves are for the
  * piece on the board 'b' at 'rank' and 'file'. Returns nothing.
  */
-void pgn_get_valid_moves(GAME *g, BOARD b, int rank, int file);
+void pgn_find_valid_moves(GAME g, BOARD b, int rank, int file);
 
 /*
  * Errors returned from the above functions.
@@ -377,6 +382,7 @@ typedef enum {
     E_PGN_ERR = -1,
     E_PGN_OK,
     E_PGN_PARSE,
+    E_PGN_AMBIGUOUS,
     E_PGN_INVALID,
     E_MAX_PGN_ERRORS
 } pgn_error;

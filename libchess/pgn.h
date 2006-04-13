@@ -43,5 +43,6 @@ int pgn_write_turn;
 int pgn_mpl;
 int pgn_lastc;
 int pgn_isfile;
+int pgn_count;
 
 #endif

@@ -1641,7 +1641,7 @@ static char *board_to_san(GAME *g, BOARD b)
     p = str;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	if (pgn_validate_move(g, b, &p)) {
+	if (pgn_parse_move(g, b, &p)) {
 	    invalid_move(gindex + 1, p);
 	    return NULL;
 	}
@@ -1649,7 +1649,7 @@ static char *board_to_san(GAME *g, BOARD b)
 	return p;
     }
 
-    if (pgn_validate_only(g, b, &p)) {
+    if (pgn_validate_move(g, b, &p)) {
 	invalid_move(gindex + 1, p);
 	return NULL;
     }
@@ -2511,8 +2511,8 @@ static int playmode_keys(chtype c)
 	    sp.col = c_col;
 
 	    if (!editmode && config.validmoves)
-		pgn_get_valid_moves(&game[gindex], game[gindex].b, sp.row,
-			sp.col);
+		pgn_find_valid_moves(game[gindex], game[gindex].b, sp.col,
+			sp.row);
 
 	    paused = 0;
 	    break;
@@ -2863,6 +2863,7 @@ static int globalkeys(chtype c)
 		    return 1;
 	    }
 
+	    /*
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine || 
 			d->engine->status == ENGINE_OFFLINE)) {
 		if (start_chess_engine(&game[gindex]) < 0)
@@ -2874,6 +2875,7 @@ static int globalkeys(chtype c)
 		pushkey = 'h';
 		return 1;
 	    }
+	    */
 
 	    pushkey = 0;
 	    oldhistorytotal = pgn_history_total(game[gindex].hp);
