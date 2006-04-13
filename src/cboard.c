@@ -3431,6 +3431,7 @@ void game_loop()
 	}
 
 	error_recover = 0;
+	pgn_board_update(&game[gindex], game[gindex].b, game[gindex].hindex);
 	draw_board(&game[gindex], board_details);
 	wmove(boardw, ROWTOMATRIX(c_row), COLTOMATRIX(c_col));
 
@@ -3448,7 +3449,6 @@ void game_loop()
 
 	if (!keycount && status.notify)
 	    update_status_notify(game[gindex], NULL);
-
 
 	if ((n = globalkeys(c)) == 1) {
 	    keycount = 0;

@@ -47,6 +47,7 @@ void write_debug_output(int file, const char *format, ...)
     }
 
     fprintf(fp, "%s", buf);
+    fflush(fp);
 
     if (file)
 	fclose(fp);

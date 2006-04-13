@@ -199,32 +199,6 @@ static int count_by_rank_file(GAME g, BOARD b, int piece, int sfile, int srank,
     return count + count_by_file(g, b, piece, sfile, srank, file, rank);
 }
 
-static int valid_move(GAME g, BOARD b, int row, int col, int srow, int scol)
-{
-    int p1, p2;
-
-    if (!VALIDFILE(srow) || !VALIDFILE(scol))
-	return 0;
-
-    if (row == srow && col == scol)
-	return 0;
-
-    p1 = b[ROWTOBOARD(srow)][COLTOBOARD(scol)].icon;
-    p2 = b[ROWTOBOARD(row)][COLTOBOARD(col)].icon;
-
-    if (pgn_piece_to_int(p1) == OPEN_SQUARE)
-	return 0;
-
-    if (piece_side(g, p1) == piece_side(g, p2))
-	return 0;
-
-    if (pgn_piece_to_int(p1) == PAWN && scol == col &&
-	    pgn_piece_to_int(p2) != OPEN_SQUARE)
-	return 0;
-
-    return 1;
-}
-
 /*
  * Returns the number of pieces of type 'p' that can move to the destination
  * square located at 'file' and 'rank'. The source square 'sfile' and 'srank'
@@ -417,33 +391,29 @@ static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
 		return 0;
 	}
 
-	return 1;
+	count = 1;
     }
+    else {
+	for (r = 1; VALIDRANK(r); r++) {
+	    for (f = 1; VALIDFILE(f); f++) {
+		int n;
 
-    for (r = 1; VALIDRANK(r); r++) {
-	for (f = 1; VALIDFILE(f); f++) {
-	    int n;
+		if ((*sfile && f != *sfile) || (*srank && r != *srank))
+		    continue;
 
-	    if ((*sfile && f != *sfile) || (*srank && r != *srank))
-		continue;
+		n = find_ambiguous(g, b, piece, f, r, file, rank);
 
-	    n = find_ambiguous(g, b, piece, f, r, file, rank);
-
-	    if (n) {
-		count += n;
-		*sfile = f;
-		*srank = r;
+		if (n) {
+		    count += n;
+		    *sfile = f;
+		    *srank = r;
+		}
 	    }
 	}
     }
 
     if (count != 1)
 	return count;
-
-    /* FIXME shouldn't be here.
-    if (valid_move(g, b, rank, file, *srank, *sfile) == 0)
-	return 0;
-     */
 
     if (piece == KING) {
 	if (abs(*srank - rank) > 1 || abs(*sfile - file) > 2)
@@ -488,7 +458,7 @@ static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank,
 	pi = pgn_piece_to_int(p);
 
 	if (pi == PAWN) {
-	    if (sfile != file) {
+	    if (sfile != file && TEST_FLAG(g->flags, GF_ENPASSANT)) {
 		p = (g->turn == WHITE) ? rank - 1 : rank + 1;
 		b[RANKTOBOARD(p)][FILETOBOARD(file)].icon =
 		    pgn_int_to_piece(g->turn, OPEN_SQUARE);
@@ -901,6 +871,7 @@ again:
 	}
     }
 
+    *p = 0;
     *mp = m;
     return finalize_move(g, b, promo, sfile, srank, file, rank);
 }
