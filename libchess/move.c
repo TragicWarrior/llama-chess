@@ -511,8 +511,10 @@ static int check_test(GAME g, BOARD b)
 
 	    pgn_switch_turn(&g);
 
-	    if (find_source_square(g, b, pi, &f, &r, kfile, krank) != 0)
-		check = CHECK;
+	    if (find_source_square(g, b, pi, &f, &r, kfile, krank) != 0) {
+		pgn_switch_turn(&g);
+		return CHECK_SELF;
+	    }
 
 	    pgn_switch_turn(&g);
 	}
