@@ -548,6 +548,10 @@ static int validate_pawn(GAME g, BOARD b, int sfile, int srank, int file,
     if (!val_piece_side(g.turn, p) || pgn_piece_to_int(p) != PAWN)
 	return 0;
 
+    if (srank == rank || (g.turn == WHITE && rank < srank) || 
+	    (g.turn == BLACK && rank > srank))
+	return 0;
+
     if (sfile == file) {
 	p = b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon;
 
@@ -1110,8 +1114,7 @@ void pgn_find_valid_moves(GAME g, BOARD b, int file, int rank)
 	    if (val_piece_side(g.turn, b[RANKTOBOARD(r)][FILETOBOARD(f)].icon))
 		continue;
 
-	    if (find_source_square(g, b, p, &file, (p == PAWN) ? &n : &rank, f,
-			r) != 0)
+	    if (find_source_square(g, b, p, &file, &rank, f, r) != 0)
 		b[RANKTOBOARD(r)][FILETOBOARD(f)].valid = 1;
 	}
     }
