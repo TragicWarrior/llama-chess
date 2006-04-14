@@ -71,7 +71,7 @@ typedef struct {
     unsigned char icon;		// The piece.
     unsigned char valid: 1, 	// != 0 if this square is a valid move for the
     				// selected piece.
-		  enpassant: 1; // This square is an en passant one.
+		  enpassant: 1;
 } BOARD[8][8];
 
 /*

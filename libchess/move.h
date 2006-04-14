@@ -23,6 +23,14 @@ static int capture;
 static int castle;
 
 enum {
+    CHECK = 1,
+    CHECK_SELF,
+    CHECK_MATE
+};
+
+static int check;
+
+enum {
     WHITEWINS, BLACKWINS, DRAW
 };
 
