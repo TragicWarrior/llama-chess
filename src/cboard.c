@@ -1649,7 +1649,7 @@ static char *board_to_san(GAME *g, BOARD b)
 	return p;
     }
 
-    if (pgn_validate_move(g, b, &p)) {
+    if (pgn_parse_move(g, b, &p)) {
 	invalid_move(gindex + 1, p);
 	return NULL;
     }

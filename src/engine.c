@@ -398,7 +398,7 @@ static void parse_xboard_line(GAME *g, char *str)
 
 	p = m;
 
-	if (pgn_validate_move(g, g->b, &p)) {
+	if (pgn_parse_move(g, g->b, &p)) {
 	    invalid_move(0, m);
 	    RETURN(d);
 	}

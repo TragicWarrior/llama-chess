@@ -508,23 +508,38 @@ static int check_opponent(GAME g, BOARD b, register int file, register int rank)
 	    if (pi == OPEN_SQUARE || !val_piece_side(g.turn, p))
 		continue;
 
-	    if (find_source_square(g, b, pi, &f, &r, file, rank) != 0) {
-		check = CHECK;
-		goto done;
-	    }
+	    if (find_source_square(g, b, pi, &f, &r, file, rank) != 0)
+		return CHECK;
 	}
     }
-
-done:
-    if (check)
-	return checkmate_test(g, b, file, rank);
 
     return check;
 }
 
 static int check_self(GAME g, BOARD b, int file, int rank)
 {
-    return 0;
+    int f, r;
+    register int p, pi;
+
+    pgn_switch_turn(&g);
+
+    for (r = 1; VALIDRANK(r); r++) {
+	for (f = 1; VALIDFILE(f); f++) {
+	    p = b[RANKTOBOARD(r)][FILETOBOARD(f)].icon;
+	    pi = pgn_piece_to_int(p);
+
+	    if (pi == OPEN_SQUARE || !val_piece_side(g.turn, p))
+		continue;
+
+	    if (find_source_square(g, b, pi, &f, &r, file, rank) != 0) {
+		pgn_switch_turn(&g);
+		return CHECK_SELF;
+	    }
+	}
+    }
+
+    pgn_switch_turn(&g);
+    return check;
 }
 
 static int check_test(GAME g, BOARD b)
@@ -538,7 +553,11 @@ static int check_test(GAME g, BOARD b)
     if (check)
 	return check;
 
-    check |= check_opponent(g, b, okfile, okrank);
+    check = check_opponent(g, b, okfile, okrank);
+
+    if (check)
+	return checkmate_test(g, b, okfile, okrank);
+
     return check;
 }
 
