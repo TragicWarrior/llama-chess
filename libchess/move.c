@@ -972,6 +972,9 @@ capture:
 
     *bp = 0;
 
+    if (find_source_square(*g, b, p, &sfile, &srank, file, rank) != 1)
+	return E_PGN_INVALID;
+
     if (finalize_move(g, b, promo, sfile, srank, file, rank) != E_PGN_OK)
 	return E_PGN_INVALID;
 
