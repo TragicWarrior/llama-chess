@@ -28,7 +28,8 @@ enum {
     CHECK_MATE
 };
 
-static int check;
+static int check, check_testing;
+static int kfile, krank, okfile, okrank;
 
 enum {
     WHITEWINS, BLACKWINS, DRAW
