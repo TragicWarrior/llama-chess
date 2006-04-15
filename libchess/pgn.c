@@ -411,7 +411,7 @@ void pgn_history_next(GAME *g, BOARD b, int n)
  * Converts the character piece 'p' to an integer. Returns the integer
  * associated with 'p' or E_PGN_ERR if 'p' is invalid.
  */
-int pgn_piece_to_int(int p)
+int pgn_piece_to_int(register int p)
 {
     if (p == '.')
 	return OPEN_SQUARE;
