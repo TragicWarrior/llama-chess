@@ -16,7 +16,7 @@
 # Sends a command to the engine when the specified key is pressed. The bound
 # key will only be available in play mode and will only get sent if it doesn't
 # conflict with other play mode keys.
-#key		#	depth 3
+#bind		#	depth 3
 
 # The number of moves to jump when browsing move history and pressing the UP
 # or DOWN keys.
