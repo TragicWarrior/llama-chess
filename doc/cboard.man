@@ -266,14 +266,12 @@ parsing errors or command line usage errors.
 Configuration file.
 .It Pa ~/.cboard/agony.data
 A list of agony strings, one per line, which is displayed randomly when a
-capature has been made.
+capture has been made.
 .It Pa ~/.cboard/cc.data
 Country codes. Used when editing the \&"Site\&" tag.
 .It Pa ~/.cboard/nag.data
 Appending to this file is fine for custom NAG types, but lines before 140 are
 reserved by the PGN standard.
-.It Pa ~/.cboard/fifo
-A FIFO read by the chess engine for resuming games.
 .El
 .
 .Sh SEE ALSO
