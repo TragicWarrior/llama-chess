@@ -212,7 +212,7 @@ void parse_rcfile(const char *filename)
 	err(EXIT_FAILURE, "%s", filename);
 
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
-	int n;
+	int n, c;
 	char var[30], val[50];
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
 	char *p;
@@ -244,6 +244,31 @@ void parse_rcfile(const char *filename)
 		    sizeof(struct key_s *));
 	    config.keys[k] = Calloc(1, sizeof(struct key_s));
 	    p = val;
+	    n = 0;
+	    
+	    while (*p && !isspace(*p))
+		p++, n++;
+
+	    c = *p;
+	    *p = 0;
+	    p -= n;
+
+	    if (strcasecmp(p, "none") == 0)
+		config.keys[k]->type = KEY_DEFAULT;
+	    else if (strcasecmp(p, "repeat") == 0)
+		config.keys[k]->type = KEY_REPEAT;
+	    else if (strcasecmp(p, "set") == 0)
+		config.keys[k]->type = KEY_SET;
+	    else
+		errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename,
+			lines, p);
+	    
+	    p = val + n;
+	    *p = c;
+
+	    while (*p && isspace(*p))
+		p++;
+
 	    config.keys[k]->c = *p++;
 	    config.keys[k++]->str = strdup(p);
 	    config.keys[k] = NULL;

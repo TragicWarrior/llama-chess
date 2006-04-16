@@ -15,8 +15,20 @@
 
 # Sends a command to the engine when the specified key is pressed. The bound
 # key will only be available in play mode and will only get sent if it doesn't
-# conflict with other play mode keys.
-#bind		#	depth 3
+# conflict with other play mode keys. The first argument describes how the key
+# behaves when a repeat count is used (typing a series of numbers before
+# pressing the key). A type of 'set' will append the repeat count to the
+# command, 'repeat' will send the command the amount of times specified by the
+# repeat count and 'none' will send the command only once, unaltered.
+#
+# Typing '23P' in play mode will send "depth 23" to the engine.
+#bind	set	P	depth
+#
+# Typing '23$' in play mode will send "something" to the engine 23 times.
+#bind	repeat	$	something
+#
+# Only send "depth 1" to the engine.
+#bine	none	!	depth 1
 
 # The number of moves to jump when browsing move history and pressing the UP
 # or DOWN keys.

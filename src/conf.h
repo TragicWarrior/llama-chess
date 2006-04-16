@@ -46,8 +46,15 @@ struct color_s {
     int nattrs;		// Attributes for a non-color terminal.
 };
 
+enum {
+    KEY_DEFAULT,
+    KEY_REPEAT,
+    KEY_SET
+};
+
 struct key_s {
     int c;
+    int type;
     char *str;
 };
 

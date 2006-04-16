@@ -2598,12 +2598,33 @@ static int playmode_keys(chtype c)
 	    if (config.keys) {
 		for (x = 0; config.keys[x]; x++) {
 		    if (config.keys[x]->c == c) {
-			add_engine_command(&game[gindex], -1, "%s\n", 
-				config.keys[x]->str);
-			d->engine->status = ENGINE_READY;
-			break;
+			switch (config.keys[x]->type) {
+			    case KEY_DEFAULT:
+				add_engine_command(&game[gindex], -1, "%s\n", 
+					config.keys[x]->str);
+				break;
+			    case KEY_SET:
+				if (!keycount)
+				    break;
+
+				add_engine_command(&game[gindex], -1, 
+					"%s %i\n", config.keys[x]->str, keycount);
+				keycount = 0;
+				break;
+			    case KEY_REPEAT:
+				if (!keycount)
+				    break;
+
+				for (w = 0; w < keycount; w++)
+				    add_engine_command(&game[gindex], -1,
+					    "%s\n", config.keys[x]->str);
+				keycount = 0;
+				break;
+			}
 		    }
 		}
+
+		update_status_notify(game[gindex], NULL);
 	    }
 	    break;
     }

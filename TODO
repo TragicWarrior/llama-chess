@@ -27,8 +27,4 @@ order):
 
 - A menu to select a game from a file.
 
-- Key bindings that can take a repeat count. Say you have 'depth' bound to key
-  '!' then pressing 2 then 3 then '!' would send 'depth 23' to the engine.
-  Maybe 'bind ! repeat depth' or 'bind N none command'.
-
 ? Macros? A sequence of (bound) keys for a given game mode.
