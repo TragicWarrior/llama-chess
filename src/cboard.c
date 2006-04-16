@@ -2142,6 +2142,8 @@ static int toggle_delete_flag(int n)
     int i, x;
 
     TOGGLE_FLAG(game[n].flags, GF_DELETE);
+    gindex = n;
+    update_all(game[gindex]);
 
     for (i = x = 0; i < gtotal; i++) {
 	if (TEST_FLAG(game[i].flags, GF_DELETE))
@@ -2813,6 +2815,22 @@ void init_userdata()
     }
 }
 
+void fix_marks(int *start, int *end)
+{
+    int i;
+
+    *start = (*start < 0) ? 0 : *start;
+    *end = (*end < 0) ? 0 : *end;
+
+    if (*start > *end) {
+	i = *start;
+	*start = *end;
+        *end = i + 1;
+    }
+
+    *end = (*end > gtotal) ? gtotal : *end;
+}
+
 // Global and other keys.
 static int globalkeys(chtype c)
 {
@@ -2888,16 +2906,24 @@ static int globalkeys(chtype c)
 		    keycount : 1);
 
 	    if (delete_count) {
-		markend = delete_count;
+		if (c == '>') {
+		    markend = markstart + delete_count;
+		    delete_count = 0;
+		}
+		else {
+		    markend = markstart - delete_count;
+		    delete_count = -1; // to fix gindex in the other direction
+		}
+
 		pushkey = 'x';
-		delete_count = 0;
+		fix_marks(&markstart, &markend);
 	    }
 
-	    if (game[gindex].mode != MODE_EDIT) {
+	    if (game[gindex].mode != MODE_EDIT)
 		pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
-	    }
+
+	    update_status_notify(game[gindex], NULL);
 	    update_all(game[gindex]);
-	    update_tag_window(game[gindex].tag);
 	    return 1;
 	case '}':
 	case '{':
@@ -2926,7 +2952,6 @@ static int globalkeys(chtype c)
 
 		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
-		  update_tag_window(game[gindex].tag);
 		  return 1;
 	case 'J':
 		  if (gtotal < 2)
@@ -2957,8 +2982,8 @@ static int globalkeys(chtype c)
 
 		  gindex = i;
 		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
+		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
-		  update_tag_window(game[gindex].tag);
 		  return 1;
 	case 'x':
 		  pushkey = 0;
@@ -2966,7 +2991,7 @@ static int globalkeys(chtype c)
 		  if (gtotal < 2)
 		      return 1;
 
-		  if (keycount && !delete_count) {
+		  if (keycount && delete_count == 0) {
 		      markstart = gindex;
 		      delete_count = keycount;
 		      update_status_notify(game[gindex], "%s (delete)",
@@ -2975,16 +3000,15 @@ static int globalkeys(chtype c)
 		  }
 
 		  if (markstart >= 0 && markend >= 0) {
-		      if (markstart > markend) {
-			  i = markstart;
-			  markstart = markend;
-			  markend = i;
+		      for (i = markstart; i < markend; i++) {
+			  if (toggle_delete_flag(i)) {
+			      update_all(game[gindex]);
+			      return 1;
+			  }
 		      }
 
-		      for (i = markstart; i <= markend; i++) {
-			  if (toggle_delete_flag(i))
-			      return 1;
-		      }
+		      gindex = (delete_count < 0) ? markstart : i - 1;
+		      update_all(game[gindex]);
 		  }
 		  else {
 		      if (toggle_delete_flag(gindex))
@@ -2992,6 +3016,7 @@ static int globalkeys(chtype c)
 		  }
 
 		  markstart = markend = -1;
+		  delete_count = 0;
 		  update_status_window(game[gindex]);
 		  return 1;
 	case 'X':
@@ -3030,12 +3055,10 @@ static int globalkeys(chtype c)
 
 		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
-		  update_tag_window(game[gindex].tag);
 		  return 1;
 	case 'T':
 		  edit_save_tags(&game[gindex]);
 		  update_all(game[gindex]);
-		  update_tag_window(game[gindex].tag);
 		  return 1;
 	case 't':
 		  edit_tags(game[gindex], game[gindex].b, 0);
@@ -3074,7 +3097,6 @@ static int globalkeys(chtype c)
 
 		  pgn_board_update(&game[gindex], game[gindex].b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
-		  update_tag_window(game[gindex].tag);
 		  return 1;
 	case 'S':
 	case 's':
@@ -3201,7 +3223,6 @@ static int globalkeys(chtype c)
 		  c_col = 4;
 		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
-		  update_tag_window(game[gindex].tag);
 		  return 1;
 	case CTRL('L'):
 		  endwin();
