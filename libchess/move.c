@@ -928,8 +928,12 @@ static int frfrtosan(GAME *g, BOARD b, char **m)
 	else if (!fc && rc)
 	    *bp++ = INTTORANK(srank);
 	else if (fc && rc) {
-	    *bp++ = INTTOFILE(sfile);
-	    *bp++ = INTTORANK(srank);
+	    if (rc == 1)
+		*bp++ = INTTORANK(srank);
+	    else {
+		*bp++ = INTTOFILE(sfile);
+		*bp++ = INTTORANK(srank);
+	    }
 	}
 	else
 	    return E_PGN_PARSE; // not reached.
