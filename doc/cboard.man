@@ -112,13 +112,31 @@ protocol should work.
 A command to send to the chess engine each time a new game or round is started
 or reset. Can be specified more than once.
 .Pp
-.It Cm bind Ar key Ar command
+.It Cm bind Ar type Ar key Ar command
 Bind the specified
 .Ar key
 to the engine command
 .Ar command .
 The bound key will only be available in play mode and will only be sent to the
-engine if it doesn't conflict with other play mode keys.
+engine if it doesn't conflict with other play mode keys. The
+.Ar type
+argument specifies how a repeat count is treated. When
+.Ar set ,
+typing a number then pressing the bound 
+.Ar key
+will append that number to
+.Ar command .
+When
+.Ar repeat ,
+typing a number then pressing
+.Ar key
+will send
+.Ar command
+the repeat amount of times. If
+.Ar none ,
+then
+.Ar command
+will be sent without modification.
 .Pp
 .It Cm jump_count Ar integer
 When viewing move history, you can jump more than one move to the next or
