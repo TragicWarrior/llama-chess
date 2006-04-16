@@ -25,7 +25,7 @@
 int oldhistorytotal;
 
 int send_signal_to_engine(pid_t, int);
-void send_to_engine(GAME *g, const char *format, ...);
+void send_to_engine(GAME *g, int, const char *format, ...);
 int start_chess_engine(GAME *);
 void set_engine_defaults(GAME *, char **);
 void stop_engine(GAME *);

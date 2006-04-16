@@ -56,7 +56,7 @@ int send_signal_to_engine(pid_t pid, int sig)
     return 0;
 }
 
-void send_to_engine(GAME *g, const char *format, ...)
+void send_to_engine(GAME *g, int status, const char *format, ...)
 {
     va_list ap;
     int len;
@@ -131,6 +131,7 @@ void send_to_engine(GAME *g, const char *format, ...)
 	}
     }
 
+    d->engine->status = status;
     free(line);
 }
 
@@ -294,7 +295,7 @@ void stop_engine(GAME *g)
     if (!d->engine || d->engine->status == ENGINE_OFFLINE)
 	return;
 
-    send_to_engine(g, "quit\n");
+    send_to_engine(g, ENGINE_READY, "quit\n");
 
     if (!send_signal_to_engine(d->engine->pid, 0)) {
 	if (!send_signal_to_engine(d->engine->pid, SIGTERM))
@@ -307,12 +308,13 @@ void stop_engine(GAME *g)
 void set_engine_defaults(GAME *g, char **init)
 {
     int i;
+    struct userdata_s *d = g->data;
 
     if (!init)
 	return;
 
     for (i = 0; init[i]; i++)
-	send_to_engine(g, "%s\n", init[i]);
+	add_engine_command(&d->engine->queue, ENGINE_READY, "%s\n", init[i]);
 }
 
 int start_chess_engine(GAME *g)
@@ -386,7 +388,7 @@ static void parse_xboard_line(GAME *g, char *str)
     if (strlen(p) > MAX_SAN_MOVE_LEN)
 	return;
 
-    // We should now have the real move which may be in SAN or a2a4 format.
+    // We should now have the real move which may be in SAN or frfr format.
     if (sscanf(p, "%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
 	p = m + strlen(m) - 1;
 
@@ -398,7 +400,7 @@ static void parse_xboard_line(GAME *g, char *str)
 
 	p = m;
 
-	if (pgn_parse_move(g, g->b, &p)) {
+	if (pgn_parse_move(g, g->b, &p) != E_PGN_OK) {
 	    invalid_move(0, m);
 	    RETURN(d);
 	}
@@ -412,7 +414,7 @@ static void parse_xboard_line(GAME *g, char *str)
 		update_cursor(*g, g->hindex);
 
 	    if (!TEST_FLAG(g->flags, GF_GAMEOVER)) {
-		send_to_engine(g, "go\n");
+		add_engine_command(&d->engine->queue, ENGINE_THINKING, "go\n");
 		return;
 	    }
 	    else

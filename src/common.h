@@ -39,10 +39,16 @@ enum {
 #define CF_ENGINE_LOOP	0x01
 #define CF_HUMAN	0x02
 
+struct queue_s {
+    char *line;
+    int status;
+};
+
 struct engine_s {
     int fd[2];
     pid_t pid;
     int status;
+    struct queue_s **queue;
 };
 
 /*
@@ -58,5 +64,6 @@ char **enginebuf;
 
 void invalid_move(int n, const char *m);
 void update_status_window(GAME g);
+void add_engine_command(struct queue_s ***, int, char *fmt, ...);
 
 #endif
