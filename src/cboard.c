@@ -2378,8 +2378,13 @@ void add_engine_command(GAME *g, int s, char *fmt, ...)
     va_list ap;
     int i = 0;
     struct userdata_s *d = g->data;
-    struct queue_s **q = d->engine->queue;
+    struct queue_s **q;
     char *line;
+
+    if (!d->engine)
+	return;
+
+    q = d->engine->queue;
 
     if (q)
 	for (i = 0; q[i]; i++);
