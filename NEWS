@@ -1,3 +1,79 @@
+Cboard version 0.2.0
+--------------------
+Quite a while since the last release, I've lost interest in the project off
+and on but still keep at it enough to fix and add things. The most important
+change is better SAN handling. Ambiguities are fixed along with frfr to SAN
+conversion. There are quite a few internal changes too but unfortunately this
+version is quite a bit slower than the last do to more functionality. I'm
+trying to find ways to speed it up though. The PGN portion of the code has
+been split up into a library "libchess". This allows for easy inclusion into
+other projects when it's better tested and stable. In-game keys have changed
+quite a bit. Press F1 to see them. Also read the manual page as configuration
+parameters have been changed/added/removed. Here's the rest of the changes:
+
+Switch from CVS to GIT.
+
+Lots of FEN tag fixes when parsing, saving and editing the board.
+
+When in history mode, the cursor is updated to the last position on the board.
+
+Support for Unix 98 ptys.
+
+Show the repeat count in the status window.
+
+Added command line options -V to only validate a .pgn file, -S to save a PGN
+formatted game and -R to save a reduced PGN formatted game. The return value
+of cboard will be 1 if there was a parse error or 0 on success.
+
+Added option -t to save custom tags from the configuration file when -S is
+specified.
+
+Added option -E to stop processing the file when a game contains a parse
+error. Also see configuration parameter stop_on_error in the manual page.
+
+A few key bindings have been removed. Press 'F1' in game for help.
+
+Added human/human play. Toggle it with the 'H' key.
+
+Added engine/engine play. Toggle it with the 'E' key then hit 'g'o!.
+
+I've got a new email address. Write to me at bjk@luxsci.net.
+
+When a piece is selected cboard will only highlight legal squares the piece
+can move to.
+
+Updated manual page. Read this because a few configuration parameters have
+changed.
+
+Added game key 'd' to show board details. Details are the enpassant square and
+castling availability.
+
+The parser now supports RAV. Moves are read into the history but the interface
+is minimal at the moment. Saving also works but is buggy.
+
+Support window resizing when in an xterm. Need at least an 80x24 terminal.
+
+Support for all engines that utilize the XBoard protocol. Not very well tested
+though. GNUChess and Crafty seem to work fine though.
+
+Added configuration parameter 'engine_init' which sends a command to the
+engine when initialized.
+
+The file browser (save/load prompt) supports filters.
+
+A "Loading..." window/line when a file is being loaded.
+
+Added configuration parameter 'bind' which binds a key to a command to send to
+the engine when in play mode.
+
+Added key 'W' to show an engine io window.
+
+New menu code. Looks better with custom colors. Type ahead searching is buggy
+though.
+
+Lots of internal, parser, validation and bug fixes.
+
+
 CBoard version 0.1.6
 --------------------
 A few important save game, validation and file parser fixes.
