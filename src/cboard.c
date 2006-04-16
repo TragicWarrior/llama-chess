@@ -1675,7 +1675,7 @@ static int move_to_engine(GAME *g, BOARD b)
 	return 1;
     }
 
-    add_engine_command(&d->engine->queue, ENGINE_THINKING, "%s\n", p);
+    add_engine_command(g, ENGINE_THINKING, "%s\n", p);
     return 1;
 }
 
@@ -2373,11 +2373,12 @@ static void do_window_resize()
     update_all(game[gindex]);
 }
 
-void add_engine_command(struct queue_s ***dst, int s, char *fmt, ...)
+void add_engine_command(GAME *g, int s, char *fmt, ...)
 {
     va_list ap;
     int i = 0;
-    struct queue_s **q = *dst;
+    struct userdata_s *d = g->data;
+    struct queue_s **q = d->engine->queue;
     char *line;
 
     if (q)
@@ -2394,9 +2395,9 @@ void add_engine_command(struct queue_s ***dst, int s, char *fmt, ...)
     va_end(ap);
     q[i] = Malloc(sizeof(struct queue_s));
     q[i]->line = line;
-    q[i++]->status = s;
+    q[i++]->status = (s == -1) ? d->engine->status : s;
     q[i] = NULL;
-    *dst = q;
+    d->engine->queue = q;
 }
 
 static void historymode_keys(chtype);
@@ -2420,7 +2421,7 @@ static int playmode_keys(chtype c)
 		x = pgn_tag_find(game[gindex].tag, "FEN");
 
 		if (start_chess_engine(&game[gindex]) <= 0) {
-		    add_engine_command(&d->engine->queue, ENGINE_READY, 
+		    add_engine_command(&game[gindex], ENGINE_READY, 
 			    "setboard %s\n", game[gindex].tag[x]->value);
 		    d->engine->status = ENGINE_READY;
 		}
@@ -2441,10 +2442,10 @@ static int playmode_keys(chtype c)
 	    CLEAR_FLAG(d->flags, CF_HUMAN);
 
 	    if (d->engine && !TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
-		add_engine_command(&d->engine->queue, ENGINE_READY, "new\n");
+		add_engine_command(&game[gindex], ENGINE_READY, "new\n");
 		pgn_board_update(&game[gindex], game[gindex].b,
 			pgn_history_total(game[gindex].hp));
-		add_engine_command(&d->engine->queue, ENGINE_READY, 
+		add_engine_command(&game[gindex], ENGINE_READY, 
 			"setboard %s\n", pgn_game_to_fen(game[gindex],
 			    game[gindex].b));
 	    }
@@ -2514,9 +2515,8 @@ static int playmode_keys(chtype c)
 
 		if ((w >= 0 && x >= 0 && atoi(game[gindex].tag[w]->value) == 1) 
 			|| (x >= 0 && w == -1)) {
-		    add_engine_command(&d->engine->queue, ENGINE_READY, 
+		    add_engine_command(&game[gindex], ENGINE_READY, 
 			    "setboard %s\n", game[gindex].tag[x]->value);
-		    d->engine->status = ENGINE_READY;
 		}
 	    }
 
@@ -2551,7 +2551,7 @@ static int playmode_keys(chtype c)
 	    paused = 0;
 	    break;
 	case 'w':
-	    add_engine_command(&d->engine->queue, ENGINE_READY, "\nswitch\n");
+	    add_engine_command(&game[gindex], ENGINE_READY, "\nswitch\n");
 	    switch_side(&game[gindex]);
 	    update_status_window(game[gindex]);
 	    break;
@@ -2560,7 +2560,7 @@ static int playmode_keys(chtype c)
 		break;
 
 	    if (d->engine && d->engine->status == ENGINE_READY) {
-		add_engine_command(&d->engine->queue, ENGINE_READY, "remove\n");
+		add_engine_command(&game[gindex], ENGINE_READY, "remove\n");
 		d->engine->status = ENGINE_READY;
 	    }
 
@@ -2584,7 +2584,7 @@ static int playmode_keys(chtype c)
 	    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
 		start_chess_engine(&game[gindex]);
 
-	    add_engine_command(&d->engine->queue, ENGINE_THINKING, "go\n");
+	    add_engine_command(&game[gindex], ENGINE_THINKING, "go\n");
 	    break;
 	default:
 	    if (!d->engine)
@@ -2593,8 +2593,8 @@ static int playmode_keys(chtype c)
 	    if (config.keys) {
 		for (x = 0; config.keys[x]; x++) {
 		    if (config.keys[x]->c == c) {
-			add_engine_command(&d->engine->queue, ENGINE_READY,
-				"%s\n", config.keys[x]->str);
+			add_engine_command(&game[gindex], -1, "%s\n", 
+				config.keys[x]->str);
 			d->engine->status = ENGINE_READY;
 			break;
 		    }

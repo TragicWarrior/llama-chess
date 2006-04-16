@@ -64,6 +64,6 @@ char **enginebuf;
 
 void invalid_move(int n, const char *m);
 void update_status_window(GAME g);
-void add_engine_command(struct queue_s ***, int, char *fmt, ...);
+void add_engine_command(GAME *, int, char *fmt, ...);
 
 #endif

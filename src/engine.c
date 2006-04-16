@@ -308,13 +308,12 @@ void stop_engine(GAME *g)
 void set_engine_defaults(GAME *g, char **init)
 {
     int i;
-    struct userdata_s *d = g->data;
 
     if (!init)
 	return;
 
     for (i = 0; init[i]; i++)
-	add_engine_command(&d->engine->queue, ENGINE_READY, "%s\n", init[i]);
+	add_engine_command(g, ENGINE_READY, "%s\n", init[i]);
 }
 
 int start_chess_engine(GAME *g)
@@ -414,7 +413,7 @@ static void parse_xboard_line(GAME *g, char *str)
 		update_cursor(*g, g->hindex);
 
 	    if (!TEST_FLAG(g->flags, GF_GAMEOVER)) {
-		add_engine_command(&d->engine->queue, ENGINE_THINKING, "go\n");
+		add_engine_command(g, ENGINE_THINKING, "go\n");
 		return;
 	    }
 	    else
