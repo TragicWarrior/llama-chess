@@ -2304,7 +2304,14 @@ void update_status_notify(GAME g, char *fmt, ...)
 
 static void switch_side(GAME *g)
 {
+    int i = pgn_tag_find(g->tag, "White");
+    int n = pgn_tag_find(g->tag, "Black");
+    char *w = g->tag[i]->value;
+
+    g->tag[i]->value = g->tag[n]->value;
+    g->tag[n]->value = w;
     g->side = (g->side == WHITE) ? BLACK : WHITE;
+    update_tag_window(g->tag);
 }
 
 int rav_next_prev(GAME *g, BOARD b, int n)
