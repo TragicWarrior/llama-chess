@@ -407,11 +407,6 @@ static void parse_xboard_line(GAME *g, char *str)
 	    RETURN(d);
 	}
 
-	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-	    pgn_board_update(g, g->b, pgn_history_total(g->hp));
-	    RETURN(d);
-	}
-
 	pgn_history_add(g, p);
 	SET_FLAG(g->flags, GF_MODIFIED);
 	pgn_switch_turn(g);

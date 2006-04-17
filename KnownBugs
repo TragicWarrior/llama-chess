@@ -1,4 +1,2 @@
 Speed up the move validator. It's alot slower since 0.1.6. I need suggestions 
 on this.
-
-Checkmate.
