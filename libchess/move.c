@@ -766,11 +766,6 @@ static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank,
 	return E_PGN_INVALID;
 
     if (!validate) {
-	if (p == PAWN || capture)
-	    g->ply = 0;
-	else
-	    g->ply++;
-
 	pgn_reset_enpassant(b);
 	p = b[RANKTOBOARD(srank)][FILETOBOARD(sfile)].icon;
 	pi = pgn_piece_to_int(p);
@@ -863,6 +858,20 @@ static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank,
 		break;
 	    default:
 		break;
+	}
+    }
+
+    if (!validate) {
+	p = pgn_piece_to_int(p);
+
+	if (p == PAWN || promo || capture)
+	    g->ply = 0;
+	else
+	    g->ply++;
+
+	if (g->ply / 2 == 50) {
+	    pgn_tag_add(&g->tag, "Result", "1-2/1-2");
+	    SET_FLAG(g->flags, GF_GAMEOVER);
 	}
     }
 

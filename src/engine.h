@@ -19,7 +19,7 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#define RETURN(d)	d->engine->status = ENGINE_READY; return
+#define RETURN(d)	{d->engine->status = ENGINE_READY; return;}
 
 // This is a failsafe when resuming a game.
 int oldhistorytotal;

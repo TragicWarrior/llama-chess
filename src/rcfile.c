@@ -236,9 +236,6 @@ void parse_rcfile(const char *filename)
 
 	    config.jumpcount = atoi(val);
 	}
-	else if (strcmp(var, "fifty_move_draw") == 0)
-	    pgn_config_set(PGN_FIFTY_MOVE_DRAW, on_or_off(filename, lines, 
-			val));
 	else if (strcmp(var, "bind") == 0) {
 	    config.keys = Realloc(config.keys, (k + 2) *
 		    sizeof(struct key_s *));

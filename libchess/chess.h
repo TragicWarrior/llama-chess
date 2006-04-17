@@ -163,11 +163,6 @@ typedef enum {
      * entire file will be discarded.
      */
     PGN_STOP_ON_ERROR,
-
-    /*
-     * Enable the 50 move draw rule.
-     */
-    PGN_FIFTY_MOVE_DRAW
 } pgn_config_flag;
 
 /*

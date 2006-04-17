@@ -199,12 +199,6 @@ default is
 When in the file browser you can filter what is displayed with this value.
 Directories, including hidden directories, are always displayed reguardless of
 the pattern. The default is `*.pgn'.
-.Pp
-.It Cm fifty_move_draw Ar BOOL
-Enable the fifty move draw rule. The fifty move draw is a drawing rule that
-causes a game to be ended when no captures or pawn advances have occured in
-the last fifty moves on either playing side. The default is
-.Ar off .
 .El
 .
 .Sh COLORS

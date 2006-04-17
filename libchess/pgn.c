@@ -1963,9 +1963,6 @@ int pgn_config_set(pgn_config_flag f, int val)
 	    else
 		return E_PGN_ERR;
 	    break;
-	case PGN_FIFTY_MOVE_DRAW:
-	    pgn_config.fmd = val;
-	    break;
 	default:
 	    return E_PGN_ERR;
     }
@@ -1985,8 +1982,6 @@ int pgn_config_get(pgn_config_flag f)
 	    return pgn_config.stop;
 	case PGN_MPL:
 	    return pgn_config.mpl;
-	case PGN_FIFTY_MOVE_DRAW:
-	    return pgn_config.fmd;
 	default:
 	    break;
     }

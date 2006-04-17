@@ -391,6 +391,9 @@ static void parse_xboard_line(GAME *g, char *str)
     if (sscanf(p, "%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
 	p = m + strlen(m) - 1;
 
+	if (TEST_FLAG(g->flags, GF_GAMEOVER))
+	    RETURN(d);
+
 	// Test SAN or a2a4 format.
 	if (!isdigit(*p) && *p != 'O' && *p != '+' && *p != '#' &&
 		((*(p - 1) != '=' || !isdigit(*(p - 1))) && 
@@ -404,6 +407,11 @@ static void parse_xboard_line(GAME *g, char *str)
 	    RETURN(d);
 	}
 
+	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
+	    pgn_board_update(g, g->b, pgn_history_total(g->hp));
+	    RETURN(d);
+	}
+
 	pgn_history_add(g, p);
 	SET_FLAG(g->flags, GF_MODIFIED);
 	pgn_switch_turn(g);
@@ -412,12 +420,10 @@ static void parse_xboard_line(GAME *g, char *str)
 	    if (d->n == gindex)
 		update_cursor(*g, g->hindex);
 
-	    if (!TEST_FLAG(g->flags, GF_GAMEOVER)) {
-		add_engine_command(g, ENGINE_THINKING, "go\n");
-		return;
-	    }
-	    else
+	    if (TEST_FLAG(g->flags, GF_GAMEOVER))
 		RETURN(d);
+
+	    add_engine_command(g, ENGINE_THINKING, "go\n");
 	}
 
 	if (g->side == g->turn)
