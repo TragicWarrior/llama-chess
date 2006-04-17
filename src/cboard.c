@@ -2911,9 +2911,10 @@ static int globalkeys(chtype c)
 	    toggle_engine_window();
 	    break;
 	case KEY_F(10):
-	    cmessage("ABOUT", ANYKEY, "%s\n%s with %i colors and %i "
-		    "color pairs\nCopyright 2002-2006 %s", PACKAGE_STRING,
-		    curses_version(), COLORS, COLOR_PAIRS, PACKAGE_BUGREPORT);
+	    cmessage("ABOUT", ANYKEY, "%s (%s)\nUsing %s with %i colors "
+		    "and %i color pairs\nCopyright 2002-2006 %s",
+		    PACKAGE_STRING, pgn_version(), curses_version(), COLORS,
+		    COLOR_PAIRS, PACKAGE_BUGREPORT);
 	    break;
 	case 'h':
 	    if (game[gindex].mode != MODE_HISTORY) {

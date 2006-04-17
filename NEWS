@@ -2,14 +2,14 @@ Cboard version 0.2.0
 --------------------
 Quite a while since the last release, I've lost interest in the project off
 and on but still keep at it enough to fix and add things. The most important
-change is better SAN handling. Ambiguities are fixed along with frfr to SAN
-conversion. There are quite a few internal changes too but unfortunately this
-version is quite a bit slower than the last do to more functionality. I'm
-trying to find ways to speed it up though. The PGN portion of the code has
-been split up into a library "libchess". This allows for easy inclusion into
-other projects when it's better tested and stable. In-game keys have changed
-quite a bit. Press F1 to see them. Also read the manual page as configuration
-parameters have been changed/added/removed. Here's the rest of the changes:
+change in this version is better SAN handling. Ambiguities are fixed along
+with frfr to SAN conversion. There are quite a few internal changes too but
+unfortunately this version is quite a bit slower than the last do to more
+functionality. I'm trying to find ways to speed it up though. The PGN portion
+of the code has been split up into a library "libchess". This allows for easy
+inclusion into other projects. In-game keys have changed quite a bit. Press F1
+to see them. Also read the manual page as configuration parameters have been
+changed/added/removed. Here's the rest of the changes:
 
 Switch from CVS to GIT.
 
@@ -37,7 +37,8 @@ Added human/human play. Toggle it with the 'H' key.
 
 Added engine/engine play. Toggle it with the 'E' key then hit 'g'o!.
 
-I've got a new email address. Write to me at bjk@luxsci.net.
+I've got a new email address. Send any bugs reports patches etc to me at
+bjk@luxsci.net.
 
 When a piece is selected cboard will only highlight legal squares the piece
 can move to.
@@ -53,8 +54,8 @@ is minimal at the moment. Saving also works but is buggy.
 
 Support window resizing when in an xterm. Need at least an 80x24 terminal.
 
-Support for all engines that utilize the XBoard protocol. Not very well tested
-though. GNUChess and Crafty seem to work fine though.
+Support for all engines that utilize the XBoard protocol. Not very well
+tested. GNUChess and Crafty seem to work fine though.
 
 Added configuration parameter 'engine_init' which sends a command to the
 engine when initialized.
@@ -64,7 +65,7 @@ The file browser (save/load prompt) supports filters.
 A "Loading..." window/line when a file is being loaded.
 
 Added configuration parameter 'bind' which binds a key to a command to send to
-the engine when in play mode.
+the engine when in play mode. Read the manual page.
 
 Added key 'W' to show an engine io window.
 

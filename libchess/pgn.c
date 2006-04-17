@@ -50,6 +50,11 @@
 #include <dmalloc.h>
 #endif
 
+char *pgn_version()
+{
+    return "libchess " PACKAGE_VERSION;
+}
+
 static char *trim(char *str)
 {
     int i = 0;

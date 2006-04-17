@@ -371,6 +371,11 @@ void pgn_reset_valid_moves(BOARD b);
 void pgn_find_valid_moves(GAME g, BOARD b, int rank, int file);
 
 /*
+ * Returns the version string of the library.
+ */
+char *pgn_version(void);
+
+/*
  * Errors returned from the above functions.
  */
 typedef enum {
