@@ -3054,6 +3054,7 @@ static int globalkeys(chtype c)
 		      return 1;
 
 		  gindex = i;
+		  d = game[gindex].data;
 		  pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
 		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
@@ -3126,6 +3127,7 @@ static int globalkeys(chtype c)
 		  if (pgn_history_total(game[gindex].hp))
 		      game[gindex].mode = MODE_HISTORY;
 
+		  d = game[gindex].data;
 		  pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
 		  return 1;
@@ -3168,6 +3170,7 @@ static int globalkeys(chtype c)
 		  if (pgn_history_total(game[gindex].hp))
 		      game[gindex].mode = MODE_HISTORY;
 
+		  d = game[gindex].data;
 		  pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
 		  return 1;
