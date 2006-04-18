@@ -32,6 +32,7 @@ struct {
     int fmd;
 } pgn_config;
 
+BOARD pgn_board;
 int done_fen_tag;
 RAV *rav;
 int ravlevel;

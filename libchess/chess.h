@@ -111,7 +111,6 @@ typedef struct {
  * the current game.
  */
 typedef struct games {
-    BOARD b;			// The board associated with this game.
     TAG **tag;			// Roster tags.
     HISTORY **history;		// Move history for this game.
     HISTORY **hp; 		// History pointer pointing to the location 

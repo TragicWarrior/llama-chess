@@ -55,6 +55,7 @@ struct engine_s {
  * Attached to game[n].data.
  */
 struct userdata_s {
+    BOARD b;
     struct engine_s *engine;
     unsigned short flags;
     unsigned n;

@@ -834,14 +834,14 @@ static int move_text(GAME *g, FILE *fp)
 
     p = m;
 
-    if (pgn_parse_move(g, g->b, &p)) {
+    if (pgn_parse_move(g, pgn_board, &p)) {
 	pgn_switch_turn(g);
 	return 1;
     }
 
 #ifdef DEBUG
     DUMP("%s\n", p);
-    dump_board(0, g->b);
+    dump_board(0, pgn_board);
 #endif
 
     pgn_history_add(g, p);
@@ -1100,14 +1100,15 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 
 	rav = r;
 	
-	if ((rav[ravindex].fen = strdup(pgn_game_to_fen((*g), g->b))) == NULL) {
+	if ((rav[ravindex].fen = strdup(pgn_game_to_fen((*g), pgn_board)))
+		== NULL) {
 	    warn("strdup()");
 	    return 1;
 	}
 
 	rav[ravindex].hp = g->hp;
 	memcpy(&tg, g, sizeof(GAME));
-	memcpy(g->b, o, sizeof(BOARD));
+	memcpy(pgn_board, o, sizeof(BOARD));
 
 	if ((g->hp[g->hindex]->rav = calloc(1, sizeof(HISTORY))) == NULL) {
 	    warn("calloc()");
@@ -1136,7 +1137,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 * function returning -1 (see below). So we restore the game state
 	 * that was saved before calling read_file().
 	 */
-	pgn_board_init_fen(&tg, g->b, rav[ravindex].fen);
+	pgn_board_init_fen(&tg, pgn_board, rav[ravindex].fen);
 	free(rav[ravindex].fen);
 	memcpy(g, &tg, sizeof(GAME));
 	g->hp = rav[ravindex].hp;
@@ -1352,7 +1353,7 @@ int pgn_new_game()
     game[gindex].side = game[gindex].turn = WHITE;
     SET_FLAG(game[gindex].flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
 	    GF_BK_CASTLE|GF_BQ_CASTLE);
-    pgn_board_init(game[gindex].b);
+    pgn_board_init(pgn_board);
     set_default_tags(&game[gindex]);
 
     if (pgn_isfile && !(gtotal % 50))
@@ -1513,7 +1514,7 @@ static int read_file(FILE *fp)
 		    break;
 		}
 
-		memcpy(old, game[gindex].b, sizeof(BOARD));
+		memcpy(old, pgn_board, sizeof(BOARD));
 	    }
 
 	    if (tag_text(&game[gindex], fp))
@@ -1531,8 +1532,7 @@ static int read_file(FILE *fp)
 
 	    if (!done_fen_tag) {
 		if (pgn_tag_find(game[gindex].tag, "FEN") != -1 && 
-			pgn_board_init_fen(&game[gindex], game[gindex].b,
-			    NULL)) {
+			pgn_board_init_fen(&game[gindex], pgn_board, NULL)) {
 		    parse_error = 1;
 		    continue;
 		}
@@ -1552,8 +1552,8 @@ static int read_file(FILE *fp)
 	    // PGN: If a FEN tag exists, initialize the board to the value.
 	    if (tag_section) {
 		if (pgn_tag_find(game[gindex].tag, "FEN") != E_PGN_ERR && 
-			(n = pgn_board_init_fen(&game[gindex], game[gindex].b,
-			    NULL)) == E_PGN_PARSE) {
+			(n = pgn_board_init_fen(&game[gindex], pgn_board, 
+						NULL)) == E_PGN_PARSE) {
 		    parse_error = 1;
 		    continue;
 		}
@@ -1577,11 +1577,11 @@ static int read_file(FILE *fp)
 		    break;
 		}
 
-		memcpy(old, game[gindex].b, sizeof(BOARD));
+		memcpy(old, pgn_board, sizeof(BOARD));
 		nulltags = 0;
 	    }
 
-	    memcpy(old, game[gindex].b, sizeof(BOARD));
+	    memcpy(old, pgn_board, sizeof(BOARD));
 
 	    if (move_text(&game[gindex], fp)) {
 		SET_FLAG(game[gindex].flags, GF_PERROR);

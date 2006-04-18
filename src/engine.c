@@ -56,7 +56,7 @@ int send_signal_to_engine(pid_t pid, int sig)
     return 0;
 }
 
-void send_to_engine(GAME *g, int status, const char *format, ...)
+int send_to_engine(GAME *g, int status, const char *format, ...)
 {
     va_list ap;
     int len;
@@ -66,14 +66,10 @@ void send_to_engine(GAME *g, int status, const char *format, ...)
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE || 
 	    TEST_FLAG(d->flags, CF_HUMAN))
-	return;
+	return 1;
 
     if (send_signal_to_engine(d->engine->pid, SIGINT))
-	return;
-
-    d->engine->status = ENGINE_THINKING;
-    update_status_window(*g);
-    refresh_all();
+	return 1;
 
     va_start(ap, format);
 #ifdef HAVE_VASPRINTF
@@ -108,8 +104,7 @@ void send_to_engine(GAME *g, int status, const char *format, ...)
 			message(ERROR, ANYKEY, "Could not write to engine. "
 				"Process no longer exists.");
 			d->engine->status = ENGINE_OFFLINE;
-			//update_status_window(NULL);
-			return;
+			return 1;
 		    }
 
 		    message(ERROR, ANYKEY, "Attempt #%i. write(): %s", ++try,
@@ -133,6 +128,7 @@ void send_to_engine(GAME *g, int status, const char *format, ...)
 
     d->engine->status = status;
     free(line);
+    return 0;
 }
 
 #ifndef UNIX98
@@ -402,7 +398,7 @@ static void parse_xboard_line(GAME *g, char *str)
 
 	p = m;
 
-	if (pgn_parse_move(g, g->b, &p) != E_PGN_OK) {
+	if (pgn_parse_move(g, d->b, &p) != E_PGN_OK) {
 	    invalid_move(0, m);
 	    RETURN(d);
 	}
