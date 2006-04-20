@@ -388,19 +388,19 @@ static void parse_xboard_line(GAME *g, char *str)
 
     // We should now have the real move which may be in SAN or frfr format.
     if (sscanf(p, "%[0-9a-hprnqkxPRNBQKO+=#-]", m) == 1) {
-	if (strlen(m) < 2)
-	    RETURN(d);
-
 	if (TEST_FLAG(g->flags, GF_GAMEOVER))
 	    RETURN(d);
 
+	if (strlen(m) < 2)
+	    RETURN(d);
+
+	p = m + strlen(m) - 1;
+
 	// Test SAN or a2a4 format.
-#if 0
 	if (!isdigit(*p) && *p != 'O' && *p != '+' && *p != '#' &&
 		((*(p - 1) != '=' || !isdigit(*(p - 1))) && 
 		 pgn_piece_to_int(*p) == -1))
 	    return;
-#endif
 
 	p = m;
 
