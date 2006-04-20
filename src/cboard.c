@@ -2417,7 +2417,6 @@ static int playmode_keys(chtype c)
 	    CLEAR_FLAG(d->flags, CF_HUMAN);
 
 	    if (d->engine && !TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
-		add_engine_command(&game[gindex], ENGINE_READY, "new\n");
 		pgn_board_update(&game[gindex], d->b,
 			pgn_history_total(game[gindex].hp));
 		add_engine_command(&game[gindex], ENGINE_READY, 
@@ -2903,12 +2902,6 @@ static int globalkeys(chtype c)
 		return 1;
 	    }
 
-	    // FIXME
-	    if (TEST_FLAG(game[gindex].flags, GF_BLACK_OPENING)) {
-		cmessage(NULL, ANYKEY, "%s", E_RESUME_BLACK);
-		return 1;
-	    }
-
 	    // FIXME Resuming from previous history could append to a RAV.
 	    if (game[gindex].hindex != pgn_history_total(game[gindex].hp)) {
 		if (!pushkey) {
@@ -2922,19 +2915,15 @@ static int globalkeys(chtype c)
 		    return 1;
 	    }
 
-	    /*
-	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine || 
-			d->engine->status == ENGINE_OFFLINE)) {
-		if (start_chess_engine(&game[gindex]) < 0)
-		    return 1;
+	    if (!TEST_FLAG(d->flags, CF_HUMAN)) {
+		if (!d->engine) {
+		    if (start_chess_engine(&game[gindex]))
+			return 1;
+		}
 
-		send_to_engine(&game[gindex], "setboard %s\n",
+		add_engine_command(&game[gindex], ENGINE_READY, "setboard %s\n",
 			pgn_game_to_fen(game[gindex], d->b));
-		d->engine->status = ENGINE_READY;
-		pushkey = 'h';
-		return 1;
 	    }
-	    */
 
 	    pushkey = 0;
 	    game[gindex].mode = MODE_PLAY;
@@ -3473,12 +3462,8 @@ void game_loop()
 				}
 			    }
 			    else {
-				if (len) {
+				if (len)
 				    parse_engine_output(&game[i], fdbuf);
-
-				    if (d->engine->queue)
-					send_engine_command(&game[i]);
-				}
 			    }
 			}
 		    }
@@ -3487,16 +3472,15 @@ void game_loop()
 	    else {
 		if (n == -1)
 		    cmessage(ERROR, ANYKEY, "select(): %s", strerror(errno));
-		else {
-		    /* timeout */
-		    for (i = 0; i < gtotal; i++) {
-			d = game[i].data;
-
-			if (d->engine && d->engine->queue)
-			    send_engine_command(&game[i]);
-		    }
-		}
+		/* timeout */
 	    }
+	}
+
+	for (i = 0; i < gtotal; i++) {
+	    d = game[i].data;
+
+	    if (d->engine && d->engine->queue)
+		send_engine_command(&game[i]);
 	}
 
 	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER) && game[gindex].mode 

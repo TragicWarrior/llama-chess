@@ -388,8 +388,6 @@ static void parse_xboard_line(GAME *g, char *str)
 
     // We should now have the real move which may be in SAN or frfr format.
     if (sscanf(p, "%[0-9a-hprnqkxPRNBQKO+=#-]", m) == 1) {
-	p = m + strlen(m) - 1;
-
 	if (strlen(m) < 2)
 	    RETURN(d);
 
@@ -471,11 +469,8 @@ void send_engine_command(GAME *g)
 	return;
 
     if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
-	if (d->n == gindex) {
-	    d->engine->status = ENGINE_THINKING;
+	if (d->n == gindex)
 	    update_status_window(*g);
-	    refresh_all();
-	}
     }
 
     free(q[0]->line);
