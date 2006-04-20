@@ -198,8 +198,10 @@ static int opponent_can_attack(GAME g, BOARD b, register int file,
 {
     int f, r;
     register int p, pi;
+    int kf = kfile, kr = krank;
 
     pgn_switch_turn(&g);
+    kfile = okfile, krank = okrank;
 
     for (r = 1; VALIDRANK(r); r++) {
 	for (f = 1; VALIDFILE(f); f++) {
@@ -210,12 +212,14 @@ static int opponent_can_attack(GAME g, BOARD b, register int file,
 		continue;
 
 	    if (find_source_square(g, b, pi, &f, &r, file, rank) != 0) {
+		kfile = kf, krank = kr;
 		pgn_switch_turn(&g);
 		return 1;
 	    }
 	}
     }
 
+    kfile = kf, krank = kr;
     pgn_switch_turn(&g);
     return 0;
 }
