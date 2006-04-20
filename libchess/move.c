@@ -814,12 +814,18 @@ static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank,
 	    }
 	}
 	else if (pi == ROOK) {
-	    if (g->turn == WHITE)
-		CLEAR_FLAG(g->flags, (file > FILETOINT('e')) ? GF_WK_CASTLE :
-			GF_WQ_CASTLE);
-	    else
-		CLEAR_FLAG(g->flags, (file > FILETOINT('e')) ? GF_BK_CASTLE :
-			GF_BQ_CASTLE);
+	    if (g->turn == WHITE) {
+		if (sfile == FILETOINT('h'))
+		    CLEAR_FLAG(g->flags, GF_WK_CASTLE);
+		else if (sfile == FILETOINT('a'))
+		    CLEAR_FLAG(g->flags, GF_WQ_CASTLE);
+	    }
+	    else {
+		if (sfile == FILETOINT('h'))
+		    CLEAR_FLAG(g->flags, GF_BK_CASTLE);
+		else if (sfile == FILETOINT('a'))
+		    CLEAR_FLAG(g->flags, GF_BQ_CASTLE);
+	    }
 	}
 
 	if (pi != PAWN)
