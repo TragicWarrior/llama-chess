@@ -2850,7 +2850,9 @@ void init_userdata()
 	d = Calloc(1, sizeof(struct userdata_s));
 	game[i].data = d;
 	d->n = i;
-	pgn_board_init(d->b);
+
+	if (pgn_board_init_fen(&game[i], d->b, NULL) != E_PGN_OK)
+	    pgn_board_init(d->b);
     }
 }
 
