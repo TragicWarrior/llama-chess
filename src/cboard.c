@@ -1561,8 +1561,8 @@ static void draw_board(GAME *g, int details)
 			attrs = CP_BOARD_CURSOR;
 		    }
 
-		    if (row == ROWTOMATRIX(sp.row) && 
-			    col == COLTOMATRIX(sp.col)) {
+		    if (row == ROWTOMATRIX(d->sp.srow) && 
+			    col == COLTOMATRIX(d->sp.scol)) {
 			attrs = CP_BOARD_SELECTED;
 		    }
 
@@ -1626,14 +1626,14 @@ static char *board_to_san(GAME *g, BOARD b)
     int promo;
     struct userdata_s *d = g->data;
 
-    snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[sp.col - 1], 
-	    sp.row, x_grid_chars[sp.destcol - 1], sp.destrow);
+    snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[d->sp.scol - 1], 
+	    d->sp.srow, x_grid_chars[d->sp.col - 1], d->sp.row);
 
     p = str;
-    piece = pgn_piece_to_int(b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon);
+    piece = pgn_piece_to_int(b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon);
 
-    if (piece == PAWN && ((sp.destrow == 8 && g->turn == WHITE) ||
-		    (sp.destrow == 1 && g->turn == BLACK))) {
+    if (piece == PAWN && ((d->sp.row == 8 && g->turn == WHITE) ||
+		    (d->sp.row == 1 && g->turn == BLACK))) {
 	promo = cmessage(PROMOTION_TITLE, PROMOTION_PROMPT, PROMOTION_TEXT);
 	
 	if (pgn_piece_to_int(promo) == -1)
@@ -1671,7 +1671,7 @@ static int move_to_engine(GAME *g, BOARD b)
     if ((p = board_to_san(g, b)) == NULL)
 	return 0;
 
-    sp.row = sp.col = sp.icon = 0;
+    d->sp.srow = d->sp.scol = d->sp.icon = 0;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
 	pgn_history_add(g, p);
@@ -2449,18 +2449,18 @@ static int playmode_keys(chtype c)
 		break;
 	    }
 
-	    if (!sp.icon)
+	    if (!d->sp.icon)
 		break;
 
-	    sp.destrow = d->c_row;
-	    sp.destcol = d->c_col;
+	    d->sp.row = d->c_row;
+	    d->sp.col = d->c_col;
 
 	    if (editmode) {
-		p = d->b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon;
-		d->b[ROWTOBOARD(sp.destrow)][COLTOBOARD(sp.destcol)].icon = p;
-		d->b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon =
+		p = d->b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon;
+		d->b[ROWTOBOARD(d->sp.row)][COLTOBOARD(d->sp.col)].icon = p;
+		d->b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon =
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
-		sp.icon = sp.row = sp.col = 0;
+		d->sp.icon = d->sp.srow = d->sp.scol = 0;
 		break;
 	    }
 
@@ -2479,7 +2479,7 @@ static int playmode_keys(chtype c)
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine ||
 			d->engine->status == ENGINE_OFFLINE) && !editmode) {
 		if (start_chess_engine(&game[gindex])) {
-		    sp.icon = 0;
+		    d->sp.icon = 0;
 		    break;
 		}
 
@@ -2493,25 +2493,25 @@ static int playmode_keys(chtype c)
 		}
 	    }
 
-	    if (sp.icon || (!editmode && d->engine &&
+	    if (d->sp.icon || (!editmode && d->engine &&
 			d->engine->status == ENGINE_THINKING)) {
 		beep();
 		break;
 	    }
 
-	    sp.icon = mvwinch(boardw, ROWTOMATRIX(d->c_row), 
+	    d->sp.icon = mvwinch(boardw, ROWTOMATRIX(d->c_row), 
 		    COLTOMATRIX(d->c_col)+1) & A_CHARTEXT;
 
-	    if (sp.icon == ' ') {
-		sp.icon = 0;
+	    if (d->sp.icon == ' ') {
+		d->sp.icon = 0;
 		break;
 	    }
 
-	    if (!editmode && ((islower(sp.icon) && game[gindex].turn != BLACK)
-			|| (isupper(sp.icon) && game[gindex].turn != WHITE))) {
+	    if (!editmode && ((islower(d->sp.icon) && game[gindex].turn != BLACK)
+			|| (isupper(d->sp.icon) && game[gindex].turn != WHITE))) {
 		if (pgn_history_total(game[gindex].hp)) {
 		    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
-		    sp.icon = 0;
+		    d->sp.icon = 0;
 		    break;
 		}
 		else {
@@ -2523,11 +2523,11 @@ static int playmode_keys(chtype c)
 		}
 	    }
 
-	    sp.row = d->c_row;
-	    sp.col = d->c_col;
+	    d->sp.srow = d->c_row;
+	    d->sp.scol = d->c_col;
 
 	    if (!editmode && config.validmoves)
-		pgn_find_valid_moves(game[gindex], d->b, sp.col, sp.row);
+		pgn_find_valid_moves(game[gindex], d->b, d->sp.scol, d->sp.srow);
 
 	    paused = 0;
 	    break;
@@ -2619,14 +2619,14 @@ static void editmode_keys(chtype c)
 	    playmode_keys(c);
 	    break;
 	case 'd':
-	    if (sp.icon)
-		d->b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = 
+	    if (d->sp.icon)
+		d->b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon = 
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 	    else
 		d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].icon =
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 
-	    sp.icon = sp.row = sp.col = 0;
+	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
 	    break;
 	case 'w':
 	    pgn_switch_turn(&game[gindex]);
@@ -3265,7 +3265,7 @@ static int globalkeys(chtype c)
 		  refresh_all();
 		  return 1;
 	case KEY_ESCAPE:
-		  sp.icon = sp.row = sp.col = 0;
+		  d->sp.icon = d->sp.srow = d->sp.scol = 0;
 		  markend = markstart = 0;
 
 		  if (keycount) {

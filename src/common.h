@@ -29,6 +29,15 @@ struct userdata_s {
     unsigned n;
     int c_row;
     int c_col;
+
+    // The selected piece.
+    struct {
+	unsigned char icon;
+	char scol;
+	char srow;
+	char col;
+	char row;
+    } sp;
 };
 
 #endif
