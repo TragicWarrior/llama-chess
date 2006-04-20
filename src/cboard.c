@@ -3251,6 +3251,7 @@ static int globalkeys(chtype c)
 		      d = Calloc(1, sizeof(struct userdata_s));
 		      pgn_board_init(d->b);
 		      game[gindex].data = d;
+		      loadfile[0] = 0;
 		  }
 
 		  game[gindex].mode = MODE_PLAY;
