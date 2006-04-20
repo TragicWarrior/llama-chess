@@ -414,8 +414,7 @@ static void parse_xboard_line(GAME *g, char *str)
 	pgn_switch_turn(g);
 
 	if (TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
-	    if (d->n == gindex)
-		update_cursor(*g, g->hindex);
+	    update_cursor(*g, g->hindex);
 
 	    if (TEST_FLAG(g->flags, GF_GAMEOVER))
 		RETURN(d);
@@ -469,7 +468,7 @@ void send_engine_command(GAME *g)
 	return;
 
     if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
-	if (d->n == gindex)
+	if (memcmp(g, &game[gindex], sizeof(GAME)))
 	    update_status_window(*g);
     }
 

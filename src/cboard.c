@@ -1857,7 +1857,7 @@ void update_history_window(GAME g)
     mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    h = pgn_history_by_n(g.hp, game[gindex].hindex - 1);
+    h = pgn_history_by_n(g.hp, g.hindex - 1);
     snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
     n = 0;
 
@@ -2827,7 +2827,6 @@ void init_userdata()
 
 	d = Calloc(1, sizeof(struct userdata_s));
 	game[i].data = d;
-	d->n = i;
 
 	if (pgn_board_init_fen(&game[i], d->b, NULL) != E_PGN_OK)
 	    pgn_board_init(d->b);
@@ -3061,10 +3060,6 @@ static int globalkeys(chtype c)
 		  }
 
 		  delete_game((!n) ? gindex : -1);
-
-		  if (pgn_history_total(game[gindex].hp))
-		      game[gindex].mode = MODE_HISTORY;
-
 		  d = game[gindex].data;
 		  pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
@@ -3602,7 +3597,7 @@ void catch_signal(int which)
 	    break;
 	case SIGUSR1:
 	    if (curses_initialized) {
-		update_loading_window(game[gindex]);
+		update_loading_window();
 		break;
 	    }
 

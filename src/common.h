@@ -26,7 +26,6 @@ struct userdata_s {
     BOARD b;
     struct engine_s *engine;
     unsigned short flags;
-    unsigned n;
     int c_row;
     int c_col;
 
