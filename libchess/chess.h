@@ -354,6 +354,12 @@ int pgn_int_to_piece(char turn, int n);
 void pgn_switch_turn(GAME *);
 
 /*
+ * Toggles g->side and switches the White and Black roster tags. Returns
+ * nothing.
+ */
+void pgn_switch_side(GAME *g);
+
+/*
  * Clears the enpassant flag for all positions on board 'b'. Returns nothing.
  */
 void pgn_reset_enpassant(BOARD b);

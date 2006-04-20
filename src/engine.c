@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #include "chess.h"
 #include "conf.h"
 #include "misc.h"
@@ -358,7 +362,6 @@ int start_chess_engine(GAME *g)
 static void parse_xboard_line(GAME *g, char *str)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
-    int count;
     struct userdata_s *d = g->data;
 
     p = str;
@@ -384,17 +387,22 @@ static void parse_xboard_line(GAME *g, char *str)
 	return;
 
     // We should now have the real move which may be in SAN or frfr format.
-    if (sscanf(p, "%[a-zA-Z0-9+=#-]%n", m, &count) == 1) {
+    if (sscanf(p, "%[0-9a-hprnqkxPRNBQKO+=#-]", m) == 1) {
 	p = m + strlen(m) - 1;
+
+	if (strlen(m) < 2)
+	    RETURN(d);
 
 	if (TEST_FLAG(g->flags, GF_GAMEOVER))
 	    RETURN(d);
 
 	// Test SAN or a2a4 format.
+#if 0
 	if (!isdigit(*p) && *p != 'O' && *p != '+' && *p != '#' &&
 		((*(p - 1) != '=' || !isdigit(*(p - 1))) && 
 		 pgn_piece_to_int(*p) == -1))
 	    return;
+#endif
 
 	p = m;
 
@@ -449,3 +457,69 @@ void parse_engine_output(GAME *g, char *str)
 	*p++ = *str++;
     }
 }
+
+void send_engine_command(GAME *g)
+{
+    struct userdata_s *d = g->data;
+    struct queue_s **q = d->engine->queue;
+    int i;
+
+    if (!d->engine || !d->engine->queue)
+	return;
+
+    if (!q || !q[0])
+	return;
+
+    if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
+	if (d->n == gindex) {
+	    d->engine->status = ENGINE_THINKING;
+	    update_status_window(*g);
+	    refresh_all();
+	}
+    }
+
+    free(q[0]->line);
+    free(q[0]);
+
+    for (i = 0; q[i]; i++) {
+	if (q[i+1])
+	    q[i] = q[i+1];
+	else {
+	    q[i] = NULL;
+	    break;
+	}
+    }
+}
+
+void add_engine_command(GAME *g, int s, char *fmt, ...)
+{
+    va_list ap;
+    int i = 0;
+    struct userdata_s *d = g->data;
+    struct queue_s **q;
+    char *line;
+
+    if (!d->engine)
+	return;
+
+    q = d->engine->queue;
+
+    if (q)
+	for (i = 0; q[i]; i++);
+
+    q = Realloc(q, (i + 2) * sizeof(struct queue_s *));
+    va_start(ap, fmt);
+#ifdef HAVE_VASPRINTF
+    vasprintf(&line, fmt, ap);
+#else
+    line = Malloc(LINE_MAX + 1);
+    vsnprintf(line, LINE_MAX, fmt, ap);
+#endif
+    va_end(ap);
+    q[i] = Malloc(sizeof(struct queue_s));
+    q[i]->line = line;
+    q[i++]->status = (s == -1) ? d->engine->status : s;
+    q[i] = NULL;
+    d->engine->queue = q;
+}
+

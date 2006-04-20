@@ -19,38 +19,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
-
-enum {
-    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
-};
-
-enum { 
-    HUMAN, ENGINE
-};
-
-enum {
-    ENGINE_IN_FD,
-    ENGINE_OUT_FD,
-};
-
-#define CF_ENGINE_LOOP	0x01
-#define CF_HUMAN	0x02
-
-struct queue_s {
-    char *line;
-    int status;
-};
-
-struct engine_s {
-    int fd[2];
-    pid_t pid;
-    int status;
-    struct queue_s **queue;
-};
-
 /*
  * Attached to game[n].data.
  */
@@ -62,11 +30,5 @@ struct userdata_s {
     int c_row;
     int c_col;
 };
-
-char **enginebuf;
-
-void invalid_move(int n, const char *m);
-void update_status_window(GAME g);
-void add_engine_command(GAME *, int, char *fmt, ...);
 
 #endif

@@ -895,6 +895,10 @@ static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank,
 	    default:
 		break;
 	}
+
+	// FIXME RAV/FEN
+	if (!validate && !pgn_history_total(g->hp) && srank >= 7)
+	    SET_FLAG(g->flags, GF_BLACK_OPENING);
     }
 
     if (!validate) {

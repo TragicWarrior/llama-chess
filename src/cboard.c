@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #ifdef HAVE_WORDEXP_H
 #include <wordexp.h>
 #endif
@@ -2305,18 +2309,6 @@ void update_status_notify(GAME g, char *fmt, ...)
 	update_status_window(g);
 }
 
-static void switch_side(GAME *g)
-{
-    int i = pgn_tag_find(g->tag, "White");
-    int n = pgn_tag_find(g->tag, "Black");
-    char *w = g->tag[i]->value;
-
-    g->tag[i]->value = g->tag[n]->value;
-    g->tag[n]->value = w;
-    g->side = (g->side == WHITE) ? BLACK : WHITE;
-    update_tag_window(g->tag);
-}
-
 int rav_next_prev(GAME *g, BOARD b, int n)
 {
     // Next RAV.
@@ -2381,38 +2373,6 @@ static void do_window_resize()
     wclrtobot(statusw);
     draw_window_decor();
     update_all(game[gindex]);
-}
-
-void add_engine_command(GAME *g, int s, char *fmt, ...)
-{
-    va_list ap;
-    int i = 0;
-    struct userdata_s *d = g->data;
-    struct queue_s **q;
-    char *line;
-
-    if (!d->engine)
-	return;
-
-    q = d->engine->queue;
-
-    if (q)
-	for (i = 0; q[i]; i++);
-
-    q = Realloc(q, (i + 2) * sizeof(struct queue_s *));
-    va_start(ap, fmt);
-#ifdef HAVE_VASPRINTF
-    vasprintf(&line, fmt, ap);
-#else
-    line = Malloc(LINE_MAX + 1);
-    vsnprintf(line, LINE_MAX, fmt, ap);
-#endif
-    va_end(ap);
-    q[i] = Malloc(sizeof(struct queue_s));
-    q[i]->line = line;
-    q[i++]->status = (s == -1) ? d->engine->status : s;
-    q[i] = NULL;
-    d->engine->queue = q;
 }
 
 static void historymode_keys(chtype);
@@ -2550,9 +2510,18 @@ static int playmode_keys(chtype c)
 
 	    if (!editmode && ((islower(sp.icon) && game[gindex].turn != BLACK)
 			|| (isupper(sp.icon) && game[gindex].turn != WHITE))) {
-		message(NULL, ANYKEY, "%s", E_SELECT_TURN);
-		sp.icon = 0;
-		break;
+		if (pgn_history_total(game[gindex].hp)) {
+		    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
+		    sp.icon = 0;
+		    break;
+		}
+		else {
+		    add_engine_command(&game[gindex], ENGINE_READY, "black\n");
+		    pgn_switch_turn(&game[gindex]);
+
+		    if (game[gindex].side != BLACK)
+			pgn_switch_side(&game[gindex]);
+		}
 	    }
 
 	    sp.row = d->c_row;
@@ -2564,8 +2533,9 @@ static int playmode_keys(chtype c)
 	    paused = 0;
 	    break;
 	case 'w':
-	    add_engine_command(&game[gindex], ENGINE_READY, "\nswitch\n");
-	    switch_side(&game[gindex]);
+	    pgn_switch_side(&game[gindex]);
+	    add_engine_command(&game[gindex], -1, 
+		    (game[gindex].side == WHITE) ? "white\n" : "black\n");
 	    update_status_window(game[gindex]);
 	    break;
 	case 'u':
@@ -2661,7 +2631,6 @@ static void editmode_keys(chtype c)
 	    break;
 	case 'w':
 	    pgn_switch_turn(&game[gindex]);
-	    switch_side(&game[gindex]);
 	    update_all(game[gindex]);
 	    break;
 	case 'c':
@@ -2968,7 +2937,6 @@ static int globalkeys(chtype c)
 	    */
 
 	    pushkey = 0;
-	    oldhistorytotal = pgn_history_total(game[gindex].hp);
 	    game[gindex].mode = MODE_PLAY;
 	    update_all(game[gindex]);
 	    return 1;
@@ -3435,39 +3403,6 @@ static int globalkeys(chtype c)
     return 0;
 }
 
-void send_engine_command(GAME *g)
-{
-    struct userdata_s *d = g->data;
-    struct queue_s **q = d->engine->queue;
-    int i;
-
-    if (!d->engine || !d->engine->queue)
-	return;
-
-    if (!q || !q[0])
-	return;
-
-    if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
-	if (d->n == gindex) {
-	    d->engine->status = ENGINE_THINKING;
-	    update_status_window(*g);
-	    refresh_all();
-	}
-    }
-
-    free(q[0]->line);
-    free(q[0]);
-
-    for (i = 0; q[i]; i++) {
-	if (q[i+1])
-	    q[i] = q[i+1];
-	else {
-	    q[i] = NULL;
-	    break;
-	}
-    }
-}
-
 void game_loop()
 {  
     int error_recover = 0;
@@ -3557,9 +3492,8 @@ void game_loop()
 		    for (i = 0; i < gtotal; i++) {
 			d = game[i].data;
 
-			if (d->engine && d->engine->queue) {
+			if (d->engine && d->engine->queue)
 			    send_engine_command(&game[i]);
-			}
 		    }
 		}
 	    }

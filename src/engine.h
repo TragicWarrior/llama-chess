@@ -21,8 +21,35 @@
 
 #define RETURN(d)	{d->engine->status = ENGINE_READY; return;}
 
-// This is a failsafe when resuming a game.
-int oldhistorytotal;
+enum {
+    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
+};
+
+enum { 
+    HUMAN, ENGINE
+};
+
+enum {
+    ENGINE_IN_FD,
+    ENGINE_OUT_FD,
+};
+
+#define CF_ENGINE_LOOP	0x01
+#define CF_HUMAN	0x02
+
+struct queue_s {
+    char *line;
+    int status;
+};
+
+struct engine_s {
+    int fd[2];
+    pid_t pid;
+    int status;
+    struct queue_s **queue;
+};
+
+char **enginebuf;
 
 int send_signal_to_engine(pid_t, int);
 int send_to_engine(GAME *g, int, const char *format, ...);
@@ -32,5 +59,9 @@ void stop_engine(GAME *);
 void update_cursor(GAME, int);
 void refresh_all(void);
 void append_enginebuf(char *);
+void send_engine_command(GAME *g);
+void add_engine_command(GAME *g, int s, char *fmt, ...);
+void invalid_move(int n, const char *m);
+void update_status_window(GAME g);
 
 #endif

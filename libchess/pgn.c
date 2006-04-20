@@ -101,6 +101,21 @@ void pgn_switch_turn(GAME *g)
 }
 
 /*
+ * Toggles g->side and switches the White and Black roster tags. Returns
+ * nothing.
+ */
+void pgn_switch_side(GAME *g)
+{
+    int i = pgn_tag_find(g->tag, "White");
+    int n = pgn_tag_find(g->tag, "Black");
+    char *w = g->tag[i]->value;
+
+    g->tag[i]->value = g->tag[n]->value;
+    g->tag[n]->value = w;
+    g->side = (g->side == WHITE) ? BLACK : WHITE;
+}
+
+/*
  * Creates a FEN tag from the current game 'g', history move (g.hindex) and
  * board 'b'. Returns a FEN tag.
  */
@@ -803,7 +818,7 @@ static int move_text(GAME *g, FILE *fp)
 	break;
     }
 
-    if (digit) {
+    if (!pgn_history_total(g->hp) && digit) {
 	if (dots > 1) {
 	    g->turn = BLACK;
 
@@ -822,15 +837,6 @@ static int move_text(GAME *g, FILE *fp)
 
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
-
-    p = m + strlen(m) - 1;
-
-    if (!pgn_history_total(g->hp) && g->ravlevel == 0 && 
-	    VALIDRANK(ROWTOINT(*p)) && VALIDFILE(COLTOINT(*(p-1))) && 
-	    ROWTOINT(*p) > 4 && pgn_tag_find(g->tag, "FEN") == E_PGN_ERR) {
-	g->turn = BLACK;
-	SET_FLAG(g->flags, GF_BLACK_OPENING);
-    }
 
     p = m;
 
