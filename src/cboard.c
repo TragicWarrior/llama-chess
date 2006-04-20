@@ -104,6 +104,7 @@ void update_cursor(GAME g, int idx)
     char *p;
     int len;
     int t = pgn_history_total(g.hp);
+    struct userdata_s *d = g.data;
 
     /*
      * If not deincremented then r and c would be the next move.
@@ -111,7 +112,7 @@ void update_cursor(GAME g, int idx)
     idx--;
 
     if (idx > t || idx < 0 || !t || !g.hp[idx]->move) {
-	c_row = 2, c_col = 5;
+	d->c_row = 2, d->c_col = 5;
 	return;
     }
 
@@ -120,11 +121,11 @@ void update_cursor(GAME g, int idx)
 
     if (*p == 'O') {
 	if (len <= 4)
-	    c_col = 7;
+	    d->c_col = 7;
 	else
-	    c_col = 3;
+	    d->c_col = 3;
 
-	c_row = (g.turn == WHITE) ? 1 : 8;
+	d->c_row = (g.turn == WHITE) ? 1 : 8;
 	return;
     }
 
@@ -133,8 +134,8 @@ void update_cursor(GAME g, int idx)
     while (!isdigit(*p))
 	p--;
 
-    c_row = ROWTOINT(*p--);
-    c_col = COLTOINT(*p);
+    d->c_row = ROWTOINT(*p--);
+    d->c_col = COLTOINT(*p);
 }
 
 static int init_nag()
@@ -1551,8 +1552,8 @@ static void draw_board(GAME *g, int details)
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE :
 			    CP_BOARD_BLACK;
 
-		    if (row == ROWTOMATRIX(c_row) && col == 
-			    COLTOMATRIX(c_col)) {
+		    if (row == ROWTOMATRIX(d->c_row) && col == 
+			    COLTOMATRIX(d->c_col)) {
 			attrs = CP_BOARD_CURSOR;
 		    }
 
@@ -2492,8 +2493,8 @@ static int playmode_keys(chtype c)
 	    if (!sp.icon)
 		break;
 
-	    sp.destrow = c_row;
-	    sp.destcol = c_col;
+	    sp.destrow = d->c_row;
+	    sp.destcol = d->c_col;
 
 	    if (editmode) {
 		p = d->b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon;
@@ -2539,8 +2540,8 @@ static int playmode_keys(chtype c)
 		break;
 	    }
 
-	    sp.icon = mvwinch(boardw, ROWTOMATRIX(c_row), 
-		    COLTOMATRIX(c_col)+1) & A_CHARTEXT;
+	    sp.icon = mvwinch(boardw, ROWTOMATRIX(d->c_row), 
+		    COLTOMATRIX(d->c_col)+1) & A_CHARTEXT;
 
 	    if (sp.icon == ' ') {
 		sp.icon = 0;
@@ -2554,8 +2555,8 @@ static int playmode_keys(chtype c)
 		break;
 	    }
 
-	    sp.row = c_row;
-	    sp.col = c_col;
+	    sp.row = d->c_row;
+	    sp.col = d->c_col;
 
 	    if (!editmode && config.validmoves)
 		pgn_find_valid_moves(game[gindex], d->b, sp.col, sp.row);
@@ -2653,7 +2654,7 @@ static void editmode_keys(chtype c)
 		d->b[ROWTOBOARD(sp.row)][COLTOBOARD(sp.col)].icon = 
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 	    else
-		d->b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].icon =
+		d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].icon =
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 
 	    sp.icon = sp.row = sp.col = 0;
@@ -2664,9 +2665,9 @@ static void editmode_keys(chtype c)
 	    update_all(game[gindex]);
 	    break;
 	case 'c':
-	    castling_state(&game[gindex], d->b, ROWTOBOARD(c_row), 
-		    COLTOBOARD(c_col),
-		    d->b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].icon, 1);
+	    castling_state(&game[gindex], d->b, ROWTOBOARD(d->c_row), 
+		    COLTOBOARD(d->c_col),
+		    d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].icon, 1);
 	    break;
 	case 'i':
 	    c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
@@ -2675,12 +2676,12 @@ static void editmode_keys(chtype c)
 	    if (pgn_piece_to_int(c) == -1)
 		break;
 
-	    d->b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].icon = c;
+	    d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].icon = c;
 	    break;
 	case 'p':
-	    if (c_row == 6 || c_row == 3) {
+	    if (d->c_row == 6 || d->c_row == 3) {
 		pgn_reset_enpassant(d->b);
-		d->b[ROWTOBOARD(c_row)][COLTOBOARD(c_col)].enpassant = 1;
+		d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].enpassant = 1;
 	    }
 	    break;
 	default:
@@ -3296,8 +3297,8 @@ static int globalkeys(chtype c)
 		  }
 
 		  game[gindex].mode = MODE_PLAY;
-		  c_row = (game[gindex].side == WHITE) ? 2 : 7;
-		  c_col = 4;
+		  d->c_row = (game[gindex].side == WHITE) ? 2 : 7;
+		  d->c_col = 4;
 		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
 		  return 1;
@@ -3334,14 +3335,14 @@ static int globalkeys(chtype c)
 		      return 0;
 
 		  if (keycount) {
-		      c_row += keycount;
+		      d->c_row += keycount;
 		      pushkey = '\n';
 		  }
 		  else
-		      c_row++;
+		      d->c_row++;
 
-		  if (c_row > 8)
-		      c_row = 1;
+		  if (d->c_row > 8)
+		      d->c_row = 1;
 
 		  return 1;
 	case KEY_DOWN:
@@ -3349,15 +3350,15 @@ static int globalkeys(chtype c)
 		      return 0;
 
 		  if (keycount) {
-		      c_row -= keycount;
+		      d->c_row -= keycount;
 		      pushkey = '\n';
 		      update_status_notify(game[gindex], NULL);
 		  }
 		  else
-		      c_row--;
+		      d->c_row--;
 
-		  if (c_row < 1)
-		      c_row = 8;
+		  if (d->c_row < 1)
+		      d->c_row = 8;
 
 		  return 1;
 	case KEY_LEFT:
@@ -3365,14 +3366,14 @@ static int globalkeys(chtype c)
 		      return 0;
 
 		  if (keycount) {
-		      c_col -= keycount;
+		      d->c_col -= keycount;
 		      pushkey = '\n';
 		  }
 		  else
-		      c_col--;
+		      d->c_col--;
 
-		  if (c_col < 1)
-		      c_col = 8;
+		  if (d->c_col < 1)
+		      d->c_col = 8;
 
 		  return 1;
 	case KEY_RIGHT:
@@ -3380,14 +3381,14 @@ static int globalkeys(chtype c)
 		      return 0;
 
 		  if (keycount) {
-		      c_col += keycount;
+		      d->c_col += keycount;
 		      pushkey = '\n';
 		  }
 		  else
-		      c_col++;
+		      d->c_col++;
 
-		  if (c_col > 8)
-		      c_col = 1;
+		  if (d->c_col > 8)
+		      d->c_col = 1;
 
 		  return 1;
 	case 'e':
@@ -3472,7 +3473,7 @@ void game_loop()
     int error_recover = 0;
     struct userdata_s *d = game[gindex].data;
 
-    c_row = 2, c_col = 5;
+    d->c_row = 2, d->c_col = 5;
     gindex = gtotal - 1;
 
     if (pgn_history_total(game[gindex].hp))
@@ -3565,16 +3566,15 @@ void game_loop()
 	}
 
 	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER) && game[gindex].mode 
-		!= MODE_HISTORY) {
+		!= MODE_HISTORY)
 	    game[gindex].mode = MODE_HISTORY;
-	    update_all(game[gindex]);
-	}
 
 	d = game[gindex].data;
 	error_recover = 0;
 	draw_board(&game[gindex], board_details);
+	update_all(game[gindex]);
 	// FIXME per game (DATA)
-	wmove(boardw, ROWTOMATRIX(c_row), COLTOMATRIX(c_col));
+	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
 
 	if (!paused) {
 	}
