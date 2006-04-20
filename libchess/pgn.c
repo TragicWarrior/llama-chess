@@ -1260,6 +1260,7 @@ other:
 
 	row = 8 - atoi(tmp++);
 	b[row][col].enpassant = 1;
+	SET_FLAG(*flags, GF_ENPASSANT);
     }
     else 
 	tmp++;

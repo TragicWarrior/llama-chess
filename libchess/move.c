@@ -646,7 +646,6 @@ static int validate_pawn(GAME g, BOARD b, register int sfile,
 
     p = b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon;
 
-    /* En Passant. */
     if (pgn_piece_to_int(p) != OPEN_SQUARE) {
 	if (val_piece_side(g.turn, p))
 	    return 0;
@@ -654,6 +653,7 @@ static int validate_pawn(GAME g, BOARD b, register int sfile,
 	return 1;
     }
 
+    /* En Passant. */
     p = (g.turn == WHITE) ? rank - 1 : rank + 1;
     p = b[RANKTOBOARD(p)][FILETOBOARD(file)].icon;
 
