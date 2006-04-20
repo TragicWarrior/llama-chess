@@ -3400,7 +3400,7 @@ void game_loop()
 	char fdbuf[8192] = {0};
 	int len;
 	struct timeval tv = {0, 0};
-	fd_set rfds;
+	fd_set rfds, wfds;
 
 	FD_ZERO(&rfds);
 
@@ -3414,11 +3414,18 @@ void game_loop()
 
 		    FD_SET(d->engine->fd[ENGINE_IN_FD], &rfds);
 		}
+
+		if (d->engine->fd[ENGINE_OUT_FD] > 2) {
+		    if (d->engine->fd[ENGINE_OUT_FD] > n)
+			n = d->engine->fd[ENGINE_OUT_FD];
+
+		    FD_SET(d->engine->fd[ENGINE_OUT_FD], &wfds);
+		}
 	    }
 	}
 
 	if (n) {
-	    if ((n = select(n + 1, &rfds, NULL, NULL, &tv)) > 0) {
+	    if ((n = select(n + 1, &rfds, &wfds, NULL, &tv)) > 0) {
 		for (i = 0; i < gtotal; i++) {
 		    d = game[i].data;
 
@@ -3442,6 +3449,11 @@ void game_loop()
 				    parse_engine_output(&game[i], fdbuf);
 			    }
 			}
+
+			if (FD_ISSET(d->engine->fd[ENGINE_OUT_FD], &wfds)) {
+			    if (d->engine->queue)
+				send_engine_command(&game[i]);
+			}
 		    }
 		}
 	    }
@@ -3450,13 +3462,6 @@ void game_loop()
 		    cmessage(ERROR, ANYKEY, "select(): %s", strerror(errno));
 		/* timeout */
 	    }
-	}
-
-	for (i = 0; i < gtotal; i++) {
-	    d = game[i].data;
-
-	    if (d->engine && d->engine->queue)
-		send_engine_command(&game[i]);
 	}
 
 	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER) && game[gindex].mode 
