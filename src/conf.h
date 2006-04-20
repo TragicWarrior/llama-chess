@@ -60,9 +60,6 @@ struct key_s {
 
 struct {
     int jumpcount;	// KEY_UP and KEY_DOWN in history mode.
-    int historyagony;	// Whether to display agony strings on capture when in 
-    			// history mode.
-    int agony;		// Whether to display agony anywhere.
     int linegraphics;	// Board line graphics.
     int saveprompt;	// Prompt to save modified games on quit. FIXME
     int deleteprompt;	// Prompt when deleting a game.
@@ -70,7 +67,6 @@ struct {
     int validmoves;	// Display valid squares a selected piece can move to.
     struct passwd *pwd;	// Used throughout (tags/home directory).
     char *nagfile;	// The pathname to the NAG data file.
-    char *agonyfile;	// The pathname to the agony data file.
     char *configfile;	// The pathname to the configuration file (default or
     			// from the command line).
     char *ccfile;	// The pathname to the Country Code data file.

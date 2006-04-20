@@ -1544,7 +1544,11 @@ static int read_file(FILE *fp)
 		    continue;
 		}
 
+		pgn_fen_tag = pgn_tag_find(game[gindex].tag, "FEN");
 		done_fen_tag = 1;
+#ifdef DEBUG
+		dump_board(0, pgn_board);
+#endif
 	    }
 
 	    continue;
@@ -1566,7 +1570,11 @@ static int read_file(FILE *fp)
 		}
 
 		done_fen_tag = 1;
+		pgn_fen_tag = pgn_tag_find(game[gindex].tag, "FEN");
 		tag_section = 0;
+#ifdef DEBUG
+		dump_board(0, pgn_board);
+#endif
 	    }
 
 	    /*

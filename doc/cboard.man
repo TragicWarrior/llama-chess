@@ -144,17 +144,6 @@ previous move with the UP and DOWN keys. This sets the number of moves to
 jump. The default is
 .Ar 5 .
 .Pp
-.It Cm agony Ar BOOL
-Display agony strings in the status window when a capture is made. The default
-is
-.Ar on .
-.Pp
-.It Cm history_agony Ar BOOL
-Display agony strings when browsing move history. If
-.Cm agony
-is disabled, then this will be disable also. The default is
-.Ar off .
-.Pp
 .It Cm tag Ar name Op Ar value
 Custom PGN tags to add to new games. This can also be used to overwrite
 default tag values. It can also be used more than once.

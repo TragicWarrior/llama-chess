@@ -45,5 +45,6 @@ int pgn_mpl;
 int pgn_lastc;
 int pgn_isfile;
 int pgn_count;
+int pgn_fen_tag;
 
 #endif

@@ -34,13 +34,6 @@
 # or DOWN keys.
 jump_count	5
 
-# Show agony strings on captures. BOOL
-agony		on
-
-# Show agony strings when browsing history. If "agony" above is off, this will
-# be off also regardless of the setting. BOOL
-history_agony	off
-
 # If set, the default directory where games will be saved to and opened from.
 # Tildes '~' and environment variables are supported.
 #save_directory	/some/path

@@ -168,8 +168,6 @@ void set_config_defaults()
     config.pattern = strdup("*.pgn");
     config.engine_cmd = strdup("gnuchess --xboard");
     config.jumpcount = 5;
-    config.historyagony = 0;
-    config.agony = 1;
     config.linegraphics = 1;
     config.saveprompt = 1;
     config.deleteprompt = 1;
@@ -182,13 +180,6 @@ void set_config_defaults()
 	    copydatafile(config.nagfile, "nag.data");
 	else
 	    warn("%s", config.nagfile);
-    }
-
-    if (stat(config.agonyfile, &st) == -1) {
-	if (errno == ENOENT)
-	    copydatafile(config.agonyfile, "agony.data");
-	else
-	    warn("%s", config.agonyfile);
     }
 
     if (stat(config.ccfile, &st) == -1) {
@@ -285,10 +276,6 @@ void parse_rcfile(const char *filename)
 			lines);
 	    pgn_config_set(PGN_MPL, atoi(val));
 	}
-	else if (strcmp(var, "history_agony") == 0)
-	    config.historyagony = on_or_off(filename, lines, val);
-	else if (strcmp(var, "agony") == 0)
-	    config.agony = on_or_off(filename, lines, val);
 	else if (strcmp(var, "stop_on_error") == 0)
 	    pgn_config_set(PGN_STOP_ON_ERROR, on_or_off(filename, lines, val));
 	else if (strcmp(var, "tag") == 0) {

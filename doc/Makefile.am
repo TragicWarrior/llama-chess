@@ -1,4 +1,4 @@
-dist_man6_MANS = cboard.man
+dist_man6_MANS = cboard.man config.example
 
 dist-hook:
 	for m in $(dist_man6_MANS); do \

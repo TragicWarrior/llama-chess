@@ -226,7 +226,12 @@ void set_menu_vars(int c, int rows, int items, int *item, int *top)
 		toppos = 0;
 	    break;
 	default:
-	    toppos = selected - rows + 1;
+	    if (selected == (LINES / 5) * 4 - 4)
+		toppos = 1;
+	    else if (selected <= rows)
+		toppos = 0;
+	    else
+		toppos = selected - rows + 1;
 
 	    if (toppos < 0)
 		toppos = 0;
@@ -1081,11 +1086,12 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 		    
 		    if (selected >= data_index)
 			selected = data_index - 1;
-
-		    if (selected > rows - 5)
-			toppos = selected - (rows - 5);
-		    else
-			toppos -= (toppos) ? 1 : 0;
+		    else {
+			if (selected > rows - 4)
+			    toppos = selected - (rows - 4);
+			else
+			    toppos -= (toppos) ? 1 : 0;
+		    }
 
 		    goto cleanup;
 		    break;
@@ -1142,6 +1148,11 @@ TAG **edit_tags(GAME g, BOARD b, int edit)
 			    &toppos);
 		    goto gotitem;
 		    break;
+		case CTRL('X'):
+		    pgn_tag_free(data);
+		    del_panel(panel);
+		    delwin(win);
+		    return NULL;
 		case '\n':
 		    goto gotitem;
 		    break;
@@ -1350,42 +1361,6 @@ int save_pgn(const char *filename, int saveindex)
 	strncpy(loadfile, filename, sizeof(loadfile));
 
     return 0;
-}
-
-char *random_agony(GAME g)
-{
-    static int n;
-    FILE *fp;
-    char line[LINE_MAX];
-
-    if (n == -1 || !config.agony || !curses_initialized ||
-	    (g.mode == MODE_HISTORY && !config.historyagony))
-	return NULL;
-
-    if (!agony) {
-	if ((fp = fopen(config.agonyfile, "r")) == NULL) {
-	    n = -1;
-	    cmessage(ERROR, ANYKEY, "%s: %s", config.agonyfile, strerror(errno));
-	    return NULL;
-	}
-
-	while (!feof(fp)) {
-	    if (fscanf(fp, " %[^\n] ", line) == 1) {
-		agony = Realloc(agony, (n + 2) * sizeof(char *));
-		agony[n++] = strdup(trim(line));
-	    }
-	}
-
-	agony[n] = NULL;
-	fclose(fp);
-
-	if (agony[0] == NULL || !n) {
-	    n = -1;
-	    return NULL;
-	}
-    }
-
-    return agony[random() % n];
 }
 
 static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod)
@@ -2515,6 +2490,9 @@ static int playmode_keys(chtype c)
 		    break;
 		}
 		else {
+		    if (pgn_tag_find(game[gindex].tag, "FEN") != E_PGN_ERR)
+			break;
+
 		    add_engine_command(&game[gindex], ENGINE_READY, "black\n");
 		    pgn_switch_turn(&game[gindex]);
 
@@ -3662,8 +3640,6 @@ int main(int argc, char *argv[])
     config.ccfile = strdup(buf);
     snprintf(buf, sizeof(buf), "%s/nag.data", datadir);
     config.nagfile = strdup(buf);
-    snprintf(buf, sizeof(buf), "%s/agony.data", datadir);
-    config.agonyfile = strdup(buf);
     snprintf(buf, sizeof(buf), "%s/config", datadir);
     config.configfile = strdup(buf);
 

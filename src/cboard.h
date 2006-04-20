@@ -57,7 +57,6 @@ int pushkey;
 int keycount;
 char loadfile[FILENAME_MAX];
 int quit;
-char **agony;
 int paused;
 
 // Loaded filename from the command line or from the file input dialog.
@@ -185,7 +184,8 @@ const char *pgn_edit_help[] = {
     "     CTRL-f - add FEN tag from current position",
     "     CTRL-r - remove selected entry",
     "     CTRL-t - add custom tags",
-    "     ESCAPE - quit",
+    "     CTRL-x - quit without changes",
+    "     ESCAPE - quit with changes",
     NULL
 };
 

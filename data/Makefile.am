@@ -1,1 +1,1 @@
-dist_pkgdata_DATA = config.example nag.data agony.data cc.data
+dist_pkgdata_DATA = nag.data cc.data
