@@ -28,3 +28,5 @@ order):
 - A menu to select a game from a file.
 
 ? Macros? A sequence of (bound) keys for a given game mode.
+
+- Internationalization (gettext).

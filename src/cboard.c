@@ -3573,7 +3573,6 @@ void game_loop()
 	error_recover = 0;
 	draw_board(&game[gindex], board_details);
 	update_all(game[gindex]);
-	// FIXME per game (DATA)
 	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
 
 	if (!paused) {
