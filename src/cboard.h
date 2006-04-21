@@ -50,6 +50,7 @@ PANEL *loadingp;
 WINDOW *enginew;
 PANEL *enginep;
 
+struct itimerval clock_timer;
 int delete_count = 0;
 int markstart = -1, markend = -1;
 int pushkey;

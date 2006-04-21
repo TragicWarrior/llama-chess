@@ -1654,32 +1654,20 @@ static void update_clock(GAME *g)
     }
 
     if (g->turn == WHITE) {
-	d->wc.tv.tv_usec += 100000;
+	d->wc.tv_usec += 100000;
 
-	if (d->wc.tv.tv_usec > 1000000 - 1) {
-	    d->wc.tv.tv_sec += d->wc.tv.tv_usec / 1000000;
-	    d->wc.tv.tv_usec = d->wc.tv.tv_usec % 1000000;
+	if (d->wc.tv_usec > 1000000 - 1) {
+	    d->wc.tv_sec += d->wc.tv_usec / 1000000;
+	    d->wc.tv_usec = d->wc.tv_usec % 1000000;
 	}
-
-	d->wc.it.it_value.tv_sec = 0;
-	d->wc.it.it_value.tv_usec = 100000;
-	d->wc.it.it_interval.tv_sec = 0;
-	d->wc.it.it_interval.tv_usec = 100000;
-	setitimer(ITIMER_REAL, &d->wc.it, NULL);
     }
     else {
-	d->bc.tv.tv_usec += 100000;
+	d->bc.tv_usec += 100000;
 
-	if (d->bc.tv.tv_usec > 1000000 - 1) {
-	    d->bc.tv.tv_sec += d->bc.tv.tv_usec / 1000000;
-	    d->bc.tv.tv_usec = d->bc.tv.tv_usec % 1000000;
+	if (d->bc.tv_usec > 1000000 - 1) {
+	    d->bc.tv_sec += d->bc.tv_usec / 1000000;
+	    d->bc.tv_usec = d->bc.tv_usec % 1000000;
 	}
-
-	d->bc.it.it_value.tv_sec = 0;
-	d->bc.it.it_value.tv_usec = 100000;
-	d->bc.it.it_interval.tv_sec = 0;
-	d->bc.it.it_interval.tv_usec = 100000;
-	setitimer(ITIMER_REAL, &d->bc.it, NULL);
     }
 }
 
@@ -1708,17 +1696,17 @@ static int move_to_engine(GAME *g, BOARD b)
     return 1;
 }
 
-char *clock_to_char(struct moveclock_s timer)
+char *clock_to_char(struct timeval t)
 {
     static char buf[16];
     int h = 0, m = 0, s = 0;
-    int n = timer.tv.tv_sec;
+    int n = t.tv_sec;
 
     h = n / 3600;
     m = (n % 3600) / 60;
     s = (n % 3600) % 60;
     snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i.%.2i", h, m, s, 
-	    (int)timer.tv.tv_usec / 10000);
+	    (int)t.tv_usec / 10000);
     return buf;
 }
 
@@ -2406,6 +2394,12 @@ void update_clocks()
 	if (game[gindex].mode == MODE_PLAY)
 	    update_clock(&game[gindex]);
     }
+
+    clock_timer.it_value.tv_sec = 0;
+    clock_timer.it_value.tv_usec = 100000;
+    clock_timer.it_interval.tv_sec = 0;
+    clock_timer.it_interval.tv_usec = 100000;
+    setitimer(ITIMER_REAL, &clock_timer, NULL);
 }
 
 static void historymode_keys(chtype);
