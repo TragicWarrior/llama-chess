@@ -1433,7 +1433,7 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
     return 0;
 }
 
-static void draw_board(GAME *g, int details)
+static void draw_board(GAME *g)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -1549,13 +1549,13 @@ static void draw_board(GAME *g, int details)
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			if (details && d->b[row / 2][bcol].enpassant)
+			if (config.details && d->b[row / 2][bcol].enpassant)
 			    piece = 'x';
 			else
 			    piece = d->b[row / 2][bcol].icon;
 
-			if (details && castling_state(g, d->b, brow, bcol,
-				    piece, 0))
+			if (config.details && castling_state(g, d->b, brow,
+				    bcol, piece, 0))
 			    attrs |= A_REVERSE;
 
 			if (g->side == WHITE && isupper(piece))
@@ -1583,6 +1583,8 @@ static void draw_board(GAME *g, int details)
 
 	brow = row / 2;
     }
+
+    mvwaddch(boardw, maxy - 1, maxx - 2, (config.details) ? '!' : ' ');
 }
 
 void invalid_move(int n, const char *m)
@@ -2534,7 +2536,7 @@ static int playmode_keys(chtype c)
 	    historymode_keys(c);
 	    break;
 	case 'd':
-	    board_details = (board_details) ? 0 : 1;
+	    config.details = (config.details) ? 0 : 1;
 	    break;
 	case 'p':
 	    paused = (paused) ? 0 : 1;
@@ -2644,7 +2646,7 @@ static void historymode_keys(chtype c)
 
     switch (c) {
 	case 'd':
-	    board_details = (board_details) ? 0 : 1;
+	    config.details = (config.details) ? 0 : 1;
 	    break;
 	case ' ':
 	    movestep = (movestep == 1) ? 2 : 1;
@@ -3335,13 +3337,13 @@ static int globalkeys(chtype c)
 
 		  if (game[gindex].mode != MODE_EDIT) {
 		      pgn_board_init_fen(&game[gindex], d->b, NULL);
-		      board_details++;
+		      config.details++;
 		      game[gindex].mode = MODE_EDIT;
 		      update_all(game[gindex]);
 		      return 1;
 		  }
 
-		  board_details--;
+		  config.details--;
 		  pgn_tag_add(&game[gindex].tag, "FEN", 
 			  pgn_game_to_fen(game[gindex], d->b));
 		  pgn_tag_add(&game[gindex].tag, "SetUp", "1");
@@ -3470,7 +3472,7 @@ void game_loop()
 
 	d = game[gindex].data;
 	error_recover = 0;
-	draw_board(&game[gindex], board_details);
+	draw_board(&game[gindex]);
 	update_all(game[gindex]);
 	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
 
@@ -3616,8 +3618,8 @@ void catch_signal(int which)
 
 static void set_defaults()
 {
-    filetype = NO_FILE;
     set_config_defaults();
+    filetype = NO_FILE;
 }
 
 int main(int argc, char *argv[])

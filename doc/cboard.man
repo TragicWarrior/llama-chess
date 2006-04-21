@@ -152,6 +152,10 @@ default tag values. It can also be used more than once.
 Enable or disable board line graphics. The default is
 .Ar off .
 .Pp
+.It Cm board_details Ar BOOL
+When enabled castling availability and the en passasnt square will be shown on
+the board. This can be toggled with the `d' key.
+.Pp
 .It Cm save_directory Pa path
 If set, the default directory where games will be saved and restored from.
 Tildes `~' and environment variables are supported.

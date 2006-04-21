@@ -52,7 +52,6 @@ PANEL *enginep;
 
 int delete_count = 0;
 int markstart = -1, markend = -1;
-int board_details;
 int pushkey;
 int keycount;
 char loadfile[FILENAME_MAX];

@@ -80,6 +80,7 @@ struct {
                          * or new game.
 			 */
     struct key_s **keys; // Custom commands to send to the engine.
+    int details;	// Board details.
 } config;
 
 #endif

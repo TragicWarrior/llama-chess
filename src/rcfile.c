@@ -311,6 +311,8 @@ void parse_rcfile(const char *filename)
 	    config.deleteprompt = on_or_off(filename, lines, val);
 	else if (strcmp(var, "valid_moves") == 0)
 	    config.validmoves = on_or_off(filename, lines, val);
+	else if (strcmp(var, "board_details") == 0)
+	    config.details = on_or_off(filename, lines, val);
 	else if (strcmp(var, "engine_cmd") == 0)
 	    altengine = strdup(val);
 	else if (strcmp(var, "color_board_window") == 0)
