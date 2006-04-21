@@ -516,4 +516,3 @@ void add_engine_command(GAME *g, int s, char *fmt, ...)
     q[i] = NULL;
     d->engine->queue = q;
 }
-

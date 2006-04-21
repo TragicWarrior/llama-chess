@@ -2393,7 +2393,7 @@ static int playmode_keys(chtype c)
 	    TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
 	    CLEAR_FLAG(d->flags, CF_HUMAN);
 
-	    if (d->engine && !TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
+	    if (d->engine && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
 		pgn_board_update(&game[gindex], d->b,
 			pgn_history_total(game[gindex].hp));
 		add_engine_command(&game[gindex], ENGINE_READY, 
@@ -2412,7 +2412,7 @@ static int playmode_keys(chtype c)
 	    x = d->engine->status;
 
 	    if ((tmp = get_input_str_clear(ENGINE_CMD_TITLE, NULL)) != NULL)
-		send_to_engine(&game[gindex], ENGINE_READY, "%s\n", tmp);
+		send_to_engine(&game[gindex], -1, "%s\n", tmp);
 	    d->engine->status = x;
 	    break;
 	case '\015':
