@@ -34,9 +34,6 @@ enum {
     ENGINE_OUT_FD,
 };
 
-#define CF_ENGINE_LOOP	0x01
-#define CF_HUMAN	0x02
-
 struct queue_s {
     char *line;
     int status;

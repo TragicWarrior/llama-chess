@@ -1643,16 +1643,13 @@ static char *board_to_san(GAME *g, BOARD b)
     return p;
 }
 
-static void update_clock(GAME *g)
+static void update_clock(GAME *g, struct itimerval it)
 {
     struct userdata_s *d = g->data;
-    struct itimerval t;
-    
-    getitimer(ITIMER_REAL, &t);
 
     if (g->turn == WHITE) {
-	d->wc.tv_sec += t.it_value.tv_sec;
-	d->wc.tv_usec += t.it_value.tv_usec;
+	d->wc.tv_sec += it.it_value.tv_sec;
+	d->wc.tv_usec += it.it_value.tv_usec;
 
 	if (d->wc.tv_usec > 1000000 - 1) {
 	    d->wc.tv_sec += d->wc.tv_usec / 1000000;
@@ -1660,8 +1657,8 @@ static void update_clock(GAME *g)
 	}
     }
     else {
-	d->bc.tv_sec += t.it_value.tv_sec;
-	d->bc.tv_usec += t.it_value.tv_usec;
+	d->bc.tv_sec += it.it_value.tv_sec;
+	d->bc.tv_usec += it.it_value.tv_usec;
 
 	if (d->bc.tv_usec > 1000000 - 1) {
 	    d->bc.tv_sec += d->bc.tv_usec / 1000000;
@@ -2401,25 +2398,26 @@ static void update_clocks()
 {
     int i;
     struct userdata_s *d;
+    struct itimerval it;
+
+    getitimer(ITIMER_REAL, &it);
 
     for (i = 0; i < gtotal; i++) {
 	if (game[i].mode == MODE_PLAY) {
 	    d = game[i].data;
 
-	    if (d->paused == 1 || (d->sp.icon == 0 &&
-			!pgn_history_total(game[i].hp)))
-		return;
+	    if (d->paused == 1 || TEST_FLAG(d->flags, CF_NEW))
+		continue;
 	    else if (d->paused == -1) {
 		if (game[i].side == game[i].turn) {
 		    d->paused = 1;
-		    return;
+		    continue;
 		}
 	    }
 
-	    update_clock(&game[i]);
+	    update_clock(&game[i], it);
 	}
     }
-
 }
 
 static void historymode_keys(chtype);
@@ -2581,8 +2579,10 @@ static int playmode_keys(chtype c)
 	    if (!editmode && config.validmoves)
 		pgn_find_valid_moves(game[gindex], d->b, d->sp.scol, d->sp.srow);
 
-	    if (!editmode)
+	    if (!editmode) {
+		CLEAR_FLAG(d->flags, CF_NEW);
 		start_clock();
+	    }
 
 	    break;
 	case 'w':
@@ -2908,6 +2908,7 @@ static void init_userdata_once(GAME *g, int n)
     d = Calloc(1, sizeof(struct userdata_s));
     d->n = n;
     d->c_row = 2, d->c_col = 5;
+    SET_FLAG(d->flags, CF_NEW);
     g->data = d;
 
     if (pgn_board_init_fen(g, d->b, NULL) != E_PGN_OK)
@@ -3613,6 +3614,8 @@ void cleanup_all()
 {
     int i;
 
+    memset(&clock_timer, 0, sizeof(struct itimerval));
+    setitimer(ITIMER_REAL, &clock_timer, NULL);
     free_userdata();
     pgn_free_all();
     free(config.engine_cmd);

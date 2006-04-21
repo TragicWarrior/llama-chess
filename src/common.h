@@ -19,6 +19,10 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#define CF_ENGINE_LOOP	0x01
+#define CF_HUMAN	0x02
+#define CF_NEW		0x04
+
 /*
  * Attached to game[n].data.
  */
