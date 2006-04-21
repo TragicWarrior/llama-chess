@@ -31,6 +31,7 @@ struct userdata_s {
     int c_row;
     int c_col;
     int paused;
+    int n;
 
     // The selected piece.
     struct {

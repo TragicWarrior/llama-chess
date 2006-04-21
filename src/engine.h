@@ -61,7 +61,7 @@ void refresh_all(void);
 void append_enginebuf(char *);
 void send_engine_command(GAME *g);
 void add_engine_command(GAME *g, int s, char *fmt, ...);
-void invalid_move(int n, const char *m);
+void invalid_move(int n, int e, const char *m);
 void update_status_window(GAME g);
 
 #endif

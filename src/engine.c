@@ -363,6 +363,7 @@ static void parse_xboard_line(GAME *g, char *str)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
     struct userdata_s *d = g->data;
+    int n;
 
     p = str;
 
@@ -404,8 +405,8 @@ static void parse_xboard_line(GAME *g, char *str)
 
 	p = m;
 
-	if (pgn_parse_move(g, d->b, &p) != E_PGN_OK) {
-	    invalid_move(0, m);
+	if ((n = pgn_parse_move(g, d->b, &p)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, m);
 	    RETURN(d);
 	}
 

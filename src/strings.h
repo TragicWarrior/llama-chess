@@ -83,6 +83,7 @@
 #define E_INITCURSES	"Could not initialize curses."
 #define E_SAVE_COMPRESS	"Cannot append to compressed file."
 #define E_INVALID_MOVE	"Invalid move"
+#define E_AMBIGUOUS	"Ambiguous move"
 #define E_INVALID_COMMAND	"Invalid engine command or move"
 #define E_SELECT_TURN	"It is not your turn to move. You can switch sides " \
     "by pressing 'w' or force the engine to make the next move by " \

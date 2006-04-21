@@ -1587,12 +1587,14 @@ static void draw_board(GAME *g)
     mvwaddch(boardw, maxy - 1, maxx - 2, (config.details) ? '!' : ' ');
 }
 
-void invalid_move(int n, const char *m)
+void invalid_move(int n, int e, const char *m)
 {
     if (curses_initialized)
-	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", E_INVALID_MOVE, m, n);
+	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", (e == E_PGN_AMBIGUOUS)
+		? E_AMBIGUOUS : E_INVALID_MOVE, m, n);
     else
-	warnx("%s: %s \"%s\" (round #%i)", loadfile, E_INVALID_MOVE, m, n);
+	warnx("%s: %s \"%s\" (round #%i)", loadfile, (e == E_PGN_AMBIGUOUS) 
+		? E_AMBIGUOUS : E_INVALID_MOVE, m, n);
 }
 
 /* Convert the selected piece to SAN format and validate it. */
@@ -1602,6 +1604,7 @@ static char *board_to_san(GAME *g, BOARD b)
     int piece;
     int promo;
     struct userdata_s *d = g->data;
+    int n;
 
     snprintf(str, sizeof(str), "%c%i%c%i", x_grid_chars[d->sp.scol - 1], 
 	    d->sp.srow, x_grid_chars[d->sp.col - 1], d->sp.row);
@@ -1624,16 +1627,16 @@ static char *board_to_san(GAME *g, BOARD b)
     p = str;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	if (pgn_parse_move(g, b, &p) != E_PGN_OK) {
-	    invalid_move(gindex + 1, p);
+	if ((n = pgn_parse_move(g, b, &p)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, p);
 	    return NULL;
 	}
 
 	return p;
     }
 
-    if (pgn_validate_move(g, b, &p) != E_PGN_OK) {
-	invalid_move(gindex + 1, p);
+    if ((n = pgn_validate_move(g, b, &p)) != E_PGN_OK) {
+	invalid_move(d->n + 1, n, p);
 	return NULL;
     }
 
@@ -2898,19 +2901,25 @@ void update_loading_window(int n)
     doupdate();
 }
 
+static void init_userdata_once(GAME *g, int n)
+{
+    struct userdata_s *d = NULL;
+
+    d = Calloc(1, sizeof(struct userdata_s));
+    d->n = n;
+    d->c_row = 2, d->c_col = 5;
+    g->data = d;
+
+    if (pgn_board_init_fen(g, d->b, NULL) != E_PGN_OK)
+	pgn_board_init(d->b);
+}
+
 void init_userdata()
 {
     int i;
 
-    for (i = 0; i < gtotal; i++) {
-	struct userdata_s *d = NULL;
-
-	d = Calloc(1, sizeof(struct userdata_s));
-	game[i].data = d;
-
-	if (pgn_board_init_fen(&game[i], d->b, NULL) != E_PGN_OK)
-	    pgn_board_init(d->b);
-    }
+    for (i = 0; i < gtotal; i++)
+	init_userdata_once(&game[i], i);
 }
 
 void fix_marks(int *start, int *end)
@@ -3295,17 +3304,13 @@ static int globalkeys(chtype c)
 		  if (c == 'n') {
 		      pgn_new_game();
 		      add_custom_tags(&game[gindex].tag);
-		      d = Calloc(1, sizeof(struct userdata_s));
-		      pgn_board_init(d->b);
-		      game[gindex].data = d;
+		      init_userdata_once(&game[gindex], gindex);
 		  }
 		  else {
 		      free_userdata();
 		      pgn_parse(NULL);
 		      add_custom_tags(&game[gindex].tag);
-		      d = Calloc(1, sizeof(struct userdata_s));
-		      pgn_board_init(d->b);
-		      game[gindex].data = d;
+		      init_userdata();
 		      loadfile[0] = 0;
 		  }
 
@@ -3453,7 +3458,6 @@ void game_loop()
     int error_recover = 0;
     struct userdata_s *d = game[gindex].data;
 
-    d->c_row = 2, d->c_col = 5;
     gindex = gtotal - 1;
 
     if (pgn_history_total(game[gindex].hp))
