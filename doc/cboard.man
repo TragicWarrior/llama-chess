@@ -266,12 +266,9 @@ will return 0 on success or 1 on failure. Failures are file access errors,
 parsing errors or command line usage errors.
 .
 .Sh FILES
-.Bl -tag -compact -width ~/.cboard/agony.data
+.Bl -tag -compact -width ~/.cboard/nag.data
 .It Pa ~/.cboard/config
 Configuration file.
-.It Pa ~/.cboard/agony.data
-A list of agony strings, one per line, which is displayed randomly when a
-capture has been made.
 .It Pa ~/.cboard/cc.data
 Country codes. Used when editing the \&"Site\&" tag.
 .It Pa ~/.cboard/nag.data
@@ -280,9 +277,10 @@ reserved by the PGN standard.
 .El
 .
 .Sh SEE ALSO
-.Xr wordexp 3 ,
+.Xr gnuchess 6 ,
 .Xr ncurses 3 ,
-.Xr gnuchess 6
+.Xr wordexp 3 ,
+.Xr regex 7
 .
 .Sh AUTHORS
 .An "Ben Kibbey" Aq bjk@luxsci.net
