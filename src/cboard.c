@@ -2382,6 +2382,12 @@ static void do_window_resize()
     update_all(game[gindex]);
 }
 
+void stop_clock()
+{
+    memset(&clock_timer, 0, sizeof(struct itimerval));
+    setitimer(ITIMER_REAL, &clock_timer, NULL);
+}
+
 void start_clock()
 {
     if (clock_timer.it_interval.tv_usec)
@@ -3308,6 +3314,7 @@ static int globalkeys(chtype c)
 		      init_userdata_once(&game[gindex], gindex);
 		  }
 		  else {
+		      stop_clock();
 		      free_userdata();
 		      pgn_parse(NULL);
 		      add_custom_tags(&game[gindex].tag);
@@ -3614,8 +3621,7 @@ void cleanup_all()
 {
     int i;
 
-    memset(&clock_timer, 0, sizeof(struct itimerval));
-    setitimer(ITIMER_REAL, &clock_timer, NULL);
+    stop_clock();
     free_userdata();
     pgn_free_all();
     free(config.engine_cmd);
