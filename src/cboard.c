@@ -2628,6 +2628,9 @@ static int playmode_keys(chtype c)
 	    d->paused = (d->paused) ? 0 : 1;
 	    break;
 	case 'g':
+	    if (TEST_FLAG(d->flags, CF_HUMAN))
+		break;
+
 	    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
 		start_chess_engine(&game[gindex]);
 
