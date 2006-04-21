@@ -977,7 +977,8 @@ static int frfrtosan(GAME *g, BOARD b, char **m)
     }
 
     *bp++ = toupper(icon);
-    n = find_ambiguous(*g, b, p, 0, 0, file, rank);
+    fc = rc = 0;
+    n = find_source_square(*g, b, p, &fc, &rc, file, rank);
     
     if (!n)
 	return E_PGN_INVALID;
@@ -1221,10 +1222,11 @@ again:
 	if (*p == '=')
 	    promo == *++p;
 
-	if ((i = find_ambiguous(*g, b, piece, sfile, srank, file, rank))
-		!= 1)
+	if ((i = find_source_square(*g, b, piece, &sfile, &srank, file, rank))
+		!= 1 && !check)
 	    return (i == 0) ? E_PGN_INVALID : E_PGN_AMBIGUOUS;
 
+#if 0
 	/*
 	 * The move is a valid one. Find the source file and rank so we
 	 * can later update the board positions.
@@ -1232,6 +1234,7 @@ again:
 	if (find_source_square(*g, b, piece, &sfile, &srank, file, rank)
 		!= 1 && !check)
 	    return E_PGN_INVALID;
+#endif
     }
 
     *p = 0;
