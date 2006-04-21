@@ -661,7 +661,8 @@ static int validate_pawn(GAME g, BOARD b, register int sfile,
 	return 0;
 
     /* Previous move was not 2 squares and a pawn. */
-    if (!TEST_FLAG(g.flags, GF_ENPASSANT))
+    if (!TEST_FLAG(g.flags, GF_ENPASSANT) ||
+	    b[RANKTOBOARD(rank)][FILETOBOARD(file)].enpassant == 0)
 	return 0;
 
     /*
