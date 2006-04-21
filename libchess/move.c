@@ -691,6 +691,42 @@ static int validate_pawn(GAME g, BOARD b, register int sfile,
 
 static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank, 
 	int file, int rank);
+static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
+	int file, int rank)
+{
+    BOARD tmpb;
+    GAME newg;
+    int oldv = validate;
+    int nkfile, nkrank, nokfile, nokrank;
+
+    validate = 0;
+    check_testing = 1;
+    memcpy(tmpb, b, sizeof(BOARD));
+    memcpy(&newg, &g, sizeof(GAME));
+
+    if (finalize_move(&newg, tmpb, 0, sfile, srank, file, rank) 
+	    != E_PGN_OK) {
+	check_testing = 0;
+	validate = oldv;
+	return 0;
+    }
+
+    if (p == KING)
+	find_king_squares(newg, tmpb, &nkfile, &nkrank, &nokfile, &nokrank);
+    else
+	nkfile = kfile, nkrank = krank;
+
+    if (check_self(newg, tmpb, nkfile, nkrank) == CHECK_SELF) {
+	check_testing = 0;
+	validate = oldv;
+	return 0;
+    }
+
+    validate = oldv;
+    check_testing = 0;
+    return 1;
+}
+
 static int find_source_square(GAME g, BOARD b, int piece, int *sfile, 
 	int *srank, register int file, register int rank)
 {
@@ -721,26 +757,52 @@ static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
 	    return 0;
 	else
 	    count = 1;
+
+	if (!check_testing) {
+	    if (check_self_test(g, b, piece, *sfile, *srank, file, rank) == 0)
+		return 0;
+	}
     }
     else {
-	if (*sfile && *srank)
+	if (*sfile && *srank) {
 	    count = find_ambiguous(g, b, piece, *sfile, *srank, file, rank);
+
+	    if (count != 1)
+		return count;
+
+	    if (!check_testing) {
+		if (check_self_test(g, b, piece, *sfile, *srank, file, rank) 
+			== 0)
+		    return 0;
+	    }
+	}
 	else {
+	    int ff = *sfile, rr = *srank;
+
 	    for (r = 1; VALIDRANK(r); r++) {
 		for (f = 1; VALIDFILE(f); f++) {
 		    int n;
 
-		    if ((*sfile && f != *sfile) || (*srank && r != *srank))
+		    if ((*sfile && f != ff) || (*srank && r != rr))
 			continue;
 
 		    n = find_ambiguous(g, b, piece, f, r, file, rank);
 
 		    if (n) {
+			if (!check_testing && check_self_test(g, b, piece, f, 
+				    r, file, rank) == 0)
+			    continue;
+
 			count += n;
-			*sfile = f;
-			*srank = r;
+			ff = f;
+			rr = r;
 		    }
 		}
+	    }
+
+	    if (count == 1) {
+		*sfile = ff;
+		*srank = rr;
 	    }
 	}
 
@@ -750,39 +812,6 @@ static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
 
     if (count != 1)
 	return count;
-
-    if (!check_testing) {
-	BOARD tmpb;
-	GAME newg;
-	int oldv = validate;
-	int nkfile, nkrank, nokfile, nokrank;
-
-	validate = 0;
-	check_testing = 1;
-	memcpy(tmpb, b, sizeof(BOARD));
-	memcpy(&newg, &g, sizeof(GAME));
-
-	if (finalize_move(&newg, tmpb, 0, *sfile, *srank, file, rank) 
-		!= E_PGN_OK) {
-	    check_testing = 0;
-	    validate = oldv;
-	    return 0;
-	}
-
-	if (piece == KING)
-	    find_king_squares(newg, tmpb, &nkfile, &nkrank, &nokfile, &nokrank);
-	else
-	    nkfile = kfile, nkrank = krank;
-
-	if (check_self(newg, tmpb, nkfile, nkrank) == CHECK_SELF) {
-	    check_testing = 0;
-	    validate = oldv;
-	    return 0;
-	}
-
-	validate = oldv;
-	check_testing = 0;
-    }
 
     return count;
 }
@@ -1222,6 +1251,7 @@ again:
 	if (*p == '=')
 	    promo == *++p;
 
+	fprintf(stderr, "%i %i %i %i\n", sfile, srank ,file,rank);
 	if ((i = find_source_square(*g, b, piece, &sfile, &srank, file, rank))
 		!= 1 && !check)
 	    return (i == 0) ? E_PGN_INVALID : E_PGN_AMBIGUOUS;
