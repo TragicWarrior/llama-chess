@@ -1643,18 +1643,13 @@ static char *board_to_san(GAME *g, BOARD b)
 static void update_clock(GAME *g)
 {
     struct userdata_s *d = g->data;
+    struct itimerval t;
     
-    if (d->paused == 1)
-	return;
-    else if (d->paused == -1) {
-	if (g->side == g->turn) {
-	    d->paused = 1;
-	    return;
-	}
-    }
+    getitimer(ITIMER_REAL, &t);
 
     if (g->turn == WHITE) {
-	d->wc.tv_usec += 100000;
+	d->wc.tv_sec += t.it_value.tv_sec;
+	d->wc.tv_usec += t.it_value.tv_usec;
 
 	if (d->wc.tv_usec > 1000000 - 1) {
 	    d->wc.tv_sec += d->wc.tv_usec / 1000000;
@@ -1662,7 +1657,8 @@ static void update_clock(GAME *g)
 	}
     }
     else {
-	d->bc.tv_usec += 100000;
+	d->bc.tv_sec += t.it_value.tv_sec;
+	d->bc.tv_usec += t.it_value.tv_usec;
 
 	if (d->bc.tv_usec > 1000000 - 1) {
 	    d->bc.tv_sec += d->bc.tv_usec / 1000000;
@@ -2386,20 +2382,41 @@ static void do_window_resize()
     update_all(game[gindex]);
 }
 
-void update_clocks()
+void start_clock()
 {
-    int i;
-
-    for (i = 0; i < gtotal; i++) {
-	if (game[gindex].mode == MODE_PLAY)
-	    update_clock(&game[gindex]);
-    }
+    if (clock_timer.it_interval.tv_usec)
+	return;
 
     clock_timer.it_value.tv_sec = 0;
     clock_timer.it_value.tv_usec = 100000;
     clock_timer.it_interval.tv_sec = 0;
     clock_timer.it_interval.tv_usec = 100000;
     setitimer(ITIMER_REAL, &clock_timer, NULL);
+}
+
+static void update_clocks()
+{
+    int i;
+    struct userdata_s *d;
+
+    for (i = 0; i < gtotal; i++) {
+	if (game[i].mode == MODE_PLAY) {
+	    d = game[i].data;
+
+	    if (d->paused == 1 || (d->sp.icon == 0 &&
+			!pgn_history_total(game[i].hp)))
+		return;
+	    else if (d->paused == -1) {
+		if (game[i].side == game[i].turn) {
+		    d->paused = 1;
+		    return;
+		}
+	    }
+
+	    update_clock(&game[i]);
+	}
+    }
+
 }
 
 static void historymode_keys(chtype);
@@ -2562,7 +2579,7 @@ static int playmode_keys(chtype c)
 		pgn_find_valid_moves(game[gindex], d->b, d->sp.scol, d->sp.srow);
 
 	    if (!editmode)
-		update_clocks();
+		start_clock();
 
 	    break;
 	case 'w':
