@@ -118,7 +118,6 @@ typedef struct games {
     RAV *rav;			// Saved game states for the root move of RAV.
     int ravlevel;		// An index to *rav.
     unsigned short hindex;	// Current move in *hp.
-    unsigned moveclock;		// Move clock. FIXME
     unsigned short flags;	// Game flags.
     unsigned char side: 1,      // This playing side. BLACK or WHITE.
                   turn: 1,      // BLACK or WHITE.

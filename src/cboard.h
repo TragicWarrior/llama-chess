@@ -56,7 +56,7 @@ int pushkey;
 int keycount;
 char loadfile[FILENAME_MAX];
 int quit;
-int paused;
+time_t now;
 
 // Loaded filename from the command line or from the file input dialog.
 int filetype;

@@ -1640,6 +1640,49 @@ static char *board_to_san(GAME *g, BOARD b)
     return p;
 }
 
+static void update_clock(GAME *g)
+{
+    struct userdata_s *d = g->data;
+    
+    if (d->paused == 1)
+	return;
+    else if (d->paused == -1) {
+	if (g->side == g->turn) {
+	    d->paused = 1;
+	    return;
+	}
+    }
+
+    if (g->turn == WHITE) {
+	d->wc.tv.tv_usec += 100000;
+
+	if (d->wc.tv.tv_usec > 1000000 - 1) {
+	    d->wc.tv.tv_sec += d->wc.tv.tv_usec / 1000000;
+	    d->wc.tv.tv_usec = d->wc.tv.tv_usec % 1000000;
+	}
+
+	d->wc.it.it_value.tv_sec = 0;
+	d->wc.it.it_value.tv_usec = 100000;
+	d->wc.it.it_interval.tv_sec = 0;
+	d->wc.it.it_interval.tv_usec = 100000;
+	setitimer(ITIMER_REAL, &d->wc.it, NULL);
+    }
+    else {
+	d->bc.tv.tv_usec += 100000;
+
+	if (d->bc.tv.tv_usec > 1000000 - 1) {
+	    d->bc.tv.tv_sec += d->bc.tv.tv_usec / 1000000;
+	    d->bc.tv.tv_usec = d->bc.tv.tv_usec % 1000000;
+	}
+
+	d->bc.it.it_value.tv_sec = 0;
+	d->bc.it.it_value.tv_usec = 100000;
+	d->bc.it.it_interval.tv_sec = 0;
+	d->bc.it.it_interval.tv_usec = 100000;
+	setitimer(ITIMER_REAL, &d->bc.it, NULL);
+    }
+}
+
 static int move_to_engine(GAME *g, BOARD b)
 {
     char *p;
@@ -1649,6 +1692,9 @@ static int move_to_engine(GAME *g, BOARD b)
 	return 0;
 
     d->sp.srow = d->sp.scol = d->sp.icon = 0;
+
+    if (TEST_FLAG(g->flags, GF_GAMEOVER))
+	g->mode = MODE_HISTORY;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
 	pgn_history_add(g, p);
@@ -1662,13 +1708,18 @@ static int move_to_engine(GAME *g, BOARD b)
     return 1;
 }
 
-static void update_clock(int n, int *h, int *m, int *s)
+char *clock_to_char(struct moveclock_s timer)
 {
-    *h = n / 3600;
-    *m = (n % 3600) / 60;
-    *s = (n % 3600) % 60;
+    static char buf[16];
+    int h = 0, m = 0, s = 0;
+    int n = timer.tv.tv_sec;
 
-    return;
+    h = n / 3600;
+    m = (n % 3600) / 60;
+    s = (n % 3600) % 60;
+    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i.%.2i", h, m, s, 
+	    (int)timer.tv.tv_usec / 10000);
+    return buf;
 }
 
 void update_status_window(GAME g)
@@ -1677,7 +1728,6 @@ void update_status_window(GAME g)
     char *buf;
     char tmp[15], *engine, *mode;
     int w;
-    int h, m, s;
     char *p;
     int maxy, maxx;
     int len;
@@ -1788,15 +1838,11 @@ void update_status_window(GAME g)
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    update_clock(g.moveclock, &h, &m, &s);
-    snprintf(buf, len, "%.2i:%.2i:%.2i", h, m, s);
-    mvwprintw(statusw, 7, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 7, 1, "%*s: %-*s", 6, tmp, w, clock_to_char(d->wc));
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    update_clock(g.moveclock, &h, &m, &s);
-    snprintf(buf, len, "%.2i:%.2i:%.2i", h, m, s);
-    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, buf);
+    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, clock_to_char(d->bc));
     free(buf);
 
     for (i = 1; i < maxx - 4; i++)
@@ -2352,6 +2398,16 @@ static void do_window_resize()
     update_all(game[gindex]);
 }
 
+void update_clocks()
+{
+    int i;
+
+    for (i = 0; i < gtotal; i++) {
+	if (game[gindex].mode == MODE_PLAY)
+	    update_clock(&game[gindex]);
+    }
+}
+
 static void historymode_keys(chtype);
 static int playmode_keys(chtype c)
 {
@@ -2449,6 +2505,8 @@ static int playmode_keys(chtype c)
 		    CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
 		    SET_FLAG(game[gindex].flags, GF_MODIFIED);
 		}
+		
+		d->paused = 0;
 	    }
 
 	    break;
@@ -2509,7 +2567,9 @@ static int playmode_keys(chtype c)
 	    if (!editmode && config.validmoves)
 		pgn_find_valid_moves(game[gindex], d->b, d->sp.scol, d->sp.srow);
 
-	    paused = 0;
+	    if (!editmode)
+		update_clocks();
+
 	    break;
 	case 'w':
 	    pgn_switch_side(&game[gindex]);
@@ -2539,7 +2599,13 @@ static int playmode_keys(chtype c)
 	    config.details = (config.details) ? 0 : 1;
 	    break;
 	case 'p':
-	    paused = (paused) ? 0 : 1;
+	    if (!TEST_FLAG(d->flags, CF_HUMAN) && game[gindex].turn != 
+		    game[gindex].side) {
+		d->paused = -1;
+		break;
+	    }
+
+	    d->paused = (d->paused) ? 0 : 1;
 	    break;
 	case 'g':
 	    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
@@ -3391,7 +3457,6 @@ void game_loop()
 
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
-    paused = 1; //FIXME clock
     flushinp();
     update_all(game[gindex]);
     update_tag_window(game[gindex].tag);
@@ -3467,8 +3532,7 @@ void game_loop()
 	    }
 	}
 
-	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER) && game[gindex].mode 
-		!= MODE_HISTORY)
+	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
 	    game[gindex].mode = MODE_HISTORY;
 
 	d = game[gindex].data;
@@ -3476,10 +3540,6 @@ void game_loop()
 	draw_board(&game[gindex]);
 	update_all(game[gindex]);
 	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
-
-	if (!paused) {
-	}
-
 	refresh_all();
 
 	if (pushkey)
@@ -3582,6 +3642,9 @@ void cleanup_all()
 void catch_signal(int which)
 {
     switch (which) {
+	case SIGALRM:
+	    update_clocks();
+	    break;
 	case SIGINT:
 	case SIGPIPE:
 	    if (which == SIGPIPE && quit)
@@ -3706,6 +3769,7 @@ int main(int argc, char *argv[])
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
     signal(SIGINT, catch_signal);
+    signal(SIGALRM, catch_signal);
 
     srandom(getpid());
 

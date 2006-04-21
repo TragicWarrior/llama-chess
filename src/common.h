@@ -19,15 +19,23 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+struct moveclock_s {
+    struct itimerval it;
+    struct timeval tv;
+};
+
 /*
  * Attached to game[n].data.
  */
 struct userdata_s {
     BOARD b;
+    struct moveclock_s wc;
+    struct moveclock_s bc;
     struct engine_s *engine;
     unsigned short flags;
     int c_row;
     int c_col;
+    int paused;
 
     // The selected piece.
     struct {
