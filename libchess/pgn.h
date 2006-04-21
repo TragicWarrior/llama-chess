@@ -30,6 +30,8 @@ struct {
     int stop;
     int reduced;
     int fmd;
+    long progress;
+    pgn_progress *pfunc;
 } pgn_config;
 
 BOARD pgn_board;
@@ -46,5 +48,6 @@ int pgn_lastc;
 int pgn_isfile;
 int pgn_count;
 int pgn_fen_tag;
+long pgn_fsize;
 
 #endif

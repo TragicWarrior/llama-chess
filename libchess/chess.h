@@ -162,18 +162,30 @@ typedef enum {
      * entire file will be discarded.
      */
     PGN_STOP_ON_ERROR,
+
+    /*
+     * After PGN_PROGRESS amount of bytes have been read from a file, call
+     * PGN_PROGRESS_FUNC.
+     */
+    PGN_PROGRESS,
+    PGN_PROGRESS_FUNC,
 } pgn_config_flag;
+
+/*
+ * The prototype of the PGN_PROGRESS_FUNC function pointer.
+ */
+typedef void (pgn_progress)(long size, long offset);
 
 /*
  * Sets config flag 'f' to 'val'. Returns E_PGN_OK on success or E_PGN_ERR if
  * 'f' is an invalid flag or 'val' is an invalid value.
  */
-int pgn_config_set(pgn_config_flag f, int val);
+int pgn_config_set(pgn_config_flag f, void *);
 
 /*
- * Returns the value accociated with 'f' or E_PGN_ERR if 'f' is invalid.
+ * Returns the value accociated with 'f' or NULL if 'f' is invalid.
  */
-int pgn_config_get(pgn_config_flag f);
+void *pgn_config_get(pgn_config_flag f);
 
 /* 
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or

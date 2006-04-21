@@ -2801,7 +2801,7 @@ static void free_userdata()
     }
 }
 
-void update_loading_window()
+void update_loading_window(int n)
 {
     if (!loadingw) {
 	loadingw = newwin(3, COLS / 2, CALCPOSY(3), CALCPOSX(COLS / 2));
@@ -2815,7 +2815,8 @@ void update_loading_window()
     box(loadingw, ACS_VLINE, ACS_HLINE);
     wattroff(loadingw, CP_MESSAGE_BORDER);
     mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
-		11 + strlen(itoa(gtotal))), "Loading... %i", gtotal);
+		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
+	    gtotal);
     update_panels();
     doupdate();
 }
@@ -3602,17 +3603,20 @@ void catch_signal(int which)
 	    cbreak();
 	    noecho();
 	    break;
-	case SIGUSR1:
-	    if (curses_initialized) {
-		update_loading_window();
-		break;
-	    }
-
-	    fprintf(stderr, "Loading... %i\r", gtotal);
-	    fflush(stderr);
-	    break;
 	default:
 	    break;
+    }
+}
+
+void loading_progress(long total, long offset)
+{
+    int n = (100 * (offset / 100) / (total / 100));
+
+    if (curses_initialized)
+	update_loading_window(n);
+    else {
+	fprintf(stderr, "Loading... %i%% (%i games)\r", n, gtotal);
+	fflush(stderr);
     }
 }
 
@@ -3620,6 +3624,8 @@ static void set_defaults()
 {
     set_config_defaults();
     filetype = NO_FILE;
+    pgn_config_set(PGN_PROGRESS, (int *)256);
+    pgn_config_set(PGN_PROGRESS_FUNC, loading_progress);
 }
 
 int main(int argc, char *argv[])
@@ -3667,10 +3673,10 @@ int main(int argc, char *argv[])
 		write_custom_tags = 1;
 		break;
 	    case 'E':
-		pgn_config_set(PGN_STOP_ON_ERROR, 1);
+		pgn_config_set(PGN_STOP_ON_ERROR, (int *)1);
 		break;
 	    case 'R':
-		pgn_config_set(PGN_REDUCED, 1);
+		pgn_config_set(PGN_REDUCED, (int *)1);
 	    case 'S':
 		validate_and_write = 1;
 	    case 'V':
@@ -3700,7 +3706,6 @@ int main(int argc, char *argv[])
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
     signal(SIGINT, catch_signal);
-    signal(SIGUSR1, catch_signal);
 
     srandom(getpid());
 

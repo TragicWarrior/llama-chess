@@ -50,6 +50,23 @@
 #include <dmalloc.h>
 #endif
 
+static int Fgetc(FILE *fp)
+{
+    register int c;
+
+    if ((c = fgetc(fp)) != EOF) {
+	if (!(ftell(fp) % pgn_config.progress))
+	    (*pgn_config.pfunc)(pgn_fsize, ftell(fp));
+    }
+
+    return c;
+}
+
+static int Ungetc(int c, FILE *fp)
+{
+    return ungetc(c, fp);
+}
+
 char *pgn_version()
 {
     return "libchess " PACKAGE_VERSION;
@@ -782,12 +799,12 @@ static void skip_leading_space(FILE *fp)
 {
     int c;
 
-    while ((c = fgetc(fp)) != EOF && !feof(fp)) {
+    while ((c = Fgetc(fp)) != EOF && !feof(fp)) {
 	if (!isspace(c))
 	    break;
     }
 
-    ungetc(c, fp);
+    Ungetc(c, fp);
 }
 
 /*
@@ -801,7 +818,7 @@ static int move_text(GAME *g, FILE *fp)
     int dots = 0;
     int digit = 0;
 
-    while((c = fgetc(fp)) != EOF) {
+    while((c = Fgetc(fp)) != EOF) {
 	if (isspace(c))
 	    continue;
 
@@ -833,7 +850,7 @@ static int move_text(GAME *g, FILE *fp)
 	}
     }
 
-    ungetc(c, fp);
+    Ungetc(c, fp);
 
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
@@ -864,33 +881,33 @@ static void nag_text(GAME *g, FILE *fp)
     char nags[5], *n = nags;
     int nag = 0;
 
-    while ((c = fgetc(fp)) != EOF && !isspace(c)) {
+    while ((c = Fgetc(fp)) != EOF && !isspace(c)) {
 	if (c == '$') {
-	    while ((c = fgetc(fp)) != EOF && isdigit(c))
+	    while ((c = Fgetc(fp)) != EOF && isdigit(c))
 		*n++ = c;
 
 	    break;
 	}
 
 	if (c == '!') {
-	    if ((c = fgetc(fp)) == '!')
+	    if ((c = Fgetc(fp)) == '!')
 		nag = 3;
 	    else if (c == '?')
 		nag = 5;
 	    else {
-		ungetc(c, fp);
+		Ungetc(c, fp);
 		nag = 1;
 	    }
 
 	    break;
 	}
 	else if (c == '?') {
-	    if ((c = fgetc(fp)) == '?')
+	    if ((c = Fgetc(fp)) == '?')
 		nag = 4;
 	    else if (c == '!')
 		nag = 6;
 	    else {
-		ungetc(c, fp);
+		Ungetc(c, fp);
 		nag = 2;
 	    }
 
@@ -899,46 +916,46 @@ static void nag_text(GAME *g, FILE *fp)
 	else if (c == '~')
 	    nag = 13;
 	else if (c == '=') {
-	    if ((c = fgetc(fp)) == '+')
+	    if ((c = Fgetc(fp)) == '+')
 		nag = 15;
 	    else {
-		ungetc(c, fp);
+		Ungetc(c, fp);
 		nag = 10;
 	    }
 
 	    break;
 	}
 	else if (c == '+') {
-	    if ((t = fgetc(fp)) == '=')
+	    if ((t = Fgetc(fp)) == '=')
 		nag = 14;
 	    else if (t == '-')
 		nag = 18;
 	    else if (t == '/') {
-		if ((i = fgetc(fp)) == '-')
+		if ((i = Fgetc(fp)) == '-')
 		    nag = 16;
 		else
-		    ungetc(i, fp);
+		    Ungetc(i, fp);
 
 		break;
 	    }
 	    else
-		ungetc(t, fp);
+		Ungetc(t, fp);
 
 	    break;
 	}
 	else if (c == '-') {
-	    if ((t = fgetc(fp)) == '+')
+	    if ((t = Fgetc(fp)) == '+')
 		nag = 18;
 	    else if (t == '/') {
-		if ((i = fgetc(fp)) == '+')
+		if ((i = Fgetc(fp)) == '+')
 		    nag = 17;
 		else
-		    ungetc(i, fp);
+		    Ungetc(i, fp);
 
 		break;
 	    }
 	    else
-		ungetc(t, fp);
+		Ungetc(t, fp);
 
 	    break;
 	}
@@ -977,7 +994,7 @@ static int annotation_text(GAME *g, FILE *fp, int terminator)
 
     skip_leading_space(fp);
 
-    while ((c = fgetc(fp)) != EOF && c != terminator) {
+    while ((c = Fgetc(fp)) != EOF && c != terminator) {
 	if (c == '\n')
 	    c = ' ';
 
@@ -1013,7 +1030,7 @@ static int tag_text(GAME *g, FILE *fp)
     skip_leading_space(fp);
 
     /* The tag name is up until the first whitespace. */
-    while ((c = fgetc(fp)) != EOF && !isspace(c))
+    while ((c = Fgetc(fp)) != EOF && !isspace(c))
 	*n++ = c;
 
     *n = '\0';
@@ -1021,7 +1038,7 @@ static int tag_text(GAME *g, FILE *fp)
     skip_leading_space(fp);
 
     /* The value is until the first closing bracket. */
-    while ((c = fgetc(fp)) != EOF && c != ']') {
+    while ((c = Fgetc(fp)) != EOF && c != ']') {
 	if (i++ == '\0' && c == '\"') {
 	    quoted_string = 1;
 	    continue;
@@ -1069,11 +1086,11 @@ static int eog_text(GAME *g, FILE *fp)
     int c, i = 0;
     char buf[8], *p = buf;
 
-    while ((c = fgetc(fp)) != EOF && !isspace(c) && i++ < sizeof(buf))
+    while ((c = Fgetc(fp)) != EOF && !isspace(c) && i++ < sizeof(buf))
 	*p++ = c;
 
     if (isspace(c))
-	ungetc(c, fp);
+	Ungetc(c, fp);
 
     *p = 0;
 
@@ -1362,10 +1379,6 @@ int pgn_new_game()
 	    GF_BK_CASTLE|GF_BQ_CASTLE);
     pgn_board_init(pgn_board);
     set_default_tags(&game[gindex]);
-
-    if (pgn_isfile && !(gtotal % 50))
-	kill(getpid(), SIGUSR1);
-
     return E_PGN_OK;
 }
 
@@ -1383,7 +1396,7 @@ static int read_file(FILE *fp)
 	int lastchar = c;
 	int n;
 
-	if ((c = fgetc(fp)) == EOF) {
+	if ((c = Fgetc(fp)) == EOF) {
 	    if (feof(fp))
 		break;
 
@@ -1401,8 +1414,8 @@ static int read_file(FILE *fp)
 	if (c == '\015')
 	    continue;
 
-	nextchar = fgetc(fp);
-	ungetc(nextchar, fp);
+	nextchar = Fgetc(fp);
+	Ungetc(nextchar, fp);
 
 	/*
 	 * If there was a move text parsing error, keep reading until the end
@@ -1442,7 +1455,7 @@ static int read_file(FILE *fp)
 	 */
 	if (c == '%') { 
 	    if (lastchar == '\n' || lastchar == 0) {
-		while ((c = fgetc(fp)) != EOF && c != '\n');
+		while ((c = Fgetc(fp)) != EOF && c != '\n');
 		continue;
 	    }
 
@@ -1491,7 +1504,7 @@ static int read_file(FILE *fp)
 	// PGN: Numeric Annotation Glyph.
 	if (c == '$' || c == '!' || c == '?' || c == '+' || c == '-' || 
 		c == '~' || c == '=') {
-	    ungetc(c, fp);
+	    Ungetc(c, fp);
 	    nag_text(&game[gindex], fp);
 	    continue;
 	}
@@ -1532,7 +1545,7 @@ static int read_file(FILE *fp)
 
 	// PGN: End-of-game markers.
 	if ((isdigit(c) && (nextchar == '-' || nextchar == '/')) || c == '*') {
-	    ungetc(c, fp);
+	    Ungetc(c, fp);
 	    eog_text(&game[gindex], fp);
 	    nulltags = 1;
 	    tag_section = 0;
@@ -1558,7 +1571,7 @@ static int read_file(FILE *fp)
 	if ((isdigit(c) && c != '0') || VALIDCOL(c) || c == 'N' || c == 'K' 
 		    || c == 'Q' || c == 'B' || c == 'R' || c == 'P' ||
 		    c == 'O') {
-	    ungetc(c, fp);
+	    Ungetc(c, fp);
 
 	    // PGN: If a FEN tag exists, initialize the board to the value.
 	    if (tag_section) {
@@ -1633,6 +1646,7 @@ static int read_file(FILE *fp)
 int pgn_parse(FILE *fp)
 {
     int i;
+    long offset;
 
     if (!fp) {
 	reset_game_data();
@@ -1643,6 +1657,10 @@ int pgn_parse(FILE *fp)
     reset_game_data();
     nulltags = 1;
     pgn_isfile = 1;
+    offset = ftell(fp);
+    fseek(fp, 0, SEEK_END);
+    pgn_fsize = ftell(fp);
+    fseek(fp, offset, SEEK_SET);
     pgn_ret = read_file(fp);
     fclose(fp);
 
@@ -1958,30 +1976,39 @@ int pgn_is_compressed(const char *filename)
  * Sets config flag 'f' to 'val'. Returns E_PGN_OK on success or E_PGN_ERR if
  * 'f' is an invalid flag or 'val' is an invalid value.
  */
-int pgn_config_set(pgn_config_flag f, int val)
+int pgn_config_set(pgn_config_flag f, void *val)
 {
-    if (val < 0)
-	return E_PGN_ERR;
+    int n;
 
     switch (f) {
 	case PGN_REDUCED:
-	    if (val == 1)
+	    n = (int)val;
+
+	    if (n == 1)
 		pgn_config.reduced = 1;
-	    else if (val == 0)
+	    else if (n == 0)
 		pgn_config.reduced = 0;
 	    else
 		return E_PGN_ERR;
 	    break;
 	case PGN_MPL:
-	    pgn_config.mpl = val;
+	    pgn_config.mpl = (int)val;
 	    break;
 	case PGN_STOP_ON_ERROR:
-	    if (val == 1)
+	    n = (int)val;
+
+	    if (n == 1)
 		pgn_config.stop = 1;
-	    else if (val == 0)
+	    else if (n == 0)
 		pgn_config.stop = 0;
 	    else
 		return E_PGN_ERR;
+	    break;
+	case PGN_PROGRESS:
+	    pgn_config.progress = (long)val;
+	    break;
+	case PGN_PROGRESS_FUNC:
+	    pgn_config.pfunc = (pgn_progress*)val;
 	    break;
 	default:
 	    return E_PGN_ERR;
@@ -1991,22 +2018,26 @@ int pgn_config_set(pgn_config_flag f, int val)
 }
 
 /*
- * Returns the value accociated with 'f' or E_PGN_ERR if 'f' is invalid.
+ * Returns the value accociated with 'f' or NULL if 'f' is invalid.
  */
-int pgn_config_get(pgn_config_flag f)
+void *pgn_config_get(pgn_config_flag f)
 {
     switch (f) {
 	case PGN_REDUCED:
-	    return pgn_config.reduced;
+	    return (int *)pgn_config.reduced;
 	case PGN_STOP_ON_ERROR:
-	    return pgn_config.stop;
+	    return (int *)pgn_config.stop;
 	case PGN_MPL:
-	    return pgn_config.mpl;
+	    return (int *)pgn_config.mpl;
+	case PGN_PROGRESS:
+	    return (long *)pgn_config.progress;
+	case PGN_PROGRESS_FUNC:
+	    return (pgn_progress *)pgn_config.pfunc;
 	default:
 	    break;
     }
 
-    return E_PGN_ERR;
+    return NULL;
 }
 
 /*

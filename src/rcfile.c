@@ -274,10 +274,11 @@ void parse_rcfile(const char *filename)
 	    if (!isinteger(val))
 		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
 			lines);
-	    pgn_config_set(PGN_MPL, atoi(val));
+	    pgn_config_set(PGN_MPL, (int *)atoi(val));
 	}
 	else if (strcmp(var, "stop_on_error") == 0)
-	    pgn_config_set(PGN_STOP_ON_ERROR, on_or_off(filename, lines, val));
+	    pgn_config_set(PGN_STOP_ON_ERROR, (int *)on_or_off(filename, lines,
+			val));
 	else if (strcmp(var, "tag") == 0) {
 	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
 		    n > 2)
