@@ -810,9 +810,6 @@ static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
 	    return 0;
     }
 
-    if (count != 1)
-	return count;
-
     return count;
 }
 
@@ -964,6 +961,7 @@ static int frfrtosan(GAME *g, BOARD b, char **m)
     int sfile, srank, file, rank;
     int n;
     int fc, rc;
+    int ff = 0, rr = 0;
     
     sfile = FILETOINT(bp[0]);
     srank = RANKTOINT(bp[1]);
@@ -1012,8 +1010,8 @@ static int frfrtosan(GAME *g, BOARD b, char **m)
     if (!n)
 	return E_PGN_INVALID;
     else if (n > 1) {
-	fc = find_ambiguous(*g, b, p, sfile, 0, file, rank);
-	rc = find_ambiguous(*g, b, p, 0, srank, file, rank);
+	fc = find_source_square(*g, b, p, &sfile, &rr, file, rank);
+	rc = find_source_square(*g, b, p, &ff, &srank, file, rank);
 
 	if (fc == 1)
 	    *bp++ = INTTOFILE(sfile);
@@ -1251,7 +1249,6 @@ again:
 	if (*p == '=')
 	    promo == *++p;
 
-	fprintf(stderr, "%i %i %i %i\n", sfile, srank ,file,rank);
 	if ((i = find_source_square(*g, b, piece, &sfile, &srank, file, rank))
 		!= 1 && !check)
 	    return (i == 0) ? E_PGN_INVALID : E_PGN_AMBIGUOUS;
