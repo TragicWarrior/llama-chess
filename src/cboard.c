@@ -1666,9 +1666,9 @@ static void update_clock(GAME *g, struct itimerval it)
 	}
     }
 
-    if (TEST_FLAG(d->flags, CF_CLOCK)) {
-	d->elapsed = d->wc.tv_sec + d->bc.tv_sec;
+    d->elapsed = d->wc.tv_sec + d->bc.tv_sec;
 
+    if (TEST_FLAG(d->flags, CF_CLOCK)) {
 	if (d->elapsed >= d->limit) {
 	    SET_FLAG(g->flags, GF_GAMEOVER);
 	    pgn_tag_add(&g->tag, "Result", "1/2-1/2");
@@ -1842,7 +1842,8 @@ void update_status_window(GAME g)
 	    (g.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
-	    clock_to_char(d->limit - d->elapsed));
+	    clock_to_char((TEST_FLAG(d->flags, CF_CLOCK)) ?
+		    d->limit - d->elapsed : 0));
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
@@ -2546,7 +2547,7 @@ static int playmode_keys(chtype c)
 	    else {
 		if (n) {
 		    SET_FLAG(d->flags, CF_CLOCK);
-		    d->limit = (d->limit < n) ? d->limit + n : n;
+		    d->limit = (n <= d->elapsed) ? d->elapsed + n : n;
 		}
 		else
 		    CLEAR_FLAG(d->flags, CF_CLOCK);
