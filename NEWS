@@ -1,3 +1,45 @@
+Cboard version 0.2.1
+--------------------
+The move validator is a little more than 5 times faster. The major problem was
+initializing each games g->b board when a file was parsed. Now g->b has
+disappeared and a single board is used (caching). I discovered this on
+accident, learn something new every day. Still not as fast as 0.1.6 though.
+
+Switching between games will remember the cursor position and selected piece.
+
+Switching playing sides will update the White and Black roster tags.
+
+Castling and en passant validation fixes.
+
+Resuming a game with a Black opening fixed.
+
+FEN tag fix when loading a file.
+
+Fixed the 'u'ndo command.
+
+Cosmetic menu fix.
+
+Added configuration parameter 'board_details' to enable/disable it by default.
+
+Added board details indicator at the lower-right of the board window.
+
+Added a move clock for both Black and White. Also added a countdown clock that
+can be set by pressing 'C' in play mode.
+
+When an ambiguous piece was pinned both the pinned piece and the other piece
+failed validation. This has been fixed.
+
+Fixed another SAN bug. If an ambiguous piece was pinned and the other was on
+the same file the libchess would put the rank next to the piece in the move
+text rather than the file.
+
+Fixed resuming a game from a previous move in the history.
+
+SIGTERM and SIGINT are caught and both will have cboard exit cleanly.
+
+Black opening fix. Also when saving.
+
+
 Cboard version 0.2.0
 --------------------
 Quite a while since the last release, I've lost interest in the project off

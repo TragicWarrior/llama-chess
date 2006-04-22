@@ -2704,6 +2704,7 @@ static int playmode_keys(chtype c)
 	    break;
 	case 'w':
 	    pgn_switch_side(&game[gindex]);
+	    pgn_switch_turn(&game[gindex]);
 	    add_engine_command(&game[gindex], -1, 
 		    (game[gindex].side == WHITE) ? "white\n" : "black\n");
 	    update_status_window(game[gindex]);
@@ -3806,6 +3807,7 @@ void catch_signal(int which)
 	    cbreak();
 	    noecho();
 	    break;
+	case SIGINT:
 	case SIGTERM:
 	    quit = 1;
 	    break;
@@ -3911,7 +3913,7 @@ int main(int argc, char *argv[])
     signal(SIGPIPE, catch_signal);
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
-    signal(SIGINT, SIG_IGN);
+    signal(SIGINT, catch_signal);
     signal(SIGALRM, catch_signal);
     signal(SIGTERM, catch_signal);
 

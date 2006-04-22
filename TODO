@@ -5,14 +5,12 @@ order):
 + = started
 ? = not sure to included it
 
-+ Fix all the KnownBugs (priority)
-
 + The 'draw' game result needs better handling. Parsing works and the 50 move
   draw rule works, but offering and accepting draws isn't implemented.
 
-- A WINDOW stack that doesn't block.
++ A WINDOW stack that doesn't block.
 
-- A clock.
++ A clock.
 
 - ICS network game support.
 
@@ -22,8 +20,6 @@ order):
 
 - When saving multiple games, sort them by tag values specified by the
   standard.
-
-- A command to show pinned pieces.
 
 - A menu to select a game from a file.
 
