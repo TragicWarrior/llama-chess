@@ -137,7 +137,7 @@
 
 /* Clock setting input window. */
 #define CLOCK_TITLE		"Set Clock"
-#define CLOCK_HELP		"Format is: digit[hms] [digit[hms]] ..."
+#define CLOCK_HELP		"Format is: [+]digit[hms] [digit[hms]] ..."
 
 /* Country code menu window when editing the "Site" tag. */
 #define CC_PROMPT	"Type CTRL-t for country codes"

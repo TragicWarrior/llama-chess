@@ -2477,11 +2477,17 @@ static int init_chess_engine(GAME *g)
     return 0;
 }
 
-static long parse_clock_input(char *str)
+static int parse_clock_input(struct userdata_s *d, char *str)
 {
     char *p = str;
     long n = 0;
     int t = 0;
+    int plus = 0;
+
+    if (*p == '+') {
+	plus = 1;
+	p++;
+    }
 
     while (*p) {
 	if (isdigit(*p)) {
@@ -2494,7 +2500,7 @@ static long parse_clock_input(char *str)
 	}
 
 	if (!t && *p != ' ')
-	    return -1;
+	    return 1;
 
 	switch (*p) {
 	    case 'H':
@@ -2516,7 +2522,7 @@ static long parse_clock_input(char *str)
 		t = 0;
 		break;
 	    default:
-		return -1;
+		return 1;
 	}
 
 	p++;
@@ -2525,7 +2531,20 @@ static long parse_clock_input(char *str)
     if (t)
 	n += t;
 
-    return n;
+    if (!n) {
+	d->limit = 0;
+	CLEAR_FLAG(d->flags, CF_CLOCK);
+    }
+    else {
+	SET_FLAG(d->flags, CF_CLOCK);
+
+	if (plus)
+	    d->limit += n;
+	else
+	    d->limit = (n <= d->elapsed) ? d->elapsed + n : n;
+    }
+
+    return 0;
 }
 
 static void historymode_keys(chtype);
@@ -2537,24 +2556,15 @@ static int playmode_keys(chtype c)
     int w, x;
     char *tmp;
     struct userdata_s *d = game[gindex].data;
-    long n;
 
     switch (c) {
 	case 'C':
 	    if ((tmp = get_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL,
-			    NULL, 0, 0)) == NULL)
+			    NULL, 0, -1)) == NULL)
 		break;
 
-	    if ((n = parse_clock_input(tmp)) == -1)
+	    if (parse_clock_input(d, tmp))
 		cmessage(ERROR, ANYKEY, "Invalid time specification");
-	    else {
-		if (n) {
-		    SET_FLAG(d->flags, CF_CLOCK);
-		    d->limit = (n <= d->elapsed) ? d->elapsed + n : n;
-		}
-		else
-		    CLEAR_FLAG(d->flags, CF_CLOCK);
-	    }
 	    break;
 	case 'H':
 	    TOGGLE_FLAG(d->flags, CF_HUMAN);
