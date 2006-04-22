@@ -2972,6 +2972,8 @@ static void historymode_keys(chtype c)
 	    if (n < 0 || n > (pgn_history_total(game[gindex].hp) / 2))
 		break;
 
+	    keycount = 0;
+	    update_status_notify(game[gindex], NULL);
 	    game[gindex].hindex = (n) ? n * 2 - 1 : n * 2;
 	    pgn_board_update(&game[gindex], d->b,
 		    game[gindex].hindex);
