@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdarg.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -1973,71 +1974,63 @@ int pgn_is_compressed(const char *filename)
 }
 
 /*
- * Sets config flag 'f' to 'val'. Returns E_PGN_OK on success or E_PGN_ERR if
- * 'f' is an invalid flag or 'val' is an invalid value.
+ * Sets config flag 'f' to the next argument. Returns E_PGN_OK on success or
+ * E_PGN_ERR if 'f' is an invalid flag or E_PGN_INVALID if 'val' is an invalid
+ * flag value.
  */
-int pgn_config_set(pgn_config_flag f, void *val)
+int pgn_config_set(pgn_config_flag f, ...)
 {
+    va_list ap;
     int n;
+    int ret = E_PGN_OK;
+
+    va_start(ap, f);
 
     switch (f) {
 	case PGN_REDUCED:
-	    n = (int)val;
+	    n = va_arg(ap, int);
 
-	    if (n == 1)
-		pgn_config.reduced = 1;
-	    else if (n == 0)
-		pgn_config.reduced = 0;
-	    else
-		return E_PGN_ERR;
+	    if (n != 1 && n != 0) {
+		ret = E_PGN_INVALID;
+		break;
+	    }
+
+	    pgn_config.reduced = n;
 	    break;
 	case PGN_MPL:
-	    pgn_config.mpl = (int)val;
+	    n = va_arg(ap, int);
+
+	    if (n < 0) {
+		ret = E_PGN_INVALID;
+		break;
+	    }
+
+	    pgn_config.mpl = n;
 	    break;
 	case PGN_STOP_ON_ERROR:
-	    n = (int)val;
+	    n = va_arg(ap, int);
 
-	    if (n == 1)
-		pgn_config.stop = 1;
-	    else if (n == 0)
-		pgn_config.stop = 0;
-	    else
-		return E_PGN_ERR;
+	    if (n != 1 && n != 0) {
+		ret = E_PGN_INVALID;
+		break;
+	    }
+
+	    pgn_config.stop = n;
 	    break;
 	case PGN_PROGRESS:
-	    pgn_config.progress = (long)val;
+	    n = va_arg(ap, long);
+	    pgn_config.progress = n;
 	    break;
 	case PGN_PROGRESS_FUNC:
-	    pgn_config.pfunc = (pgn_progress*)val;
+	    pgn_config.pfunc = va_arg(ap, pgn_progress *);
 	    break;
 	default:
-	    return E_PGN_ERR;
-    }
-
-    return E_PGN_OK;
-}
-
-/*
- * Returns the value accociated with 'f' or NULL if 'f' is invalid.
- */
-void *pgn_config_get(pgn_config_flag f)
-{
-    switch (f) {
-	case PGN_REDUCED:
-	    return (int *)pgn_config.reduced;
-	case PGN_STOP_ON_ERROR:
-	    return (int *)pgn_config.stop;
-	case PGN_MPL:
-	    return (int *)pgn_config.mpl;
-	case PGN_PROGRESS:
-	    return (long *)pgn_config.progress;
-	case PGN_PROGRESS_FUNC:
-	    return (pgn_progress *)pgn_config.pfunc;
-	default:
+	    ret = E_PGN_ERR;
 	    break;
     }
 
-    return NULL;
+    va_end(ap);
+    return ret;
 }
 
 /*

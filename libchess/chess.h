@@ -144,13 +144,14 @@ typedef enum {
     /*
      * When pgn_write() is called to write a game, write reduced PGN format.
      * This will only write the seven tag roster and move text skipping any
-     * annotation.
+     * annotation. The type for this flag is an int.
      */
     PGN_REDUCED,
 
     /*
      * The number of full moves to write per line. If 0 then pgn_write() will
-     * write as many as possible within 80 columns.
+     * write as many as possible within 80 columns. The type for this flag
+     * is an int.
      */
     PGN_MPL,
 
@@ -158,13 +159,14 @@ typedef enum {
      * Normally when a parse error occurs in a game the game is flagged with
      * GF_PERROR and the rest of the game is discarded and processing of the
      * next game is done. When set and a parse error occurs the rest of the
-     * entire file will be discarded.
+     * entire file will be discarded. The type for this flag is an int.
      */
     PGN_STOP_ON_ERROR,
 
     /*
      * After PGN_PROGRESS amount of bytes have been read from a file, call
-     * PGN_PROGRESS_FUNC.
+     * PGN_PROGRESS_FUNC. The type for PGN_PROGRESS is a long.
+     * PGN_PROGRESS_FUNC is of type pgn_progress.
      */
     PGN_PROGRESS,
     PGN_PROGRESS_FUNC,
@@ -176,15 +178,11 @@ typedef enum {
 typedef void (pgn_progress)(long size, long offset);
 
 /*
- * Sets config flag 'f' to 'val'. Returns E_PGN_OK on success or E_PGN_ERR if
- * 'f' is an invalid flag or 'val' is an invalid value.
+ * Sets config flag 'f' to the next argument. Returns E_PGN_OK on success or
+ * E_PGN_ERR if 'f' is an invalid flag or E_PGN_INVALID if 'val' is an invalid
+ * flag value.
  */
-int pgn_config_set(pgn_config_flag f, void *);
-
-/*
- * Returns the value accociated with 'f' or NULL if 'f' is invalid.
- */
-void *pgn_config_get(pgn_config_flag f);
+int pgn_config_set(pgn_config_flag f, ...);
 
 /* 
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
