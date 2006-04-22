@@ -816,39 +816,12 @@ static int move_text(GAME *g, FILE *fp)
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
-    int dots = 0;
-    int digit = 0;
 
     while((c = Fgetc(fp)) != EOF) {
-	if (isspace(c))
+	if (isdigit(c) || isspace(c) || c == '.')
 	    continue;
-
-	if (isdigit(c)) {
-	    digit = 1;
-	    continue;
-	}
-	
-	if (c == '.') {
-	    dots++;
-	    continue;
-	}
 
 	break;
-    }
-
-    if (!pgn_history_total(g->hp) && digit) {
-	if (dots > 1) {
-	    g->turn = BLACK;
-
-	    if (g->hindex == 0 && g->ravlevel == 0)
-		SET_FLAG(g->flags, GF_BLACK_OPENING);
-	}
-	else {
-	    g->turn = WHITE;
-
-	    if (g->hindex == 0)
-		CLEAR_FLAG(g->flags, GF_BLACK_OPENING);
-	}
     }
 
     Ungetc(c, fp);

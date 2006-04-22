@@ -968,6 +968,11 @@ static int frfrtosan(GAME *g, BOARD b, char **m)
     file = FILETOINT(bp[2]);
     rank = RANKTOINT(bp[3]);
 
+    if (rank > 4 && !g->ravlevel && !g->hindex) {
+	SET_FLAG(g->flags, GF_BLACK_OPENING);
+	g->turn = BLACK;
+    }
+
     if (bp[4]) {
 	if ((promo = pgn_piece_to_int(bp[4])) == -1 || promo == OPEN_SQUARE)
 	    return E_PGN_PARSE;
@@ -1192,6 +1197,12 @@ again:
 	    }
 	}
 
+	if (rank > 4 && !g->ravlevel && !g->hindex) {
+	    SET_FLAG(g->flags, GF_BLACK_OPENING);
+	    g->turn = BLACK;
+	    find_king_squares(*g, b, &kfile, &krank, &okfile, &okrank);
+	}
+
 	if (find_source_square(*g, b, PAWN, &sfile, &srank, file, rank) != 1)
 	    return E_PGN_INVALID;
     }
@@ -1248,6 +1259,11 @@ again:
 
 	if (*p == '=')
 	    promo == *++p;
+
+	if (rank > 4 && !g->ravlevel && !g->hindex) {
+	    SET_FLAG(g->flags, GF_BLACK_OPENING);
+	    g->turn = BLACK;
+	}
 
 	if ((i = find_source_square(*g, b, piece, &sfile, &srank, file, rank))
 		!= 1 && !check)
