@@ -2426,6 +2426,29 @@ static void update_clocks()
     }
 }
 
+static int init_chess_engine(GAME *g)
+{
+    struct userdata_s *d = g->data;
+    int w, x;
+
+    if (start_chess_engine(g) > 0) {
+	d->sp.icon = 0;
+	return 1;
+    }
+
+    x = pgn_tag_find(g->tag, "FEN");
+    w = pgn_tag_find(g->tag, "SetUp");
+
+    if ((w >= 0 && x >= 0 && atoi(g->tag[w]->value) == 1) || 
+	    (x >= 0 && w == -1))
+	add_engine_command(g, ENGINE_READY, "setboard %s\n", g->tag[x]->value);
+    else
+	add_engine_command(g, ENGINE_READY, "setboard %s\n",
+		pgn_game_to_fen(*g, d->b));
+
+    return 0;
+}
+
 static void historymode_keys(chtype);
 static int playmode_keys(chtype c)
 {
@@ -2442,15 +2465,8 @@ static int playmode_keys(chtype c)
 
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
 		    pgn_history_total(game[gindex].hp)) {
-		pgn_tag_add(&game[gindex].tag, "FEN", 
-			pgn_game_to_fen(game[gindex], d->b));
-		x = pgn_tag_find(game[gindex].tag, "FEN");
-
-		if (start_chess_engine(&game[gindex]) <= 0) {
-		    add_engine_command(&game[gindex], ENGINE_READY, 
-			    "setboard %s\n", game[gindex].tag[x]->value);
-		    d->engine->status = ENGINE_READY;
-		}
+		if (init_chess_engine(&game[gindex]))
+		    break;
 	    }
 
 	    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
@@ -2531,19 +2547,8 @@ static int playmode_keys(chtype c)
 	case ' ':
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine ||
 			d->engine->status == ENGINE_OFFLINE) && !editmode) {
-		if (start_chess_engine(&game[gindex])) {
-		    d->sp.icon = 0;
+		if (init_chess_engine(&game[gindex]))
 		    break;
-		}
-
-		x = pgn_tag_find(game[gindex].tag, "FEN");
-		w = pgn_tag_find(game[gindex].tag, "SetUp");
-
-		if ((w >= 0 && x >= 0 && atoi(game[gindex].tag[w]->value) == 1) 
-			|| (x >= 0 && w == -1)) {
-		    add_engine_command(&game[gindex], ENGINE_READY, 
-			    "setboard %s\n", game[gindex].tag[x]->value);
-		}
 	    }
 
 	    if (d->sp.icon || (!editmode && d->engine &&
@@ -2631,8 +2636,10 @@ static int playmode_keys(chtype c)
 	    if (TEST_FLAG(d->flags, CF_HUMAN))
 		break;
 
-	    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
-		start_chess_engine(&game[gindex]);
+	    if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
+		if (init_chess_engine(&game[gindex]))
+		    break;
+	    }
 
 	    add_engine_command(&game[gindex], ENGINE_THINKING, "go\n");
 	    break;
@@ -2986,21 +2993,20 @@ static int globalkeys(chtype c)
 		    if ((c = message(NULL, YESNO, "%s",
 				    GAME_RESUME_HISTORY_TEXT)) != 'y')
 			return 1;
+
+		    pgn_history_free(game[gindex].hp, game[gindex].hindex);
+		    pgn_board_update(&game[gindex], d->b, 
+			    pgn_history_total(game[gindex].hp));
+
+		    if (!TEST_FLAG(d->flags, CF_HUMAN))
+			add_engine_command(&game[gindex], ENGINE_READY,
+				"setboard %s\n", pgn_game_to_fen(game[gindex], 
+				    d->b));
 		}
 	    }
 	    else {
 		if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
 		    return 1;
-	    }
-
-	    if (!TEST_FLAG(d->flags, CF_HUMAN)) {
-		if (!d->engine) {
-		    if (start_chess_engine(&game[gindex]))
-			return 1;
-		}
-
-		add_engine_command(&game[gindex], ENGINE_READY, "setboard %s\n",
-			pgn_game_to_fen(game[gindex], d->b));
 	    }
 
 	    pushkey = 0;
