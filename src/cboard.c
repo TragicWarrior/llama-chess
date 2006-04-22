@@ -1646,6 +1646,7 @@ static char *board_to_san(GAME *g, BOARD b)
 static void update_clock(GAME *g, struct itimerval it)
 {
     struct userdata_s *d = g->data;
+    long n;
 
     if (g->turn == WHITE) {
 	d->wc.tv_sec += it.it_value.tv_sec;
@@ -1667,6 +1668,8 @@ static void update_clock(GAME *g, struct itimerval it)
     }
 
     d->elapsed = d->wc.tv_sec + d->bc.tv_sec;
+    n = d->wc.tv_usec + d->bc.tv_usec;
+    d->elapsed += (n > 1000000 - 1) ? n / 1000000 : 0;
 
     if (TEST_FLAG(d->flags, CF_CLOCK)) {
 	if (d->elapsed >= d->limit) {
