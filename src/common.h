@@ -22,6 +22,7 @@
 #define CF_ENGINE_LOOP	0x01
 #define CF_HUMAN	0x02
 #define CF_NEW		0x04
+#define CF_CLOCK	0x08
 
 /*
  * Attached to game[n].data.
@@ -30,6 +31,8 @@ struct userdata_s {
     BOARD b;
     struct timeval wc;
     struct timeval bc;
+    long limit;
+    long elapsed;
     struct engine_s *engine;
     unsigned short flags;
     int c_row;

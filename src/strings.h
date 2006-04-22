@@ -135,6 +135,10 @@
 #define INPUT_HELP_PROMPT	GAME_HELP_PROMPT
 #define INPUT_HELP_TITLE	"Line Editing Keys"
 
+/* Clock setting input window. */
+#define CLOCK_TITLE		"Set Clock"
+#define CLOCK_HELP		"Format is: digit[hms] [digit[hms]] ..."
+
 /* Country code menu window when editing the "Site" tag. */
 #define CC_PROMPT	"Type CTRL-t for country codes"
 #define CC_TITLE	"Country Codes"
@@ -181,9 +185,8 @@
 #define STATUS_MODE_STR		"Mode:"
 #define STATUS_GAME_STR		"Game:"
 #define STATUS_ENGINE_STR	"Engine:"
-#define STATUS_DEPTH_STR	"Depth:"
-#define STATUS_BOOK_STR		"Book:"
 #define STATUS_TURN_STR		"Turn:"
+#define STATUS_CLOCK_STR	"Clock:"
 
 /* Engine status strings. */
 #define ENGINE_READY_STR	"ready"

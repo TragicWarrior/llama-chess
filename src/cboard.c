@@ -1665,6 +1665,15 @@ static void update_clock(GAME *g, struct itimerval it)
 	    d->bc.tv_usec = d->bc.tv_usec % 1000000;
 	}
     }
+
+    if (TEST_FLAG(d->flags, CF_CLOCK)) {
+	d->elapsed = d->wc.tv_sec + d->bc.tv_sec;
+
+	if (d->elapsed >= d->limit) {
+	    SET_FLAG(g->flags, GF_GAMEOVER);
+	    pgn_tag_add(&g->tag, "Result", "1/2-1/2");
+	}
+    }
 }
 
 static int move_to_engine(GAME *g, BOARD b)
@@ -1692,7 +1701,19 @@ static int move_to_engine(GAME *g, BOARD b)
     return 1;
 }
 
-char *clock_to_char(struct timeval t)
+static char *clock_to_char(long n)
+{
+    static char buf[16];
+    int h = 0, m = 0, s = 0;
+
+    h = n / 3600;
+    m = (n % 3600) / 60;
+    s = (n % 3600) % 60;
+    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
+    return buf;
+}
+
+static char *timeval_to_char(struct timeval t)
 {
     static char buf[16];
     int h = 0, m = 0, s = 0;
@@ -1820,13 +1841,16 @@ void update_status_window(GAME g)
     mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
 	    (g.turn == WHITE) ? WHITE_STR : BLACK_STR);
 
+    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
+	    clock_to_char(d->limit - d->elapsed));
+
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, 7, 1, "%*s: %-*s", 6, tmp, w, clock_to_char(d->wc));
+    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->wc));
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, clock_to_char(d->bc));
+    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->bc));
     free(buf);
 
     for (i = 1; i < maxx - 4; i++)
@@ -2449,6 +2473,57 @@ static int init_chess_engine(GAME *g)
     return 0;
 }
 
+static long parse_clock_input(char *str)
+{
+    char *p = str;
+    long n = 0;
+    int t = 0;
+
+    while (*p) {
+	if (isdigit(*p)) {
+	    t = atoi(p);
+
+	    while (isdigit(*p))
+		p++;
+
+	    continue;
+	}
+
+	if (!t && *p != ' ')
+	    return -1;
+
+	switch (*p) {
+	    case 'H':
+	    case 'h':
+		n += t * (60 * 60);
+		t = 0;
+		break;
+	    case 'M':
+	    case 'm':
+		n += t * 60;
+		t = 0;
+		break;
+	    case 'S':
+	    case 's':
+		n += t;
+		t = 0;
+		break;
+	    case ' ':
+		t = 0;
+		break;
+	    default:
+		return -1;
+	}
+
+	p++;
+    }
+
+    if (t)
+	n += t;
+
+    return n;
+}
+
 static void historymode_keys(chtype);
 static int playmode_keys(chtype c)
 {
@@ -2458,8 +2533,25 @@ static int playmode_keys(chtype c)
     int w, x;
     char *tmp;
     struct userdata_s *d = game[gindex].data;
+    long n;
 
     switch (c) {
+	case 'C':
+	    if ((tmp = get_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL,
+			    NULL, 0, 0)) == NULL)
+		break;
+
+	    if ((n = parse_clock_input(tmp)) == -1)
+		cmessage(ERROR, ANYKEY, "Invalid time specification");
+	    else {
+		if (n) {
+		    SET_FLAG(d->flags, CF_CLOCK);
+		    d->limit = (d->limit < n) ? d->limit + n : n;
+		}
+		else
+		    CLEAR_FLAG(d->flags, CF_CLOCK);
+	    }
+	    break;
 	case 'H':
 	    TOGGLE_FLAG(d->flags, CF_HUMAN);
 
@@ -3678,7 +3770,6 @@ void catch_signal(int which)
 	case SIGALRM:
 	    update_clocks();
 	    break;
-	case SIGINT:
 	case SIGPIPE:
 	    if (which == SIGPIPE && quit)
 		break;
@@ -3698,6 +3789,9 @@ void catch_signal(int which)
 	    curs_set(0);
 	    cbreak();
 	    noecho();
+	    break;
+	case SIGTERM:
+	    quit = 1;
 	    break;
 	default:
 	    break;
@@ -3801,8 +3895,9 @@ int main(int argc, char *argv[])
     signal(SIGPIPE, catch_signal);
     signal(SIGCONT, catch_signal);
     signal(SIGSTOP, catch_signal);
-    signal(SIGINT, catch_signal);
+    signal(SIGINT, SIG_IGN);
     signal(SIGALRM, catch_signal);
+    signal(SIGTERM, catch_signal);
 
     srandom(getpid());
 
