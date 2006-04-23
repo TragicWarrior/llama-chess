@@ -1107,13 +1107,13 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	memcpy(&tg, g, sizeof(GAME));
 	memcpy(pgn_board, o, sizeof(BOARD));
 
-	if ((g->hp[g->hindex]->rav = calloc(1, sizeof(HISTORY))) == NULL) {
+	if ((g->hp[g->hindex - 1]->rav = calloc(1, sizeof(HISTORY))) == NULL) {
 	    warn("calloc()");
 	    return 1;
 	}
 
 	// pgn_history_add() will now append to this new RAV.
-	g->hp = g->hp[g->hindex]->rav;
+	g->hp = g->hp[g->hindex - 1]->rav;
 
 	/*
 	 * Reset. Will be restored later from 'tg' which is a local variable
@@ -1121,6 +1121,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 */
 	g->hindex = 0;
 	ravlevel++;
+	pgn_switch_turn(g);
 
 	/*
 	 * Now continue as normal as if there were no RAV. Moves will be
