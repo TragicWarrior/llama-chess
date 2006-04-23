@@ -184,7 +184,7 @@ void set_config_defaults()
 
     if (stat(config.ccfile, &st) == -1) {
 	if (errno == ENOENT)
-	    copydatafile(config.nagfile, "cc.data");
+	    copydatafile(config.ccfile, "cc.data");
 	else
 	    warn("%s", config.ccfile);
     }
