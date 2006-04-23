@@ -1,0 +1,19 @@
+Source: cboard
+Section: games
+Priority: optional
+Maintainer: Ben Kibbey <bjk@luxsci.net>
+Build-Depends: debhelper (>= 4.0.0), autotools-dev, libncurses5-dev
+Standards-Version: 3.6.2
+
+Package: cboard
+Architecture: any
+Depends: ${shlibs:Depends}
+Recommends: crafty, gnuchess
+Description: An NCurses PGN browser, editor and chess engine interface.
+ CBoard is a Console/Curses PGN file browser, editor and interface to chess
+ engines supporting the XBoard protocol. It supports SAN move format with
+ annotations including RAV, NAG, single and multi-line comments along with the
+ FEN tag which can be edited by arranging pieces on the board. It can also
+ validate an save to (optionally reduced) PGN format. Multiple games
+ (human/human, human/engine, engine/engine) can be loaded, created,
+ searched and edited.

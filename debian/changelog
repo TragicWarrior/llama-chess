@@ -1,0 +1,6 @@
+cboard (0.2.1-1) unstable; urgency=low
+
+  * Initial Debian package release
+
+ -- Ben Kibbey <bjk@luxsci.net>  Sat, 22 Apr 2006 18:47:06 -0400
+
