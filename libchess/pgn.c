@@ -1816,6 +1816,9 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 	    putstring(fp, ")", len);
 	    ravlevel--;
 
+	    if (ravlevel)
+		Fputc(' ', fp, len);
+
 	    if (h[i + 1] && !ravlevel)
 		Fputc(' ', fp, len);
 
