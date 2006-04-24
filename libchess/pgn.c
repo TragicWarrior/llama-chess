@@ -860,6 +860,7 @@ static void nag_text(GAME *g, FILE *fp)
 	    while ((c = Fgetc(fp)) != EOF && isdigit(c))
 		*n++ = c;
 
+	    Ungetc(c, fp);
 	    break;
 	}
 
