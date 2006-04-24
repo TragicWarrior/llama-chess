@@ -1057,6 +1057,9 @@ capture:
     *bp++ = INTTOFILE(file);
     *bp++ = INTTORANK(rank);
 
+    if (p == PAWN && !promo && (rank == 8 || rank == 1)) 
+	promo = pgn_piece_to_int('q');
+
     /*
      * [Pf][fr][x]fr[=P]
      */
@@ -1135,7 +1138,7 @@ again:
 
     while (!isdigit(*--p) && *p != 'O') {
 	if (*p == '=') {
-	    promo = toupper(pgn_piece_to_int(i));
+	    promo = pgn_piece_to_int(i);
 	    i = 0;
 	    break;
 	}
@@ -1205,6 +1208,13 @@ again:
 
 	if (find_source_square(*g, b, PAWN, &sfile, &srank, file, rank) != 1)
 	    return E_PGN_INVALID;
+
+	if (!promo && (rank == 8 || rank == 1)) {
+	    promo = pgn_piece_to_int('q');
+	    *p++ = '=';
+	    *p++ = pgn_int_to_piece(WHITE, promo);
+	    *p = 0;
+	}
     }
     /* Not a pawn. */
     else {
