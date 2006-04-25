@@ -1101,7 +1101,6 @@ static void eog_text(GAME *g, FILE *fp)
 static int read_file(FILE *);
 static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 {
-    int ravindex = g->ravlevel;
     GAME tg;
     RAV *r;
 
@@ -1110,21 +1109,21 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	/*
 	 * Save the current game state for this RAV depth/level.
 	 */
-	if ((r = realloc(g->rav, (ravindex + 1) * sizeof(RAV))) == NULL) {
+	if ((r = realloc(g->rav, (g->ravlevel + 1) * sizeof(RAV))) == NULL) {
 	    warn("realloc()");
 	    return 1;
 	}
 
 	g->rav = r;
 	
-	if ((g->rav[ravindex].fen = strdup(pgn_game_to_fen((*g), pgn_board)))
+	if ((g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen((*g), pgn_board)))
 		== NULL) {
 	    warn("strdup()");
 	    return 1;
 	}
 
-	g->rav[ravindex].hp = g->hp;
-	g->rav[ravindex].hindex = g->hindex;
+	g->rav[g->ravlevel].hp = g->hp;
+	g->rav[g->ravlevel].hindex = g->hindex;
 	memcpy(&tg, g, sizeof(GAME));
 	memcpy(pgn_board, o, sizeof(BOARD));
 
@@ -1157,14 +1156,14 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 * function returning -1 (see below). So we restore the game state
 	 * that was saved before calling read_file().
 	 */
-	pgn_board_init_fen(&tg, pgn_board, g->rav[ravindex].fen);
-	free(g->rav[ravindex].fen);
+	pgn_board_init_fen(&tg, pgn_board, g->rav[tg.ravlevel].fen);
+	free(g->rav[tg.ravlevel].fen);
 	memcpy(g, &tg, sizeof(GAME));
 
 	if (!g->ravlevel)
 	    g->hp = g->history;
 	else
-	    g->hp = g->rav[ravindex].hp;
+	    g->hp = g->rav[g->ravlevel].hp;
     }
     /*
      * The end of a RAV. This makes read_file() that called this function
@@ -1382,19 +1381,6 @@ int pgn_new_game()
     return E_PGN_OK;
 }
 
-void test(HISTORY **hp)
-{
-    int i;
-    static int depth;
-
-    for (i = 0; hp[i]; i++) {
-	if (hp[i]->rav) {
-	    depth++;
-	    test(hp[i]->rav);
-	    depth--;
-	}
-    }
-}
 static int read_file(FILE *fp)
 {
 #ifdef DEBUG
