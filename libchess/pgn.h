@@ -25,7 +25,7 @@
 extern char *strptime(const char *, const char *, struct tm *);
 #endif
 
-struct {
+static struct {
     int mpl;
     int stop;
     int reduced;
@@ -34,20 +34,15 @@ struct {
     pgn_progress *pfunc;
 } pgn_config;
 
-BOARD pgn_board;
-int done_fen_tag;
-RAV *rav;
-int ravlevel;
-int validate;
-int nulltags;
-int tag_section;
-int pgn_ret;
-int pgn_write_turn;
-int pgn_mpl;
-int pgn_lastc;
-int pgn_isfile;
-int pgn_count;
-int pgn_fen_tag;
-long pgn_fsize;
+static BOARD pgn_board;
+static int nulltags;
+static int tag_section;
+static int pgn_ret;
+static int pgn_write_turn;
+static int pgn_mpl;
+static int pgn_lastc;
+static int pgn_isfile;
+static int ravlevel;
+static long pgn_fsize;
 
 #endif

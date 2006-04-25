@@ -26,7 +26,7 @@
 #endif
 
 #include "chess.h"
-#include "pgn.h"
+#include "common.h"
 #include "move.h"
 
 #ifdef DEBUG
@@ -942,8 +942,10 @@ static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank,
 	    g->ply++;
 
 	if (g->ply / 2 == 50) {
-	    pgn_tag_add(&g->tag, "Result", "1/2-1/2");
-	    SET_FLAG(g->flags, GF_GAMEOVER);
+	    if (g->tag[6]->value[0] == '*') {
+		pgn_tag_add(&g->tag, "Result", "1/2-1/2");
+		SET_FLAG(g->flags, GF_GAMEOVER);
+	    }
 	}
     }
 

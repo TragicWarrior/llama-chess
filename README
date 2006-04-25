@@ -1,13 +1,14 @@
-CBoard is an ncurses frontend to GNU Chess. Only version 5.07 of GNU Chess has
-been tested to work. Other versions might work, but I haven't tested them.
-Support for other engines is planned.
-
-Only version 5.1 has been tested to work with CBoard. Other versions might
-work, or might not.
+CBoard is an NCurses PGN browser, editor and chess engine interface. CBoard is
+a Console/Curses PGN file browser, editor and interface to chess engines
+supporting the XBoard protocol. It supports SAN move format with annotations
+including RAV, NAG, single and multi-line comments along with the FEN tag
+which can be edited by arranging pieces on the board. It can also validate and
+save to (optionally reduced) PGN format. Multiple games (human/human,
+human/engine, engine/engine) can be loaded, created, searched and edited.
 
 Read INSTALL for build and installation details. After installing, type
 "cboard -h" for command-line options or just "cboard". Then type F1 for
-in-game command keys.
+help on in-game command keys.
 
 Send a description of any bugs you find along with the associated .pgn (if
 any) and feature requests to the address below.

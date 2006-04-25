@@ -41,6 +41,7 @@
 #endif
 
 #include "chess.h"
+#include "common.h"
 #include "pgn.h"
 
 #ifdef DEBUG
@@ -124,12 +125,10 @@ void pgn_switch_turn(GAME *g)
  */
 void pgn_switch_side(GAME *g)
 {
-    int i = pgn_tag_find(g->tag, "White");
-    int n = pgn_tag_find(g->tag, "Black");
-    char *w = g->tag[i]->value;
+    char *w = g->tag[4]->value;
 
-    g->tag[i]->value = g->tag[n]->value;
-    g->tag[n]->value = w;
+    g->tag[4]->value = g->tag[5]->value;
+    g->tag[5]->value = w;
     g->side = (g->side == WHITE) ? BLACK : WHITE;
 }
 
@@ -317,9 +316,11 @@ int pgn_history_add(GAME *g, const char *m)
     int t = pgn_history_total(g->hp);
     int o;
     HISTORY **h = NULL;
+    int ri = (g->ravlevel) ? g->rav[g->ravlevel - 1].hindex : 0;
 
-    if (g->ravlevel)
-	o = g->rav[g->ravlevel].hp - g->hp;
+    if (g->ravlevel) {
+	o = g->rav[g->ravlevel - 1].hp[ri-1]->rav - g->hp;
+    }
     else
 	o = g->history - g->hp;
 
@@ -329,7 +330,7 @@ int pgn_history_add(GAME *g, const char *m)
     g->hp = h;
 
     if (g->ravlevel)
-	g->rav[g->ravlevel].hp = g->hp + o;
+	g->rav[g->ravlevel - 1].hp[ri-1]->rav = g->hp + o;
     else
 	g->history = g->hp + o;
 
@@ -337,6 +338,7 @@ int pgn_history_add(GAME *g, const char *m)
 	return E_PGN_ERR;
 
     if ((g->hp[t]->move = strdup(m)) == NULL) {
+	free(g->hp[t]);
 	g->hp[t] = NULL;
 	return E_PGN_ERR;
     }
@@ -1047,8 +1049,19 @@ static int tag_text(GAME *g, FILE *fp)
 
     strncpy(value, remove_tag_escapes(value), sizeof(value));
 
-    if (pgn_tag_add(&g->tag, name, value) != E_PGN_OK)
-	warn("pgn_tag_add()");
+    /*
+     * See eog_text() for an explanation.
+     */
+    if (strcmp(name, "Result") == 0) {
+	if (strcmp(value, "1/2-1/2") == 0) {
+	    if (pgn_tag_add(&g->tag, name, value) != E_PGN_OK)
+		warn("pgn_tag_add()");
+	}
+    }
+    else {
+	if (pgn_tag_add(&g->tag, name, value) != E_PGN_OK)
+	    warn("pgn_tag_add()");
+    }
 
     return 0;
 }
@@ -1056,7 +1069,7 @@ static int tag_text(GAME *g, FILE *fp)
 /*
  * PGN end-of-game marker.
  */
-static int eog_text(GAME *g, FILE *fp)
+static void eog_text(GAME *g, FILE *fp)
 {
     int c, i = 0;
     char buf[8], *p = buf;
@@ -1069,10 +1082,16 @@ static int eog_text(GAME *g, FILE *fp)
 
     *p = 0;
 
-    if (pgn_tag_add(&g->tag, "Result", buf) != E_PGN_OK)
-	warn("pgn_tag_add()");
-
-    return 1;
+    /*
+     * The eog marker in the move text may not match the actual game result.
+     * We'll leave it up to the move validator to determine the result unless
+     * the move validator cannot determine who won and the move text says it's
+     * a draw.
+     */
+    if (g->tag[6]->value[0] == '*' && strcmp("1/2-1/2", buf) == 0) {
+	if (pgn_tag_add(&g->tag, "Result", buf) != E_PGN_OK)
+	    warn("pgn_tag_add()");
+    }
 }
 
 /*
@@ -1082,7 +1101,7 @@ static int eog_text(GAME *g, FILE *fp)
 static int read_file(FILE *);
 static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 {
-    int ravindex = ravlevel;
+    int ravindex = g->ravlevel;
     GAME tg;
     RAV *r;
 
@@ -1091,37 +1110,39 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	/*
 	 * Save the current game state for this RAV depth/level.
 	 */
-	if ((r = realloc(rav, (ravindex + 1) * sizeof(RAV))) == NULL) {
+	if ((r = realloc(g->rav, (ravindex + 1) * sizeof(RAV))) == NULL) {
 	    warn("realloc()");
 	    return 1;
 	}
 
-	rav = r;
+	g->rav = r;
 	
-	if ((rav[ravindex].fen = strdup(pgn_game_to_fen((*g), pgn_board)))
+	if ((g->rav[ravindex].fen = strdup(pgn_game_to_fen((*g), pgn_board)))
 		== NULL) {
 	    warn("strdup()");
 	    return 1;
 	}
 
-	rav[ravindex].hp = g->hp;
+	g->rav[ravindex].hp = g->hp;
+	g->rav[ravindex].hindex = g->hindex;
 	memcpy(&tg, g, sizeof(GAME));
 	memcpy(pgn_board, o, sizeof(BOARD));
 
-	if ((g->hp[g->hindex - 1]->rav = calloc(1, sizeof(HISTORY))) == NULL) {
+	if ((g->hp[g->hindex - 1]->rav = calloc(1, sizeof(HISTORY *))) == NULL) {
 	    warn("calloc()");
 	    return 1;
 	}
 
 	// pgn_history_add() will now append to this new RAV.
 	g->hp = g->hp[g->hindex - 1]->rav;
+	g->hp[0] = NULL;
 
 	/*
 	 * Reset. Will be restored later from 'tg' which is a local variable
 	 * so recursion is possible.
 	 */
 	g->hindex = 0;
-	ravlevel++;
+	g->ravlevel++;
 	pgn_switch_turn(g);
 
 	/*
@@ -1136,11 +1157,14 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 * function returning -1 (see below). So we restore the game state
 	 * that was saved before calling read_file().
 	 */
-	pgn_board_init_fen(&tg, pgn_board, rav[ravindex].fen);
-	free(rav[ravindex].fen);
+	pgn_board_init_fen(&tg, pgn_board, g->rav[ravindex].fen);
+	free(g->rav[ravindex].fen);
 	memcpy(g, &tg, sizeof(GAME));
-	g->hp = rav[ravindex].hp;
-	ravlevel--;
+
+	if (!g->ravlevel)
+	    g->hp = g->history;
+	else
+	    g->hp = g->rav[ravindex].hp;
     }
     /*
      * The end of a RAV. This makes read_file() that called this function
@@ -1358,6 +1382,19 @@ int pgn_new_game()
     return E_PGN_OK;
 }
 
+void test(HISTORY **hp)
+{
+    int i;
+    static int depth;
+
+    for (i = 0; hp[i]; i++) {
+	if (hp[i]->rav) {
+	    depth++;
+	    test(hp[i]->rav);
+	    depth--;
+	}
+    }
+}
 static int read_file(FILE *fp)
 {
 #ifdef DEBUG
@@ -1400,11 +1437,11 @@ static int read_file(FILE *fp)
 	if (parse_error) {
 	    pgn_ret = E_PGN_PARSE;
 	    
-	    if (ravlevel)
+	    if (game[gindex].ravlevel)
 		return 1;
 
 	    if (pgn_config.stop)
-		return 1;
+		return E_PGN_PARSE;
 
 	    if (c == '\n' && (nextchar == '\n' || nextchar == '\015')) {
 		parse_error = 0;
@@ -1457,7 +1494,7 @@ static int read_file(FILE *fp)
 		     * been called from rav_text(). Returning from this point
 		     * will put us back in rav_text().
 		     */
-		    if (ravlevel > 0)
+		    if (game[gindex].ravlevel > 0)
 			return pgn_ret;
 
 		    /*
@@ -1588,6 +1625,12 @@ static int read_file(FILE *fp)
 	    memcpy(old, pgn_board, sizeof(BOARD));
 
 	    if (move_text(&game[gindex], fp)) {
+		if (pgn_tag_add(&game[gindex].tag, "Result", "*") == 
+			E_PGN_ERR) {
+		    warn("pgn_tag_add()");
+		    pgn_ret = E_PGN_ERR;
+		}
+
 		SET_FLAG(game[gindex].flags, GF_PERROR);
 		parse_error = 1;
 	    }
@@ -1640,9 +1683,6 @@ int pgn_parse(FILE *fp)
     pgn_ret = read_file(fp);
     fclose(fp);
 
-    if (rav)
-	free(rav);
-
     if (gtotal < 1)
 	pgn_new_game();
 
@@ -1691,7 +1731,7 @@ static void Fputc(int c, FILE *fp, int *len)
 	Fputc('\n', fp, &i);
 
     if (pgn_lastc == '\n' && c == ' ') {
-	*len = 0;
+	*len = pgn_mpl = 0;
 	return;
     }
 
@@ -1699,7 +1739,7 @@ static void Fputc(int c, FILE *fp, int *len)
 	warn("PGN Save");
     else {
 	if (c == '\n')
-	    i = 0;
+	    i = pgn_mpl = 0;
 	else
 	    i++;
     }
@@ -1732,7 +1772,6 @@ static void putstring(FILE *fp, char *str, int *len)
 static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
 {
     int i;
-    int type = 0;
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
 	if (h->nag[i]) {
@@ -1743,19 +1782,10 @@ static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
     }
 
     if (h->comment) {
-	if (strlen(h->comment) + *len + 1 > 80) {
-	    type = 1;
-	    putstring(fp, " {", len);
-	}
-	else
-	    putstring(fp, " ;", len);
-
+	Fputc('\n', fp, len);
+	putstring(fp, " {", len);
 	putstring(fp, h->comment, len);
-
-	if (type)
-	    putstring(fp, "}", len);
-	else
-	    Fputc('\n', fp, len);
+	Fputc('}', fp, len);
     }
 }
 
@@ -1816,7 +1846,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 	    putstring(fp, ")", len);
 	    ravlevel--;
 
-	    if (ravlevel)
+	    if (ravlevel && h[i + 1])
 		Fputc(' ', fp, len);
 
 	    if (h[i + 1] && !ravlevel)
@@ -2105,7 +2135,7 @@ int pgn_write(FILE *fp, GAME g)
 
     Fputc('\n', fp, &len);
     g.hp = g.history;
-    ravlevel = 0;
+    ravlevel = pgn_mpl = 0;
 
     if (pgn_history_total(g.hp) && pgn_write_turn == BLACK)
 	putstring(fp, "1...", &len);
@@ -2113,7 +2143,7 @@ int pgn_write(FILE *fp, GAME g)
     write_all_move_text(fp, g.hp, 1, &len);
 
     Fputc(' ', fp, &len);
-    putstring(fp, g.tag[pgn_tag_find(g.tag, "Result")]->value, &len);
+    putstring(fp, g.tag[6]->value, &len);
     putstring(fp, "\n\n", &len);
 
     if (!pgn_config.reduced) {

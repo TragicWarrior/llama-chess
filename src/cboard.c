@@ -3022,8 +3022,7 @@ void update_loading_window(int n)
     mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
 		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
 	    gtotal);
-    update_panels();
-    doupdate();
+    refresh_all();
 }
 
 static void init_userdata_once(GAME *g, int n)
@@ -3301,7 +3300,11 @@ static int globalkeys(chtype c)
 
 		  free_userdata();
 
-		  if (pgn_parse(fp)) {
+		  if (pgn_parse(fp) == E_PGN_ERR) {
+		      del_panel(loadingp);
+		      delwin(loadingw);
+		      loadingw = NULL;
+		      loadingp = NULL;
 		      init_userdata();
 		      update_all(game[gindex]);
 		      return 1;
@@ -3832,7 +3835,7 @@ static void set_defaults()
 {
     set_config_defaults();
     filetype = NO_FILE;
-    pgn_config_set(PGN_PROGRESS, (int *)256);
+    pgn_config_set(PGN_PROGRESS, 1024);
     pgn_config_set(PGN_PROGRESS_FUNC, loading_progress);
 }
 
@@ -3846,7 +3849,7 @@ int main(int argc, char *argv[])
     int validate_only = 0, validate_and_write = 0;
     int write_custom_tags = 0;
     FILE *fp;
-    int i;
+    int i = 0;
 
     if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
@@ -3881,10 +3884,10 @@ int main(int argc, char *argv[])
 		write_custom_tags = 1;
 		break;
 	    case 'E':
-		pgn_config_set(PGN_STOP_ON_ERROR, (int *)1);
+		i = 1;
 		break;
 	    case 'R':
-		pgn_config_set(PGN_REDUCED, (int *)1);
+		pgn_config_set(PGN_REDUCED, 1);
 	    case 'S':
 		validate_and_write = 1;
 	    case 'V':
@@ -3909,6 +3912,9 @@ int main(int argc, char *argv[])
 
     if (access(config.configfile, R_OK) == 0)
 	parse_rcfile(config.configfile);
+
+    if (i)
+	pgn_config_set(PGN_STOP_ON_ERROR, 1);
 
     signal(SIGPIPE, catch_signal);
     signal(SIGCONT, catch_signal);
@@ -3951,7 +3957,7 @@ int main(int argc, char *argv[])
 	cleanup_all();
 	exit(ret);
     }
-    else if (ret)
+    else if (ret == E_PGN_ERR)
 	exit(ret);
 
     init_userdata();
