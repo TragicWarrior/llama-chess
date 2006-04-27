@@ -318,9 +318,8 @@ int pgn_history_add(GAME *g, const char *m)
     HISTORY **h = NULL;
     int ri = (g->ravlevel) ? g->rav[g->ravlevel - 1].hindex : 0;
 
-    if (g->ravlevel) {
+    if (g->ravlevel)
 	o = g->rav[g->ravlevel - 1].hp[ri-1]->rav - g->hp;
-    }
     else
 	o = g->history - g->hp;
 
@@ -1106,6 +1105,11 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 
     // Begin RAV for the current move.
     if (which == '(') {
+	if (!g->hindex)
+	    return 1;
+
+	pgn_rav++; // For detecting parse errors.
+
 	/*
 	 * Save the current game state for this RAV depth/level.
 	 */
@@ -1132,9 +1136,11 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	    return 1;
 	}
 
-	// pgn_history_add() will now append to this new RAV.
+	/*
+	 * pgn_history_add() will now append to the new history pointer that
+	 * is g.hp[previous_move]->rav.
+	 */
 	g->hp = g->hp[g->hindex - 1]->rav;
-	g->hp[0] = NULL;
 
 	/*
 	 * Reset. Will be restored later from 'tg' which is a local variable
@@ -1142,35 +1148,36 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	 */
 	g->hindex = 0;
 	g->ravlevel++;
+
+	/* 
+	 * Undo move_text()'s switch.
+	 */
 	pgn_switch_turn(g);
 
 	/*
 	 * Now continue as normal as if there were no RAV. Moves will be
-	 * parsed and appended to the new .hp.
+	 * parsed and appended to the new history pointer.
 	 */
 	if (read_file(fp))
 	    return 1;
 
 	/*
-	 * read_file() has returned. The means that a RAV has ended by this
+	 * read_file() has returned. This means that a RAV has ended by this
 	 * function returning -1 (see below). So we restore the game state
-	 * that was saved before calling read_file().
+	 * (tg) that was saved before calling read_file().
 	 */
 	pgn_board_init_fen(&tg, pgn_board, g->rav[tg.ravlevel].fen);
 	free(g->rav[tg.ravlevel].fen);
 	memcpy(g, &tg, sizeof(GAME));
-
-	if (!g->ravlevel)
-	    g->hp = g->history;
-	else
-	    g->hp = g->rav[g->ravlevel].hp;
     }
     /*
-     * The end of a RAV. This makes read_file() that called this function
-     * rav_text() return (see above).
+     * The end of a RAV. This makes the read_file() that called this function
+     * return (see above and the switch statement in read_file()).
      */
-    else if (which == ')')
-	return -1;
+    else if (which == ')') {
+	pgn_rav--; // For detecting parse errors.
+	return (pgn_rav < 0) ? 1 : -1;
+    }
 
     return 0;
 }
@@ -1395,6 +1402,12 @@ static int read_file(FILE *fp)
 	int lastchar = c;
 	int n;
 
+	/* 
+	 * A parse error may have occured at EOF.
+	 */
+	if (parse_error)
+	    pgn_ret = E_PGN_PARSE;
+
 	if ((c = Fgetc(fp)) == EOF) {
 	    if (feof(fp))
 		break;
@@ -1469,7 +1482,7 @@ static int read_file(FILE *fp)
 	    continue;
 
 	/*
-	 * PGN: Recurrsive Annotation Variation. Read rav_text() for more
+	 * PGN: Recurrsive Annotated Variation. Read rav_text() for more
 	 * info.
 	 */
 	if (c == '(' || c == ')') {
@@ -1496,6 +1509,9 @@ static int read_file(FILE *fp)
 		     */
 		    break;
 	    }
+
+	    if (!game[gindex].ravlevel && pgn_rav)
+		parse_error = 1;
 
 	    continue;
 	}
