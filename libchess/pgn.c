@@ -57,8 +57,10 @@ static int Fgetc(FILE *fp)
     register int c;
 
     if ((c = fgetc(fp)) != EOF) {
-	if (!(ftell(fp) % pgn_config.progress))
-	    (*pgn_config.pfunc)(pgn_fsize, ftell(fp));
+	if (pgn_config.progress && pgn_config.pfunc) {
+	    if (!(ftell(fp) % pgn_config.progress))
+		(*pgn_config.pfunc)(pgn_fsize, ftell(fp));
+	}
     }
 
     return c;
