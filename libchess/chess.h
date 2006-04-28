@@ -54,15 +54,13 @@ enum {
 
 /* Game flags. */
 #define GF_PERROR	0x01	/* Parse error for this game. */
-#define GF_DELETE	0x02	/* Flagged for deletion ('x' command). */
-#define GF_MODIFIED	0x04	/* Modified tags or history. */
-#define GF_ENPASSANT	0x08	/* For En Passant validation. */
-#define GF_GAMEOVER	0x010	/* End of game. */
-#define GF_WK_CASTLE	0x020
-#define GF_WQ_CASTLE	0x040
-#define GF_BK_CASTLE	0x080
-#define GF_BQ_CASTLE	0x0100
-#define GF_BLACK_OPENING	0x0200
+#define GF_ENPASSANT	0x02	/* For En Passant validation. */
+#define GF_GAMEOVER	0x04	/* End of game. */
+#define GF_WK_CASTLE	0x08
+#define GF_WQ_CASTLE	0x010
+#define GF_BK_CASTLE	0x020
+#define GF_BQ_CASTLE	0x0400
+#define GF_BLACK_OPENING	0x0800
 
 /*
  * The chess board.

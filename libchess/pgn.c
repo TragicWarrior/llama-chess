@@ -362,14 +362,9 @@ int pgn_board_update(GAME *g, BOARD b, int n)
     BOARD tb;
     int ret = E_PGN_OK;
 
-    if (TEST_FLAG(g->flags, GF_BLACK_OPENING))
-	g->turn = BLACK;
-    else
-	g->turn = WHITE;
-
+    g->flags = 0;
     SET_FLAG(g->flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
 	    GF_BK_CASTLE|GF_BQ_CASTLE);
-    CLEAR_FLAG(g->flags, GF_GAMEOVER);
     pgn_board_init(tb);
 
     if (g->ravlevel)
@@ -2141,10 +2136,8 @@ int pgn_write(FILE *fp, GAME g)
     putstring(fp, g.tag[6]->value, &len);
     putstring(fp, "\n\n", &len);
 
-    if (!pgn_config.reduced) {
-	CLEAR_FLAG(g.flags, GF_MODIFIED);
+    if (!pgn_config.reduced)
 	CLEAR_FLAG(g.flags, GF_PERROR);
-    }
 
     return E_PGN_OK;
 }

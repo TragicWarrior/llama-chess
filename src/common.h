@@ -23,6 +23,8 @@
 #define CF_HUMAN	0x02
 #define CF_NEW		0x04
 #define CF_CLOCK	0x08
+#define CF_MODIFIED	0x10
+#define CF_DELETE	0x20
 
 /*
  * Attached to game[n].data.

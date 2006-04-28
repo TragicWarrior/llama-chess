@@ -1285,6 +1285,7 @@ int save_pgn(const char *filename, int saveindex)
     int i;
     char *command = NULL;
     int saveindex_max = (saveindex == -1) ? gtotal : saveindex + 1;
+    struct userdata_s *d;
 
     if (filename[0] != '/' && config.savedirectory) {
 	if (stat(config.savedirectory, &st) == -1) {
@@ -1349,8 +1350,11 @@ int save_pgn(const char *filename, int saveindex)
 	}
     }
 
-    for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++)
+    for (i = (saveindex == -1) ? 0 : saveindex; i < saveindex_max; i++) {
+	d = game[i].data;
 	pgn_write(fp, game[i]);
+	CLEAR_FLAG(d->flags, CF_MODIFIED);
+    }
 
     if (command)
 	pclose(fp);
@@ -1695,7 +1699,7 @@ static int move_to_engine(GAME *g, BOARD b)
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
 	pgn_history_add(g, p);
 	pgn_switch_turn(g);
-	SET_FLAG(g->flags, GF_MODIFIED);
+	SET_FLAG(d->flags, CF_MODIFIED);
 	update_all(*g);
 	return 1;
     }
@@ -1749,7 +1753,7 @@ void update_status_window(GAME g)
     *tmp = '\0';
     p = tmp;
 
-    if (TEST_FLAG(g.flags, GF_DELETE)) {
+    if (TEST_FLAG(d->flags, CF_DELETE)) {
 	*p++ = '(';
 	*p++ = 'x';
 	i++;
@@ -1765,7 +1769,7 @@ void update_status_window(GAME g)
 	i++;
     }
 
-    if (TEST_FLAG(g.flags, GF_MODIFIED)) {
+    if (TEST_FLAG(d->flags, CF_MODIFIED)) {
 	if (!i)
 	    *p++ = '(';
 	else
@@ -2093,9 +2097,12 @@ static void delete_game(int which)
     GAME *g = NULL;
     int gi = 0;
     int i;
+    struct userdata_s *d;
 
     for (i = 0; i < gtotal; i++) {
-	if (i == which || TEST_FLAG(game[i].flags, GF_DELETE)) {
+	d = game[i].data;
+
+	if (i == which || TEST_FLAG(d->flags, CF_DELETE)) {
 	    pgn_free(game[i]);
 	    continue;
 	}
@@ -2181,19 +2188,23 @@ static int find_move_exp(GAME g, const char *str, int init, int which,
 static int toggle_delete_flag(int n)
 {
     int i, x;
+    struct userdata_s *d = game[n].data;
 
-    TOGGLE_FLAG(game[n].flags, GF_DELETE);
+    TOGGLE_FLAG(d->flags, CF_DELETE);
     gindex = n;
     update_all(game[gindex]);
 
     for (i = x = 0; i < gtotal; i++) {
-	if (TEST_FLAG(game[i].flags, GF_DELETE))
+	d = game[i].data;
+
+	if (TEST_FLAG(d->flags, CF_DELETE))
 	    x++;
     }
 
     if (x == gtotal) {
 	cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
-	CLEAR_FLAG(game[n].flags, GF_DELETE);
+	d = game[n].data;
+	CLEAR_FLAG(d->flags, CF_DELETE);
 	return 1;
     }
 
@@ -2210,7 +2221,7 @@ static void edit_save_tags(GAME *g)
 
     pgn_tag_free(g->tag);
     g->tag = t;
-    SET_FLAG(g->flags, GF_MODIFIED);
+    SET_FLAG(d->flags, CF_MODIFIED);
     pgn_tag_sort(g->tag);
 }
 
@@ -2645,7 +2656,7 @@ static int playmode_keys(chtype c)
 
 		if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER)) {
 		    CLEAR_FLAG(game[gindex].flags, GF_GAMEOVER);
-		    SET_FLAG(game[gindex].flags, GF_MODIFIED);
+		    SET_FLAG(d->flags, CF_MODIFIED);
 		}
 		
 		d->paused = 0;
@@ -2908,7 +2919,7 @@ static void historymode_keys(chtype c)
 	    game[gindex].hp[n]->comment = Realloc(game[gindex].hp[n]->comment,
 		    len);
 	    strncpy(game[gindex].hp[n]->comment, (tmp) ? tmp : "", len);
-	    SET_FLAG(game[gindex].flags, GF_MODIFIED);
+	    SET_FLAG(d->flags, CF_MODIFIED);
 	    update_all(game[gindex]);
 	    break;
 	case ']':
@@ -3254,7 +3265,9 @@ static int globalkeys(chtype c)
 		  tmp = NULL;
 
 		  for (i = n = 0; i < gtotal; i++) {
-		      if (TEST_FLAG(game[i].flags, GF_DELETE))
+		      d = game[i].data;
+
+		      if (TEST_FLAG(d->flags, CF_DELETE))
 			  n++;
 		  }
 
