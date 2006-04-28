@@ -3747,6 +3747,16 @@ void cleanup_all()
     pgn_free_all();
     free(config.engine_cmd);
     free(config.pattern);
+    free(config.ccfile);
+    free(config.nagfile);
+    free(config.configfile);
+
+    if (config.keys) {
+	for (i = 0; config.keys[i]; i++)
+	    free(config.keys[i]->str);
+
+	free(config.keys);
+    }
 
     if (config.einit) {
 	for (i = 0; config.einit[i]; i++)

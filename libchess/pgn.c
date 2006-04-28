@@ -832,6 +832,7 @@ static int move_text(GAME *g, FILE *fp)
     if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
 
+    m[MAX_SAN_MOVE_LEN] = 0;
     p = m;
 
     if (pgn_parse_move(g, pgn_board, &p)) {
@@ -1120,9 +1121,9 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	    return 1;
 	}
 
-	g->rav = r;
+	g->rav = pgn_rav_p = r;
 	
-	if ((g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen((*g), pgn_board)))
+	if ((g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(*g, pgn_board))) 
 		== NULL) {
 	    warn("strdup()");
 	    return 1;
@@ -1171,6 +1172,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	pgn_board_init_fen(&tg, pgn_board, g->rav[tg.ravlevel].fen);
 	free(g->rav[tg.ravlevel].fen);
 	memcpy(g, &tg, sizeof(GAME));
+	g->rav = pgn_rav_p;
     }
     /*
      * The end of a RAV. This makes the read_file() that called this function
@@ -2067,6 +2069,8 @@ int pgn_write(FILE *fp, GAME g)
 	    break;
 
 	if (strcmp(g.tag[i]->name, "Date") == 0) {
+	    memset(&tp, 0, sizeof(struct tm));
+
 	    if (strptime(g.tag[i]->value, PGN_TIME_FORMAT, &tp) != NULL) {
 		len = strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, &tp) + 1;
 

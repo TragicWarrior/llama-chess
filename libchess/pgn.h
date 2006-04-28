@@ -45,5 +45,6 @@ static int pgn_isfile;
 static int ravlevel;
 static long pgn_fsize;
 static int pgn_rav;
+static RAV *pgn_rav_p;
 
 #endif

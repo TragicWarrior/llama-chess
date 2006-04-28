@@ -217,8 +217,12 @@ void parse_rcfile(const char *filename)
 	if ((n = sscanf(line, "%s %[^\n]", var, val)) != 2)
 	    errx(EXIT_FAILURE, "%s(%i): parse error %i", filename, lines,n);
 
-	strncpy(val, trim(val), sizeof(val));
-	strncpy(var, trim(var), sizeof(var));
+	p = strdup(trim(val));
+	strncpy(val, p, sizeof(val));
+	free(p);
+	p = strdup(trim(var));
+	strncpy(var, p, sizeof(var));
+	free(p);
 
 	if (strcmp(var, "jump_count") == 0) {
 	    if (!isinteger(val))
@@ -389,6 +393,6 @@ void parse_rcfile(const char *filename)
     if (altengine) {
 	free(config.engine_cmd);
 	config.engine_cmd = NULL;
-	config.engine_cmd = strdup(altengine);
+	config.engine_cmd = altengine;
     }
 }
