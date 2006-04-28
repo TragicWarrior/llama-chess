@@ -1203,11 +1203,11 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
 		    return E_PGN_PARSE;
 
 		for (; n; --n, col++)
-		    b[ROWTOBOARD(row)][COLTOBOARD(col)].icon =
+		    b[RANKTOBOARD(row)][FILETOBOARD(col)].icon =
 			pgn_int_to_piece(WHITE, OPEN_SQUARE);
 	    } 
 	    else if (pgn_piece_to_int(*tmp) != -1)
-		b[ROWTOBOARD(row)][COLTOBOARD(col++)].icon = *tmp;
+		b[RANKTOBOARD(row)][FILETOBOARD(col++)].icon = *tmp;
 	    else
 		return E_PGN_PARSE;
 

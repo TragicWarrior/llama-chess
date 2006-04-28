@@ -138,8 +138,8 @@ void update_cursor(GAME g, int idx)
     while (!isdigit(*p))
 	p--;
 
-    d->c_row = ROWTOINT(*p--);
-    d->c_col = COLTOINT(*p);
+    d->c_row = RANKTOINT(*p--);
+    d->c_col = FILETOINT(*p);
 }
 
 static int init_nag()
@@ -1614,7 +1614,7 @@ static char *board_to_san(GAME *g, BOARD b)
 	    d->sp.srow, x_grid_chars[d->sp.col - 1], d->sp.row);
 
     p = str;
-    piece = pgn_piece_to_int(b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon);
+    piece = pgn_piece_to_int(b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon);
 
     if (piece == PAWN && ((d->sp.row == 8 && g->turn == WHITE) ||
 		    (d->sp.row == 1 && g->turn == BLACK))) {
@@ -2642,9 +2642,9 @@ static int playmode_keys(chtype c)
 	    d->sp.col = d->c_col;
 
 	    if (editmode) {
-		p = d->b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon;
-		d->b[ROWTOBOARD(d->sp.row)][COLTOBOARD(d->sp.col)].icon = p;
-		d->b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon =
+		p = d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon;
+		d->b[RANKTOBOARD(d->sp.row)][FILETOBOARD(d->sp.col)].icon = p;
+		d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon =
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 		d->sp.icon = d->sp.srow = d->sp.scol = 0;
 		break;
@@ -2816,10 +2816,10 @@ static void editmode_keys(chtype c)
 	    break;
 	case 'd':
 	    if (d->sp.icon)
-		d->b[ROWTOBOARD(d->sp.srow)][COLTOBOARD(d->sp.scol)].icon = 
+		d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon = 
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 	    else
-		d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].icon =
+		d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon =
 		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
 
 	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
@@ -2829,9 +2829,9 @@ static void editmode_keys(chtype c)
 	    update_all(game[gindex]);
 	    break;
 	case 'c':
-	    castling_state(&game[gindex], d->b, ROWTOBOARD(d->c_row), 
-		    COLTOBOARD(d->c_col),
-		    d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].icon, 1);
+	    castling_state(&game[gindex], d->b, RANKTOBOARD(d->c_row), 
+		    FILETOBOARD(d->c_col),
+		    d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon, 1);
 	    break;
 	case 'i':
 	    c = message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, "%s",
@@ -2840,12 +2840,12 @@ static void editmode_keys(chtype c)
 	    if (pgn_piece_to_int(c) == -1)
 		break;
 
-	    d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].icon = c;
+	    d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon = c;
 	    break;
 	case 'p':
 	    if (d->c_row == 6 || d->c_row == 3) {
 		pgn_reset_enpassant(d->b);
-		d->b[ROWTOBOARD(d->c_row)][COLTOBOARD(d->c_col)].enpassant = 1;
+		d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].enpassant = 1;
 	    }
 	    break;
 	default:

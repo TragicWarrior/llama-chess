@@ -22,18 +22,14 @@
 #define PGN_TIME_FORMAT	"%Y.%m.%d"
 #define MAX_PGN_LINE_LEN 255
 #define MAX_SAN_MOVE_LEN 7
-#define MAX_PGN_NAG 5
+#define MAX_PGN_NAG 8
 
 #define VALIDRANK	VALIDFILE
 #define VALIDFILE(f)	(f >= 1 && f <= 8)
-#define RANKTOBOARD ROWTOBOARD
-#define FILETOBOARD COLTOBOARD
-#define RANKTOINT ROWTOINT
-#define FILETOINT COLTOINT
-#define ROWTOBOARD(r)	(8 - r)
-#define COLTOBOARD(c)	(c - 1)
-#define ROWTOINT(r)	(r - '0')
-#define COLTOINT(c)	(c - ('a' - 1))
+#define RANKTOBOARD(r)	(8 - r)
+#define FILETOBOARD(c)	(c - 1)
+#define RANKTOINT(r)	(r - '0')
+#define FILETOINT(c)	(c - ('a' - 1))
 #define VALIDROW(r)	(r >= '1' && r <= '8')
 #define VALIDCOL(c)	(c >= 'a' && c <= 'h')
 #define INTTORANK(r)	(r + '0')
@@ -45,7 +41,7 @@
 #define TEST_FLAG(var, f)	(var & f)
 
 enum {
-    OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING, MAX_PIECES
+    OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING
 };
 
 enum {
@@ -59,8 +55,8 @@ enum {
 #define GF_WK_CASTLE	0x08
 #define GF_WQ_CASTLE	0x010
 #define GF_BK_CASTLE	0x020
-#define GF_BQ_CASTLE	0x0400
-#define GF_BLACK_OPENING	0x0800
+#define GF_BQ_CASTLE	0x040
+#define GF_BLACK_OPENING	0x080
 
 /*
  * The chess board.
@@ -90,7 +86,7 @@ typedef struct tags {
 typedef struct history {
     char *move;				// The SAN move text.
     char *comment;			// Annotation for this move.
-    unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph. FIXME
+    unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph.
     struct history **rav;		// Variation of the current move.
 } HISTORY;
 
@@ -376,8 +372,8 @@ void pgn_reset_enpassant(BOARD b);
 void pgn_reset_valid_moves(BOARD b);
 
 /* 
- * Sets valid moves from game 'g' using board 'b'. The valid moves are for the
- * piece on the board 'b' at 'rank' and 'file'. Returns nothing.
+ * Sets valid moves (b.valid) from game 'g' using board 'b'. The valid moves
+ * are for the piece on the board 'b' at 'rank' and 'file'. Returns nothing.
  */
 void pgn_find_valid_moves(GAME g, BOARD b, int rank, int file);
 
@@ -394,8 +390,7 @@ typedef enum {
     E_PGN_OK,
     E_PGN_PARSE,
     E_PGN_AMBIGUOUS,
-    E_PGN_INVALID,
-    E_MAX_PGN_ERRORS
+    E_PGN_INVALID
 } pgn_error;
 
 #endif
