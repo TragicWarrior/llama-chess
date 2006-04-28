@@ -120,8 +120,7 @@ typedef struct games {
     unsigned short hindex;	// Current move in *hp.
     unsigned short flags;	// Game flags.
     unsigned char side: 1,      // This playing side. BLACK or WHITE.
-                  turn: 1,      // BLACK or WHITE.
-    	          mode: 2;      // MODE_[HISTORY/EDIT/PLAY]
+                  turn: 1;      // BLACK or WHITE.
     unsigned short ply;         // Move count.
     void *data;			/* User data associated with this game. Must
 				 * be freed by the user. */

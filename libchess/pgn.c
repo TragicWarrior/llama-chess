@@ -367,27 +367,14 @@ int pgn_board_update(GAME *g, BOARD b, int n)
     else
 	g->turn = WHITE;
 
-#if 0
-    if (TEST_FLAG(g->flags, GF_PERROR))
-	SET_FLAG(flags, GF_PERROR);
-
-    if (TEST_FLAG(g->flags, GF_MODIFIED))
-	SET_FLAG(flags, GF_MODIFIED);
-
-    if (TEST_FLAG(g->flags, GF_DELETE))
-	SET_FLAG(flags, GF_DELETE);
-
-    if (TEST_FLAG(g->flags, GF_GAMEOVER))
-	SET_FLAG(flags, GF_GAMEOVER);
-    
-    g->flags = flags;
-#endif
-
     SET_FLAG(g->flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
 	    GF_BK_CASTLE|GF_BQ_CASTLE);
+    CLEAR_FLAG(g->flags, GF_GAMEOVER);
     pgn_board_init(tb);
 
-    if (pgn_tag_find(g->tag, "FEN") != -1 &&
+    if (g->ravlevel)
+	pgn_board_init_fen(g, tb, g->rav[g->ravlevel - 1].fen);
+    else if (pgn_tag_find(g->tag, "FEN") != -1 &&
 	    pgn_board_init_fen(g, tb, NULL))
 	return E_PGN_PARSE;
 

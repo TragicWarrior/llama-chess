@@ -1442,7 +1442,7 @@ static void draw_board(GAME *g)
     unsigned coords_y = 8;
     struct userdata_s *d = g->data;
 
-    if (g->mode != MODE_PLAY && g->mode != MODE_EDIT)
+    if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
 	update_cursor(*g, g->hindex);
 
     for (row = 0; row < maxy; row++) {
@@ -1690,7 +1690,7 @@ static int move_to_engine(GAME *g, BOARD b)
     d->sp.srow = d->sp.scol = d->sp.icon = 0;
 
     if (TEST_FLAG(g->flags, GF_GAMEOVER))
-	g->mode = MODE_HISTORY;
+	d->mode = MODE_HISTORY;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
 	pgn_history_add(g, p);
@@ -1786,7 +1786,7 @@ void update_status_window(GAME g)
 	    (*tmp) ? tmp : "");
     mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
 
-    switch (g.mode) {
+    switch (d->mode) {
 	case MODE_HISTORY:
 	    mode = MODE_HISTORY_STR;
 	    break;
@@ -1803,7 +1803,7 @@ void update_status_window(GAME g)
 
     snprintf(buf, len - 1, "%*s %s", 7, STATUS_MODE_STR, mode);
 
-    if (g.mode == MODE_PLAY) {
+    if (d->mode == MODE_PLAY) {
 	if (TEST_FLAG(d->flags, CF_HUMAN))
 	    strncat(buf, " (human/human)", len - 1);
 	else if (TEST_FLAG(d->flags, CF_ENGINE_LOOP))
@@ -2348,7 +2348,8 @@ int rav_next_prev(GAME *g, BOARD b, int n)
 {
     // Next RAV.
     if (n) {
-	if (g->hp[g->hindex]->rav == NULL)
+	if ((!g->ravlevel && g->hp[g->hindex - 1]->rav == NULL) ||
+		(g->ravlevel && g->hp[g->hindex]->rav == NULL))
 	    return 1;
 
 	g->rav = Realloc(g->rav, (g->ravlevel + 1) * sizeof(RAV));
@@ -2356,9 +2357,10 @@ int rav_next_prev(GAME *g, BOARD b, int n)
 	g->rav[g->ravlevel].flags = g->flags;
 	g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(*g, b));
 	g->rav[g->ravlevel].hindex = g->hindex;
-	g->hp = g->hp[g->hindex]->rav;
+	g->hp = (!g->ravlevel) ? g->hp[g->hindex - 1]->rav : g->hp[g->hindex]->rav;
 	g->hindex = 0;
 	g->ravlevel++;
+	pgn_board_update(g, b, g->hindex + 1);
 	return 0;
     }
 
@@ -2437,9 +2439,9 @@ static void update_clocks()
     getitimer(ITIMER_REAL, &it);
 
     for (i = 0; i < gtotal; i++) {
-	if (game[i].mode == MODE_PLAY) {
-	    d = game[i].data;
+	d = game[i].data;
 
+	if (d->mode == MODE_PLAY) {
 	    if (d->paused == 1 || TEST_FLAG(d->flags, CF_NEW))
 		continue;
 	    else if (d->paused == -1) {
@@ -2551,11 +2553,11 @@ static void historymode_keys(chtype);
 static int playmode_keys(chtype c)
 {
     // More keys in MODE_EDIT share keys with MODE_PLAY than don't.
-    int editmode = (game[gindex].mode == MODE_EDIT) ? 1 : 0;
+    struct userdata_s *d = game[gindex].data;
+    int editmode = (d->mode == MODE_EDIT) ? 1 : 0;
     chtype p;
     int w, x;
     char *tmp;
-    struct userdata_s *d = game[gindex].data;
 
     switch (c) {
 	case 'C':
@@ -3084,12 +3086,12 @@ static int globalkeys(chtype c)
 		    COLOR_PAIRS, PACKAGE_BUGREPORT);
 	    break;
 	case 'h':
-	    if (game[gindex].mode != MODE_HISTORY) {
+	    if (d->mode != MODE_HISTORY) {
 		if (!pgn_history_total(game[gindex].hp) || 
 			(d->engine && d->engine->status == ENGINE_THINKING))
 		    return 1;
 
-		game[gindex].mode = MODE_HISTORY;
+		d->mode = MODE_HISTORY;
 		pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
 		update_all(game[gindex]);
 		return 1;
@@ -3118,7 +3120,7 @@ static int globalkeys(chtype c)
 	    }
 
 	    pushkey = 0;
-	    game[gindex].mode = MODE_PLAY;
+	    d->mode = MODE_PLAY;
 	    update_all(game[gindex]);
 	    return 1;
 	case '>':
@@ -3141,7 +3143,7 @@ static int globalkeys(chtype c)
 		fix_marks(&markstart, &markend);
 	    }
 
-	    if (game[gindex].mode != MODE_EDIT)
+	    if (d->mode != MODE_EDIT)
 		pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
 
 	    update_status_notify(game[gindex], NULL);
@@ -3171,7 +3173,7 @@ static int globalkeys(chtype c)
 		  d = game[gindex].data;
 
 		  if (pgn_history_total(game[gindex].hp))
-		      game[gindex].mode = MODE_HISTORY;
+		      d->mode = MODE_HISTORY;
 
 		  pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
 		  update_all(game[gindex]);
@@ -3318,7 +3320,7 @@ static int globalkeys(chtype c)
 		  strncpy(loadfile, tmp, sizeof(loadfile));
 
 		  if (pgn_history_total(game[gindex].hp))
-		      game[gindex].mode = MODE_HISTORY;
+		      d->mode = MODE_HISTORY;
 
 		  d = game[gindex].data;
 		  pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
@@ -3385,7 +3387,7 @@ static int globalkeys(chtype c)
 	case KEY_F(1):
 		  n = 0;
 
-		  switch (game[gindex].mode) {
+		  switch (d->mode) {
 		      case MODE_PLAY:
 			  c = help(GAME_HELP_PLAY_TITLE, ANYKEY, playhelp);
 			  break;
@@ -3443,9 +3445,7 @@ static int globalkeys(chtype c)
 		      loadfile[0] = 0;
 		  }
 
-		  game[gindex].mode = MODE_PLAY;
-		  d->c_row = (game[gindex].side == WHITE) ? 2 : 7;
-		  d->c_col = 4;
+		  d->mode = MODE_PLAY;
 		  update_status_notify(game[gindex], NULL);
 		  update_all(game[gindex]);
 		  return 1;
@@ -3478,7 +3478,7 @@ static int globalkeys(chtype c)
 		  update_status_notify(game[gindex], "Repeat %i", keycount);
 		  return -1;
 	case KEY_UP:
-		  if (game[gindex].mode == MODE_HISTORY)
+		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
 		  if (keycount) {
@@ -3493,7 +3493,7 @@ static int globalkeys(chtype c)
 
 		  return 1;
 	case KEY_DOWN:
-		  if (game[gindex].mode == MODE_HISTORY)
+		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
 		  if (keycount) {
@@ -3509,7 +3509,7 @@ static int globalkeys(chtype c)
 
 		  return 1;
 	case KEY_LEFT:
-		  if (game[gindex].mode == MODE_HISTORY)
+		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
 		  if (keycount) {
@@ -3524,7 +3524,7 @@ static int globalkeys(chtype c)
 
 		  return 1;
 	case KEY_RIGHT:
-		  if (game[gindex].mode == MODE_HISTORY)
+		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
 		  if (keycount) {
@@ -3539,7 +3539,7 @@ static int globalkeys(chtype c)
 
 		  return 1;
 	case 'e':
-		  if (game[gindex].mode != MODE_EDIT && game[gindex].mode !=
+		  if (d->mode != MODE_EDIT && d->mode !=
 			  MODE_PLAY)
 		      return 1;
 
@@ -3547,10 +3547,10 @@ static int globalkeys(chtype c)
 		  if (pgn_history_total(game[gindex].hp))
 		      return 1;
 
-		  if (game[gindex].mode != MODE_EDIT) {
+		  if (d->mode != MODE_EDIT) {
 		      pgn_board_init_fen(&game[gindex], d->b, NULL);
 		      config.details++;
-		      game[gindex].mode = MODE_EDIT;
+		      d->mode = MODE_EDIT;
 		      update_all(game[gindex]);
 		      return 1;
 		  }
@@ -3560,7 +3560,7 @@ static int globalkeys(chtype c)
 			  pgn_game_to_fen(game[gindex], d->b));
 		  pgn_tag_add(&game[gindex].tag, "SetUp", "1");
 		  pgn_tag_sort(game[gindex].tag);
-		  game[gindex].mode = MODE_PLAY;
+		  d->mode = MODE_PLAY;
 		  update_all(game[gindex]);
 		  return 1;
 	case 'Q':
@@ -3590,11 +3590,11 @@ void game_loop()
     gindex = gtotal - 1;
 
     if (pgn_history_total(game[gindex].hp))
-	game[gindex].mode = MODE_HISTORY;
+	d->mode = MODE_HISTORY;
     else
-	game[gindex].mode = MODE_PLAY;
+	d->mode = MODE_PLAY;
 
-    if (game[gindex].mode == MODE_HISTORY) {
+    if (d->mode == MODE_HISTORY) {
 	pgn_board_update(&game[gindex], d->b,
 		pgn_history_total(game[gindex].hp));
     }
@@ -3677,7 +3677,7 @@ void game_loop()
 	}
 
 	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
-	    game[gindex].mode = MODE_HISTORY;
+	    d->mode = MODE_HISTORY;
 
 	d = game[gindex].data;
 	error_recover = 0;
@@ -3703,7 +3703,7 @@ void game_loop()
 	else if (n == -1)
 	    continue;
 
-	switch (game[gindex].mode) {
+	switch (d->mode) {
 	    case MODE_EDIT:
 		editmode_keys(c);
 		break;
