@@ -361,6 +361,13 @@ int pgn_board_update(GAME *g, BOARD b, int n)
     int i = 0;
     BOARD tb;
     int ret = E_PGN_OK;
+    int p_error = TEST_FLAG(g->flags, GF_PERROR);
+    int black_opening = TEST_FLAG(g->flags, GF_BLACK_OPENING);
+
+    if (!g->ravlevel && TEST_FLAG(g->flags, GF_BLACK_OPENING))
+	g->turn = BLACK;
+    else
+	g->turn = WHITE;
 
     g->flags = 0;
     SET_FLAG(g->flags, GF_WK_CASTLE|GF_WQ_CASTLE|GF_WQ_CASTLE|
@@ -390,6 +397,12 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 
     if (ret == 0)
 	memcpy(b, tb, sizeof(BOARD));
+
+    if (p_error)
+	SET_FLAG(g->flags, GF_PERROR);
+
+    if (black_opening)
+	SET_FLAG(g->flags, GF_BLACK_OPENING);
 
     return ret;
 }
