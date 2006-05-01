@@ -1,3 +1,30 @@
+CBoard version 0.2.2
+--------------------
+Black opening and history mode fix.
+
+Tag window and long value fix.
+
+Added frfr2san.pgn to test/.
+
+Increased MAX_PGN_NAG from 5 to 8.
+
+The "Result" tag is determined by the move validator. Don't trust the result
+tag from PGN import format unless it's a draw and the result couldn't be
+determined.
+
+-E command line switch fix.
+
+When there is no promotion piece in the move text, promote to queen.
+
+A few PGN parsing and writing fixes. RAV, NAG, comments and EOG.
+
+Fix for copying the cc.data file.
+
+Fix installing config.example to PREFIX/share/man/man6.
+
+Added Debianization stuff.
+
+
 Cboard version 0.2.1
 --------------------
 The move validator is a little more than 5 times faster. The major problem was
