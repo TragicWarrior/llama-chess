@@ -1001,7 +1001,7 @@ static int frfrtosan(GAME *g, BOARD b, char **m)
     icon = b[RANKTOBOARD(srank)][FILETOBOARD(sfile)].icon;
 
     if ((p = pgn_piece_to_int(icon)) == -1 || p == OPEN_SQUARE)
-	return 0;
+	return E_PGN_PARSE;
 
     if (p != PAWN && promo)
 	return E_PGN_INVALID;
