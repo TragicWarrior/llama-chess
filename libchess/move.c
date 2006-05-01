@@ -50,11 +50,13 @@ static int count_piece(GAME g, BOARD b, register int piece, register int sfile,
 	register int srank, register int file, register int rank, 
 	register int *count)
 {
-    register int p = b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon;
-    register int pi = pgn_piece_to_int(p);
+    register int p, pi;
 
     if (!VALIDRANK(rank) || !VALIDFILE(file))
 	return 0;
+
+    p = b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon;
+    pi = pgn_piece_to_int(p);
 
     if (pi != OPEN_SQUARE) {
 	if (pi == piece && val_piece_side(g.turn, p)) {
