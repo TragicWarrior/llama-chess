@@ -1953,7 +1953,8 @@ void update_tag_window(TAG **t)
     int w = TAG_WIDTH - 10;
 
     for (i = 0; i < 7; i++)
-	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i]->name, w, t[i]->value);
+	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i]->name, w, 
+		str_etc(t[i]->value, w, 0));
 }
 
 void draw_prompt(WINDOW *win, int y, int width, const char *str, chtype attr)
