@@ -1053,7 +1053,7 @@ static int tag_text(GAME *g, FILE *fp)
 /*
  * PGN end-of-game marker.
  */
-static void eog_text(GAME *g, FILE *fp)
+static int eog_text(GAME *g, FILE *fp)
 {
     int c, i = 0;
     char buf[8], *p = buf;
@@ -1066,6 +1066,10 @@ static void eog_text(GAME *g, FILE *fp)
 
     *p = 0;
 
+    if (strcmp(buf, "1-0") != 0 && strcmp(buf, "0-1") != 0 &&
+	    strcmp(buf, "1/2-1/2") != 0 && strcmp(buf, "*") != 0)
+	return 1;
+
     /*
      * The eog marker in the move text may not match the actual game result.
      * We'll leave it up to the move validator to determine the result unless
@@ -1076,6 +1080,8 @@ static void eog_text(GAME *g, FILE *fp)
 	if (pgn_tag_add(&g->tag, "Result", buf) != E_PGN_OK)
 	    warn("pgn_tag_add()");
     }
+
+    return 0;
 }
 
 /*
@@ -1391,8 +1397,10 @@ static int read_file(FILE *fp)
 	/* 
 	 * A parse error may have occured at EOF.
 	 */
-	if (parse_error)
+	if (parse_error) {
 	    pgn_ret = E_PGN_PARSE;
+	    SET_FLAG(game[gindex].flags, GF_PERROR);
+	}
 
 	if ((c = Fgetc(fp)) == EOF) {
 	    if (feof(fp))
@@ -1433,7 +1441,7 @@ static int read_file(FILE *fp)
 		nulltags = 1;
 		tag_section = 0;
 	    }
-	    else
+	    else 
 		continue;
 	}
 
@@ -1547,7 +1555,12 @@ static int read_file(FILE *fp)
 	// PGN: End-of-game markers.
 	if ((isdigit(c) && (nextchar == '-' || nextchar == '/')) || c == '*') {
 	    Ungetc(c, fp);
-	    eog_text(&game[gindex], fp);
+
+	    if (eog_text(&game[gindex], fp)) {
+		parse_error = 1;
+		continue;
+	    }
+
 	    nulltags = 1;
 	    tag_section = 0;
 
