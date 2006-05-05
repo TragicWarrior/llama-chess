@@ -579,16 +579,23 @@ int pgn_tag_add(TAG ***dst, char *name, char *value)
     int len = 0;
     int t = pgn_tag_total(tdata);
 
+    if (!name)
+	return E_PGN_ERR;
+
     name = trim(name);
-    value = trim(value);
+
+    if (value)
+	value = trim(value);
 
     // Find an existing tag with 'name'.
     for (i = 0; i < t; i++) {
-	char *tmp;
+	char *tmp = NULL;
 
 	if (strcasecmp(tdata[i]->name, name) == 0) {
-	    if ((tmp = strdup(value)) == NULL)
-		return E_PGN_ERR;
+	    if (value) {
+		if ((tmp = strdup(value)) == NULL)
+		    return E_PGN_ERR;
+	    }
 
 	    free(tdata[i]->value);
 	    tdata[i]->value = tmp;
@@ -622,6 +629,7 @@ int pgn_tag_add(TAG ***dst, char *name, char *value)
     else
 	tdata[t]->value = NULL;
 
+    tdata[t]->name[0] = toupper(tdata[t]->name[0]);
     tdata[++t] = NULL;
     *dst = tdata;
     return E_PGN_OK;
