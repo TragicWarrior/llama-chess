@@ -98,6 +98,7 @@ const char *history_menu_help_str = {
     "  PGDN/PGUP - next/previous page\n" \
     "  a-zA-Z0-9 - jump to item\n" \
     "          a - annotate the selected move\n" \
+    "      ENTER - view annotation\n" \
     "     ESCAPE - quit"
 };
 

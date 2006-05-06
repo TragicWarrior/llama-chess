@@ -2465,6 +2465,14 @@ void do_annotate_move(HISTORY *hp)
 	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1);
 }
 
+void history_menu_view_annotation(struct menu_input_s *m)
+{
+    GAME *g = m->data;
+
+    // FIXME RAV
+    view_annotation(g->history[m->selected]);
+}
+
 void history_menu_annotate(struct menu_input_s *m)
 {
     GAME *g = m->data;
@@ -2482,6 +2490,7 @@ void history_menu(GAME *g)
     add_menu_key(&keys, KEY_DOWN, history_menu_next);
     add_menu_key(&keys, KEY_F(1), history_menu_help);
     add_menu_key(&keys, 'a', history_menu_annotate);
+    add_menu_key(&keys, '\n', history_menu_view_annotation);
     construct_menu(LINES, TAG_WIDTH, 0, 0, "Move History Tree", 1, 
 	    get_history_items, keys, g, history_menu_exit);
 }
