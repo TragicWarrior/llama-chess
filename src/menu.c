@@ -128,7 +128,7 @@ static void fix_menu_vals(WIN *win)
 {
     struct menu_input_s *m = win->data;
     char buf[COLS - 4];
-    int i = win->rows, n;
+    int i = 0, n;
     int nlen = 0;
 
     if (!m->cstatic) {
@@ -153,6 +153,7 @@ static void fix_menu_vals(WIN *win)
     if (!m->rstatic)
 	win->rows = i;
 
+    for (i = 0; m->items[i]; i++);
     m->total = i;
 
     if (!m->rstatic && m->title)
@@ -164,7 +165,7 @@ static void fix_menu_vals(WIN *win)
     if (!m->rstatic)
 	win->rows += 3; // 2 box, 1 prompt
 
-    if (win->rows > MAX_MENU_HEIGHT)
+    if (!m->rstatic && win->rows > MAX_MENU_HEIGHT)
 	win->rows = MAX_MENU_HEIGHT;
 
     snprintf(buf, sizeof(buf), "Item %i %s %i  %s", m->selected + 1,
@@ -178,7 +179,8 @@ static void fix_menu_vals(WIN *win)
 
     wresize(win->w, win->rows, win->cols);
     replace_panel(win->p, win->w);
-    move_panel(win->p, CALCPOSY(win->rows), CALCPOSX(win->cols));
+    move_panel(win->p, (m->ystatic == -1) ? CALCPOSY(win->rows) : m->ystatic, 
+	    (m->xstatic == -1) ? CALCPOSX(win->cols) : m->xstatic);
     keypad(win->w, TRUE);
     wmove(win->w, 0, 0);
     wclrtobot(win->w);
@@ -196,7 +198,10 @@ static void draw_menu(WIN *win)
     int n = 0;
     char *p;
 
-    for (i = 0; i < m->total; i++) {
+    if (!m->items)
+	return;
+
+    for (i = 0; m->items[i]; i++) {
 	y = strlen(m->items[i]->name);
 
 	if (nlen < y)
@@ -243,6 +248,18 @@ int display_menu(WIN *win)
     keypad(win->w, TRUE);
     nl();
 
+    if (m->keys) {
+	for (i = 0; m->keys[i]; i++) {
+	    if (win->c == m->keys[i]->c) {
+		(*m->keys[i]->func)(m);
+		m->items = (*m->func)(win);
+		key = 1;
+		m->search[0] = 0;
+		goto end;
+	    }
+	}
+    }
+
     switch (win->c) {
 	case REFRESH_MENU:
 	    m->items = (*m->func)(win);
@@ -251,44 +268,6 @@ int display_menu(WIN *win)
 	case -1:
 	    pushkey = 0;
 	    goto done;
-	default:
-	    if (m->keys) {
-		for (i = 0; m->keys[i]; i++) {
-		    if (win->c == m->keys[i]->c) {
-			(*m->keys[i]->func)(m);
-			m->items = (*m->func)(win);
-			key = 1;
-			m->search[0] = 0;
-			break;
-		    }
-		}
-	    }
-
-	    if (!key) {
-		if (strlen(m->search) + 1 > sizeof(m->search) - 1)
-		    m->search[0] = 0;
-
-		p = m->search;
-		
-		while (*p)
-		    p++;
-
-		*p++ = win->c;
-		*p = 0;
-		n = m->selected;
-
-		for (i = 0; m->items[i]; i++) {
-		    if (strncasecmp(m->search, m->items[i]->name, 
-				strlen(m->search)) == 0) {
-			m->selected = i;
-			break;
-		    }
-		}
-
-		if (n == m->selected)
-		    m->search[0] = 0;
-	    }
-	    break;
 	case KEY_HOME:
 	case KEY_END:
 	case KEY_UP:
@@ -297,8 +276,34 @@ int display_menu(WIN *win)
 	case KEY_PPAGE:
 	    m->search[0] = 0;
 	    break;
+	default:
+	    if (strlen(m->search) + 1 > sizeof(m->search) - 1)
+		m->search[0] = 0;
+
+	    p = m->search;
+
+	    while (*p)
+		p++;
+
+	    *p++ = win->c;
+	    *p = 0;
+	    n = m->selected;
+
+	    if (m->items) {
+		for (i = 0; m->items[i]; i++) {
+		    if (strncasecmp(m->search, m->items[i]->name, 
+				strlen(m->search)) == 0) {
+			m->selected = i;
+			break;
+		    }
+		}
+	    }
+
+	    if (n == m->selected)
+		m->search[0] = 0;
     }
 
+end:
     set_menu_vars(win->c, win->rows - 4, m->total - 1, &m->selected, &m->top);
     fix_menu_vals(win);
     draw_menu(win);
@@ -335,8 +340,8 @@ done:
     return 0;
 }
 
-WIN *construct_menu(int rows, int cols, const char *title, int name_only, 
-	menu_items *func, struct menu_key_s **keys, void *data, 
+WIN *construct_menu(int rows, int cols, int y, int x, const char *title, 
+	int name_only, menu_items *func, struct menu_key_s **keys, void *data, 
 	window_exit_func *efunc)
 {
     WIN *win;
@@ -344,9 +349,11 @@ WIN *construct_menu(int rows, int cols, const char *title, int name_only,
     struct menu_input_s *m;
 
     m = Calloc(1, sizeof(struct menu_input_s));
-    win = window_create(rows, cols, CALCPOSY(h), CALCPOSX(w), display_menu, m, 
-	    efunc);
+    win = window_create(rows, cols, (y >= 0) ? y : CALCPOSY(h), 
+	    (x >= 0) ? x : CALCPOSX(w), display_menu, m, efunc);
     m = win->data;
+    m->ystatic = y;
+    m->xstatic = x;
 
     if (rows)
 	m->rstatic = 1;

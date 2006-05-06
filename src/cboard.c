@@ -263,7 +263,8 @@ void edit_nag(void *arg)
     add_menu_key(&keys, ' ', edit_nag_toggle_item);
     add_menu_key(&keys, CTRL('x'), edit_nag_save);
     add_menu_key(&keys, KEY_F(1), edit_nag_help);
-    construct_menu(0, 0, NAG_EDIT_TITLE, 1, get_nag_items, keys, arg, NULL);
+    construct_menu(0, 0, -1, -1, NAG_EDIT_TITLE, 1, get_nag_items, keys, arg,
+	    NULL);
     return;
 }
 
@@ -574,7 +575,7 @@ void file_browser(void *arg)
     add_menu_key(&keys, KEY_F(1), file_browser_help);
     add_menu_key(&keys, '~', file_browser_home);
     add_menu_key(&keys, KEY_ESCAPE, file_browser_abort);
-    construct_menu(LINES - 4, 0, NULL, 0, get_file_items, keys, in,
+    construct_menu(LINES - 4, 0, -1, -1, NULL, 0, get_file_items, keys, in,
 	    file_browser_finalize);
     return;
 }

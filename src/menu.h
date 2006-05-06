@@ -54,11 +54,13 @@ struct menu_input_s {
     char search[16];
     int rstatic;
     int cstatic;
+    int ystatic;
+    int xstatic;
 };
 
 void add_menu_key(struct menu_key_s ***dst, int c, menu_key func);
-WIN *construct_menu(int rows, int cols, const char *title, int name_only, 
-	menu_items *func, struct menu_key_s **keys, void *data, 
+WIN *construct_menu(int rows, int cols, int y, int x, const char *title, 
+	int name_only, menu_items *func, struct menu_key_s **keys, void *data, 
 	window_exit_func *efunc);
 
 #endif

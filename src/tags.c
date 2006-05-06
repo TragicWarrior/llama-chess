@@ -148,7 +148,8 @@ static void country_codes(void *arg)
     add_menu_key(&keys, KEY_F(1), do_cc_help);
     add_menu_key(&keys, KEY_ESCAPE, do_cc_abort);
     add_menu_key(&keys, '\n', do_cc_save);
-    construct_menu(0, 0, CC_TITLE, 0, get_cc_items, keys, arg, do_cc_finalize);
+    construct_menu(0, 0, -1, -1, CC_TITLE, 0, get_cc_items, keys, arg, 
+	    do_cc_finalize);
     return;
 }
 
@@ -442,6 +443,6 @@ void edit_tags(GAME g, BOARD b, int edit)
 	add_menu_key(&keys, KEY_F(1), view_tag_help);
     }
 
-    construct_menu(0, 0, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 0, 
+    construct_menu(0, 0, -1, -1, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 0, 
 	    get_tag_items, keys, data, NULL);
 }

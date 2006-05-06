@@ -51,6 +51,8 @@ struct userdata_s {
 	char col;
 	char row;
     } sp;
+
+    void *data; // For the history menu
 };
 
 #endif
