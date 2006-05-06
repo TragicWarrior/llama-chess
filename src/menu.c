@@ -242,7 +242,6 @@ int display_menu(WIN *win)
     int key = 0;
     char *p;
 
-    draw_menu(win);
     cbreak();
     noecho();
     keypad(win->w, TRUE);
@@ -277,6 +276,9 @@ int display_menu(WIN *win)
 	    m->search[0] = 0;
 	    break;
 	default:
+	    if (!win->c)
+		break;
+
 	    if (strlen(m->search) + 1 > sizeof(m->search) - 1)
 		m->search[0] = 0;
 
@@ -307,6 +309,10 @@ end:
     set_menu_vars(win->c, win->rows - 4, m->total - 1, &m->selected, &m->top);
     fix_menu_vals(win);
     draw_menu(win);
+    
+    if (m->draw_exit_func)
+	(*m->draw_exit_func)(m);
+
     return 1;
 
 done:

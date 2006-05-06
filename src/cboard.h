@@ -87,8 +87,18 @@ const char *historyhelp = {
     "         + - next variation for the previous move\n" \
     "         - - previous variation for the previous move\n" \
     "         d - toggle board details\n" \
+    "         M - move history menu\n" \
     "         h - exit history mode\n" \
     "        F1 - global and other key help"
+};
+
+const char *history_menu_help_str = {
+    "    UP/DOWN - previous/next menu item\n" \
+    "   HOME/END - first/last menu item\n" \
+    "  PGDN/PGUP - next/previous page\n" \
+    "  a-zA-Z0-9 - jump to item\n" \
+    "          a - annotate the selected move\n" \
+    "     ESCAPE - quit"
 };
 
 const char *mainhelp = {

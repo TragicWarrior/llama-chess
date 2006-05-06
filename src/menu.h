@@ -46,6 +46,7 @@ struct menu_input_s {
     int top;
     int total;
     menu_items *func;
+    menu_key *draw_exit_func;
     char *title;
     int name_only;
     struct menu_item_s **items;
