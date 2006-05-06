@@ -19,21 +19,52 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#define INPUT_WIDTH	((COLS > 60) ? 60 : COLS - 2)
-#define CTRL(x)			((x) & 0x1f)
-#define KEY_ESCAPE		CTRL('[')
+#ifdef HAVE_FORM_H
+#include <form.h>
+#endif
+
+#define INPUT_WIDTH		((COLS / 4) * 3)
 
 enum {
     FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
-    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND
+    FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND,
+    FIELD_TYPE_PGN_RESULT
 };
 
-void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
-void draw_prompt(WINDOW *win, int, int, const char *, chtype);
-int help(const char *, const char *, const char **);
-char *get_input(const char *title, const char *init, int lines, int reset,
-	const char *extra_help, char *(*custom_func)(void *), void *arg, 
-	chtype ckey, int type, ...);
+typedef void (input_func)(void *);
+struct input_s {
+    char buf[MAX_PGN_LINE_LEN];
+    WINDOW *sw;
+    FIELD *fields[2];
+    FORM *f;
+    int w;
+    int h;
+    int lines;
+    char *t;
+    char *init;
+    char *extra;
+    input_func *func;
+    char *arg;
+    int c;
+    void *data;
+    int reset;
+};
+
+struct input_data_s {
+    void *data;
+    void *moredata;
+    char *str;
+    window_exit_func *efunc;
+};
+
+FIELDTYPE *TYPE_PGN_TAG_NAME;
+FIELDTYPE *TYPE_PGN_DATE;
+FIELDTYPE *TYPE_PGN_ROUND;
+FIELDTYPE *TYPE_PGN_RESULT;
+
+WIN *construct_input(const char *title, const char *init, int lines, int reset,
+	const char *extra_help, input_func *func, void *arg, int key,
+	struct input_data_s *id, int type, ...);
 
 #endif

@@ -17,6 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
@@ -39,25 +40,24 @@
 #include "window.h"
 #include "strings.h"
 #include "misc.h"
+#include "message.h"
 #include "input.h"
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
 
-const char *inputhelp[] = {
-    "UP/DOWN/LEFT/RIGHT - position cursor",
-    "            CTRL-A - move cursor to the beginning of line",
-    "            CTRL-E - move cursor to the end of line",
-    "            CTRL-B - move cursor to previous word",
-    "            CTRL-W - move cursor to next word",
-    "            CTRL-X - delete word under cursor",
-    "            CTRL-K - delete from cursor to end of line",
-    "            CTRL-U - clear entire input field",
-    "         BACKSPACE - delete previous character",
-    "            ESCAPE - quit without changes",
-    "             ENTER - quit with changes",
-    NULL
+const char *inputhelp = {
+    "UP/DOWN/LEFT/RIGHT - position cursor\n" \
+    "       HOME/CTRL-A - move cursor to the beginning of line\n" \
+    "        END/CTRL-E - move cursor to the end of line\n" \
+    "          CTRL-B/W - move cursor to previous/next word\n" \
+    "            CTRL-X - delete word under cursor\n" \
+    "            CTRL-K - delete from cursor to end of line\n" \
+    "            CTRL-U - clear entire input field\n" \
+    "         BACKSPACE - delete previous character\n" \
+    "            ESCAPE - quit without changes\n" \
+    "             ENTER - quit with changes" 
 };
 
 static bool validate_pgn_tag_name(int c, const void *arg)
@@ -84,6 +84,128 @@ static bool validate_pgn_round(int c, const void *arg)
     return TRUE;
 }
 
+static bool validate_pgn_result(int c, const void *arg)
+{
+    if (c != '1' && c != '0' && c != '2' && c != '*' && c != '/' && c != '-')
+	return FALSE;
+
+    return TRUE;
+}
+
+static int get_input(WIN *win)
+{
+    struct input_s *in = win->data;
+    char *tmp;
+    struct input_data_s *data = in->data;
+
+    curs_set(1);
+    window_draw_title(win->w, in->t, in->w, CP_INPUT_TITLE,
+	    CP_INPUT_BORDER);
+
+    if (in->extra) {
+	window_draw_prompt(win->w, in->h - 3, in->w, in->extra, 
+		CP_INPUT_PROMPT);
+	window_draw_prompt(win->w, in->h - 2, in->w, INPUT_HELP_PROMPT,
+		CP_INPUT_PROMPT);
+    }
+    else
+	window_draw_prompt(win->w, in->h - 2, in->w, INPUT_HELP_PROMPT,
+		CP_INPUT_PROMPT);
+
+    if (in->func && in->c && win->c == in->c) {
+	(*in->func)(in);
+	return 1;
+    }
+
+    switch (win->c) {
+	case CTRL('X'):
+	    form_driver(in->f, REQ_DEL_WORD);
+	    break;
+	case CTRL('B'):
+	    form_driver(in->f, REQ_PREV_WORD);
+	    break;
+	case CTRL('W'):
+	    form_driver(in->f, REQ_NEXT_WORD);
+	    break;
+	case KEY_HOME:
+	case CTRL('A'):
+	    form_driver(in->f, REQ_BEG_LINE);
+	    break;
+	case KEY_END:
+	case CTRL('E'):
+	    form_driver(in->f, REQ_END_LINE);
+	    break;
+	case CTRL('K'):
+	    form_driver(in->f, REQ_CLR_EOL);
+	    break;
+	case CTRL('U'):
+	    form_driver(in->f, REQ_CLR_FIELD);
+	    break;
+	case KEY_F(1):
+	    message(INPUT_HELP_TITLE, ANYKEY, "%s", inputhelp);
+	    break;
+	case KEY_LEFT:
+	    form_driver(in->f, REQ_LEFT_CHAR);
+	    break;
+	case KEY_RIGHT:
+	    form_driver(in->f, REQ_RIGHT_CHAR);
+	    break;
+	case KEY_UP:
+	    form_driver(in->f, REQ_UP_CHAR);
+	    break;
+	case KEY_DOWN:
+	    form_driver(in->f, REQ_DOWN_CHAR);
+	    break;
+	case '\010':
+	case KEY_BACKSPACE:
+	    form_driver(in->f, REQ_DEL_PREV);
+	    break;
+	case '\n':
+	    tmp = field_buffer(in->fields[0], 0);
+	    goto done;
+	case KEY_ESCAPE:
+	    if (in->reset)
+		tmp = NULL;
+	    else
+		tmp = (in->buf[0]) ? in->buf : NULL;
+	    goto done;
+	default:
+	    form_driver(in->f, (win->c & A_CHARTEXT));
+	    break;
+    }
+
+    form_driver(in->f, REQ_VALIDATION);
+    return 1;
+
+done:
+    if (tmp) {
+	tmp = trim(tmp);
+
+	if (tmp[0])
+	    strncpy(in->buf, tmp, sizeof(in->buf));
+	else
+	    in->buf[0] = 0;
+    }
+    else
+	in->buf[0] = 0;
+
+    unpost_form(in->f);
+    free_form(in->f);
+    free_field(in->fields[0]);
+
+    if (in->t)
+	free(in->t);
+
+    if (in->extra)
+	free(in->extra);
+
+    data->str = (in->buf[0]) ? strdup(in->buf) : NULL;
+    win->data = data;
+    free(in);
+    curs_set(0);
+    return 0;
+}
+
 /*
  * This function prompts for input. The init argument is the initial value.
  * The lines argument is how many lines the field is. If zero, then it is
@@ -98,241 +220,128 @@ static bool validate_pgn_round(int c, const void *arg)
  * function of type void which takes one pointer-to-void argument. This
  * function is called when the ckey argument is pressed.
  *
+ * The efunc parameter is the function that is ran when the window is done
+ * getting input or NULL. This function is ran just before the window is
+ * destroyed.
+ *
  * The type argument is the type of validation for the input defined in
  * common.h. Remaining arguments are values for the type argument. See
  * field_type(3X) for validation types.
  *
  * FIXME form validation is buggy (integers).
  */
-char *get_input(const char *title, const char *init, int lines, int reset,
-	const char *extra_help, char *(*custom_func)(void *), void *arg, 
-	chtype ckey, int type, ...)
+WIN *construct_input(const char *title, const char *init, int lines, int reset,
+	const char *extra_help, input_func *func, void *arg, int key,
+	struct input_data_s *id, int type, ...)
 {
-    WINDOW *win, *swin;
-    PANEL *panel;
-    FIELD *fields[2];
-    FORM *form;
-    int width, len;
-    int y, x;
-    int i, n;
-    static char dst[MAX_PGN_LINE_LEN];
-    char *tmp;
+    WIN *win;
+    struct input_s *in;
+    int l = (lines > 0) ? lines : 1;
     va_list ap;
-    FIELDTYPE *TYPE_PGN_TAG_NAME;
-    FIELDTYPE *TYPE_PGN_DATE;
-    FIELDTYPE *TYPE_PGN_ROUND;
-    int quit = 0;
+    static int hasrun;
 
-    bzero(dst, sizeof(dst));
+    l += 2;
+    in = Calloc(1, sizeof(struct input_s));
 
-    len = strlen(title);
-    width = (len + 4 > INPUT_WIDTH && len + 4 < COLS - 2) ?
-	    len + 4 : INPUT_WIDTH;
+    if (extra_help) {
+	l++;
+	in->extra = strdup(extra_help);
+    }
 
-    fields[0] = new_field((lines) ? lines : sizeof(dst) / width + 1, 
-	    width - 2, 0, 0, 0, 0);
+    if (title) {
+	l++;
+	in->t = strdup(title);
+    }
 
-    if (lines == 1)
-	field_opts_off(fields[0], O_STATIC);
-
-    TYPE_PGN_TAG_NAME = new_fieldtype(NULL, validate_pgn_tag_name);
-    TYPE_PGN_DATE = new_fieldtype(NULL, validate_pgn_date);
-    TYPE_PGN_ROUND = new_fieldtype(NULL, validate_pgn_round);
+    if (!hasrun) {
+	TYPE_PGN_TAG_NAME = new_fieldtype(NULL, validate_pgn_tag_name);
+	TYPE_PGN_DATE = new_fieldtype(NULL, validate_pgn_date);
+	TYPE_PGN_ROUND = new_fieldtype(NULL, validate_pgn_round);
+	TYPE_PGN_RESULT = new_fieldtype(NULL, validate_pgn_result);
+    }
 
     va_start(ap, type);
 
     switch (type) {
 	case FIELD_TYPE_PGN_ROUND:
-	    set_field_type(fields[0], TYPE_PGN_ROUND);
+	    set_field_type(in->fields[0], TYPE_PGN_ROUND);
+	    break;
+	case FIELD_TYPE_PGN_RESULT:
+	    set_field_type(in->fields[0], TYPE_PGN_RESULT);
 	    break;
 	case FIELD_TYPE_PGN_DATE:
-	    set_field_type(fields[0], TYPE_PGN_DATE);
+	    set_field_type(in->fields[0], TYPE_PGN_DATE);
 	    break;
 	case FIELD_TYPE_PGN_TAG_NAME:
-	    set_field_type(fields[0], TYPE_PGN_TAG_NAME);
+	    set_field_type(in->fields[0], TYPE_PGN_TAG_NAME);
 	    break;
 	case FIELD_TYPE_ALNUM:
-	    set_field_type(fields[0], TYPE_ALNUM, va_arg(ap, int));
+	    set_field_type(in->fields[0], TYPE_ALNUM, va_arg(ap, int));
 	    break;
 	case FIELD_TYPE_ALPHA:
-	    set_field_type(fields[0], TYPE_ALPHA, va_arg(ap, int));
+	    set_field_type(in->fields[0], TYPE_ALPHA, va_arg(ap, int));
 	    break;
 	case FIELD_TYPE_ENUM:
-	    set_field_type(fields[0], TYPE_ENUM, va_arg(ap, char **),
+	    set_field_type(in->fields[0], TYPE_ENUM, va_arg(ap, char **),
 		    va_arg(ap, int), va_arg(ap, int));
 	    break;
 	case FIELD_TYPE_INTEGER:
-	    set_field_type(fields[0], TYPE_INTEGER, va_arg(ap, int),
+	    set_field_type(in->fields[0], TYPE_INTEGER, va_arg(ap, int),
 		    va_arg(ap, long), va_arg(ap, long));
 	    break;
 	case FIELD_TYPE_NUMERIC:
-	    set_field_type(fields[0], TYPE_NUMERIC, va_arg(ap, int),
+	    set_field_type(in->fields[0], TYPE_NUMERIC, va_arg(ap, int),
 		    va_arg(ap, double), va_arg(ap, double));
 	    break;
 	case FIELD_TYPE_REGEXP:
-	    set_field_type(fields[0], TYPE_REGEXP, va_arg(ap, char *));
+	    set_field_type(in->fields[0], TYPE_REGEXP, va_arg(ap, char *));
 	    break;
 	case FIELD_TYPE_IPV4:
-	    set_field_type(fields[0], TYPE_IPV4);
+	    set_field_type(in->fields[0], TYPE_IPV4);
 	    break;
 	default:
+	    set_field_type(in->fields[0], NULL);
 	    break;
     }
 
     va_end(ap);
 
-    if (init)
-	set_field_buffer(fields[0], 0, init);
+    if (init) {
+	strncpy(in->buf, init, sizeof(in->buf));
+	set_field_buffer(in->fields[0], 0, init);
+    }
 
-    field_opts_off(fields[0], O_BLANK|O_AUTOSKIP);
-    fields[1] = NULL;
-    form = new_form(fields);
-    form_opts_off(form, O_BS_OVERLOAD);
+    in->h = l + 1;
+    in->w = INPUT_WIDTH;
+    in->func = func;
+    in->arg = arg;
+    in->c = key;
+    in->lines = (lines) ? lines : 1;
+    win = window_create(in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w), 
+	    get_input, in, id->efunc);
+    in = win->data;
+    in->data = id;
+    in->reset = reset;
+    in->fields[0] = new_field(in->lines, in->w - 2, 0, 0, 0, 0);
 
-    scale_form(form, &y, &x);
+    if (in->lines == 1)
+	field_opts_off(in->fields[0], O_STATIC);
 
-    win = newwin((extra_help) ? y + 5 : y + 4, x + 2, 
-	    CALCPOSY(((extra_help) ? y + 5 : y + 4)), CALCPOSX(x));
-    set_form_win(form, win);
-    swin = derwin(win, y, x, 2, 1);
-    set_form_sub(form, swin);
-    post_form(form);
-    nl();
-    noecho();
-    cbreak();
-    keypad(win, TRUE);
+    if (in->buf)
+	set_field_buffer(in->fields[0], 0, in->buf);
+
+    field_opts_off(in->fields[0], O_BLANK|O_AUTOSKIP);
+    in->fields[1] = NULL;
+    in->f = new_form(in->fields);
+    form_opts_off(in->f, O_BS_OVERLOAD);
+    set_form_win(in->f, win->w);
+    in->sw = derwin(win->w, in->lines, in->w - 2, 2, 1);
+    set_form_sub(in->f, in->sw);
+    post_form(in->f);
+    form_driver(in->f, REQ_END_FIELD);
+    keypad(win->w, TRUE);
     curs_set(1);
-    panel = new_panel(win);
-    wbkgd(win, CP_INPUT_WINDOW);
-    draw_window_title(win, title, width, CP_INPUT_TITLE, CP_INPUT_BORDER);
-
-    if (extra_help)
-	draw_prompt(win, y + 2, width, extra_help, CP_INPUT_PROMPT);
-
-    draw_prompt(win, (extra_help) ? y + 3 : y + 2, width, INPUT_HELP_PROMPT,
-	    CP_INPUT_PROMPT);
-
-    form_driver(form, REQ_END_FIELD);
-
-    while (1) {
-	chtype c;
-
-	update_panels();
-	doupdate();
-
-	c = wgetch(win);
-
-	if (c == ckey && custom_func) {
-	    form_driver(form, REQ_VALIDATION);
-
-	    if ((tmp = custom_func(arg)) != NULL) {
-		set_field_buffer(fields[0], 0, tmp);
-		form_driver(form, REQ_END_LINE);
-	    }
-
-	    continue;
-	}
-
-	switch (c) {
-	    case CTRL('X'):
-		form_driver(form, REQ_DEL_WORD);
-		break;
-	    case CTRL('B'):
-		form_driver(form, REQ_PREV_WORD);
-		break;
-	    case CTRL('W'):
-		form_driver(form, REQ_NEXT_WORD);
-		break;
-	    case CTRL('A'):
-		form_driver(form, REQ_BEG_LINE);
-		break;
-	    case CTRL('E'):
-		form_driver(form, REQ_END_LINE);
-		break;
-	    case CTRL('K'):
-		form_driver(form, REQ_CLR_EOL);
-		break;
-	    case CTRL('U'):
-		form_driver(form, REQ_CLR_FIELD);
-		break;
-	    case KEY_F(1):
-		help(INPUT_HELP_TITLE, ANYKEY, inputhelp);
-		break;
-	    case KEY_LEFT:
-		form_driver(form, REQ_LEFT_CHAR);
-		break;
-	    case KEY_RIGHT:
-		form_driver(form, REQ_RIGHT_CHAR);
-		break;
-	    case KEY_UP:
-		form_driver(form, REQ_UP_CHAR);
-		break;
-	    case KEY_DOWN:
-		form_driver(form, REQ_DOWN_CHAR);
-		break;
-	    case '\010':
-	    case KEY_BACKSPACE:
-		form_driver(form, REQ_DEL_PREV);
-		break;
-	    case '\n':
-		goto done;
-		break;
-	    case KEY_ESCAPE:
-		quit = 1;
-		goto done;
-		break;
-	    default:
-		form_driver(form, (c & A_CHARTEXT));
-		form_driver(form, REQ_VALIDATION);
-		break;
-	}
-    }
-
-done:
-    if (quit) {
-	if (reset) {
-	    dst[0] = 0;
-	    goto cleanup;
-	}
-	else
-	    set_field_buffer(fields[0], 0, init);
-    }
-
-    form_driver(form, REQ_VALIDATION);
-    tmp = trim(field_buffer(fields[0], 0));
-
-    /* Remove multiple whitespace. Happens on a multiline field. */
-    if (tmp) {
-	for (i = 0, n = 0; i < strlen(tmp); i++) {
-	    if (isspace(tmp[i]) && isspace(tmp[i + 1]))
-		continue;
-
-	    dst[n++] = tmp[i];
-	}
-
-	dst[n] = 0;
-    }
-    else
-	dst[0] = 0;
-
-    dst[sizeof(dst) - 1] = 0;
-
-cleanup:
-    unpost_form(form);
-    free_form(form);
-
-    for (i = 0; fields[i]; i++)
-	free_field(fields[i]);
-
-    del_panel(panel);
-    delwin(swin);
-    delwin(win);
-    free_fieldtype(TYPE_PGN_TAG_NAME);
-    free_fieldtype(TYPE_PGN_DATE);
-    free_fieldtype(TYPE_PGN_ROUND);
-    noecho();
-    nonl();
-    curs_set(0);
-    tmp = dst;
-    return (dst[0]) ? dst : NULL;
+    wbkgd(win->w, CP_INPUT_WINDOW);
+    (*win->func)(win);
+    return win;
 }

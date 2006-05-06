@@ -39,39 +39,32 @@
 
 #include "chess.h"
 #include "conf.h"
-#include "window.h"
 #include "colors.h"
 #include "misc.h"
+#include "window.h"
 #include "message.h"
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
 
-int dump_message(const char *title, const char *prompt, int center,
-	const char *extra_help, void(*custom_func)(void*), void *arg, int ckey,
-	const char *format, ...)
+static void build_message_lines(const char *title, const char *prompt,
+	const char *extra, int *h, int *w, char ***str, const char *fmt, 
+	va_list ap)
 {
-    WINDOW *win;
-    PANEL *panel;
-    char *line, **lines = NULL;
-    int width = 0, height;
     int i, n, pos;
+    char *line, **lines = NULL;
+    int width = 0, height = 0;
+    char buf[LINE_MAX];
+    char *tmp, *p;
     int total = 0;
-    char buf[LINE_MAX], *p;
-    char *tmp;
-    va_list ap;
-
-    va_start(ap, format);
 
 #ifdef HAVE_VASPRINTF
-    vasprintf(&line, format, ap);
+    vasprintf(&line, fmt, ap);
 #else
     line = Malloc(LINE_MAX);
-    vsnprintf(line, LINE_MAX, format, ap);
+    vsnprintf(line, LINE_MAX, fmt, ap);
 #endif
-
-    va_end(ap);
 
     /* Get the longest line to dynamically adjust the message box width. */
     for (i = n = pos = 0; line[i]; i++, n++) {
@@ -116,7 +109,7 @@ int dump_message(const char *title, const char *prompt, int center,
     p = buf;
 
     while ((tmp = strsep(&p, "\n")) != NULL) {
-	tmp = trim(tmp);
+	tmp = rtrim(tmp);
 
 	if (!*tmp)
 	    continue;
@@ -130,54 +123,114 @@ int dump_message(const char *title, const char *prompt, int center,
     if (prompt && width < strlen(prompt))
 	width = strlen(prompt);
 
-    if (extra_help && width < strlen(extra_help))
-	width = strlen(extra_help);
+    if (extra && width < strlen(extra))
+	width = strlen(extra);
 
     if (title && width < strlen(title))
 	width = strlen(title);
 
-    width += 2;
     height = total;
 
-    if (extra_help)
+    if (extra)
 	height++;
 
-    win = newwin((title) ? height + 5 : height + 4, width,
-	    CALCPOSY(((title) ? height + 5 : height + 4)), CALCPOSX(width));
-    keypad(win, TRUE);
-    panel = new_panel(win);
-    wbkgd(win, CP_MESSAGE_WINDOW);
-    draw_window_title(win, title, width, CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
+    if (title)
+	height++;
 
-    for (i = 0; lines[i]; i++)
-	mvwprintw(win, (title) ? 2 + i: 1 + i, 
-		(center) ? CENTERX(width, lines[i]) : 1, "%s", lines[i]);
+    height += 4; // 1 padding, 2 box, 1 prompt
+    width += 4; // 2 padding, 2 box
+    *h = height;
+    *w = width;
+    *str = lines;
+}
 
-    if (extra_help)
-	draw_prompt(win, (title) ? height + 2 : height + 1, width, extra_help,
-		CP_MESSAGE_PROMPT);
+static int display_message(WIN *win)
+{
+    struct message_s *m = win->data;
+    int i;
+    void *p = NULL;
 
-    draw_prompt(win, (title) ? height + 3 : height + 2, width, prompt,
-	    CP_MESSAGE_PROMPT);
+    keypad(win->w, TRUE);
+    window_draw_title(win->w, m->title, m->w, CP_MESSAGE_TITLE, 
+	    CP_MESSAGE_BORDER);
 
-    while (1) {
-	update_panels();
-	doupdate();
+    for (i = 0; m->lines[i]; i++)
+	mvwprintw(win->w, (m->title) ? 2 + i: 1 + i, (m->center) ?
+		CENTERX(m->w, m->lines[i]) : 1, "%s", m->lines[i]);
 
-	n = wgetch(win);
+    if (m->extra)
+	window_draw_prompt(win->w, (m->prompt) ? m->h - 3 : m->h - 2, m->w,
+		m->extra, CP_MESSAGE_PROMPT);
 
-	if (!custom_func || n != ckey)
-	    break;
+    if (m->prompt)
+	window_draw_prompt(win->w, m->h - 2, m->w, m->prompt, CP_MESSAGE_PROMPT);
 
-	custom_func(arg);
+    if (m->func && win->c == m->c) {
+	(*m->func)(m->arg);
+	return 1;
     }
 
-    del_panel(panel);
-    delwin(win);
+    if (win->c != 0) {
+	for (i = 0; m->lines[i]; i++)
+	    free(m->lines[i]);
 
-    for (i = 0; i < total; i++)
-	free(lines[i]);
+	free(m->lines);
+	
+	if (m->title)
+	    free(m->title);
 
-    free(lines);
-    return n;
+	if (m->prompt)
+	    free(m->prompt);
+
+	if (m->extra)
+	    free(m->extra);
+
+	if (m->arg)
+	    p = m->arg;
+
+	free(m);
+	win->data = p;
+	return 0;
+    }
+
+    return 1;
+}
+
+WIN *construct_message(const char *title, const char *prompt, int center,
+	const char *extra_help, message_func *func, void *arg, 
+	window_exit_func *efunc, int ckey, const char *fmt, ...)
+{
+    char **lines = NULL;
+    va_list ap;
+    struct message_s *m = NULL;
+    WIN *win = NULL;
+    int h, w;
+    
+    va_start(ap, fmt);
+    build_message_lines(title, prompt, extra_help, &h, &w, &lines, fmt, ap);
+    va_end(ap);
+
+    m = Calloc(1, sizeof(struct message_s));
+    m->lines = lines;
+    m->w = w;
+    m->h = h;
+    m->center = center;
+    m->c = ckey;
+    m->func = func;
+    m->arg = arg;
+
+    if (title)
+	m->title = strdup(title);
+
+    if (prompt)
+	m->prompt = strdup(prompt);
+
+    if (extra_help)
+	m->extra = strdup(extra_help);
+
+    win = window_create(h, w, CALCPOSY(h), CALCPOSX(w), display_message, m, 
+	    efunc);
+    wbkgd(win->w, CP_MESSAGE_WINDOW);
+    (*win->func)(win);
+    return win;
 }

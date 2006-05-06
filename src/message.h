@@ -19,9 +19,31 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#define MSG_WIDTH	60 /* For multiline messages. */
+#define MSG_WIDTH	((COLS / 5) * 4) /* For multiline messages. */
 
-void draw_window_title(WINDOW *, const char *, int, chtype, chtype);
-void draw_prompt(WINDOW *win, int, int, const char *, chtype);
+#define message(t, p, fmt...) \
+    construct_message(t, p, 0, NULL, NULL, NULL, NULL, 0, ##fmt)
+#define cmessage(t, p, fmt...) \
+    construct_message(t, p, 1, NULL, NULL, NULL, NULL, 0, ##fmt)
+
+typedef void *(message_func) (void *);
+
+struct message_s {
+    int w;
+    int h;
+    char *title;
+    char *prompt;
+    char *extra;
+    char **lines;
+    int center;
+    int c;
+    message_func *func;
+    void *arg;
+};
+
+WIN *construct_message(const char *, const char *, int, const char *,
+	message_func *, void *, window_exit_func *, int, const char *, ...);
+struct message_s *update_message(struct message_s *, char *, char *, char *fmt,
+	...);
 
 #endif

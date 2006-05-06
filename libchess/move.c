@@ -956,7 +956,7 @@ static int finalize_move(GAME *g, BOARD b, int promo, int sfile, int srank,
 
 static void black_opening(GAME *g, BOARD b, int rank)
 {
-    if (!g->ravlevel && !g->hindex) {
+    if (!g->ravlevel && !g->hindex && pgn_tag_find(g->tag, "FEN") == -1) {
 	if (rank > 4) {
 	    g->turn = BLACK;
 	    find_king_squares(*g, b, &kfile, &krank, &okfile, &okrank);

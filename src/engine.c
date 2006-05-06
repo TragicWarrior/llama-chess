@@ -36,6 +36,14 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_NCURSES_H
+#include <ncurses.h>
+#endif
+
+#ifdef HAVE_PANEL_H
+#include <panel.h>
+#endif
+
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
@@ -45,6 +53,7 @@
 #include "misc.h"
 #include "strings.h"
 #include "window.h"
+#include "message.h"
 #include "common.h"
 #include "engine.h"
 

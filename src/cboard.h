@@ -50,10 +50,11 @@ PANEL *loadingp;
 WINDOW *enginew;
 PANEL *enginep;
 
+static char gameexp[255];
+static char moveexp[255];
 struct itimerval clock_timer;
 int delete_count = 0;
 int markstart = -1, markend = -1;
-int pushkey;
 int keycount;
 char loadfile[FILENAME_MAX];
 int quit;
@@ -65,158 +66,107 @@ enum {
     NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
 };
 
-struct country_codes {
-    char code[4];
-    char country[64];
-} *ccodes;
-
-const char *historyhelp[] = {
-    "   UP/DOWN - jump to next or previous history *",
-    "RIGHT/LEFT - next or previous history *",
-    "     SPACE - toggle half move (ply) stepping",
-    "         j - jump to move number (prompt) *",
-    "         / - specify a new move text search expression *",
-    "         ] - find the next move text expression *",
-    "         [ - find the previous move text expression *",
-    "         a - annotate the previous move",
-    "         v - view annotation for the next move",
-    "         V - view annotation for the previous move",
-    "         + - next variation for the previous move",
-    "         - - previous variation for the previous move",
-    "         d - toggle board details",
-    "         h - exit history mode",
-    "        F1 - global and other key help",
-    NULL
-};
-
-const char *mainhelp[] = {
-    "p - play mode keys",
-    "h - history mode keys",
-    "e - board edit mode keys",
-    "g - global game keys",
-    NULL
-};
-
-const char *edithelp[] = {
-    "              0..9 - cursor repeat count",
-    "UP/DOWN/LEFT/RIGHT - position cursor *",
-    "             SPACE - select piece under cursor for movement",
-    "             ENTER - commit selected piece",
-    "            ESCAPE - cancel selected piece",
-    "                 d - delete the piece under the cursor",
-    "                 i - insert a new piece",
-    "                 c - toggle castling availability",
-    "                 p - this square is the en passant one",
-    "                 w - switch turn",
-    "                 e - exit edit mode",
-    "                F1 - global and other key help",
-    NULL,
-};
-
-const char *gamehelp[] = {
-    "  0..9 - command repeat count",
-    "     T - edit the current games roster tags",
-    "     t - view the current games roster tags",
-    "     ? - specify a new roster tag expression *",
-    "     } - find the next roster tag expression *",
-    "     { - find the previous roster tag expression *",
-    "     n - start new game or round",
-    "     N - start new game from scratch resetting all other games",
-    "     > - next game or round *",
-    "     < - previous game or round *",
-    "     J - jump to game or round *",
-    "     x - toggle game delete flag *",
-    "     X - delete the current or all flagged games",
-    "     r - resume a saved game",
-    "     s - save game",
-    "     S - save game and prompt",
-    "     Q - quit",
-    "   F10 - About",
-    "    F1 - global and other key help",
-    NULL
-};
-
-const char *playhelp[] = {
-    "              0..9 - cursor repeat count",
-    "UP/DOWN/LEFT/RIGHT - position cursor *",
-    "             SPACE - select piece under cursor for movement",
-    "             ENTER - commit selected piece",
-    "            ESCAPE - cancel selected piece",
-    "                 C - set clock",
-    "                 d - toggle board details",
-    "                 w - switch playing side",
-    "                 u - undo previous move *",
-    "                 g - force engine to make the next move",
-    "                 | - send a command to the chess engine",
-    "                 E - toggle engine/engine play",
-    "                 W - toggle engine input/output window",
-    "                 H - toggle human/human play",
-    "                F1 - global and other key help",
-    NULL
-};
-
-const char *cc_help[] = {
-    "    UP/DOWN - previous/next menu item",
-    "   HOME/END - first/last menu item",
-    "  PGDN/PGUP - next/previous page",
-    "  a-zA-Z0-9 - jump to item",
-    "      ENTER - select item",
-    "     ESCAPE - cancel",
-    NULL
-};
-
-const char *pgn_info_help[] = {
-    "    UP/DOWN - previous/next menu item",
-    "   HOME/END - first/last menu item",
-    "  PGDN/PGUP - next/previous page",
-    "  a-zA-Z0-9 - jump to item",
-    "      ENTER - view selected item",
-    "     ESCAPE - cancel",
-    NULL
-};
-
-const char *pgn_edit_help[] = {
-    "    UP/DOWN - previous/next menu item",
-    "   HOME/END - first/last menu item",
-    "  PGDN/PGUP - next/previous page",
-    "  a-zA-Z0-9 - jump to item",
-    "      ENTER - edit select item",
-    "     CTRL-a - add an entry",
-    "     CTRL-f - add FEN tag from current position",
-    "     CTRL-r - remove selected entry",
-    "     CTRL-t - add custom tags",
-    "     CTRL-x - quit without changes",
-    "     ESCAPE - quit with changes",
-    NULL
-};
-
 struct file_s {
     char *path;
     char *name;
     char *st;
 };
 
-const char *file_browser_help[] = {
-    "    UP/DOWN - previous/next menu item",
-    "   HOME/END - first/last menu item",
-    "  PGDN/PGUP - next/previous page",
-    "  a-zA-Z0-9 - jump to item",
-    "      ENTER - select item",
-    "     CTRL-x - change directory",
-    "          ~ - change to home directory",
-    "     ESCAPE - abort",
-    NULL
+struct file_s **files;
+
+const char *historyhelp = {
+    "   UP/DOWN - jump to next or previous history *\n" \
+    "RIGHT/LEFT - next or previous history *\n" \
+    "     SPACE - toggle half move (ply) stepping\n" \
+    "         j - jump to move number (prompt) *\n" \
+    "         / - specify a new move text search expression *\n" \
+    "       ],[ - find the next/previous move text expression *\n" \
+    "         a - annotate the previous move\n" \
+    "         v - view annotation for the next move\n" \
+    "         V - view annotation for the previous move\n" \
+    "         + - next variation for the previous move\n" \
+    "         - - previous variation for the previous move\n" \
+    "         d - toggle board details\n" \
+    "         h - exit history mode\n" \
+    "        F1 - global and other key help"
 };
 
-const char *naghelp[] = {
-    "    UP/DOWN - previous/next menu item",
-    "   HOME/END - first/last menu item",
-    "  PGDN/PGUP - next/previous page",
-    "  a-zA-Z0-9 - jump to item",
-    "      SPACE - toggle selected item",
-    "      ENTER - quit with changes",
-    "     ESCAPE - quit without changes",
-    NULL
+const char *mainhelp = {
+    "p - play mode keys\n" \
+    "h - history mode keys\n" \
+    "e - board edit mode keys\n" \
+    "g - global game keys"
+};
+
+const char *edithelp = {
+    "              0..9 - cursor repeat count\n" \
+    "UP/DOWN/LEFT/RIGHT - position cursor *\n" \
+    "             SPACE - select piece under cursor for movement\n" \
+    "             ENTER - commit selected piece\n" \
+    "            ESCAPE - cancel selected piece\n" \
+    "                 d - delete the piece under the cursor\n" \
+    "                 i - insert a new piece\n" \
+    "                 c - toggle castling availability\n" \
+    "                 p - this square is the en passant one\n" \
+    "                 w - switch turn\n" \
+    "                 e - exit edit mode\n" \
+    "                F1 - global and other key help"
+};
+
+const char *gamehelp = {
+    "  0..9 - command repeat count\n" \
+    "   T/t - edit/view the current games roster tags\n" \
+    "     ? - specify a new roster tag expression *\n" \
+    "   },{ - find the next/previous roster tag expression *\n" \
+    "     n - start new game or round\n" \
+    "     N - start new game from scratch resetting all other games\n" \
+    "   >,< - next/previous game or round *\n" \
+    "     J - jump to game or round *\n" \
+    "     x - toggle game delete flag *\n" \
+    "     X - delete the current or all flagged games\n" \
+    "     r - resume a saved game\n" \
+    "     s - save game\n" \
+    "     S - save game and prompt\n" \
+    "     Q - quit\n" \
+    "   F10 - About\n" \
+    "    F1 - global and other key help"
+};
+
+const char *playhelp = {
+    "              0..9 - cursor repeat count\n" \
+    "UP/DOWN/LEFT/RIGHT - position cursor *\n" \
+    "             SPACE - select piece under cursor for movement\n" \
+    "             ENTER - commit selected piece\n" \
+    "            ESCAPE - cancel selected piece\n" \
+    "                 C - set clock\n" \
+    "                 d - toggle board details\n" \
+    "                 w - switch playing side\n" \
+    "                 u - undo previous move *\n" \
+    "                 g - force engine to make the next move\n" \
+    "                 | - send a command to the chess engine\n" \
+    "                 E - toggle engine/engine play\n" \
+    "                 W - toggle engine input/output window\n" \
+    "                 H - toggle human/human play\n" \
+    "                F1 - global and other key help"
+};
+
+const char *filebrowser_help = {
+    "    UP/DOWN - previous/next menu item\n" \
+    "   HOME/END - first/last menu item\n" \
+    "  PGDN/PGUP - next/previous page\n" \
+    "  a-zA-Z0-9 - jump to item\n" \
+    "      ENTER - select item\n" \
+    "          ~ - change to home directory\n" \
+    "     ESCAPE - abort"
+};
+
+const char *naghelp = {
+    "    UP/DOWN - previous/next menu item\n" \
+    "   HOME/END - first/last menu item\n" \
+    "  PGDN/PGUP - next/previous page\n" \
+    "  a-zA-Z0-9 - jump to item\n" \
+    "      SPACE - toggle selected item\n" \
+    "     CTRL-X - quit with changes"
 };
 
 char **nags;
@@ -238,6 +188,9 @@ int movestep;
 
 void update_all(GAME g);
 void parse_engine_output(GAME *g, char *str);
+void update_status_notify(GAME g, char *fmt, ...);
+void edit_tags(GAME g, BOARD b, int edit);
+void add_custom_tags(TAG ***t);
 
 #ifdef DEBUG
 void dump_board(int, BOARD);

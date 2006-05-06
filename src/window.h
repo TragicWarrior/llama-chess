@@ -19,27 +19,45 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#define cmessage(title, prompt, args...)	\
-    dump_message(title, prompt, 1, NULL, NULL, NULL, 0, ##args)
-
-#define message(title, prompt, args...) \
-    dump_message(title, prompt, 0, NULL, NULL, NULL, 0, ##args)
-
-#define show_message(title, prompt, ehelp, func, arg, key, args...) \
-    dump_message(title, prompt, 0, ehelp, func, arg, key, ##args)
-
-#define get_input_str(title, init) \
-    get_input(title, init, 1, 0, NULL, NULL, NULL, 0, -1, 20)
-
-#define get_input_str_clear(title, init) \
-    get_input(title, init, 1, 1, NULL, NULL, NULL, 0, -1, 20)
-
-int dump_message(const char *, const char *, int, const char *, 
-	void (*)(void *), void *, int, const char *, ...);
-
+#define WINDOW_TIMEOUT		70
+#define CTRL(x)			((x) & 0x1f)
+#define KEY_ESCAPE		CTRL('[')
 #define CALCPOSY(y)		((y > LINES - 1) ? 0 : LINES / 2 - y / 2)
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
 #define CENTERX(x, str)		abs((x / 2 - strlen(str) / 2))
 #define CENTER_INT(x, n)	abs((x / 2 - n / 2))
+
+typedef struct window_s WIN;
+typedef int (window_func) (WIN *);
+typedef void (window_exit_func) (WIN *);
+
+struct window_s {
+    WINDOW *w;
+    PANEL *p;
+    int rows;
+    int cols;
+    int posy;
+    int posx;
+    /* 
+     * Function that is called when a key is pressed from game_loop(). This is
+     * the only place where a key is gotten from. This is for the top window
+     * (LIFO). When the function returns -1, the window is destroyed and the
+     * top becomes top - 1.
+     */
+    window_func *func;
+    window_exit_func *efunc;
+    void *data;
+    int c;
+    int keep;
+};
+
+WIN **wins;
+int pushkey;
+
+WIN *window_create(int h, int w, int y, int x, window_func, void *data,
+	window_exit_func);
+void window_destroy(WIN *);
+void window_draw_title(WINDOW *, const char *, int, chtype, chtype);
+void window_draw_prompt(WINDOW *, int, int, const char *, chtype);
 
 #endif

@@ -70,20 +70,25 @@ void *Calloc(size_t n, size_t size)
     return p;
 }
 
+char *rtrim(char *str)
+{
+    int i;
+
+    for (i = strlen(str) - 1; isspace(str[i]); i--)
+	str[i] = 0;
+
+    return str;
+}
+
 char *trim(char *str)
 {
-    int i = 0;
-
     if (!str)
 	return NULL;
 
     while (isspace(*str))
 	str++;
 
-    for (i = strlen(str) - 1; isspace(str[i]); i--)
-	str[i] = 0;
-
-    return str;
+    return rtrim(str);
 }
 
 char *itoa(long n)
@@ -161,5 +166,6 @@ char *word_split_append(const char *str, int c, char *pattern)
 	*bp++ = *p++;
     }
 
+    *bp = 0;
     return buf;
 }
