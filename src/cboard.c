@@ -2869,7 +2869,7 @@ static int globalkeys(chtype c)
 	    // FIXME Resuming from previous history could append to a RAV.
 	    if (game[gindex].hindex != pgn_history_total(game[gindex].hp)) {
 		if (!pushkey)
-		    construct_message(NULL, GAME_RESUME_HISTORY_TEXT, 0,
+		    construct_message(NULL, "(r)esume or abort", 0,
 			    NULL, NULL, NULL, do_history_mode_confirm, 0, 
 			    "%s", GAME_RESUME_HISTORY_TEXT);
 
