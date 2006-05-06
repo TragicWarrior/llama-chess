@@ -97,8 +97,9 @@ const char *history_menu_help_str = {
     "   HOME/END - first/last menu item\n" \
     "  PGDN/PGUP - next/previous page\n" \
     "  a-zA-Z0-9 - jump to item\n" \
-    "          a - annotate the selected move\n" \
+    "     CTRL-a - annotate the selected move\n" \
     "      ENTER - view annotation\n" \
+    "     CTRL-d - toggle board details\n" \
     "     ESCAPE - quit"
 };
 

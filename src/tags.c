@@ -136,6 +136,14 @@ static void do_cc_save(struct menu_input_s *m)
     pushkey = -1;
 }
 
+static void cc_print(WIN *win)
+{
+    struct menu_input_s *m = win->data;
+
+    mvwprintw(win->w, m->print_line, 1, "%s %-*s", m->item->name,
+	    win->cols - 6, m->item->value);
+}
+
 static void country_codes(void *arg)
 {
     struct menu_key_s **keys = NULL;
@@ -149,7 +157,7 @@ static void country_codes(void *arg)
     add_menu_key(&keys, KEY_ESCAPE, do_cc_abort);
     add_menu_key(&keys, '\n', do_cc_save);
     construct_menu(0, 0, -1, -1, CC_TITLE, 0, get_cc_items, keys, arg, 
-	    do_cc_finalize);
+	    cc_print, do_cc_finalize);
     return;
 }
 
@@ -416,6 +424,22 @@ static void view_tag_value(struct menu_input_s *m)
     cmessage(buf, ANYKEY, "%s", item->value);
 }
 
+static void tag_print(WIN *win)
+{
+    int i, len = 0;
+    struct menu_input_s *m = win->data;
+
+    for (i = 0; m->items[i]; i++) {
+	int n = strlen(m->items[i]->name);
+
+	if (len < n)
+	    len = n;
+    }
+
+    mvwprintw(win->w, m->print_line, 1, "%*s: %-*s", len, m->item->name, 
+	    win->cols - len - 4, m->item->value);
+}
+
 void edit_tags(GAME g, BOARD b, int edit)
 {
     struct menu_key_s **keys = NULL;
@@ -444,5 +468,5 @@ void edit_tags(GAME g, BOARD b, int edit)
     }
 
     construct_menu(0, 0, -1, -1, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 0, 
-	    get_tag_items, keys, data, NULL);
+	    get_tag_items, keys, data, tag_print, NULL);
 }

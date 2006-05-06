@@ -38,6 +38,7 @@ struct menu_key_s {
     void *data;
 };
 
+typedef void (menu_print_func)(WIN *);
 typedef struct menu_item_s **(menu_items)(WIN *);
 
 struct menu_input_s {
@@ -47,9 +48,12 @@ struct menu_input_s {
     int total;
     menu_items *func;
     menu_key *draw_exit_func;
+    menu_print_func *print_func;
+    int print_line;
     char *title;
     int name_only;
     struct menu_item_s **items;
+    struct menu_item_s *item;
     struct menu_key_s **keys;
     void *data;
     char search[16];
@@ -62,6 +66,6 @@ struct menu_input_s {
 void add_menu_key(struct menu_key_s ***dst, int c, menu_key func);
 WIN *construct_menu(int rows, int cols, int y, int x, const char *title, 
 	int name_only, menu_items *func, struct menu_key_s **keys, void *data, 
-	window_exit_func *efunc);
+	menu_print_func *pfunc, window_exit_func *efunc);
 
 #endif

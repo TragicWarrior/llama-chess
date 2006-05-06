@@ -251,6 +251,13 @@ struct menu_item_s **get_nag_items(WIN *win)
     return items;
 }
 
+void nag_print(WIN *win)
+{
+    struct menu_input_s *m = win->data;
+
+    mvwprintw(win->w, m->print_line, 1, "%-*s", win->cols - 2, m->item->name);
+}
+
 void edit_nag(void *arg)
 {
     struct menu_key_s **keys = NULL;
@@ -264,7 +271,7 @@ void edit_nag(void *arg)
     add_menu_key(&keys, CTRL('x'), edit_nag_save);
     add_menu_key(&keys, KEY_F(1), edit_nag_help);
     construct_menu(0, 0, -1, -1, NAG_EDIT_TITLE, 1, get_nag_items, keys, arg,
-	    NULL);
+	    nag_print, NULL);
     return;
 }
 
@@ -450,7 +457,7 @@ new_we:
 	
 	tp = localtime(&st.st_mtime);
 	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
-	snprintf(sbuf, sizeof(sbuf), "%9i %s", (int)st.st_size, tbuf);
+	snprintf(sbuf, sizeof(sbuf), "%s %6i", tbuf, (int)st.st_size);
 	files[n]->st = strdup(sbuf);
 	n++;
     }
@@ -550,6 +557,22 @@ void file_browser_abort(struct menu_input_s *m)
     pushkey = -1;
 }
 
+void file_browser_print(WIN *win)
+{
+    int i, len = 0;
+    struct menu_input_s *m = win->data;
+
+    for (i = 0; m->items[i]; i++) {
+	int n = strlen(m->items[i]->value);
+
+	if (len < n)
+	    len = n;
+    }
+
+    mvwprintw(win->w, m->print_line, 1, "%*s %-*s", len, m->item->value, 
+	    win->cols - len - 3, m->item->name);
+}
+
 void file_browser(void *arg)
 {
     struct menu_key_s **keys = NULL;
@@ -577,7 +600,7 @@ void file_browser(void *arg)
     add_menu_key(&keys, '~', file_browser_home);
     add_menu_key(&keys, KEY_ESCAPE, file_browser_abort);
     construct_menu(LINES - 4, 0, -1, -1, NULL, 0, get_file_items, keys, in,
-	    file_browser_finalize);
+	    file_browser_print, file_browser_finalize);
     return;
 }
 
@@ -1253,7 +1276,7 @@ void update_history_window(GAME g)
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (v", sizeof(buf));
+	strncat(buf, " (Annotated", sizeof(buf));
 	n++;
     }
 
@@ -1278,7 +1301,7 @@ void update_history_window(GAME g)
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (V", sizeof(buf));
+	strncat(buf, " (Annotated", sizeof(buf));
 	n++;
     }
 
@@ -1886,6 +1909,11 @@ void do_engine_command_finalize(WIN *win)
     free(in);
 }
 
+void do_board_details()
+{
+    config.details = (config.details) ? 0 : 1;
+}
+
 static void historymode_keys(chtype);
 static int playmode_keys(chtype c)
 {
@@ -2054,7 +2082,7 @@ static int playmode_keys(chtype c)
 	    historymode_keys(c);
 	    break;
 	case 'd':
-	    config.details = (config.details) ? 0 : 1;
+	    do_board_details();
 	    break;
 	case 'p':
 	    if (!TEST_FLAG(d->flags, CF_HUMAN) && game[gindex].turn != 
@@ -2481,6 +2509,18 @@ void history_menu_annotate(struct menu_input_s *m)
     do_annotate_move(g->history[m->selected]);
 }
 
+void history_menu_details(struct menu_input_s *m)
+{
+    do_board_details();
+}
+
+void history_menu_print(WIN *win)
+{
+    struct menu_input_s *m = win->data;
+
+    mvwprintw(win->w, m->print_line, 1, "%-*s", win->cols - 2, m->item->name);
+}
+
 void history_menu(GAME *g)
 {
     struct menu_key_s **keys = NULL;
@@ -2489,10 +2529,11 @@ void history_menu(GAME *g)
     add_menu_key(&keys, KEY_UP, history_menu_prev);
     add_menu_key(&keys, KEY_DOWN, history_menu_next);
     add_menu_key(&keys, KEY_F(1), history_menu_help);
-    add_menu_key(&keys, 'a', history_menu_annotate);
+    add_menu_key(&keys, CTRL('a'), history_menu_annotate);
+    add_menu_key(&keys, CTRL('d'), history_menu_details);
     add_menu_key(&keys, '\n', history_menu_view_annotation);
     construct_menu(LINES, TAG_WIDTH, 0, 0, "Move History Tree", 1, 
-	    get_history_items, keys, g, history_menu_exit);
+	    get_history_items, keys, g, history_menu_print, history_menu_exit);
 }
 
 static void historymode_keys(chtype c)
@@ -2507,7 +2548,7 @@ static void historymode_keys(chtype c)
 	    history_menu(&game[gindex]);
 	    break;
 	case 'd':
-	    config.details = (config.details) ? 0 : 1;
+	    do_board_details();
 	    break;
 	case ' ':
 	    movestep = (movestep == 1) ? 2 : 1;
@@ -2564,13 +2605,6 @@ static void historymode_keys(chtype c)
 	    }
 
 	    do_find_move_exp_finalize(0, c);
-	    break;
-	case 'v':
-	    view_annotation(game[gindex].hp[game[gindex].hindex]);
-	    break;
-	case 'V':
-	    if (game[gindex].hindex - 1 >= 0)
-		view_annotation(game[gindex].hp[game[gindex].hindex - 1]);
 	    break;
 	case '-':
 	case '+':

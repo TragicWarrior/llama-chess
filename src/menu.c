@@ -194,39 +194,21 @@ static void draw_menu(WIN *win)
     int i;
     int y = 0;
     struct menu_input_s *m = win->data;
-    int nlen = 0;
-    int n = 0;
-    char *p;
 
     if (!m->items)
 	return;
 
-    for (i = 0; m->items[i]; i++) {
-	y = strlen(m->items[i]->name);
-
-	if (nlen < y)
-	    nlen = y;
-    }
-
-    for (i = m->top, y = 2; i < m->total && y < win->rows - 2; i++, y++) {
-	if (m->items[i]->value)
-	    n = strlen(m->items[i]->value) + nlen;
-
-	if (n >= win->cols)
-	    p = "Press ENTER";
-	else
-	    p = m->items[i]->value;
-
+    for (i = m->top, y = 2; m->items[i] && y < win->rows - 2; i++, y++) {
 	if (i == m->selected)
 	    wattron(win->w, CP_MENU_SELECTED);
 	else if (m->items[i]->selected)
 	    wattron(win->w, CP_MENU_HIGHLIGHT);
 
-	if (!m->name_only)
-	    mvwprintw(win->w, y, 1, "%*s - %-*s", nlen, m->items[i]->name, 
-		    win->cols - 5 - nlen, (m->items[i]->value) ? p : UNKNOWN);
-	else
-	    mvwprintw(win->w, y, 1, "%-*s", nlen, m->items[i]->name);
+	if (m->print_func) {
+	    m->print_line = y;
+	    m->item = m->items[i];
+	    (*m->print_func)(win);
+	}
 
 	if (i == m->selected)
 	    wattroff(win->w, CP_MENU_SELECTED);
@@ -348,7 +330,7 @@ done:
 
 WIN *construct_menu(int rows, int cols, int y, int x, const char *title, 
 	int name_only, menu_items *func, struct menu_key_s **keys, void *data, 
-	window_exit_func *efunc)
+	menu_print_func *pfunc, window_exit_func *efunc)
 {
     WIN *win;
     int h = 1, w = 1;
@@ -367,6 +349,7 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
     if (cols)
 	m->cstatic = 1;
 
+    m->print_func = pfunc;
     m->func = func;
     m->keys = keys;
     m->data = data;
