@@ -147,6 +147,10 @@
 	COLOR_PAIR(32) | config.color[CONF_MENUH].attrs : \
 	config.color[CONF_MENUH].nattrs)
 
+#define CP_HISTORY_MENU_LG	((COLORS) ? \
+	COLOR_PAIR(33) | config.color[CONF_HISTORY_MENU_LG].attrs : \
+	config.color[CONF_HISTORY_MENU_LG].nattrs)
+
 void init_color_pairs();
 void set_default_colors();
 

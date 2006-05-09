@@ -124,12 +124,15 @@
 /* Annotation viewing and editing windows. */
 #define ANNOTATION_VIEW_TITLE	"Viewing Annotation for"
 #define ANNOTATION_EDIT_TITLE	"Editing Annotation for"
+#define NO_ANNOTATIONS		"No comment text for this move"
 
 /* NAG editing window. */
 #define NAG_PROMPT	"Type CTRL-t to edit NAG"
 #define NAG_EDIT_TITLE	"Numeric Annotation Glyphs"
 #define NAG_EDIT_PROMPT	"Type F1 for help"
 #define NAG_EDIT_HELP	"NAG Menu Keys"
+#define VIEW_NAG	"Press 'n' to view NAG"
+#define VIEW_MOVE_NAG	"Viewing NAG for"
 
 /* The input window. */
 #define INPUT_HELP_PROMPT	GAME_HELP_PROMPT
@@ -168,6 +171,7 @@
 #define COPY_DATAFILE		"Copying"
 #define NONE			"none"
 #define x_grid_chars		"abcdefgh"
+#define ANY_OTHER_KEY		"Any other key to continue"
 #define ANYKEY			"[ press any key to continue ]"
 #define YESNO			"[ Yes or No ]"
 #define ERROR			"[ ERROR ]"
@@ -204,6 +208,7 @@
 #define HISTORY_MOVE_STR	"Move:"
 #define HISTORY_MOVE_NEXT_STR	"Next move:"
 #define HISTORY_MOVE_PREV_STR	"Prev move:"
+#define HISTORY_MENU_TITLE	"Move History Tree"
 
 /* White and black window strings. */
 #define BW_NAME_STR	"Name:"

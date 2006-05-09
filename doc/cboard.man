@@ -227,6 +227,7 @@ the pattern. The default is `*.pgn'.
 .It Cm color_menu Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm color_menu_selected Ar foreground Ar background Op Ar cattr Op Ar attr
 .It Cm color_menu_highlight Ar foreground Ar background Op Ar cattr Op Ar attr
+.It Cm color_menu_graphics Ar foreground Ar background Op Ar cattr Op Ar attr
 .El
 .Pp
 Color and attributes can be modified from the configuration file. There are up

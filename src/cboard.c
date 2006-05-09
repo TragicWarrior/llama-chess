@@ -135,7 +135,7 @@ void update_cursor(GAME g, int idx)
 	else
 	    d->c_col = 3;
 
-	d->c_row = (g.turn == WHITE) ? 1 : 8;
+	d->c_row = (g.turn == WHITE) ? 8 : 1;
 	return;
     }
 
@@ -160,7 +160,7 @@ static int init_nag()
     }
 
     nags = Realloc(nags, (i+2) * sizeof(char *));
-    nags[i++] = strdup("None");
+    nags[i++] = strdup(NONE);
     nags[i] = NULL;
 
     while (!feof(fp)) {
@@ -282,7 +282,7 @@ static void *view_nag(void *arg)
     char line[LINE_MAX] = {0};
     int i = 0;
 
-    snprintf(buf, sizeof(buf), "Viewing NAG for \"%s\"", h->move);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", VIEW_MOVE_NAG, h->move);
 
     if (!nags) {
 	if (init_nag())
@@ -322,14 +322,13 @@ void view_annotation(HISTORY *h)
     snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_VIEW_TITLE, h->move);
 
     if (comment)
-	construct_message(buf, (nag) ? "Any other key to continue" : ANYKEY, 0,
-		(nag) ? "Press 'n' to view NAG" : NULL, 
+	construct_message(buf, (nag) ? ANY_OTHER_KEY : ANYKEY, 2,
+		(nag) ? VIEW_NAG : NULL, 
 		(nag) ? view_nag : NULL, (nag) ? h : NULL, NULL,
 		(nag) ? 'n' : 0, "%s", h->comment);
     else
-	construct_message(buf, "Any other key to continue", 0, 
-		"Press 'n' to view NAG", view_nag, h, NULL, 'n', 
-		"%s", "No annotations for this move");
+	construct_message(buf, ANY_OTHER_KEY, 1, VIEW_NAG, view_nag, h, NULL, 
+		'n', "%s", NO_ANNOTATIONS);
 }
 
 static int sort_files(const void *a, const void *b)
@@ -2081,7 +2080,7 @@ static int playmode_keys(chtype c)
 	case 'a':
 	    historymode_keys(c);
 	    break;
-	case 'd':
+	case CTRL('d'):
 	    do_board_details();
 	    break;
 	case 'p':
@@ -2199,10 +2198,9 @@ static void editmode_keys(chtype c)
     }
 }
 
-void do_annotate_finalize(WIN *win)
+void really_do_annotate_finalize(struct input_data_s *in, 
+	struct userdata_s *d)
 {
-    struct userdata_s *d = game[gindex].data;
-    struct input_data_s *in = win->data;
     HISTORY *h = in->data;
     int len;
 
@@ -2222,6 +2220,14 @@ void do_annotate_finalize(WIN *win)
     free(in);
     SET_FLAG(d->flags, CF_MODIFIED);
     update_all(game[gindex]);
+}
+
+void do_annotate_finalize(WIN *win)
+{
+    struct userdata_s *d = game[gindex].data;
+    struct input_data_s *in = win->data;
+
+    really_do_annotate_finalize(in, d);
 }
 
 void do_find_move_exp_finalize(int init, int c)
@@ -2314,12 +2320,27 @@ struct history_menu_s {
     int indent;
 };
 
+void free_history_menu_data(struct history_menu_s **h)
+{
+    int i;
+    
+    if (!h)
+	return;
+
+    for (i = 0; h[i]; i++) {
+	free(h[i]->line);
+	free(h[i]);
+    }
+
+    free(h);
+}
+
 void get_history_data(HISTORY **hp, struct history_menu_s ***menu, int m,
 	int turn)
 {
     int i, n = 0;
     int t = pgn_history_total(hp);
-    char buf[MAX_SAN_MOVE_LEN + 3];
+    char buf[MAX_SAN_MOVE_LEN + 4];
     static int depth;
     struct history_menu_s **hmenu = *menu;
 
@@ -2331,8 +2352,8 @@ void get_history_data(HISTORY **hp, struct history_menu_s ***menu, int m,
     for (i = 0; i < t; i++) {
 	hmenu = Realloc(hmenu, (n + 2) * sizeof(struct history_menu_s *));
 	hmenu[n] = Malloc(sizeof(struct history_menu_s));
-	snprintf(buf, sizeof(buf), "%c%s", (turn == WHITE) ? 'W' : 'B',
-		hp[i]->move);
+	snprintf(buf, sizeof(buf), "%c%s%s", (turn == WHITE) ? 'W' : 'B',
+		hp[i]->move, (hp[i]->comment || hp[i]->nag[0]) ? " !" : "");
 	hmenu[n]->line = strdup(buf);
 	hmenu[n]->hindex = i;
 	hmenu[n]->indent = 0;
@@ -2501,12 +2522,35 @@ void history_menu_view_annotation(struct menu_input_s *m)
     view_annotation(g->history[m->selected]);
 }
 
+void history_menu_annotate_finalize(WIN *win)
+{
+    struct input_data_s *in = win->data;
+    GAME *g = in->moredata;
+    struct userdata_s *d = g->data;
+    struct history_menu_s **hm = d->data;
+
+    really_do_annotate_finalize(in, d);
+    free_history_menu_data(hm);
+    hm = NULL;
+    get_history_data(g->history, &hm, 0, TEST_FLAG(g->flags, GF_BLACK_OPENING));
+    d->data = hm;
+    pushkey = REFRESH_MENU;
+}
+
 void history_menu_annotate(struct menu_input_s *m)
 {
     GAME *g = m->data;
+    char buf[COLS - 4];
+    struct input_data_s *in;
+    HISTORY *hp = g->history[m->selected]; // FIXME RAV
 
-    // FIXME RAV
-    do_annotate_move(g->history[m->selected]);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_EDIT_TITLE, hp->move);
+    in = Calloc(1, sizeof(struct input_data_s));
+    in->data = hp;
+    in->moredata = m->data;
+    in->efunc = history_menu_annotate_finalize;
+    construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
+	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1);
 }
 
 void history_menu_details(struct menu_input_s *m)
@@ -2514,11 +2558,40 @@ void history_menu_details(struct menu_input_s *m)
     do_board_details();
 }
 
+// FIXME RAV
 void history_menu_print(WIN *win)
 {
     struct menu_input_s *m = win->data;
+    GAME *g = m->data;
+    struct userdata_s *d = g->data;
+    struct history_menu_s **hm = d->data;
+    struct history_menu_s *h = hm[m->top];
+    int i;
+    char *p = m->item->name;
+    int line = m->print_line - 2;
+    short pair;
+    attr_t attrs;
 
-    mvwprintw(win->w, m->print_line, 1, "%-*s", win->cols - 2, m->item->name);
+    wattr_get(win->w, &attrs, &pair, NULL);
+    wattroff(win->w, COLOR_PAIR(pair));
+    mvwaddch(win->w, m->print_line, 1, *p++);
+
+    if (h->hindex == 0 && line == 0)
+	waddch(win->w, ACS_ULCORNER | CP_HISTORY_MENU_LG);
+    else if (!hm[h->hindex + (win->rows - 5) + 1] && line == win->rows - 5)
+	waddch(win->w, ACS_LLCORNER | CP_HISTORY_MENU_LG);
+    else if (hm[m->top + 1]->ravlevel != h->ravlevel || !h->ravlevel)
+	waddch(win->w, ACS_LTEE | CP_HISTORY_MENU_LG);
+    else
+	waddch(win->w, ACS_VLINE | CP_HISTORY_MENU_LG);
+
+    wattron(win->w, COLOR_PAIR(pair) | attrs);
+
+    for (i = 2; *p; p++, i++)
+	waddch(win->w, (*p == '!') ? *p | A_BOLD : *p);
+
+    while (i++ < win->cols - 2)
+	waddch(win->w, ' ');
 }
 
 void history_menu(GAME *g)
@@ -2532,7 +2605,7 @@ void history_menu(GAME *g)
     add_menu_key(&keys, CTRL('a'), history_menu_annotate);
     add_menu_key(&keys, CTRL('d'), history_menu_details);
     add_menu_key(&keys, '\n', history_menu_view_annotation);
-    construct_menu(LINES, TAG_WIDTH, 0, 0, "Move History Tree", 1, 
+    construct_menu(LINES, TAG_WIDTH, 0, 0, HISTORY_MENU_TITLE, 1, 
 	    get_history_items, keys, g, history_menu_print, history_menu_exit);
 }
 
@@ -2547,7 +2620,7 @@ static void historymode_keys(chtype c)
 	case 'M':
 	    history_menu(&game[gindex]);
 	    break;
-	case 'd':
+	case CTRL('d'):
 	    do_board_details();
 	    break;
 	case ' ':
@@ -2576,7 +2649,7 @@ static void historymode_keys(chtype c)
 		    keycount * movestep : movestep);
 	    update_all(game[gindex]);
 	    break;
-	case 'a':
+	case CTRL('a'):
 	    n = game[gindex].hindex;
 
 	    if (n && game[gindex].hp[n - 1]->move)
@@ -3399,11 +3472,6 @@ static int globalkeys(chtype c)
 	case KEY_RESIZE:
 		  do_window_resize();
 		  return 1;
-#ifdef DEBUG
-	case 'D':
-		  message("DEBUG BOARD", ANYKEY, "%s", debug_board(d->b));
-		  return 1;
-#endif
 	case 0:
 	default:
 		  break;

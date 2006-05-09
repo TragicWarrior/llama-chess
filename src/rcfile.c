@@ -383,6 +383,9 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_MENUS]);
 	else if (strcmp(var, "color_menu_highlight") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_MENUH]);
+	else if (strcmp(var, "color_menu_graphics") == 0)
+	    parse_color(filename, lines, val,
+		    &config.color[CONF_HISTORY_MENU_LG]);
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

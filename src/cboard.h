@@ -81,12 +81,10 @@ const char *historyhelp = {
     "         j - jump to move number (prompt) *\n" \
     "         / - specify a new move text search expression *\n" \
     "       ],[ - find the next/previous move text expression *\n" \
-    "         a - annotate the previous move\n" \
-    "         v - view annotation for the next move\n" \
-    "         V - view annotation for the previous move\n" \
+    "    CTRL-a - annotate the previous move\n" \
     "         + - next variation for the previous move\n" \
     "         - - previous variation for the previous move\n" \
-    "         d - toggle board details\n" \
+    "    CTRL-d - toggle board details\n" \
     "         M - move history menu\n" \
     "         h - exit history mode\n" \
     "        F1 - global and other key help"

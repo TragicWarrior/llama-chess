@@ -41,7 +41,7 @@
 #include "window.h"
 #include "menu.h"
 
-void set_menu_vars(int c, int rows, int items, int *item, int *top)
+static void set_menu_vars(int c, int rows, int items, int *item, int *top)
 {
     int selected = *item;
     int toppos = *top;
@@ -104,8 +104,10 @@ void set_menu_vars(int c, int rows, int items, int *item, int *top)
 		toppos = 1;
 	    else if (selected <= rows)
 		toppos = 0;
-	    else
-		toppos = selected - rows + 1;
+	    else {
+		if (selected - toppos > rows)
+		    toppos = selected - rows + 1;
+	    }
 	    break;
     }
 
@@ -217,7 +219,7 @@ static void draw_menu(WIN *win)
     }
 }
 
-int display_menu(WIN *win)
+static int display_menu(WIN *win)
 {
     struct menu_input_s *m = win->data;
     int i, n;
