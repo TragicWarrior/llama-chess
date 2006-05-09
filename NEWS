@@ -1,3 +1,17 @@
+CBoard version 0.2.3
+--------------------
+Added non-blocking message windows, input dialogs and menus. This means that
+other games can be running while editing tags etc.
+
+Added a move history tree menu. From this you can view and edit a moves
+annotation. RAV will be supported problably in the next release.
+
+The board details key 'd' has changed to CTRL-d and annotating a move in
+history mode now uses the key CTRL-a.
+
+A couple bug fixes. See ChangeLog for details.
+
+
 CBoard version 0.2.2
 --------------------
 Black opening and history mode fix.
