@@ -149,7 +149,7 @@ const char *playhelp = {
     "             ENTER - commit selected piece\n" \
     "            ESCAPE - cancel selected piece\n" \
     "                 C - set clock\n" \
-    "                 d - toggle board details\n" \
+    "            CTRL-d - toggle board details\n" \
     "                 w - switch playing side\n" \
     "                 u - undo previous move *\n" \
     "                 g - force engine to make the next move\n" \
