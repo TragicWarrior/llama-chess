@@ -79,6 +79,10 @@ void window_destroy(WIN *win)
 
 	delwin(wins[i]->w);
 	free(wins[i]);
+
+	if (wins[i]->freedata && wins[i]->data)
+	    free(wins[i]->data);
+
 	wins[i] = NULL;
     }
 

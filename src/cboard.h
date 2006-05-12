@@ -59,6 +59,7 @@ int keycount;
 char loadfile[FILENAME_MAX];
 int quit;
 time_t now;
+int input_c;
 
 // Loaded filename from the command line or from the file input dialog.
 int filetype;
@@ -73,22 +74,6 @@ struct file_s {
 };
 
 struct file_s **files;
-
-const char *historyhelp = {
-    "   UP/DOWN - jump to next or previous history *\n" \
-    "RIGHT/LEFT - next or previous history *\n" \
-    "     SPACE - toggle half move (ply) stepping\n" \
-    "         j - jump to move number (prompt) *\n" \
-    "         / - specify a new move text search expression *\n" \
-    "       ],[ - find the next/previous move text expression *\n" \
-    "    CTRL-a - annotate the previous move\n" \
-    "         + - next variation for the previous move\n" \
-    "         - - previous variation for the previous move\n" \
-    "    CTRL-d - toggle board details\n" \
-    "         M - move history menu\n" \
-    "         h - exit history mode\n" \
-    "        F1 - global and other key help"
-};
 
 const char *history_menu_help_str = {
     "    UP/DOWN - previous/next menu item\n" \
@@ -106,58 +91,6 @@ const char *mainhelp = {
     "h - history mode keys\n" \
     "e - board edit mode keys\n" \
     "g - global game keys"
-};
-
-const char *edithelp = {
-    "              0..9 - cursor repeat count\n" \
-    "UP/DOWN/LEFT/RIGHT - position cursor *\n" \
-    "             SPACE - select piece under cursor for movement\n" \
-    "             ENTER - commit selected piece\n" \
-    "            ESCAPE - cancel selected piece\n" \
-    "                 d - delete the piece under the cursor\n" \
-    "                 i - insert a new piece\n" \
-    "                 c - toggle castling availability\n" \
-    "                 p - this square is the en passant one\n" \
-    "                 w - switch turn\n" \
-    "                 e - exit edit mode\n" \
-    "                F1 - global and other key help"
-};
-
-const char *gamehelp = {
-    "  0..9 - command repeat count\n" \
-    "   T/t - edit/view the current games roster tags\n" \
-    "     ? - specify a new roster tag expression *\n" \
-    "   },{ - find the next/previous roster tag expression *\n" \
-    "     n - start new game or round\n" \
-    "     N - start new game from scratch resetting all other games\n" \
-    "   >,< - next/previous game or round *\n" \
-    "     J - jump to game or round *\n" \
-    "     x - toggle game delete flag *\n" \
-    "     X - delete the current or all flagged games\n" \
-    "     r - resume a saved game\n" \
-    "     s - save game\n" \
-    "     S - save game and prompt\n" \
-    "     Q - quit\n" \
-    "   F10 - About\n" \
-    "    F1 - global and other key help"
-};
-
-const char *playhelp = {
-    "              0..9 - cursor repeat count\n" \
-    "UP/DOWN/LEFT/RIGHT - position cursor *\n" \
-    "             SPACE - select piece under cursor for movement\n" \
-    "             ENTER - commit selected piece\n" \
-    "            ESCAPE - cancel selected piece\n" \
-    "                 C - set clock\n" \
-    "            CTRL-d - toggle board details\n" \
-    "                 w - switch playing side\n" \
-    "                 u - undo previous move *\n" \
-    "                 g - force engine to make the next move\n" \
-    "                 | - send a command to the chess engine\n" \
-    "                 E - toggle engine/engine play\n" \
-    "                 W - toggle engine input/output window\n" \
-    "                 H - toggle human/human play\n" \
-    "                F1 - global and other key help"
 };
 
 const char *filebrowser_help = {

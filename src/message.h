@@ -22,9 +22,9 @@
 #define MSG_WIDTH	((COLS / 5) * 4) /* For multiline messages. */
 
 #define message(t, p, fmt...) \
-    construct_message(t, p, 0, NULL, NULL, NULL, NULL, 0, ##fmt)
+    construct_message(t, p, 0, NULL, NULL, NULL, NULL, 0, 0, ##fmt)
 #define cmessage(t, p, fmt...) \
-    construct_message(t, p, 1, NULL, NULL, NULL, NULL, 0, ##fmt)
+    construct_message(t, p, 1, NULL, NULL, NULL, NULL, 0, 0, ##fmt)
 
 typedef void *(message_func) (void *);
 
@@ -42,7 +42,7 @@ struct message_s {
 };
 
 WIN *construct_message(const char *, const char *, int, const char *,
-	message_func *, void *, window_exit_func *, int, const char *, ...);
+	message_func *, void *, window_exit_func *, int, int, const char *, ...);
 struct message_s *update_message(struct message_s *, char *, char *, char *fmt,
 	...);
 

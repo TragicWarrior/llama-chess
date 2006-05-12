@@ -64,6 +64,7 @@
 #include "strings.h"
 #include "common.h"
 #include "menu.h"
+#include "keys.h"
 #include "cboard.h"
 
 #ifdef DEBUG
@@ -325,10 +326,10 @@ void view_annotation(HISTORY *h)
 	construct_message(buf, (nag) ? ANY_OTHER_KEY : ANYKEY, 2,
 		(nag) ? VIEW_NAG : NULL, 
 		(nag) ? view_nag : NULL, (nag) ? h : NULL, NULL,
-		(nag) ? 'n' : 0, "%s", h->comment);
+		(nag) ? 'n' : 0, 0, "%s", h->comment);
     else
 	construct_message(buf, ANY_OTHER_KEY, 1, VIEW_NAG, view_nag, h, NULL, 
-		'n', "%s", NO_ANNOTATIONS);
+		'n', 0, "%s", NO_ANNOTATIONS);
 }
 
 static int sort_files(const void *a, const void *b)
@@ -725,7 +726,7 @@ void save_pgn(char *filename, int saveindex)
 	s->start = saveindex;
 	s->end = end;
 	construct_message(NULL, GAME_SAVE_OVERWRITE_PROMPT, 1, NULL, NULL,
-		s, do_save_game_overwrite_confirm, 0, "%s \"%s\"",
+		s, do_save_game_overwrite_confirm, 0, 0, "%s \"%s\"",
 		E_FILEEXISTS, filename);
 	return;
     }
@@ -1075,7 +1076,7 @@ static void move_to_engine(GAME *g)
 
     if (piece == PAWN && (d->sp.row == 8 || d->sp.row == 1)) {
 	construct_message(PROMOTION_TITLE, PROMOTION_PROMPT, 1, NULL, NULL,
-		str, do_promotion_piece_finalize, 0, "%s", PROMOTION_TEXT);
+		str, do_promotion_piece_finalize, 0, 0, "%s", PROMOTION_TEXT);
 	return;
     }
 
@@ -1370,27 +1371,6 @@ void update_engine_window()
 
     window_draw_title(enginew, "Engine IO Window", COLS, CP_MESSAGE_TITLE,
 	    CP_MESSAGE_BORDER);
-}
-
-void toggle_engine_window()
-{
-    if (!enginew) {
-	enginew = newwin(LINES, COLS, 0, 0);
-	enginep = new_panel(enginew);
-	window_draw_title(enginew, "Engine IO Window", COLS, CP_MESSAGE_TITLE,
-		CP_MESSAGE_BORDER);
-	hide_panel(enginep);
-    }
-
-    if (panel_hidden(enginep)) {
-	update_engine_window();
-	top_panel(enginep);
-	refresh_all();
-    }
-    else {
-	hide_panel(enginep);
-	refresh_all();
-    }
 }
 
 void refresh_all()
@@ -1913,235 +1893,372 @@ void do_board_details()
     config.details = (config.details) ? 0 : 1;
 }
 
-static void historymode_keys(chtype);
-static int playmode_keys(chtype c)
+static void do_play_set_clock()
 {
-    // More keys in MODE_EDIT share keys with MODE_PLAY than don't.
-    struct userdata_s *d = game[gindex].data;
-    int editmode = (d->mode == MODE_EDIT) ? 1 : 0;
-    chtype p;
-    int w, x;
     struct input_data_s *in;
 
-    switch (c) {
-	case 'C':
-	    in = Calloc(1, sizeof(struct input_data_s));
-	    in->efunc = do_clock_input_finalize;
-	    construct_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL, NULL, 0,
-		    in, -1);
-	    break;
-	case 'H':
-	    TOGGLE_FLAG(d->flags, CF_HUMAN);
+    in = Calloc(1, sizeof(struct input_data_s));
+    in->efunc = do_clock_input_finalize;
+    construct_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL, NULL, 0, in, -1);
+}
 
-	    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
-		    pgn_history_total(game[gindex].hp)) {
-		if (init_chess_engine(&game[gindex]))
-		    break;
-	    }
+static void do_play_toggle_human()
+{
+    struct userdata_s *d = game[gindex].data;
 
-	    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+    TOGGLE_FLAG(d->flags, CF_HUMAN);
 
-	    if (d->engine)
-		d->engine->status = ENGINE_READY;
-
-	    update_all(game[gindex]);
-	    break;
-	case 'E':
-	    if (!d)
-		break;
-
-	    TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
-	    CLEAR_FLAG(d->flags, CF_HUMAN);
-
-	    if (d->engine && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
-		pgn_board_update(&game[gindex], d->b,
-			pgn_history_total(game[gindex].hp));
-		add_engine_command(&game[gindex], ENGINE_READY, 
-			"setboard %s\n", pgn_game_to_fen(game[gindex], d->b));
-	    }
-
-	    update_all(game[gindex]);
-	    break;
-	case '|':
-	    if (!d->engine)
-		break;
-
-	    if (d->engine->status == ENGINE_OFFLINE)
-		break;
-	    
-	    x = d->engine->status;
-	    in = Calloc(1, sizeof(struct input_data_s));
-	    in->efunc = do_engine_command_finalize;
-	    construct_input(ENGINE_CMD_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0,
-		    in, -1);
-	    break;
-	case '\015':
-	case '\n':
-	    pushkey = keycount = 0;
-	    update_status_notify(game[gindex], NULL);
-
-	    if (!editmode && !TEST_FLAG(d->flags, CF_HUMAN) &&
-		    (!d->engine || d->engine->status == ENGINE_THINKING)) {
-		beep();
-		break;
-	    }
-
-	    if (!d->sp.icon)
-		break;
-
-	    d->sp.row = d->c_row;
-	    d->sp.col = d->c_col;
-
-	    if (editmode) {
-		p = d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon;
-		d->b[RANKTOBOARD(d->sp.row)][FILETOBOARD(d->sp.col)].icon = p;
-		d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon =
-		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
-		d->sp.icon = d->sp.srow = d->sp.scol = 0;
-		break;
-	    }
-
-	    move_to_engine(&game[gindex]);
-	    break;
-	case ' ':
-	    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine ||
-			d->engine->status == ENGINE_OFFLINE) && !editmode) {
-		if (init_chess_engine(&game[gindex]))
-		    break;
-	    }
-
-	    if (d->sp.icon || (!editmode && d->engine &&
-			d->engine->status == ENGINE_THINKING)) {
-		beep();
-		break;
-	    }
-
-	    d->sp.icon = mvwinch(boardw, ROWTOMATRIX(d->c_row), 
-		    COLTOMATRIX(d->c_col)+1) & A_CHARTEXT;
-
-	    if (d->sp.icon == ' ') {
-		d->sp.icon = 0;
-		break;
-	    }
-
-	    if (!editmode && ((islower(d->sp.icon) && game[gindex].turn != BLACK)
-			|| (isupper(d->sp.icon) && game[gindex].turn != WHITE))) {
-		if (pgn_history_total(game[gindex].hp)) {
-		    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
-		    d->sp.icon = 0;
-		    break;
-		}
-		else {
-		    if (pgn_tag_find(game[gindex].tag, "FEN") != E_PGN_ERR)
-			break;
-
-		    add_engine_command(&game[gindex], ENGINE_READY, "black\n");
-		    pgn_switch_turn(&game[gindex]);
-
-		    if (game[gindex].side != BLACK)
-			pgn_switch_side(&game[gindex]);
-		}
-	    }
-
-	    d->sp.srow = d->c_row;
-	    d->sp.scol = d->c_col;
-
-	    if (!editmode && config.validmoves)
-		pgn_find_valid_moves(game[gindex], d->b, d->sp.scol, d->sp.srow);
-
-	    if (!editmode) {
-		CLEAR_FLAG(d->flags, CF_NEW);
-		start_clock();
-	    }
-
-	    break;
-	case 'w':
-	    pgn_switch_side(&game[gindex]);
-	    pgn_switch_turn(&game[gindex]);
-	    add_engine_command(&game[gindex], -1, 
-		    (game[gindex].side == WHITE) ? "white\n" : "black\n");
-	    update_status_window(game[gindex]);
-	    break;
-	case 'u':
-	    if (!pgn_history_total(game[gindex].hp))
-		break;
-
-	    if (d->engine && d->engine->status == ENGINE_READY) {
-		add_engine_command(&game[gindex], ENGINE_READY, "remove\n");
-		d->engine->status = ENGINE_READY;
-	    }
-
-	    game[gindex].hindex -= 2;
-	    pgn_history_free(game[gindex].hp, game[gindex].hindex);
-	    game[gindex].hindex = pgn_history_total(game[gindex].hp);
-	    pgn_board_update(&game[gindex], d->b, game[gindex].hindex);
-	    update_history_window(game[gindex]);
-	    break;
-	case 'a':
-	    historymode_keys(c);
-	    break;
-	case CTRL('d'):
-	    do_board_details();
-	    break;
-	case 'p':
-	    if (!TEST_FLAG(d->flags, CF_HUMAN) && game[gindex].turn != 
-		    game[gindex].side) {
-		d->paused = -1;
-		break;
-	    }
-
-	    d->paused = (d->paused) ? 0 : 1;
-	    break;
-	case 'g':
-	    if (TEST_FLAG(d->flags, CF_HUMAN))
-		break;
-
-	    if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
-		if (init_chess_engine(&game[gindex]))
-		    break;
-	    }
-
-	    add_engine_command(&game[gindex], ENGINE_THINKING, "go\n");
-	    break;
-	default:
-	    if (!d->engine)
-		break;
-
-	    if (config.keys) {
-		for (x = 0; config.keys[x]; x++) {
-		    if (config.keys[x]->c == c) {
-			switch (config.keys[x]->type) {
-			    case KEY_DEFAULT:
-				add_engine_command(&game[gindex], -1, "%s\n", 
-					config.keys[x]->str);
-				break;
-			    case KEY_SET:
-				if (!keycount)
-				    break;
-
-				add_engine_command(&game[gindex], -1, 
-					"%s %i\n", config.keys[x]->str, keycount);
-				keycount = 0;
-				break;
-			    case KEY_REPEAT:
-				if (!keycount)
-				    break;
-
-				for (w = 0; w < keycount; w++)
-				    add_engine_command(&game[gindex], -1,
-					    "%s\n", config.keys[x]->str);
-				keycount = 0;
-				break;
-			}
-		    }
-		}
-
-		update_status_notify(game[gindex], NULL);
-	    }
-	    break;
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && pgn_history_total(game[gindex].hp)) {
+	if (init_chess_engine(&game[gindex]))
+	    return;
     }
 
-    return 0;
+    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+
+    if (d->engine)
+	d->engine->status = ENGINE_READY;
+
+    update_all(game[gindex]);
+}
+
+static void do_play_toggle_engine()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
+    CLEAR_FLAG(d->flags, CF_HUMAN);
+
+    if (d->engine && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
+	pgn_board_update(&game[gindex], d->b,
+		pgn_history_total(game[gindex].hp));
+	add_engine_command(&game[gindex], ENGINE_READY, 
+		"setboard %s\n", pgn_game_to_fen(game[gindex], d->b));
+    }
+
+    update_all(game[gindex]);
+}
+
+static void do_play_send_command()
+{
+    struct userdata_s *d = game[gindex].data;
+    struct input_data_s *in;
+
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
+	return;
+
+    in = Calloc(1, sizeof(struct input_data_s));
+    in->efunc = do_engine_command_finalize;
+    construct_input(ENGINE_CMD_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, -1);
+}
+
+static void do_play_switch_turn()
+{
+    pgn_switch_side(&game[gindex]);
+    pgn_switch_turn(&game[gindex]);
+    add_engine_command(&game[gindex], -1, 
+	    (game[gindex].side == WHITE) ? "white\n" : "black\n");
+    update_status_window(game[gindex]);
+}
+
+static void do_play_undo()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (!pgn_history_total(game[gindex].hp))
+	return;
+
+    if (d->engine && d->engine->status == ENGINE_READY) {
+	add_engine_command(&game[gindex], ENGINE_READY, "remove\n");
+	d->engine->status = ENGINE_READY;
+    }
+
+    game[gindex].hindex -= 2;
+    pgn_history_free(game[gindex].hp, game[gindex].hindex);
+    game[gindex].hindex = pgn_history_total(game[gindex].hp);
+    pgn_board_update(&game[gindex], d->b, game[gindex].hindex);
+    update_history_window(game[gindex]);
+}
+
+static void do_play_toggle_pause()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && game[gindex].turn != 
+	    game[gindex].side) {
+	d->paused = -1;
+	return;
+    }
+
+    d->paused = (d->paused) ? 0 : 1;
+}
+
+static void do_play_go()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (TEST_FLAG(d->flags, CF_HUMAN))
+	return;
+
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
+	if (init_chess_engine(&game[gindex]))
+	    return;
+    }
+
+    add_engine_command(&game[gindex], ENGINE_THINKING, "go\n");
+}
+
+static void do_play_config_command()
+{
+    struct userdata_s *d = game[gindex].data;
+    int x, w;
+
+    if (!d->engine)
+	return;
+
+    if (config.keys) {
+	for (x = 0; config.keys[x]; x++) {
+	    if (config.keys[x]->c == input_c) {
+		switch (config.keys[x]->type) {
+		    case KEY_DEFAULT:
+			add_engine_command(&game[gindex], -1, "%s\n", 
+				config.keys[x]->str);
+			break;
+		    case KEY_SET:
+			if (!keycount)
+			    break;
+
+			add_engine_command(&game[gindex], -1, 
+				"%s %i\n", config.keys[x]->str, keycount);
+			keycount = 0;
+			break;
+		    case KEY_REPEAT:
+			if (!keycount)
+			    break;
+
+			for (w = 0; w < keycount; w++)
+			    add_engine_command(&game[gindex], -1,
+				    "%s\n", config.keys[x]->str);
+			keycount = 0;
+			break;
+		}
+	    }
+	}
+    }
+
+    update_status_notify(game[gindex], NULL);
+}
+
+static void do_play_cancel_selected()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    d->sp.icon = d->sp.srow = d->sp.scol = 0;
+    keycount = 0;
+    update_status_notify(game[gindex], NULL);
+}
+
+static void do_play_commit()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    pushkey = keycount = 0;
+    update_status_notify(game[gindex], NULL);
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && 
+	    (!d->engine || d->engine->status == ENGINE_THINKING))
+	return;
+
+    if (!d->sp.icon)
+	return;
+
+    d->sp.row = d->c_row;
+    d->sp.col = d->c_col;
+    move_to_engine(&game[gindex]);
+}
+
+static void do_play_select()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine ||
+		d->engine->status == ENGINE_OFFLINE)) {
+	if (init_chess_engine(&game[gindex]))
+	    return;
+    }
+
+    if (d->sp.icon || (d->engine && d->engine->status == ENGINE_THINKING))
+	return;
+
+    d->sp.icon = d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon;
+
+    if (pgn_piece_to_int(d->sp.icon) == OPEN_SQUARE) {
+	d->sp.icon = 0;
+	return;
+    }
+
+    if (((islower(d->sp.icon) && game[gindex].turn != BLACK)
+		|| (isupper(d->sp.icon) && game[gindex].turn != WHITE))) {
+	if (pgn_history_total(game[gindex].hp)) {
+	    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
+	    d->sp.icon = 0;
+	    return;
+	}
+	else {
+	    if (pgn_tag_find(game[gindex].tag, "FEN") != E_PGN_ERR)
+		return;
+
+	    add_engine_command(&game[gindex], ENGINE_READY, "black\n");
+	    pgn_switch_turn(&game[gindex]);
+
+	    if (game[gindex].side != BLACK)
+		pgn_switch_side(&game[gindex]);
+	}
+    }
+
+    d->sp.srow = d->c_row;
+    d->sp.scol = d->c_col;
+
+    if (config.validmoves)
+	pgn_find_valid_moves(game[gindex], d->b, d->sp.scol, d->sp.srow);
+
+    CLEAR_FLAG(d->flags, CF_NEW);
+    start_clock();
+}
+
+static char *build_help(const struct key_s *keys)
+{
+    int i, nlen = 1, len, t, n;
+    char *buf = NULL;
+    char *p;
+
+    if (!keys)
+	return NULL;
+
+    for (i = len = t = 0; keys[i].f; i++) {
+	if (keys[i].key) {
+	    if (strlen(keys[i].key) > nlen) {
+		nlen = strlen(keys[i].key);
+		t += nlen;
+	    }
+	    else
+		t++;
+	}
+
+	if (strlen(keys[i].d) > len)
+	    len = strlen(keys[i].d);
+
+	t += len;
+	t += keys[i].r;
+    }
+
+    t += 4 + i;
+    buf = Malloc(t);
+    p = buf;
+
+    for (i = 0; keys[i].f; i++) {
+	if (keys[i].key)
+	    n = strlen(keys[i].key);
+	else
+	    n = 1;
+
+	while (n++ <= nlen)
+	    *p++ = ' ';
+
+	*p = 0;
+
+	if (keys[i].key) {
+	    strcat(buf, keys[i].key);
+	    p = buf + strlen(buf);
+	}
+	else
+	    *p++ = keys[i].c;
+
+	*p++ = ' ';
+	*p++ = '-';
+	*p++ = ' ';
+	*p = 0;
+	strcat(buf, keys[i].d);
+
+	if (keys[i].r)
+	    strcat(buf, "*");
+
+	strcat(buf, "\n");
+	p = buf + strlen(buf);
+    }
+
+    return buf;
+}
+
+void do_more_help(WIN *);
+void do_main_help(WIN *win)
+{
+    char *buf;
+
+    switch (win->c) {
+	case 'p':
+	    buf = build_help(play_keys);
+	    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0,
+		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+	    break;
+	case 'h':
+	    buf = build_help(history_keys);
+	    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0,
+		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+	    break;
+	case 'e':
+	    buf = build_help(edit_keys);
+	    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0,
+		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+	    break;
+	case 'g':
+	    buf = build_help(global_keys);
+	    construct_message(GAME_HELP_GAME_TITLE, ANYKEY, 0,
+		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+	    break;
+	default:
+	    break;
+    }
+}
+
+void do_more_help(WIN *win)
+{
+    if (win->c == KEY_F(1))
+	construct_message(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT, 0, 
+		NULL, NULL, NULL, do_main_help, 0, 0, "%s", mainhelp);
+}
+
+static void do_play_help()
+{
+    char *buf = build_help(play_keys);
+
+    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0, NULL, NULL, buf, 
+	    do_more_help, 0, 1, "%s", buf);
+}
+
+static void do_play_history_mode()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (!pgn_history_total(game[gindex].hp) || 
+	    (d->engine && d->engine->status == ENGINE_THINKING))
+	return;
+
+    d->mode = MODE_HISTORY;
+    pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+    update_all(game[gindex]);
+}
+
+static void do_play_edit_mode()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (pgn_history_total(game[gindex].hp))
+	return;
+
+    pgn_board_init_fen(&game[gindex], d->b, NULL);
+    config.details++;
+    d->mode = MODE_EDIT;
+    update_all(game[gindex]);
 }
 
 void do_edit_insert_finalize(WIN *win)
@@ -2154,48 +2271,118 @@ void do_edit_insert_finalize(WIN *win)
     d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon = win->c;
 }
 
-static void editmode_keys(chtype c)
+static void do_edit_select()
 {
     struct userdata_s *d = game[gindex].data;
 
-    switch (c) {
-	case '\015':
-	case '\n':
-	case ' ':
-	    playmode_keys(c);
-	    break;
-	case 'd':
-	    if (d->sp.icon)
-		d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon = 
-		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
-	    else
-		d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon =
-		    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+    if (d->sp.icon)
+	return;
 
-	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
-	    break;
-	case 'w':
-	    pgn_switch_turn(&game[gindex]);
-	    update_all(game[gindex]);
-	    break;
-	case 'c':
-	    castling_state(&game[gindex], d->b, RANKTOBOARD(d->c_row), 
-		    FILETOBOARD(d->c_col),
-		    d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon, 1);
-	    break;
-	case 'i':
-	    construct_message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, 0, NULL, NULL,
-		    d->b, do_edit_insert_finalize, 0, "%s", GAME_EDIT_TEXT);
-	    break;
-	case 'p':
-	    if (d->c_row == 6 || d->c_row == 3) {
-		pgn_reset_enpassant(d->b);
-		d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].enpassant = 1;
-	    }
-	    break;
-	default:
-	    break;
+    d->sp.icon = d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon;
+
+    if (pgn_piece_to_int(d->sp.icon) == OPEN_SQUARE) {
+	d->sp.icon = 0;
+	return;
     }
+
+    d->sp.srow = d->c_row;
+    d->sp.scol = d->c_col;
+}
+
+static void do_edit_commit()
+{
+    int p;
+    struct userdata_s *d = game[gindex].data;
+
+    pushkey = keycount = 0;
+    update_status_notify(game[gindex], NULL);
+
+    if (!d->sp.icon)
+	return;
+
+    d->sp.row = d->c_row;
+    d->sp.col = d->c_col;
+    p = d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon;
+    d->b[RANKTOBOARD(d->sp.row)][FILETOBOARD(d->sp.col)].icon = p;
+    d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon =
+	pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+    d->sp.icon = d->sp.srow = d->sp.scol = 0;
+}
+
+static void do_edit_delete()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (d->sp.icon)
+	d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon = 
+	    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+    else
+	d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon =
+	    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+
+    d->sp.icon = d->sp.srow = d->sp.scol = 0;
+}
+
+static void do_edit_cancel_selected()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    d->sp.icon = d->sp.srow = d->sp.scol = 0;
+    keycount = 0;
+    update_status_notify(game[gindex], NULL);
+}
+
+static void do_edit_switch_turn()
+{
+    pgn_switch_turn(&game[gindex]);
+    update_all(game[gindex]);
+}
+
+static void do_edit_toggle_castle()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    castling_state(&game[gindex], d->b, RANKTOBOARD(d->c_row), 
+	    FILETOBOARD(d->c_col),
+	    d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon, 1);
+}
+
+static void do_edit_insert()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    construct_message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, 0, NULL, NULL,
+	    d->b, do_edit_insert_finalize, 0, 0, "%s", GAME_EDIT_TEXT);
+}
+
+static void do_edit_enpassant()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    if (d->c_row == 6 || d->c_row == 3) {
+	pgn_reset_enpassant(d->b);
+	d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].enpassant = 1;
+    }
+}
+
+static void do_edit_help()
+{
+    char *buf = build_help(edit_keys);
+
+    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0, NULL, NULL, buf, 
+	    do_more_help, 0, 1, "%s", buf);
+}
+
+static void do_edit_exit()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    config.details--;
+    pgn_tag_add(&game[gindex].tag, "FEN", pgn_game_to_fen(game[gindex], d->b));
+    pgn_tag_add(&game[gindex].tag, "SetUp", "1");
+    pgn_tag_sort(game[gindex].tag);
+    d->mode = MODE_PLAY;
+    update_all(game[gindex]);
 }
 
 void really_do_annotate_finalize(struct input_data_s *in, 
@@ -2609,56 +2796,141 @@ void history_menu(GAME *g)
 	    get_history_items, keys, g, history_menu_print, history_menu_exit);
 }
 
-static void historymode_keys(chtype c)
+static void do_history_menu()
 {
-    int n;
+    history_menu(&game[gindex]);
+}
+
+static void do_history_half_move_toggle()
+{
+    movestep = (movestep == 1) ? 2 : 1;
+    update_history_window(game[gindex]);
+}
+
+static void do_history_jump_next()
+{
     struct userdata_s *d = game[gindex].data;
+
+    pgn_history_next(&game[gindex], d->b, (keycount > 0) ?
+	    config.jumpcount * keycount * movestep : 
+	    config.jumpcount * movestep);
+    update_all(game[gindex]);
+}
+
+static void do_history_jump_prev()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    pgn_history_prev(&game[gindex], d->b, (keycount) ?
+	    config.jumpcount * keycount * movestep : 
+	    config.jumpcount * movestep);
+    update_all(game[gindex]);
+}
+
+static void do_history_prev()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    pgn_history_prev(&game[gindex], d->b,
+	    (keycount) ? keycount * movestep : movestep);
+    update_all(game[gindex]);
+}
+
+static void do_history_next()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    pgn_history_next(&game[gindex], d->b, (keycount) ? 
+	    keycount * movestep : movestep);
+    update_all(game[gindex]);
+}
+
+void do_history_mode_finalize(struct userdata_s *d)
+{
+    pushkey = 0;
+    d->mode = MODE_PLAY;
+    update_all(game[gindex]);
+}
+
+void do_history_mode_confirm(WIN *win)
+{
+    struct userdata_s *d = game[gindex].data;
+
+    switch (win->c) {
+	case 'R':
+	case 'r':
+	    pgn_history_free(game[gindex].hp, 
+		    game[gindex].hindex);
+	    pgn_board_update(&game[gindex], d->b, 
+		    pgn_history_total(game[gindex].hp));
+	    break;
+#if 0
+	case 'C':
+	case 'c':
+	    if (pgn_history_rav_new(&game[gindex], d->b,
+			game[gindex].hindex) != E_PGN_OK)
+		return;
+
+	    break;
+#endif
+	default:
+	    return;
+    }
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN))
+	add_engine_command(&game[gindex], ENGINE_READY,
+		"setboard %s\n", pgn_game_to_fen(game[gindex], d->b));
+
+    do_history_mode_finalize(d);
+}
+
+static void do_history_toggle()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    // FIXME Resuming from previous history could append to a RAV.
+    if (game[gindex].hindex != pgn_history_total(game[gindex].hp)) {
+	if (!pushkey)
+	    construct_message(NULL, "(r)esume or abort", 0, NULL, NULL, NULL, 
+		    do_history_mode_confirm, 0, 0, "%s", 
+		    GAME_RESUME_HISTORY_TEXT);
+
+	return;
+    }
+    else {
+	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
+	    return;
+    }
+
+    do_history_mode_finalize(d);
+}
+
+static void do_history_annotate()
+{
+    int n = game[gindex].hindex;
+
+    if (n && game[gindex].hp[n - 1]->move)
+	n--;
+    else
+	return;
+
+    do_annotate_move(game[gindex].hp[n]);
+}
+
+static void do_history_help()
+{
+    char *buf = build_help(history_keys);
+
+    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0, NULL, NULL, buf, 
+	    do_more_help, 0, 1, "%s", buf);
+}
+
+static void do_history_find()
+{
     struct input_data_s *in;
     int *p;
 
-    switch (c) {
-	case 'M':
-	    history_menu(&game[gindex]);
-	    break;
-	case CTRL('d'):
-	    do_board_details();
-	    break;
-	case ' ':
-	    movestep = (movestep == 1) ? 2 : 1;
-	    update_history_window(game[gindex]);
-	    break;
-	case KEY_UP:
-	    pgn_history_next(&game[gindex], d->b, (keycount > 0) ?
-		    config.jumpcount * keycount * movestep : 
-		    config.jumpcount * movestep);
-	    update_all(game[gindex]);
-	    break;
-	case KEY_DOWN:
-	    pgn_history_prev(&game[gindex], d->b, (keycount) ?
-		    config.jumpcount * keycount * movestep : 
-		    config.jumpcount * movestep);
-	    update_all(game[gindex]);
-	    break;
-	case KEY_LEFT:
-	    pgn_history_prev(&game[gindex], d->b, (keycount) ?
-		    keycount * movestep : movestep);
-	    update_all(game[gindex]);
-	    break;
-	case KEY_RIGHT:
-	    pgn_history_next(&game[gindex], d->b, (keycount) ? 
-		    keycount * movestep : movestep);
-	    update_all(game[gindex]);
-	    break;
-	case CTRL('a'):
-	    n = game[gindex].hindex;
-
-	    if (n && game[gindex].hp[n - 1]->move)
-		n--;
-	    else
-		break;
-
-	    do_annotate_move(game[gindex].hp[n]);
-	    break;
+    switch (input_c) {
 	case ']':
 	case '[':
 	case '/':
@@ -2667,41 +2939,74 @@ static void historymode_keys(chtype c)
 
 	    in = Calloc(1, sizeof(struct input_data_s));
 	    p = Malloc(sizeof(int));
-	    *p = c;
+	    *p = input_c;
 	    in->data = p;
 	    in->efunc = do_find_move_exp;
 
-	    if (!*moveexp || c == '/') {
+	    if (!*moveexp || input_c == '/') {
 		construct_input(FIND_REGEXP, moveexp, 1, 0, NULL, NULL, NULL, 
 			0, in, -1);
 		    break;
 	    }
 
-	    do_find_move_exp_finalize(0, c);
-	    break;
-	case '-':
-	case '+':
-	    rav_next_prev(&game[gindex], d->b, (c == '-') ? 0 : 1);
-	    update_all(game[gindex]);
-	    break;
-	case 'j':
-	    if (pgn_history_total(game[gindex].hp) < 2)
-		break;
-
-	    if (!keycount) {
-		in = Calloc(1, sizeof(struct input_data_s));
-		in->efunc = do_move_jump;
-
-		construct_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, NULL, 
-			NULL, NULL, 0, in, 0);
-		break;
-	    }
-
-	    do_move_jump_finalize(keycount);
-	    break;
-	default: 
+	    do_find_move_exp_finalize(0, input_c);
+	default:
 	    break;
     }
+}
+
+static void do_history_find_prev()
+{
+    do_history_find();
+}
+
+static void do_history_find_next()
+{
+    do_history_find();
+}
+
+static void do_history_rav()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    switch (input_c) {
+	case '-':
+	case '+':
+	    rav_next_prev(&game[gindex], d->b, (input_c == '-') ? 0 : 1);
+	    update_all(game[gindex]);
+	    break;
+	default:
+	    break;
+    }
+}
+
+static void do_history_rav_next()
+{
+    do_history_rav();
+}
+
+static void do_history_rav_prev()
+{
+    do_history_rav();
+}
+
+static void do_history_jump()
+{
+    struct input_data_s *in;
+
+    if (pgn_history_total(game[gindex].hp) < 2)
+	return;
+
+    if (!keycount) {
+	in = Calloc(1, sizeof(struct input_data_s));
+	in->efunc = do_move_jump;
+
+	construct_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, NULL, 
+		NULL, NULL, 0, in, 0);
+	return;
+    }
+
+    do_move_jump_finalize(keycount);
 }
 
 static void free_userdata()
@@ -2874,50 +3179,11 @@ void do_game_delete()
 	p = Malloc(sizeof(int));
 	*p = n;
 	construct_message(NULL, YESNO, 1, NULL, NULL, p,
-		do_game_delete_confirm, 0, tmp);
+		do_game_delete_confirm, 0, 0, tmp);
 	return;
     }
 
     do_game_delete_finalize(n);
-}
-
-void do_history_mode_finalize(struct userdata_s *d)
-{
-    pushkey = 0;
-    d->mode = MODE_PLAY;
-    update_all(game[gindex]);
-}
-
-void do_history_mode_confirm(WIN *win)
-{
-    struct userdata_s *d = game[gindex].data;
-
-    switch (win->c) {
-	case 'R':
-	case 'r':
-	    pgn_history_free(game[gindex].hp, 
-		    game[gindex].hindex);
-	    pgn_board_update(&game[gindex], d->b, 
-		    pgn_history_total(game[gindex].hp));
-	    break;
-#if 0
-	case 'C':
-	case 'c':
-	    if (pgn_history_rav_new(&game[gindex], d->b,
-			game[gindex].hindex) != E_PGN_OK)
-		return;
-
-	    break;
-#endif
-	default:
-	    return;
-    }
-
-    if (!TEST_FLAG(d->flags, CF_HUMAN))
-	add_engine_command(&game[gindex], ENGINE_READY,
-		"setboard %s\n", pgn_game_to_fen(game[gindex], d->b));
-
-    do_history_mode_finalize(d);
 }
 
 void do_find_game_exp_finalize(int c)
@@ -3119,264 +3385,261 @@ void do_game_save_multi_confirm(WIN *win)
     do_get_game_save_input(i);
 }
 
-void do_more_help(WIN *);
-void do_main_help(WIN *win)
+static void do_global_about()
 {
+    cmessage("ABOUT", ANYKEY, "%s (%s)\nUsing %s with %i colors "
+	    "and %i color pairs\nCopyright 2002-2006 %s",
+	    PACKAGE_STRING, pgn_version(), curses_version(), COLORS,
+	    COLOR_PAIRS, PACKAGE_BUGREPORT);
+}
 
-    switch (win->c) {
-	case 'p':
-	    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0,
-		    NULL, NULL, NULL, do_more_help, 0, "%s", 
-		    playhelp);
-	    break;
-	case 'h':
-	    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0,
-		    NULL, NULL, NULL, do_more_help, 0, "%s", 
-		    historyhelp);
-	    break;
-	case 'e':
-	    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0,
-		    NULL, NULL, NULL, do_more_help, 0, "%s", 
-		    edithelp);
-	    break;
-	case 'g':
-	    construct_message(GAME_HELP_INDEX_TITLE, ANYKEY, 0,
-		    NULL, NULL, NULL, do_more_help, 0, "%s", 
-		    gamehelp);
-	    break;
-	default:
-	    break;
+static void global_game_next_prev(int which)
+{
+    struct userdata_s *d;
+
+    game_next_prev(game[gindex], (which == 1) ? 1 : 0,
+	    (keycount) ? keycount : 1);
+    d = game[gindex].data;
+
+    if (delete_count) {
+	if (which == 1) {
+	    markend = markstart + delete_count;
+	    delete_count = 0;
+	}
+	else {
+	    markend = markstart - delete_count;
+	    delete_count = -1; // to fix gindex in the other direction
+	}
+
+	pushkey = 'x';
+	fix_marks(&markstart, &markend);
+    }
+
+    if (d->mode != MODE_EDIT)
+	pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+
+    update_status_notify(game[gindex], NULL);
+    update_all(game[gindex]);
+}
+
+static void do_global_next_game()
+{
+    global_game_next_prev(1);
+}
+
+static void do_global_prev_game()
+{
+    global_game_next_prev(0);
+}
+
+static void global_find(int which)
+{
+    struct input_data_s *in;
+    int *p;
+
+    if (gtotal < 2)
+	return;
+
+    in = Calloc(1, sizeof(struct input_data_s));
+    p = Malloc(sizeof(int));
+    *p = which;
+    in->data = p;
+    in->efunc = do_find_game_exp;
+
+    if (!*gameexp || which == 0) {
+	construct_input(GAME_FIND_EXPRESSION_TITLE, gameexp, 1, 0, 
+		GAME_FIND_EXPRESSION_PROMPT, NULL, NULL, 0, in, -1);
+	return;
+    }
+
+    do_find_game_exp_finalize(which);
+}
+
+static void do_global_find_new()
+{
+    global_find(0);
+}
+
+static void do_global_find_next()
+{
+    global_find(1);
+}
+
+static void do_global_find_prev()
+{
+    global_find(-1);
+}
+
+static void do_global_game_jump()
+{
+    struct input_data_s *in;
+
+    if (gtotal < 2)
+	return;
+
+    in = Calloc(1, sizeof(struct input_data_s));
+    in->efunc = do_game_jump;
+
+    if (!keycount) {
+	construct_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, 
+		0);
+	return;
+    }
+
+    do_game_jump_finalize(keycount);
+}
+
+static void do_global_toggle_delete()
+{
+    int i;
+
+    pushkey = 0;
+
+    if (gtotal < 2)
+	return;
+
+    if (keycount && delete_count == 0) {
+	markstart = gindex;
+	delete_count = keycount;
+	update_status_notify(game[gindex], "%s (delete)", status.notify);
+	return;
+    }
+
+    if (markstart >= 0 && markend >= 0) {
+	for (i = markstart; i < markend; i++) {
+	    if (toggle_delete_flag(i)) {
+		update_all(game[gindex]);
+		return;
+	    }
+	}
+
+	gindex = (delete_count < 0) ? markstart : i - 1;
+	update_all(game[gindex]);
+    }
+    else {
+	if (toggle_delete_flag(gindex))
+	    return;
+    }
+
+    markstart = markend = -1;
+    delete_count = 0;
+    update_status_window(game[gindex]);
+}
+
+static void do_global_delete_game()
+{
+    do_game_delete();
+}
+
+static void do_global_tag_edit()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    edit_tags(game[gindex], d->b, 1);
+}
+
+static void do_global_tag_view()
+{
+    struct userdata_s *d = game[gindex].data;
+
+    edit_tags(game[gindex], d->b, 0);
+}
+
+static void do_global_resume_game()
+{
+    struct input_data_s *in;
+
+    in = Calloc(1, sizeof(struct input_data_s));
+    in->efunc = do_load_file;
+    construct_input(GAME_LOAD_TITLE, NULL, 1, 1, BROWSER_PROMPT, file_browser,
+	    NULL, '\t', in, -1);
+}
+
+static void do_global_save_game()
+{
+    if (gtotal > 1) {
+	construct_message(NULL, GAME_SAVE_MULTI_PROMPT, 1, NULL, NULL, NULL, 
+		do_game_save_multi_confirm, 0, 0, "%s", GAME_SAVE_MULTI_TEXT);
+	return;
+    }
+
+    do_get_game_save_input(-1);
+}
+
+static void do_global_new_game()
+{
+    do_new_game();
+}
+
+static void do_global_new_all()
+{
+    construct_message(NULL, YESNO, 1, NULL, NULL, NULL, 
+	    do_new_game_from_scratch, 0, 0, "%s", GAME_NEW_PROMPT);
+}
+
+static void do_global_quit()
+{
+    quit = 1;
+}
+
+static void do_global_toggle_engine_window()
+{
+    if (!enginew) {
+	enginew = newwin(LINES, COLS, 0, 0);
+	enginep = new_panel(enginew);
+	window_draw_title(enginew, "Engine IO Window", COLS, CP_MESSAGE_TITLE,
+		CP_MESSAGE_BORDER);
+	hide_panel(enginep);
+    }
+
+    if (panel_hidden(enginep)) {
+	update_engine_window();
+	top_panel(enginep);
+	refresh_all();
+    }
+    else {
+	hide_panel(enginep);
+	refresh_all();
     }
 }
 
-void do_more_help(WIN *win)
+static void do_global_toggle_board_details()
 {
-    if (win->c == KEY_F(1))
-	construct_message(GAME_HELP_INDEX_PROMPT, ANYKEY, 0, NULL, NULL, NULL, 
-		do_main_help, 0, "%s", mainhelp);
+    do_board_details();
 }
 
 // Global and other keys.
-static int globalkeys(chtype c)
+static int globalkeys()
 {
-    char *p;
-    int n, i;
     struct userdata_s *d = game[gindex].data;
-    struct input_data_s *in;
+    int i;
 
-    switch (c) {
-	case 'W':
-	    toggle_engine_window();
-	    break;
-	case KEY_F(10):
-	    cmessage("ABOUT", ANYKEY, "%s (%s)\nUsing %s with %i colors "
-		    "and %i color pairs\nCopyright 2002-2006 %s",
-		    PACKAGE_STRING, pgn_version(), curses_version(), COLORS,
-		    COLOR_PAIRS, PACKAGE_BUGREPORT);
-	    break;
-	case 'h':
-	    if (d->mode != MODE_HISTORY) {
-		if (!pgn_history_total(game[gindex].hp) || 
-			(d->engine && d->engine->status == ENGINE_THINKING))
-		    return 1;
-
-		d->mode = MODE_HISTORY;
-		pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
-		update_all(game[gindex]);
-		return 1;
-	    }
-
-	    // FIXME Resuming from previous history could append to a RAV.
-	    if (game[gindex].hindex != pgn_history_total(game[gindex].hp)) {
-		if (!pushkey)
-		    construct_message(NULL, "(r)esume or abort", 0,
-			    NULL, NULL, NULL, do_history_mode_confirm, 0, 
-			    "%s", GAME_RESUME_HISTORY_TEXT);
-
-		return 1;
-	    }
-	    else {
-		if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
-		    return 1;
-	    }
-
-	    do_history_mode_finalize(d);
-	    return 1;
-	case '>':
-	case '<':
-	    game_next_prev(game[gindex], (c == '>') ? 1 : 0, (keycount) ?
-		    keycount : 1);
-	    d = game[gindex].data;
-
-	    if (delete_count) {
-		if (c == '>') {
-		    markend = markstart + delete_count;
-		    delete_count = 0;
-		}
-		else {
-		    markend = markstart - delete_count;
-		    delete_count = -1; // to fix gindex in the other direction
-		}
-
-		pushkey = 'x';
-		fix_marks(&markstart, &markend);
-	    }
-
-	    if (d->mode != MODE_EDIT)
-		pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
-
-	    update_status_notify(game[gindex], NULL);
-	    update_all(game[gindex]);
-	    return 1;
-	case '}':
-	case '{':
-	case '?':
-	    if (gtotal < 2)
-		return 1;
-
-	    in = Calloc(1, sizeof(struct input_data_s));
-	    p = Malloc(sizeof(int));
-	    *p = c;
-	    in->data = p;
-	    in->efunc = do_find_game_exp;
-
-	    if (!*gameexp || c == '?') {
-		construct_input(GAME_FIND_EXPRESSION_TITLE, gameexp, 1, 0, 
-			GAME_FIND_EXPRESSION_PROMPT, NULL, NULL, 0, in, -1);
-		    break;
-	    }
-
-	    do_find_game_exp_finalize(c);
-	    return 1;
-	case 'J':
-	    if (gtotal < 2)
-		return 1;
-
-	    in = Calloc(1, sizeof(struct input_data_s));
-	    in->efunc = do_game_jump;
-
-	    if (!keycount) {
-		construct_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL, NULL,
-			0, in, 0);
-		    return 1;
-	    }
-
-	    do_game_jump_finalize(keycount);
-	    return 1;
-	case 'x':
-		  pushkey = 0;
-
-		  if (gtotal < 2)
-		      return 1;
-
-		  if (keycount && delete_count == 0) {
-		      markstart = gindex;
-		      delete_count = keycount;
-		      update_status_notify(game[gindex], "%s (delete)",
-			      status.notify);
-		      return 1;
-		  }
-
-		  if (markstart >= 0 && markend >= 0) {
-		      for (i = markstart; i < markend; i++) {
-			  if (toggle_delete_flag(i)) {
-			      update_all(game[gindex]);
-			      return 1;
-			  }
-		      }
-
-		      gindex = (delete_count < 0) ? markstart : i - 1;
-		      update_all(game[gindex]);
-		  }
-		  else {
-		      if (toggle_delete_flag(gindex))
-			  return 1;
-		  }
-
-		  markstart = markend = -1;
-		  delete_count = 0;
-		  update_status_window(game[gindex]);
-		  return 1;
-	case 'X':
-		  do_game_delete();
-		  return 1;
-	case 'T':
-		  edit_tags(game[gindex], d->b, 1);
-		  return 1;
-	case 't':
-		  edit_tags(game[gindex], d->b, 0);
-		  return 1;
-	case 'r':
-		  in = Calloc(1, sizeof(struct input_data_s));
-		  in->efunc = do_load_file;
-		  construct_input(GAME_LOAD_TITLE, NULL, 1, 1, BROWSER_PROMPT,
-			  file_browser, NULL, '\t', in, -1);
-		  return 1;
-	case 'S':
-	case 's':
-		  if (gtotal > 1) {
-		      construct_message(NULL, GAME_SAVE_MULTI_PROMPT, 1, NULL,
-			      NULL, NULL, do_game_save_multi_confirm, 0, "%s",
-			      GAME_SAVE_MULTI_TEXT);
-		      return 1;
-		  }
-
-		  do_get_game_save_input(-1);
-		  return 1;
-	case KEY_F(1):
-		  switch (d->mode) {
-		      case MODE_PLAY:
-			  construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0,
-				  NULL, NULL, NULL, do_more_help, 0, "%s", 
-				  playhelp);
-			  break;
-		      case MODE_HISTORY:
-			  construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0,
-				  NULL, NULL, NULL, do_more_help, 0, "%s", 
-				  historyhelp);
-			  break;
-		      case MODE_EDIT:
-			  construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0,
-				  NULL, NULL, NULL, do_more_help, 0, "%s", 
-				  edithelp);
-			  break;
-		      default:
-			  break;
-		  }
-
-		  return 1;
-	case 'n':
-		  do_new_game();
-		  return 1;
-	case 'N':
-		  construct_message(NULL, YESNO, 1, NULL, NULL, NULL, 
-			  do_new_game_from_scratch, 0, "%s", GAME_NEW_PROMPT);
-		  return 1;
+    switch (input_c) {
 	case CTRL('L'):
-		  endwin();
-		  keypad(boardw, TRUE);
-		  refresh_all();
-		  return 1;
+	    endwin();
+	    keypad(boardw, TRUE);
+	    refresh_all();
+	    return 1;
 	case KEY_ESCAPE:
-		  d->sp.icon = d->sp.srow = d->sp.scol = 0;
-		  markend = markstart = 0;
+	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
+	    markend = markstart = 0;
 
-		  if (keycount) {
-		      keycount = 0;
-		      update_status_notify(game[gindex], NULL);
-		  }
+	    if (keycount) {
+		keycount = 0;
+		update_status_notify(game[gindex], NULL);
+	    }
 
-		  if (config.validmoves)
-		      pgn_reset_valid_moves(d->b);
+	    if (config.validmoves)
+		pgn_reset_valid_moves(d->b);
 
-		  return 1;
+	    return 1;
 	case '0' ... '9':
-		  n = c - '0';
+		  i = input_c - '0';
 
 		  if (keycount)
-		      keycount = keycount * 10 + n;
+		      keycount = keycount * 10 + i;
 		  else
-		      keycount = n;
+		      keycount = i;
 
 		  update_status_notify(game[gindex], "Repeat %i", keycount);
 		  return -1;
@@ -3441,39 +3704,17 @@ static int globalkeys(chtype c)
 		      d->c_col = 1;
 
 		  return 1;
-	case 'e':
-		  if (d->mode != MODE_EDIT && d->mode !=
-			  MODE_PLAY)
-		      return 1;
-
-		  // Don't edit a running game (for now).
-		  if (pgn_history_total(game[gindex].hp))
-		      return 1;
-
-		  if (d->mode != MODE_EDIT) {
-		      pgn_board_init_fen(&game[gindex], d->b, NULL);
-		      config.details++;
-		      d->mode = MODE_EDIT;
-		      update_all(game[gindex]);
-		      return 1;
-		  }
-
-		  config.details--;
-		  pgn_tag_add(&game[gindex].tag, "FEN", 
-			  pgn_game_to_fen(game[gindex], d->b));
-		  pgn_tag_add(&game[gindex].tag, "SetUp", "1");
-		  pgn_tag_sort(game[gindex].tag);
-		  d->mode = MODE_PLAY;
-		  update_all(game[gindex]);
-		  return 1;
-	case 'Q':
-		  quit = 1;
-		  return 1;
 	case KEY_RESIZE:
 		  do_window_resize();
 		  return 1;
 	case 0:
 	default:
+		  for (i = 0; global_keys[i].f; i++) {
+		      if (input_c == global_keys[i].c) {
+			  (*global_keys[i].f)();
+			  return 1;
+		      }
+		  }
 		  break;
     }
 
@@ -3505,7 +3746,6 @@ void game_loop()
     wtimeout(boardw, 70);
 
     while (!quit) {
-	int c = 0;
 	int n = 0, i;
 	char fdbuf[8192] = {0};
 	int len;
@@ -3600,17 +3840,17 @@ void game_loop()
 	    wp = boardw;
 
 	if (!i && pushkey)
-	    c = pushkey;
+	    input_c = pushkey;
 	else {
 	    if (!pushkey) {
-		if ((c = wgetch(wp)) == ERR)
+		if ((input_c = wgetch(wp)) == ERR)
 		    continue;
 	    }
 	    else
-		c = pushkey;
+		input_c = pushkey;
 
 	    if (win) {
-		win->c = c;
+		win->c = input_c;
 
 		/*
 		 * Run the function associated with the window. When the
@@ -3638,7 +3878,7 @@ void game_loop()
 	if (!keycount && status.notify)
 	    update_status_notify(game[gindex], NULL);
 
-	if ((n = globalkeys(c)) == 1) {
+	if ((n = globalkeys()) == 1) {
 	    keycount = 0;
 	    continue;
 	}
@@ -3647,18 +3887,29 @@ void game_loop()
 
 	switch (d->mode) {
 	    case MODE_EDIT:
-		editmode_keys(c);
+		for (i = 0; edit_keys[i].f; i++) {
+		    if (input_c == edit_keys[i].c)
+			(*edit_keys[i].f)();
+		}
 		break;
 	    case MODE_PLAY:
-		if (playmode_keys(c))
-		    continue;
+		for (i = 0; play_keys[i].f; i++) {
+		    if (input_c == play_keys[i].c)
+			(*play_keys[i].f)();
+		}
 		break;
 	    case MODE_HISTORY:
-		historymode_keys(c);
+		for (i = 0; history_keys[i].f; i++) {
+		    if (input_c == history_keys[i].c)
+			(*history_keys[i].f)();
+		}
 		break;
 	    default:
 		break;
 	}
+
+	if (keycount)
+	    update_status_notify(game[gindex], NULL);
 
 	keycount = 0;
     }

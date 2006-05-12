@@ -233,8 +233,8 @@ void parse_rcfile(const char *filename)
 	}
 	else if (strcmp(var, "bind") == 0) {
 	    config.keys = Realloc(config.keys, (k + 2) *
-		    sizeof(struct key_s *));
-	    config.keys[k] = Calloc(1, sizeof(struct key_s));
+		    sizeof(struct config_key_s *));
+	    config.keys[k] = Calloc(1, sizeof(struct config_key_s));
 	    p = val;
 	    n = 0;
 	    

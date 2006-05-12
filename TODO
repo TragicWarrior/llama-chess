@@ -8,10 +8,6 @@ order):
 + The 'draw' game result needs better handling. Parsing works and the 50 move
   draw rule works, but offering and accepting draws isn't implemented.
 
-+ A WINDOW stack that doesn't block.
-
-+ A clock.
-
 - ICS network game support.
 
 + RAV move text support. Will parse into the move history and also save

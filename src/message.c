@@ -198,7 +198,7 @@ static int display_message(WIN *win)
 
 WIN *construct_message(const char *title, const char *prompt, int center,
 	const char *extra_help, message_func *func, void *arg, 
-	window_exit_func *efunc, int ckey, const char *fmt, ...)
+	window_exit_func *efunc, int ckey, int freedata, const char *fmt, ...)
 {
     char **lines = NULL;
     va_list ap;
@@ -230,6 +230,8 @@ WIN *construct_message(const char *title, const char *prompt, int center,
 
     win = window_create(h, w, CALCPOSY(h), CALCPOSX(w), display_message, m, 
 	    efunc);
+    
+    win->freedata = freedata;
     wbkgd(win->w, CP_MESSAGE_WINDOW);
     (*win->func)(win);
     return win;

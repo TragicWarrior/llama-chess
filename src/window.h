@@ -49,6 +49,7 @@ struct window_s {
     void *data;
     int c;
     int keep;
+    int freedata; // Whether or not to free() .data when destroying
 };
 
 WIN **wins;

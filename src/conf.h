@@ -52,7 +52,7 @@ enum {
     KEY_SET
 };
 
-struct key_s {
+struct config_key_s {
     int c;
     int type;
     char *str;
@@ -79,7 +79,7 @@ struct {
     char **einit;	/* Strings to send to the chess engine upon each reset
                          * or new game.
 			 */
-    struct key_s **keys; // Custom commands to send to the engine.
+    struct config_key_s **keys; // Custom commands to send to the engine.
     int details;	// Board details.
 } config;
 
