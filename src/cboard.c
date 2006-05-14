@@ -60,11 +60,11 @@
 #include "input.h"
 #include "misc.h"
 #include "engine.h"
-#include "rcfile.h"
 #include "strings.h"
 #include "common.h"
 #include "menu.h"
 #include "keys.h"
+#include "rcfile.h"
 #include "cboard.h"
 
 #ifdef DEBUG
@@ -1893,7 +1893,7 @@ void do_board_details()
     config.details = (config.details) ? 0 : 1;
 }
 
-static void do_play_set_clock()
+void do_play_set_clock()
 {
     struct input_data_s *in;
 
@@ -1902,7 +1902,7 @@ static void do_play_set_clock()
     construct_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL, NULL, 0, in, -1);
 }
 
-static void do_play_toggle_human()
+void do_play_toggle_human()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -1921,7 +1921,7 @@ static void do_play_toggle_human()
     update_all(game[gindex]);
 }
 
-static void do_play_toggle_engine()
+void do_play_toggle_engine()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -1938,7 +1938,7 @@ static void do_play_toggle_engine()
     update_all(game[gindex]);
 }
 
-static void do_play_send_command()
+void do_play_send_command()
 {
     struct userdata_s *d = game[gindex].data;
     struct input_data_s *in;
@@ -1951,7 +1951,7 @@ static void do_play_send_command()
     construct_input(ENGINE_CMD_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, -1);
 }
 
-static void do_play_switch_turn()
+void do_play_switch_turn()
 {
     pgn_switch_side(&game[gindex]);
     pgn_switch_turn(&game[gindex]);
@@ -1960,7 +1960,7 @@ static void do_play_switch_turn()
     update_status_window(game[gindex]);
 }
 
-static void do_play_undo()
+void do_play_undo()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -1979,7 +1979,7 @@ static void do_play_undo()
     update_history_window(game[gindex]);
 }
 
-static void do_play_toggle_pause()
+void do_play_toggle_pause()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -1992,7 +1992,7 @@ static void do_play_toggle_pause()
     d->paused = (d->paused) ? 0 : 1;
 }
 
-static void do_play_go()
+void do_play_go()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2007,7 +2007,7 @@ static void do_play_go()
     add_engine_command(&game[gindex], ENGINE_THINKING, "go\n");
 }
 
-static void do_play_config_command()
+void do_play_config_command()
 {
     struct userdata_s *d = game[gindex].data;
     int x, w;
@@ -2048,7 +2048,7 @@ static void do_play_config_command()
     update_status_notify(game[gindex], NULL);
 }
 
-static void do_play_cancel_selected()
+void do_play_cancel_selected()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2057,7 +2057,7 @@ static void do_play_cancel_selected()
     update_status_notify(game[gindex], NULL);
 }
 
-static void do_play_commit()
+void do_play_commit()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2076,7 +2076,7 @@ static void do_play_commit()
     move_to_engine(&game[gindex]);
 }
 
-static void do_play_select()
+void do_play_select()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2125,7 +2125,7 @@ static void do_play_select()
     start_clock();
 }
 
-static char *build_help(const struct key_s *keys)
+static char *build_help(struct key_s **keys)
 {
     int i, nlen = 1, len, t, n;
     char *buf = NULL;
@@ -2134,30 +2134,32 @@ static char *build_help(const struct key_s *keys)
     if (!keys)
 	return NULL;
 
-    for (i = len = t = 0; keys[i].f; i++) {
-	if (keys[i].key) {
-	    if (strlen(keys[i].key) > nlen) {
-		nlen = strlen(keys[i].key);
+    for (i = len = t = 0; keys[i]; i++) {
+	if (keys[i]->key) {
+	    if (strlen(keys[i]->key) > nlen) {
+		nlen = strlen(keys[i]->key);
 		t += nlen;
 	    }
 	    else
 		t++;
 	}
 
-	if (strlen(keys[i].d) > len)
-	    len = strlen(keys[i].d);
+	if (keys[i]->d) {
+	    if (strlen(keys[i]->d) > len)
+		len = strlen(keys[i]->d);
+	}
 
 	t += len;
-	t += keys[i].r;
+	t += keys[i]->r;
     }
 
     t += 4 + i;
     buf = Malloc(t);
     p = buf;
 
-    for (i = 0; keys[i].f; i++) {
-	if (keys[i].key)
-	    n = strlen(keys[i].key);
+    for (i = 0; keys[i]; i++) {
+	if (keys[i]->key)
+	    n = strlen(keys[i]->key);
 	else
 	    n = 1;
 
@@ -2166,20 +2168,22 @@ static char *build_help(const struct key_s *keys)
 
 	*p = 0;
 
-	if (keys[i].key) {
-	    strcat(buf, keys[i].key);
+	if (keys[i]->key) {
+	    strcat(buf, keys[i]->key);
 	    p = buf + strlen(buf);
 	}
 	else
-	    *p++ = keys[i].c;
+	    *p++ = keys[i]->c;
 
 	*p++ = ' ';
 	*p++ = '-';
 	*p++ = ' ';
 	*p = 0;
-	strcat(buf, keys[i].d);
 
-	if (keys[i].r)
+	if (keys[i]->d)
+	    strcat(buf, keys[i]->d);
+
+	if (keys[i]->r)
 	    strcat(buf, "*");
 
 	strcat(buf, "\n");
@@ -2227,7 +2231,7 @@ void do_more_help(WIN *win)
 		NULL, NULL, NULL, do_main_help, 0, 0, "%s", mainhelp);
 }
 
-static void do_play_help()
+void do_play_help()
 {
     char *buf = build_help(play_keys);
 
@@ -2235,7 +2239,7 @@ static void do_play_help()
 	    do_more_help, 0, 1, "%s", buf);
 }
 
-static void do_play_history_mode()
+void do_play_history_mode()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2248,7 +2252,7 @@ static void do_play_history_mode()
     update_all(game[gindex]);
 }
 
-static void do_play_edit_mode()
+void do_play_edit_mode()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2271,7 +2275,7 @@ void do_edit_insert_finalize(WIN *win)
     d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon = win->c;
 }
 
-static void do_edit_select()
+void do_edit_select()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2289,7 +2293,7 @@ static void do_edit_select()
     d->sp.scol = d->c_col;
 }
 
-static void do_edit_commit()
+void do_edit_commit()
 {
     int p;
     struct userdata_s *d = game[gindex].data;
@@ -2309,7 +2313,7 @@ static void do_edit_commit()
     d->sp.icon = d->sp.srow = d->sp.scol = 0;
 }
 
-static void do_edit_delete()
+void do_edit_delete()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2323,7 +2327,7 @@ static void do_edit_delete()
     d->sp.icon = d->sp.srow = d->sp.scol = 0;
 }
 
-static void do_edit_cancel_selected()
+void do_edit_cancel_selected()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2332,13 +2336,13 @@ static void do_edit_cancel_selected()
     update_status_notify(game[gindex], NULL);
 }
 
-static void do_edit_switch_turn()
+void do_edit_switch_turn()
 {
     pgn_switch_turn(&game[gindex]);
     update_all(game[gindex]);
 }
 
-static void do_edit_toggle_castle()
+void do_edit_toggle_castle()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2347,7 +2351,7 @@ static void do_edit_toggle_castle()
 	    d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon, 1);
 }
 
-static void do_edit_insert()
+void do_edit_insert()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2355,7 +2359,7 @@ static void do_edit_insert()
 	    d->b, do_edit_insert_finalize, 0, 0, "%s", GAME_EDIT_TEXT);
 }
 
-static void do_edit_enpassant()
+void do_edit_enpassant()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2365,7 +2369,7 @@ static void do_edit_enpassant()
     }
 }
 
-static void do_edit_help()
+void do_edit_help()
 {
     char *buf = build_help(edit_keys);
 
@@ -2373,7 +2377,7 @@ static void do_edit_help()
 	    do_more_help, 0, 1, "%s", buf);
 }
 
-static void do_edit_exit()
+void do_edit_exit()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2417,7 +2421,7 @@ void do_annotate_finalize(WIN *win)
     really_do_annotate_finalize(in, d);
 }
 
-void do_find_move_exp_finalize(int init, int c)
+void do_find_move_exp_finalize(int init, int which)
 {
     int n;
     struct userdata_s *d = game[gindex].data;
@@ -2440,7 +2444,7 @@ void do_find_move_exp_finalize(int init, int c)
     }
 
     if ((n = find_move_exp(game[gindex], r,
-		    (c == '[') ? 0 : 1, (keycount) ? keycount : 1)) == -1)
+		    (which == -1) ? 0 : 1, (keycount) ? keycount : 1)) == -1)
 	return;
 
     game[gindex].hindex = n;
@@ -2452,15 +2456,11 @@ void do_find_move_exp(WIN *win)
 {
     struct input_data_s *in = win->data;
     int *n = in->data;
-    int c = *n;
+    int which = *n;
 
     if (in->str) {
 	strncpy(moveexp, in->str, sizeof(moveexp));
-
-	if (c == '/')
-	    c = ']';
-
-	do_find_move_exp_finalize(1, c);
+	do_find_move_exp_finalize(1, which);
 	free(in->str);
     }
 
@@ -2796,18 +2796,18 @@ void history_menu(GAME *g)
 	    get_history_items, keys, g, history_menu_print, history_menu_exit);
 }
 
-static void do_history_menu()
+void do_history_menu()
 {
     history_menu(&game[gindex]);
 }
 
-static void do_history_half_move_toggle()
+void do_history_half_move_toggle()
 {
     movestep = (movestep == 1) ? 2 : 1;
     update_history_window(game[gindex]);
 }
 
-static void do_history_jump_next()
+void do_history_jump_next()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2817,7 +2817,7 @@ static void do_history_jump_next()
     update_all(game[gindex]);
 }
 
-static void do_history_jump_prev()
+void do_history_jump_prev()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2827,7 +2827,7 @@ static void do_history_jump_prev()
     update_all(game[gindex]);
 }
 
-static void do_history_prev()
+void do_history_prev()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2836,7 +2836,7 @@ static void do_history_prev()
     update_all(game[gindex]);
 }
 
-static void do_history_next()
+void do_history_next()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2884,7 +2884,7 @@ void do_history_mode_confirm(WIN *win)
     do_history_mode_finalize(d);
 }
 
-static void do_history_toggle()
+void do_history_toggle()
 {
     struct userdata_s *d = game[gindex].data;
 
@@ -2905,7 +2905,7 @@ static void do_history_toggle()
     do_history_mode_finalize(d);
 }
 
-static void do_history_annotate()
+void do_history_annotate()
 {
     int n = game[gindex].hindex;
 
@@ -2917,7 +2917,7 @@ static void do_history_annotate()
     do_annotate_move(game[gindex].hp[n]);
 }
 
-static void do_history_help()
+void do_history_help()
 {
     char *buf = build_help(history_keys);
 
@@ -2925,72 +2925,63 @@ static void do_history_help()
 	    do_more_help, 0, 1, "%s", buf);
 }
 
-static void do_history_find()
+void do_history_find(int which)
 {
     struct input_data_s *in;
     int *p;
 
-    switch (input_c) {
-	case ']':
-	case '[':
-	case '/':
-	    if (pgn_history_total(game[gindex].hp) < 2)
-		break;
+    if (pgn_history_total(game[gindex].hp) < 2)
+	return;
 
-	    in = Calloc(1, sizeof(struct input_data_s));
-	    p = Malloc(sizeof(int));
-	    *p = input_c;
-	    in->data = p;
-	    in->efunc = do_find_move_exp;
+    in = Calloc(1, sizeof(struct input_data_s));
+    p = Malloc(sizeof(int));
+    *p = which;
+    in->data = p;
+    in->efunc = do_find_move_exp;
 
-	    if (!*moveexp || input_c == '/') {
-		construct_input(FIND_REGEXP, moveexp, 1, 0, NULL, NULL, NULL, 
-			0, in, -1);
-		    break;
-	    }
-
-	    do_find_move_exp_finalize(0, input_c);
-	default:
-	    break;
+    if (!*moveexp || which == 0) {
+	construct_input(FIND_REGEXP, moveexp, 1, 0, NULL, NULL, NULL, 
+		0, in, -1);
+	return;
     }
+
+    do_find_move_exp_finalize(0, which);
 }
 
-static void do_history_find_prev()
+void do_history_find_new()
 {
-    do_history_find();
+    do_history_find(0);
 }
 
-static void do_history_find_next()
+void do_history_find_prev()
 {
-    do_history_find();
+    do_history_find(-1);
 }
 
-static void do_history_rav()
+void do_history_find_next()
+{
+    do_history_find(1);
+}
+
+void do_history_rav(int which)
 {
     struct userdata_s *d = game[gindex].data;
 
-    switch (input_c) {
-	case '-':
-	case '+':
-	    rav_next_prev(&game[gindex], d->b, (input_c == '-') ? 0 : 1);
-	    update_all(game[gindex]);
-	    break;
-	default:
-	    break;
-    }
+    rav_next_prev(&game[gindex], d->b, which);
+    update_all(game[gindex]);
 }
 
-static void do_history_rav_next()
+void do_history_rav_next()
 {
-    do_history_rav();
+    do_history_rav(1);
 }
 
-static void do_history_rav_prev()
+void do_history_rav_prev()
 {
-    do_history_rav();
+    do_history_rav(0);
 }
 
-static void do_history_jump()
+void do_history_jump()
 {
     struct input_data_s *in;
 
@@ -3385,7 +3376,7 @@ void do_game_save_multi_confirm(WIN *win)
     do_get_game_save_input(i);
 }
 
-static void do_global_about()
+void do_global_about()
 {
     cmessage("ABOUT", ANYKEY, "%s (%s)\nUsing %s with %i colors "
 	    "and %i color pairs\nCopyright 2002-2006 %s",
@@ -3393,7 +3384,7 @@ static void do_global_about()
 	    COLOR_PAIRS, PACKAGE_BUGREPORT);
 }
 
-static void global_game_next_prev(int which)
+void global_game_next_prev(int which)
 {
     struct userdata_s *d;
 
@@ -3422,17 +3413,17 @@ static void global_game_next_prev(int which)
     update_all(game[gindex]);
 }
 
-static void do_global_next_game()
+void do_global_next_game()
 {
     global_game_next_prev(1);
 }
 
-static void do_global_prev_game()
+void do_global_prev_game()
 {
     global_game_next_prev(0);
 }
 
-static void global_find(int which)
+void global_find(int which)
 {
     struct input_data_s *in;
     int *p;
@@ -3455,22 +3446,22 @@ static void global_find(int which)
     do_find_game_exp_finalize(which);
 }
 
-static void do_global_find_new()
+void do_global_find_new()
 {
     global_find(0);
 }
 
-static void do_global_find_next()
+void do_global_find_next()
 {
     global_find(1);
 }
 
-static void do_global_find_prev()
+void do_global_find_prev()
 {
     global_find(-1);
 }
 
-static void do_global_game_jump()
+void do_global_game_jump()
 {
     struct input_data_s *in;
 
@@ -3489,7 +3480,7 @@ static void do_global_game_jump()
     do_game_jump_finalize(keycount);
 }
 
-static void do_global_toggle_delete()
+void do_global_toggle_delete()
 {
     int i;
 
@@ -3526,26 +3517,26 @@ static void do_global_toggle_delete()
     update_status_window(game[gindex]);
 }
 
-static void do_global_delete_game()
+void do_global_delete_game()
 {
     do_game_delete();
 }
 
-static void do_global_tag_edit()
+void do_global_tag_edit()
 {
     struct userdata_s *d = game[gindex].data;
 
     edit_tags(game[gindex], d->b, 1);
 }
 
-static void do_global_tag_view()
+void do_global_tag_view()
 {
     struct userdata_s *d = game[gindex].data;
 
     edit_tags(game[gindex], d->b, 0);
 }
 
-static void do_global_resume_game()
+void do_global_resume_game()
 {
     struct input_data_s *in;
 
@@ -3555,7 +3546,7 @@ static void do_global_resume_game()
 	    NULL, '\t', in, -1);
 }
 
-static void do_global_save_game()
+void do_global_save_game()
 {
     if (gtotal > 1) {
 	construct_message(NULL, GAME_SAVE_MULTI_PROMPT, 1, NULL, NULL, NULL, 
@@ -3566,23 +3557,23 @@ static void do_global_save_game()
     do_get_game_save_input(-1);
 }
 
-static void do_global_new_game()
+void do_global_new_game()
 {
     do_new_game();
 }
 
-static void do_global_new_all()
+void do_global_new_all()
 {
     construct_message(NULL, YESNO, 1, NULL, NULL, NULL, 
 	    do_new_game_from_scratch, 0, 0, "%s", GAME_NEW_PROMPT);
 }
 
-static void do_global_quit()
+void do_global_quit()
 {
     quit = 1;
 }
 
-static void do_global_toggle_engine_window()
+void do_global_toggle_engine_window()
 {
     if (!enginew) {
 	enginew = newwin(LINES, COLS, 0, 0);
@@ -3603,7 +3594,7 @@ static void do_global_toggle_engine_window()
     }
 }
 
-static void do_global_toggle_board_details()
+void do_global_toggle_board_details()
 {
     do_board_details();
 }
@@ -3614,6 +3605,10 @@ static int globalkeys()
     struct userdata_s *d = game[gindex].data;
     int i;
 
+    /*
+     * These cannot be modified and other game mode keys cannot conflict with
+     * these.
+     */
     switch (input_c) {
 	case CTRL('L'):
 	    endwin();
@@ -3709,9 +3704,9 @@ static int globalkeys()
 		  return 1;
 	case 0:
 	default:
-		  for (i = 0; global_keys[i].f; i++) {
-		      if (input_c == global_keys[i].c) {
-			  (*global_keys[i].f)();
+		  for (i = 0; global_keys[i]; i++) {
+		      if (input_c == global_keys[i]->c) {
+			  (*global_keys[i]->f)();
 			  return 1;
 		      }
 		  }
@@ -3887,27 +3882,36 @@ void game_loop()
 
 	switch (d->mode) {
 	    case MODE_EDIT:
-		for (i = 0; edit_keys[i].f; i++) {
-		    if (input_c == edit_keys[i].c)
-			(*edit_keys[i].f)();
+		for (i = 0; edit_keys[i]; i++) {
+		    if (input_c == edit_keys[i]->c) {
+			(*edit_keys[i]->f)();
+			break;
+		    }
 		}
 		break;
 	    case MODE_PLAY:
-		for (i = 0; play_keys[i].f; i++) {
-		    if (input_c == play_keys[i].c)
-			(*play_keys[i].f)();
+		for (i = 0; play_keys[i]; i++) {
+		    if (input_c == play_keys[i]->c) {
+			(*play_keys[i]->f)();
+			goto done;
+		    }
 		}
+
+		do_play_config_command();
 		break;
 	    case MODE_HISTORY:
-		for (i = 0; history_keys[i].f; i++) {
-		    if (input_c == history_keys[i].c)
-			(*history_keys[i].f)();
+		for (i = 0; history_keys[i]; i++) {
+		    if (input_c == history_keys[i]->c) {
+			(*history_keys[i]->f)();
+			break;
+		    }
 		}
 		break;
 	    default:
 		break;
 	}
 
+done:
 	if (keycount)
 	    update_status_notify(game[gindex], NULL);
 
@@ -4037,6 +4041,7 @@ void loading_progress(long total, long offset)
 static void set_defaults()
 {
     set_config_defaults();
+    set_default_keys();
     filetype = NO_FILE;
     pgn_config_set(PGN_PROGRESS, 1024);
     pgn_config_set(PGN_PROGRESS_FUNC, loading_progress);

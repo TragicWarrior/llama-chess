@@ -112,7 +112,19 @@ protocol should work.
 A command to send to the chess engine each time a new game or round is started
 or reset. Can be specified more than once.
 .Pp
-.It Cm bind Ar type Ar key Ar command
+.It Cm bind Ar mode Ar key Ar command Op description
+This allows you to change the default key bindings for each game mode.
+Each game 
+.Ar mode
+has it's own set of commands
+.Ar command
+with an optional
+.Ar description 
+which is shown in the help text. See
+.Pa config.example
+included in the archive for available game modes and commands.
+.Pp
+.It Cm cbind Ar type Ar key Ar command
 Bind the specified
 .Ar key
 to the engine command

@@ -13,23 +13,6 @@
 # Can be used more than once to specify as many commands as needed.
 #engine_init	depth 3
 
-# Sends a command to the engine when the specified key is pressed. The bound
-# key will only be available in play mode and will only get sent if it doesn't
-# conflict with other play mode keys. The first argument describes how the key
-# behaves when a repeat count is used (typing a series of numbers before
-# pressing the key). A type of 'set' will append the repeat count to the
-# command, 'repeat' will send the command the amount of times specified by the
-# repeat count and 'none' will send the command only once, unaltered.
-#
-# Typing '23P' in play mode will send "depth 23" to the engine.
-#bind	set	P	depth
-#
-# Typing '23$' in play mode will send "something" to the engine 23 times.
-#bind	repeat	$	something
-#
-# Only send "depth 1" to the engine.
-#bine	none	!	depth 1
-
 # The number of moves to jump when browsing move history and pressing the UP
 # or DOWN keys.
 jump_count	5
@@ -129,3 +112,74 @@ color_menu		white	black	none	none
 color_menu_selected	white	red	none	bold
 color_menu_highlight	blue	yellow	none	bold
 color_menu_graphics	green	black	bold	bold
+
+# Sends a command to the chess engine when the specified key is pressed. The
+# bound key will only be available in play mode and will only get sent if it
+# doesn't conflict with other play mode keys. The first argument describes how
+# the key behaves when a repeat count is used (typing a series of numbers
+# before pressing the key). A type of 'set' will append the repeat count to
+# the command, 'repeat' will send the command the amount of times specified by
+# the repeat count and 'none' will send the command only once, unaltered.
+#
+# Typing '23D' in play mode will send "depth 23" to the engine.
+#cbind	set	D	depth
+#
+# Typing '23$' in play mode will send "something" to the engine 23 times.
+#cbind	repeat	$	something
+#
+# Only send "depth 1" to the engine.
+#cbind	none	!	depth 1
+
+# These are the default key bindings. Control keys can be specified be
+# prefixing the key with a '^' and function keys with a 'F' followed by the
+# function key number. If a key is already bound then the existing key will be
+# updated. This may result in the same key being bound to more than one
+# function. If that's the case, only one of the commands will be executed.
+
+# Play mode keys.
+#    Mode       Key             Command
+bind play	"space"		select
+bind play	"\n"		commit
+bind play	"escape"	cancel_selected
+bind play	"C"		set_clock
+bind play	"w"		switch_turn
+bind play	"u"		undo
+bind play	"g"		go
+bind play	"|"		send_command
+bind play	"E"		toggle_engine
+bind play	"H"		toggle_human
+bind play	"F1"		help
+bind play	"p"		toggle_pause
+bind play	"h"		history_mode
+bind play	"e"		edit_mode
+
+# History mode keys.
+#    Mode       Key             Command
+bind history	"up"		jump_next
+bind history	"down"		jump_prev
+bind history	"right"		next
+bind history	"left"		prev
+bind history	"space"		half_move_toggle
+bind history	"j"		jump
+bind history	"/"		find_new
+bind history	"]"		find_next
+bind history	"["		find_prev
+bind history	"^a"		annotate
+bind history	"+"		rav_next
+bind history	"-"		rav_prev
+bind history	"M"		menu
+bind history	"h"		toggle
+bind history	"f1"		help
+
+# Board editing keys.
+#    Mode       Key             Command
+bind edit	"space"		select
+bind edit	"\n"		commit
+bind edit	"escape"	cancel_selected
+bind edit	"d"		delete
+bind edit	"i"		insert
+bind edit	"c"		toggle_castle
+bind edit	"p"		enpassant
+bind edit	"w"		switch_turn
+bind edit	"f1"		help
+bind edit	"e"		exit

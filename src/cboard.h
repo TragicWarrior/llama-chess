@@ -119,10 +119,6 @@ struct {
     char *notify;	// The status window notification line buffer.
 } status;
 
-enum {
-    MODE_HISTORY, MODE_PLAY, MODE_EDIT
-};
-
 int curses_initialized;
 
 // When in history mode a full step is to the next move of the same playing

@@ -37,6 +37,7 @@
 #include "conf.h"
 #include "misc.h"
 #include "colors.h"
+#include "keys.h"
 #include "rcfile.h"
 
 #ifdef WITH_DMALLOC
@@ -161,6 +162,141 @@ void copydatafile(const char *dst, const char *src)
     fclose(ofp);
 }
 
+static char *fancy_key_name(int c)
+{
+    static char buf[12];
+    char *p;
+
+    strncpy(buf, keyname(c), sizeof(buf));
+    p = buf;
+
+    if (*p == '^' && *(p + 1) == '[')
+	return "Escape";
+
+    if (*p == '^' && *(p + 1) == 'J')
+	return "Enter";
+
+    if (strncasecmp(p, "KEY_", 4) == 0) {
+	for (p = buf; *p; p++)
+	    *p = tolower(*p);
+
+	p = buf;
+	p += 4;
+
+	if (*p == 'f') {
+	    char *t = buf + 4;
+
+	    p += 2;
+
+	    while (isdigit(*p))
+		*++t = *p++;
+
+	    *++t = 0;
+	    p = buf + 4;
+	}
+	else if (strcmp(p, "ppage") == 0)
+	    return "PgUp";
+	else if (strcmp(p, "npage") == 0)
+	    return "PgDown";
+
+	*p = toupper(*p);
+	return p;
+    }
+
+    if (*p == ' ')
+	return "Space";
+
+    return p;
+}
+
+void add_key_binding(struct key_s ***dst, key_func *func, int c, char *desc, 
+	int repeat)
+{
+    int i = 0;
+    struct key_s **k = *dst;
+
+    if (k)
+	for (i = 0; k[i]; i++);
+
+    k = Realloc(k, (i + 2) * sizeof(struct key_s *));
+    k[i] = Calloc(1, sizeof(struct key_s));
+    k[i]->f = func;
+    k[i]->c = c;
+    k[i]->r = repeat;
+    k[i]->key = strdup(fancy_key_name(c));
+
+    if (desc)
+	k[i]->d = strdup(desc);
+
+    i++;
+    k[i] = NULL;
+    *dst = k;
+}
+
+void set_default_keys()
+{
+    add_key_binding(&history_keys, do_history_jump_next, KEY_UP, "history jump next", 1);
+    add_key_binding(&history_keys, do_history_jump_prev, KEY_DOWN, "history jump previous", 1);
+    add_key_binding(&history_keys, do_history_next, KEY_RIGHT, "next move", 1);
+    add_key_binding(&history_keys, do_history_prev, KEY_LEFT, "previous move", 1);
+    add_key_binding(&history_keys, do_history_half_move_toggle, ' ', "toggle half move (ply) stepping", 0);
+    add_key_binding(&history_keys, do_history_jump, 'j', "jump to move number", 1);
+    add_key_binding(&history_keys, do_history_find_new, '/', "new move text expression", 0);
+    add_key_binding(&history_keys, do_history_find_next, ']', "find next move text expression", 1);
+    add_key_binding(&history_keys, do_history_find_prev, '[', "find previous move text expression", 1);
+    add_key_binding(&history_keys, do_history_annotate, CTRL('a'), "annotate the previous move", 0);
+    add_key_binding(&history_keys, do_history_rav_next, '+', "next variation of the previous move", 0);
+    add_key_binding(&history_keys, do_history_rav_prev, '-', "previous variation of the previous move", 0);
+    add_key_binding(&history_keys, do_history_menu, 'M', "move history tree", 0);
+    add_key_binding(&history_keys, do_history_help, KEY_F(1), "help", 0);
+    add_key_binding(&history_keys, do_history_toggle, 'h', "exit history mode", 0);
+
+    add_key_binding(&edit_keys, do_edit_select, ' ', "select piece for movement", 0);
+    add_key_binding(&edit_keys, do_edit_commit, '\n', "commit selected piece", 0);
+    add_key_binding(&edit_keys, do_edit_cancel_selected, KEY_ESCAPE, "cancel selected piece", 0);
+    add_key_binding(&edit_keys, do_edit_delete, 'd', "remove the piece under the cursor", 0);
+    add_key_binding(&edit_keys, do_edit_insert, 'i', "insert piece", 0);
+    add_key_binding(&edit_keys, do_edit_toggle_castle, 'c', "toggle castling availability", 0);
+    add_key_binding(&edit_keys, do_edit_enpassant, 'p', "toggle enpassant square", 0);
+    add_key_binding(&edit_keys, do_edit_switch_turn, 'w', "toggle turn", 0);
+    add_key_binding(&edit_keys, do_edit_help, KEY_F(1), "help", 0);
+    add_key_binding(&edit_keys, do_edit_exit, 'e', "exit edit mode", 0);
+
+    add_key_binding(&play_keys, do_play_select, ' ', "select piece for movement", 0);
+    add_key_binding(&play_keys, do_play_commit, '\n', "commit selected piece", 0);
+    add_key_binding(&play_keys, do_play_cancel_selected, KEY_ESCAPE, "cancel selected piece", 0);
+    add_key_binding(&play_keys, do_play_set_clock, 'C', "set clock", 0);
+    add_key_binding(&play_keys, do_play_switch_turn, 'w', "switch turn", 0);
+    add_key_binding(&play_keys, do_play_undo, 'u', "undo previous move", 1);
+    add_key_binding(&play_keys, do_play_go, 'g', "force the chess engine to make the next move", 0);
+    add_key_binding(&play_keys, do_play_send_command, '|', "send a command to the chess engine", 0);
+    add_key_binding(&play_keys, do_play_toggle_engine, 'E', "toggle engine/engine play", 0);
+    add_key_binding(&play_keys, do_play_toggle_human, 'H', "toggle human/human play", 0);
+    add_key_binding(&play_keys, do_play_toggle_pause, 'p', "toggle pausing of this game", 0);
+    add_key_binding(&play_keys, do_play_history_mode, 'h', "enter history mode", 0);
+    add_key_binding(&play_keys, do_play_edit_mode, 'e', "enter edit mode", 0);
+    add_key_binding(&play_keys, do_play_help, KEY_F(1), "help", 0);
+
+    add_key_binding(&global_keys, do_global_tag_edit, CTRL('t'), "edit roster tags", 0);
+    add_key_binding(&global_keys, do_global_tag_view, 't', "view roster tags", 0);
+    add_key_binding(&global_keys, do_global_find_new, '?', "new find game expression", 0);
+    add_key_binding(&global_keys, do_global_find_next, '}', "find next game", 1);
+    add_key_binding(&global_keys, do_global_find_prev, '{', "find previous game", 1);
+    add_key_binding(&global_keys, do_global_new_game, CTRL('n'), "new game or round", 0);
+    add_key_binding(&global_keys, do_global_new_all, CTRL('k'), "new game from scratch", 0);
+    add_key_binding(&global_keys, do_global_next_game, '>', "next game", 1);
+    add_key_binding(&global_keys, do_global_prev_game, '<', "previous game", 1);
+    add_key_binding(&global_keys, do_global_game_jump, 'J', "jump to game", 1);
+    add_key_binding(&global_keys, do_global_toggle_delete, CTRL('x'), "toggle delete flag", 1);
+    add_key_binding(&global_keys, do_global_delete_game, 'X', "delete the current or flagged games", 0);
+    add_key_binding(&global_keys, do_global_resume_game, 'r', "load a PGN file", 0);
+    add_key_binding(&global_keys, do_global_save_game, 's', "save game", 0);
+    add_key_binding(&global_keys, do_global_toggle_board_details, CTRL('d'), "toggle board details", 0);
+    add_key_binding(&global_keys, do_global_toggle_engine_window, 'W', "toggle chess engine IO window", 0);
+    add_key_binding(&global_keys, do_global_about, KEY_F(10), "version information", 0);
+    add_key_binding(&global_keys, do_global_quit, 'Q', "quit", 0);
+}
+
 void set_config_defaults()
 {
     struct stat st;
@@ -190,20 +326,164 @@ void set_config_defaults()
     }
 }
 
+static void update_key(struct key_s **dst, struct custom_key_s config_key, 
+	int c, char *desc)
+{
+    int i;
+
+    for (i = 0; dst[i]; i++) {
+	if (dst[i]->f == config_key.func) {
+	    dst[i]->c = c;
+
+	    if (dst[i]->key)
+		free(dst[i]->key);
+
+	    dst[i]->key = strdup(fancy_key_name(c));
+
+	    if (desc && dst[i]->d)
+		free(dst[i]->d);
+
+	    if (desc)
+		dst[i]->d = strdup(desc);
+
+	    goto done;
+	}
+    }
+
+    add_key_binding(&dst, config_key.func, c, (desc) ? desc : "no description",
+	    config_key.r);
+
+done:
+    return;
+}
+
+static void parse_key_binding(const char *filename, int lines, char *val)
+{
+    char mode[64], key[8], func[64], desc[64];
+    int n;
+    int m = 0;
+    int c;
+    int f;
+    char *p;
+    int i;
+
+    n = sscanf(val, "%s %s %s %s", mode, key, func, desc);
+
+    if (n < 3)
+	errx(EXIT_FAILURE, "%s(%i): too few arguments", filename, lines);
+
+    if (strcasecmp(mode, "history") == 0)
+	m = MODE_HISTORY;
+    else if (strcasecmp(mode, "play") == 0)
+	m = MODE_PLAY;
+    else if (strcasecmp(mode, "edit") == 0)
+	m = MODE_EDIT;
+    else
+	errx(EXIT_FAILURE, "%s(%i): invalid game mode \"%s\"", filename, lines,
+		mode);
+
+    p = key;
+
+    if (*p == '\"') {
+	if (key[strlen(key) - 1] != '\"')
+	    errx(EXIT_FAILURE, "%s(%i): unbalanced quotes", filename, lines);
+
+	p++;
+	key[strlen(key) - 1] = 0;
+    }
+
+    if (strcasecmp(p, "up") == 0)
+	c = KEY_UP;
+    else if (strcasecmp(p, "down") == 0)
+	c = KEY_DOWN;
+    else if (strcasecmp(p, "left") == 0)
+	c = KEY_LEFT;
+    else if (strcasecmp(p, "right") == 0)
+	c = KEY_RIGHT;
+    else if (strcasecmp(p, "home") == 0)
+	c = KEY_HOME;
+    else if (strcasecmp(p, "end") == 0)
+	c = KEY_END;
+    else if (strcasecmp(p, "delete") == 0)
+	c = KEY_DC;
+    else if (strcasecmp(p, "pgup") == 0)
+	c = KEY_PPAGE;
+    else if (strcasecmp(p, "pgdn") == 0)
+	c = KEY_NPAGE;
+    else if (strcasecmp(p, "insert") == 0)
+	c = KEY_IC;
+    else if (strcasecmp(p, "space") == 0)
+	c = ' ';
+    else if (*p == '\\') {
+	p++;
+
+	switch (*p) {
+	    case 'n':
+		c = '\n';
+		break;
+	    default:
+		c = '\\';
+		break;
+	}
+    }
+    else if (*p == '^')
+	c = CTRL(*(p + 1));
+    else if (*p == 'F' || *p == 'f')
+	c = KEY_F(atoi(++p));
+    else
+	c = *p;
+
+    if (m != -1) {
+	for (i = 0; global_keys[i]; i++) {
+	    if (global_keys[i]->c == c)
+		errx(EXIT_FAILURE, "%s(%i): key \"%s\" conflicts with a global "
+			"key", filename, lines, key);
+	}
+    }
+
+    for (f = -2, i = 0; config_keys[i].name; i++) {
+	if (strcmp(config_keys[i].name, func) == 0 && 
+		config_keys[i].mode == m) {
+	    f = i;
+	    break;
+	}
+    }
+
+    if (f == -2)
+	errx(EXIT_FAILURE, "%s(%i): invalid command \"%s\"", filename, lines,
+		func);
+
+    switch (m) {
+	case MODE_PLAY:
+	    update_key(play_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    break;
+	case MODE_HISTORY:
+	    update_key(history_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    break;
+	case MODE_EDIT:
+	    update_key(edit_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    break;
+	default:
+	    update_key(global_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    break;
+    }
+}
+
 void parse_rcfile(const char *filename)
 {
     FILE *fp;
     char *line, buf[LINE_MAX];
     int lines = 0;
     char *altengine = NULL;
-    int k = 0;
     int init = 0;
+    int k = 0;
+    int c;
 
     if ((fp = fopen(filename, "r")) == NULL)
 	err(EXIT_FAILURE, "%s", filename);
 
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
-	int n, c;
+	int n;
 	char var[30], val[50];
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
 	char *p;
@@ -230,40 +510,6 @@ void parse_rcfile(const char *filename)
 			lines);
 
 	    config.jumpcount = atoi(val);
-	}
-	else if (strcmp(var, "bind") == 0) {
-	    config.keys = Realloc(config.keys, (k + 2) *
-		    sizeof(struct config_key_s *));
-	    config.keys[k] = Calloc(1, sizeof(struct config_key_s));
-	    p = val;
-	    n = 0;
-	    
-	    while (*p && !isspace(*p))
-		p++, n++;
-
-	    c = *p;
-	    *p = 0;
-	    p -= n;
-
-	    if (strcasecmp(p, "none") == 0)
-		config.keys[k]->type = KEY_DEFAULT;
-	    else if (strcasecmp(p, "repeat") == 0)
-		config.keys[k]->type = KEY_REPEAT;
-	    else if (strcasecmp(p, "set") == 0)
-		config.keys[k]->type = KEY_SET;
-	    else
-		errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename,
-			lines, p);
-	    
-	    p = val + n;
-	    *p = c;
-
-	    while (*p && isspace(*p))
-		p++;
-
-	    config.keys[k]->c = *p++;
-	    config.keys[k++]->str = strdup(p);
-	    config.keys[k] = NULL;
 	}
 	else if (strcmp(var, "engine_init") == 0) {
 	    config.einit = Realloc(config.einit, (init + 2) * sizeof(char *));
@@ -386,6 +632,42 @@ void parse_rcfile(const char *filename)
 	else if (strcmp(var, "color_menu_graphics") == 0)
 	    parse_color(filename, lines, val,
 		    &config.color[CONF_HISTORY_MENU_LG]);
+	else if (strcmp(var, "bind") == 0)
+	    parse_key_binding(filename, lines, val);
+	else if (strcmp(var, "cbind") == 0) {
+	    config.keys = Realloc(config.keys, (k + 2) *
+		    sizeof(struct config_key_s *));
+	    config.keys[k] = Calloc(1, sizeof(struct config_key_s));
+	    p = val;
+	    n = 0;
+	    
+	    while (*p && !isspace(*p))
+		p++, n++;
+
+	    c = *p;
+	    *p = 0;
+	    p -= n;
+
+	    if (strcasecmp(p, "none") == 0)
+		config.keys[k]->type = KEY_DEFAULT;
+	    else if (strcasecmp(p, "repeat") == 0)
+		config.keys[k]->type = KEY_REPEAT;
+	    else if (strcasecmp(p, "set") == 0)
+		config.keys[k]->type = KEY_SET;
+	    else
+		errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename,
+			lines, p);
+	    
+	    p = val + n;
+	    *p = c;
+
+	    while (*p && isspace(*p))
+		p++;
+
+	    config.keys[k]->c = *p++;
+	    config.keys[k++]->str = strdup(p);
+	    config.keys[k] = NULL;
+	}
 	else
 	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
 		    lines, var);

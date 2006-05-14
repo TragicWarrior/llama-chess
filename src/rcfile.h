@@ -19,7 +19,75 @@
 #ifndef RCFILE_H
 #define RCFILE_H
 
+static const struct custom_key_s {
+    int mode;
+    char *name;
+    key_func *func;
+    int r;
+} config_keys[] = {
+    { MODE_PLAY, "select", do_play_select, 0},
+    { MODE_PLAY, "commit", do_play_commit, 0},
+    { MODE_PLAY, "cancel_selected", do_play_cancel_selected, 0},
+    { MODE_PLAY, "set_clock", do_play_set_clock, 0},
+    { MODE_PLAY, "switch_turn", do_play_switch_turn, 0},
+    { MODE_PLAY, "undo", do_play_undo, 1},
+    { MODE_PLAY, "go", do_play_go, 0},
+    { MODE_PLAY, "send_command", do_play_send_command, 0},
+    { MODE_PLAY, "toggle_engine", do_play_toggle_engine, 0},
+    { MODE_PLAY, "toggle_human", do_play_toggle_human, 0},
+    { MODE_PLAY, "help", do_play_help, 0},
+    { MODE_PLAY, "toggle_pause", do_play_toggle_pause, 0},
+    { MODE_PLAY, "history_mode", do_play_history_mode, 0},
+    { MODE_PLAY, "edit_mode", do_play_edit_mode, 0},
+    { MODE_HISTORY, "jump_next", do_history_jump_next, 1},
+    { MODE_HISTORY, "jump_prev", do_history_jump_prev, 1},
+    { MODE_HISTORY, "next", do_history_next, 1},
+    { MODE_HISTORY, "prev", do_history_prev, 1},
+    { MODE_HISTORY, "half_move_toggle", do_history_half_move_toggle, 0},
+    { MODE_HISTORY, "jump", do_history_jump, 1},
+    { MODE_HISTORY, "find_next", do_history_find_next, 1},
+    { MODE_HISTORY, "find_new", do_history_find_new, 0},
+    { MODE_HISTORY, "find_prev", do_history_find_prev, 1},
+    { MODE_HISTORY, "annotate", do_history_annotate, 0},
+    { MODE_HISTORY, "rav_next", do_history_rav_next, 0},
+    { MODE_HISTORY, "rav_prev", do_history_rav_prev, 0},
+    { MODE_HISTORY, "menu", do_history_menu, 0},
+    { MODE_HISTORY, "toggle", do_history_toggle, 0},
+    { MODE_HISTORY, "help", do_history_help, 0},
+    { MODE_EDIT, "select", do_edit_select, 0},
+    { MODE_EDIT, "commit", do_edit_commit, 0},
+    { MODE_EDIT, "cancel_selected", do_edit_cancel_selected, 0},
+    { MODE_EDIT, "delete", do_edit_delete, 0},
+    { MODE_EDIT, "insert", do_edit_insert, 0},
+    { MODE_EDIT, "toggle_castle", do_edit_toggle_castle, 0},
+    { MODE_EDIT, "enpassant", do_edit_enpassant, 0},
+    { MODE_EDIT, "switch_turn", do_edit_switch_turn, 0},
+    { MODE_EDIT, "help", do_edit_help, 0},
+    { MODE_EDIT, "exit", do_edit_exit, 0},
+    { -1, "tag_edit", do_global_tag_edit, 0},
+    { -1, "tag_view", do_global_tag_view, 0},
+    { -1, "find_new", do_global_find_new, 0},
+    { -1, "find_next", do_global_find_next, 1},
+    { -1, "find_prev", do_global_find_prev, 1},
+    { -1, "new_game", do_global_new_game, 0},
+    { -1, "new_all", do_global_new_all, 0},
+    { -1, "next_game", do_global_next_game, 1},
+    { -1, "prev_game", do_global_prev_game, 1},
+    { -1, "game_jump", do_global_game_jump, 1},
+    { -1, "toggle_delete", do_global_toggle_delete, 0},
+    { -1, "delete_game", do_global_delete_game, 0},
+    { -1, "resume_game", do_global_resume_game, 0},
+    { -1, "save_game", do_global_save_game, 0},
+    { -1, "about", do_global_about, 0},
+    { -1, "quit", do_global_quit, 0},
+    { -1, "toggle_engine_window", do_global_toggle_engine_window, 0},
+    { -1, "toggle_board_details", do_global_toggle_board_details, 0},
+    { -1, NULL, NULL, 0}
+};
+
 void set_config_defaults();
 void parse_rcfile(const char *filename);
+void add_key_binding(struct key_s ***, key_func *, int c, char *, int);
+void set_default_keys();
 
 #endif
