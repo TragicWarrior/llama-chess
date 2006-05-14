@@ -138,9 +138,9 @@ color_menu_graphics	green	black	bold	bold
 
 # Play mode keys.
 #    Mode       Key             Command
-bind play	"space"		select
-bind play	"\n"		commit
-bind play	"escape"	cancel_selected
+bind play	"<space>"	select
+bind play	"<enter>"	commit
+bind play	"<escape>"	cancel_selected
 bind play	"C"		set_clock
 bind play	"w"		switch_turn
 bind play	"u"		undo
@@ -148,38 +148,46 @@ bind play	"g"		go
 bind play	"|"		send_command
 bind play	"E"		toggle_engine
 bind play	"H"		toggle_human
-bind play	"F1"		help
+bind play	"<F1>"		help
 bind play	"p"		toggle_pause
 bind play	"h"		history_mode
 bind play	"e"		edit_mode
 
 # History mode keys.
 #    Mode       Key             Command
-bind history	"up"		jump_next
-bind history	"down"		jump_prev
-bind history	"right"		next
-bind history	"left"		prev
-bind history	"space"		half_move_toggle
+bind history	"<up>"		jump_next
+bind history	"<down>"	jump_prev
+bind history	"<right>"	next
+bind history	"<left>"	prev
+bind history	"<space>"	half_move_toggle
 bind history	"j"		jump
 bind history	"/"		find_new
 bind history	"]"		find_next
 bind history	"["		find_prev
-bind history	"^a"		annotate
+bind history	"<^a>"		annotate
 bind history	"+"		rav_next
 bind history	"-"		rav_prev
 bind history	"M"		menu
 bind history	"h"		toggle
-bind history	"f1"		help
+bind history	"<f1>"		help
 
 # Board editing keys.
 #    Mode       Key             Command
-bind edit	"space"		select
-bind edit	"\n"		commit
-bind edit	"escape"	cancel_selected
+bind edit	"<space>"	select
+bind edit	"<enter>"	commit
+bind edit	"<escape>"	cancel_selected
 bind edit	"d"		delete
 bind edit	"i"		insert
 bind edit	"c"		toggle_castle
 bind edit	"p"		enpassant
 bind edit	"w"		switch_turn
-bind edit	"f1"		help
+bind edit	"<f1>"		help
 bind edit	"e"		exit
+
+# Macros should be defined AFTER all key bindings. The bound key "presses" a
+# series of keys in the specified game mode. The "any" game mode can be used
+# to access the global keys.
+
+# This would edit the "White" roster tag when pressing CTRL-o.
+#	Mode	Key		Key sequence
+macro 	any	"<^o>"		"<^t><^a>white<enter>"

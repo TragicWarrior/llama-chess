@@ -150,6 +150,28 @@ then
 .Ar command
 will be sent without modification.
 .Pp
+.It Cm macro Ar mode Ar key Ar key_sequence
+A 
+.Ar macro 
+is like pressing a series of keys automatically without interaction. The
+specified
+.Ar key 
+"presses" the keys specified in
+.Ar key_sequence 
+when in 
+.Ar mode .
+The 
+.Ar mode
+may be
+.Ar play ,
+.Ar history ,
+.Ar edit 
+or 
+.Ar any .
+When 
+.Ar any ,
+global keys may be accessed.
+.Pp
 .It Cm jump_count Ar integer
 When viewing move history, you can jump more than one move to the next or
 previous move with the UP and DOWN keys. This sets the number of moves to

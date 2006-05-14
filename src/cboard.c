@@ -3720,6 +3720,7 @@ void game_loop()
 {  
     int error_recover = 0;
     struct userdata_s *d = game[gindex].data;
+    int macro_match = -1;
 
     gindex = gtotal - 1;
 
@@ -3838,8 +3839,19 @@ void game_loop()
 	    input_c = pushkey;
 	else {
 	    if (!pushkey) {
-		if ((input_c = wgetch(wp)) == ERR)
-		    continue;
+		if (macros && macro_match >= 0) {
+		    if (macros[macro_match]->n >= macros[macro_match]->total) {
+			macros[macro_match]->n = 0;
+			macro_match = -1;
+			continue;
+		    }
+		    else 
+			input_c = macros[macro_match]->keys[macros[macro_match]->n++];
+		}
+		else {
+		    if ((input_c = wgetch(wp)) == ERR)
+			continue;
+		}
 	    }
 	    else
 		input_c = pushkey;
@@ -3873,8 +3885,21 @@ void game_loop()
 	if (!keycount && status.notify)
 	    update_status_notify(game[gindex], NULL);
 
+	if (macros && macro_match < 0) {
+	    for (i = 0; macros[i]; i++) {
+		if ((macros[i]->mode == -1 || macros[i]->mode == d->mode) &&
+			input_c == macros[i]->c) {
+		    input_c = macros[i]->keys[macros[i]->n++];
+		    macro_match = i;
+		    break;
+		}
+	    }
+	}
+
 	if ((n = globalkeys()) == 1) {
-	    keycount = 0;
+	    if (macro_match == -1)
+		keycount = 0;
+
 	    continue;
 	}
 	else if (n == -1)

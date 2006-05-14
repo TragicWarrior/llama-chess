@@ -287,9 +287,9 @@ void set_default_keys()
     add_key_binding(&global_keys, do_global_next_game, '>', "next game", 1);
     add_key_binding(&global_keys, do_global_prev_game, '<', "previous game", 1);
     add_key_binding(&global_keys, do_global_game_jump, 'J', "jump to game", 1);
-    add_key_binding(&global_keys, do_global_toggle_delete, CTRL('x'), "toggle delete flag", 1);
-    add_key_binding(&global_keys, do_global_delete_game, 'X', "delete the current or flagged games", 0);
-    add_key_binding(&global_keys, do_global_resume_game, 'r', "load a PGN file", 0);
+    add_key_binding(&global_keys, do_global_toggle_delete, 'X', "toggle delete flag", 1);
+    add_key_binding(&global_keys, do_global_delete_game, CTRL('X'), "delete the current or flagged games", 0);
+    add_key_binding(&global_keys, do_global_resume_game, CTRL('r'), "load a PGN file", 0);
     add_key_binding(&global_keys, do_global_save_game, 's', "save game", 0);
     add_key_binding(&global_keys, do_global_toggle_board_details, CTRL('d'), "toggle board details", 0);
     add_key_binding(&global_keys, do_global_toggle_engine_window, 'W', "toggle chess engine IO window", 0);
@@ -357,15 +357,115 @@ done:
     return;
 }
 
+static int parse_key(const char *filename, int lines, char **key)
+{
+    char *p = *key;
+    char *orig = *key;
+    int c = 0;
+
+    if (!key || !key[0])
+	return 0;
+
+    if (*p == '\"') {
+	if (orig[strlen(orig) - 1] != '\"')
+	    errx(EXIT_FAILURE, "%s(%i): unbalanced quotes", filename, lines);
+
+	p++;
+	orig[strlen(orig) - 1] = 0;
+    }
+
+    if (*p == '<') {
+	p++;
+
+	if (strncasecmp(p, "up", 2) == 0) {
+	    c = KEY_UP;
+	    p += 2;
+	}
+	else if (strncasecmp(p, "down", 4) == 0) {
+	    c = KEY_DOWN;
+	    p += 4;
+	}
+	else if (strncasecmp(p, "left", 4) == 0) {
+	    c = KEY_LEFT;
+	    p += 4;
+	}
+	else if (strncasecmp(p, "right", 5) == 0) {
+	    c = KEY_RIGHT;
+	    p += 5;
+	}
+	else if (strncasecmp(p, "home", 4) == 0) {
+	    c = KEY_HOME;
+	    p += 4;
+	}
+	else if (strncasecmp(p, "end", 3) == 0) {
+	    c = KEY_END;
+	    p += 3;
+	}
+	else if (strncasecmp(p, "delete", 6) == 0) {
+	    c = KEY_DC;
+	    p += 6;
+	}
+	else if (strncasecmp(p, "pgup", 4) == 0) {
+	    c = KEY_PPAGE;
+	    p += 4;
+	}
+	else if (strncasecmp(p, "pgdn", 4) == 0) {
+	    c = KEY_NPAGE;
+	    p += 4;
+	}
+	else if (strncasecmp(p, "insert", 5) == 0) {
+	    c = KEY_IC;
+	    p += 5;
+	}
+	else if (strncasecmp(p, "space", 5) == 0) {
+	    c = ' ';
+	    p += 5;
+	}
+	else if (strncasecmp(p, "escape", 6) == 0) {
+	    c = KEY_ESCAPE;
+	    p += 6;
+	}
+	else if (strncasecmp(p, "enter", 5) == 0) {
+	    c = '\n';
+	    p += 5;
+	}
+	else if (*p == '^') {
+	    p++;
+	    c = CTRL(*p++);
+	}
+	else if (*p == 'F' || *p == 'f') {
+	    c = KEY_F(atoi(++p));
+	    p += integer_len(atoi(p));
+	}
+
+	if (!c)
+	    c = *p++;
+
+	if (*p++ != '>')
+	    errx(EXIT_FAILURE, "%s(%i): parse error \"%s\"", filename, lines, 
+		    orig);
+    }
+    else if (*p == '\\') {
+	    p++;
+	    c = *p++;
+    }
+    else
+	c = *p++;
+
+    orig += strlen(orig) - strlen(p);
+    *key = orig;
+    return c;
+}
+
 static void parse_key_binding(const char *filename, int lines, char *val)
 {
-    char mode[64], key[8], func[64], desc[64];
+    char mode[64], key[16], func[64], desc[64];
     int n;
     int m = 0;
-    int c;
+    int c = 0;
     int f;
-    char *p;
     int i;
+    char *p;
 
     n = sscanf(val, "%s %s %s %s", mode, key, func, desc);
 
@@ -383,55 +483,7 @@ static void parse_key_binding(const char *filename, int lines, char *val)
 		mode);
 
     p = key;
-
-    if (*p == '\"') {
-	if (key[strlen(key) - 1] != '\"')
-	    errx(EXIT_FAILURE, "%s(%i): unbalanced quotes", filename, lines);
-
-	p++;
-	key[strlen(key) - 1] = 0;
-    }
-
-    if (strcasecmp(p, "up") == 0)
-	c = KEY_UP;
-    else if (strcasecmp(p, "down") == 0)
-	c = KEY_DOWN;
-    else if (strcasecmp(p, "left") == 0)
-	c = KEY_LEFT;
-    else if (strcasecmp(p, "right") == 0)
-	c = KEY_RIGHT;
-    else if (strcasecmp(p, "home") == 0)
-	c = KEY_HOME;
-    else if (strcasecmp(p, "end") == 0)
-	c = KEY_END;
-    else if (strcasecmp(p, "delete") == 0)
-	c = KEY_DC;
-    else if (strcasecmp(p, "pgup") == 0)
-	c = KEY_PPAGE;
-    else if (strcasecmp(p, "pgdn") == 0)
-	c = KEY_NPAGE;
-    else if (strcasecmp(p, "insert") == 0)
-	c = KEY_IC;
-    else if (strcasecmp(p, "space") == 0)
-	c = ' ';
-    else if (*p == '\\') {
-	p++;
-
-	switch (*p) {
-	    case 'n':
-		c = '\n';
-		break;
-	    default:
-		c = '\\';
-		break;
-	}
-    }
-    else if (*p == '^')
-	c = CTRL(*(p + 1));
-    else if (*p == 'F' || *p == 'f')
-	c = KEY_F(atoi(++p));
-    else
-	c = *p;
+    c = parse_key(filename, lines, &p);
 
     if (m != -1) {
 	for (i = 0; global_keys[i]; i++) {
@@ -467,6 +519,53 @@ static void parse_key_binding(const char *filename, int lines, char *val)
 	    update_key(global_keys, config_keys[f], c, (n > 3) ? desc : NULL);
 	    break;
     }
+}
+
+static void parse_macro(const char *filename, int lines, char *val)
+{
+    char mode[64], key[8], keys[64];
+    int n;
+    int m;
+    int c;
+    int i = 0;
+    char *p;
+
+    n = sscanf(val, "%s %s %s", mode, key, keys);
+
+    if (n != 3)
+	errx(EXIT_FAILURE, "%s(%i): too few arguments", filename, lines);
+
+    if (strcasecmp(mode, "history") == 0)
+	m = MODE_HISTORY;
+    else if (strcasecmp(mode, "play") == 0)
+	m = MODE_PLAY;
+    else if (strcasecmp(mode, "edit") == 0)
+	m = MODE_EDIT;
+    else if (strcasecmp(mode, "any") == 0)
+	m = -1;
+    else
+	errx(EXIT_FAILURE, "%s(%i): invalid game mode \"%s\"", filename, lines,
+		mode);
+
+    p = key;
+    c = parse_key(filename, lines, &p);
+
+    if (macros)
+	for (i = 0; macros[i]; i++);
+
+    macros = Realloc(macros, (i + 2) * sizeof(struct macro_s));
+    macros[i] = Calloc(1, sizeof(struct macro_s));
+    macros[i]->c = c;
+    macros[i]->mode = m;
+    p = keys;
+
+    while ((c = parse_key(filename, lines, &p)) != 0) {
+	macros[i]->keys = Realloc(macros[i]->keys, (macros[i]->total + 2) *
+		sizeof(int));
+	macros[i]->keys[macros[i]->total++] = c;
+    }
+
+    macros[++i] = NULL;
 }
 
 void parse_rcfile(const char *filename)
@@ -634,6 +733,8 @@ void parse_rcfile(const char *filename)
 		    &config.color[CONF_HISTORY_MENU_LG]);
 	else if (strcmp(var, "bind") == 0)
 	    parse_key_binding(filename, lines, val);
+	else if (strcmp(var, "macro") == 0)
+	    parse_macro(filename, lines, val);
 	else if (strcmp(var, "cbind") == 0) {
 	    config.keys = Realloc(config.keys, (k + 2) *
 		    sizeof(struct config_key_s *));

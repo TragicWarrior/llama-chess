@@ -36,6 +36,14 @@ struct key_s {
     int r;
 };
 
+struct macro_s {
+    int c;
+    int *keys;
+    int n;
+    int total;
+    int mode;
+} **macros;
+
 struct key_s **history_keys;
 key_func do_history_jump_next;
 key_func do_history_jump_prev;
