@@ -1,3 +1,29 @@
+CBoard version 0.2.4
+--------------------
+libchess: Castling bugfix.
+
+You can now customize the key bindings for each game mode. The old "bind"
+configuration parameter has been renamed to "cbind". The new "bind" works like
+this: 
+
+    bind  <game_mode>  <key>  <command>  [alternate_description]
+
+where game_mode is one of play, history or edit. The command is the command
+associated with the game_mode. See doc/config.example for the default
+bindings.
+
+Added macros. When pressing a single key multiple keys can be "pressed"
+without interaction. This adds a configuration parameter "macro" which looks
+like this:
+
+    macro  <game_mode>  <key>  <key_sequence>
+
+It's kinda like "bind" but with a key_sequence instead of a command so make
+sure you specify all the "bind" stuff before "macro" stuff. It's also
+different in that you can specify "any" as a game_mode so you can access the
+global keys.
+
+
 CBoard version 0.2.3
 --------------------
 Added non-blocking message windows, input dialogs and menus. This means that
