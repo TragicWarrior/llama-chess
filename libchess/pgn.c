@@ -1887,7 +1887,6 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
     }
 }
 
-#ifdef WITH_COMPRESSED
 static char *compression_cmd(const char *filename, int expand)
 {
     static char command[FILENAME_MAX];
@@ -1938,7 +1937,6 @@ static char *compression_cmd(const char *filename, int expand)
 
     return NULL;
 }
-#endif
 
 /*
  * Returns a file pointer associated with 'filename' or NULL on error with
@@ -1949,17 +1947,14 @@ static char *compression_cmd(const char *filename, int expand)
 FILE *pgn_open(const char *filename)
 {
     FILE *fp = NULL;
-#ifdef WITH_COMPRESSED
     FILE *tfp = NULL;
     char buf[LINE_MAX];
     char *p;
     char *command = NULL;
-#endif
 
     if (access(filename, R_OK) == -1)
 	return NULL;
 
-#ifdef WITH_COMPRESSED
     if ((command = compression_cmd(filename, 1)) != NULL) {
 	if ((tfp = tmpfile()) == NULL)
 	    return NULL;
@@ -1981,12 +1976,6 @@ FILE *pgn_open(const char *filename)
     }
 
     return tfp;
-#else
-    if ((fp = fopen(filename, "r")) == NULL)
-	return NULL;
-
-    return fp;
-#endif
 }
 
 /* 
@@ -1995,10 +1984,8 @@ FILE *pgn_open(const char *filename)
  */
 int pgn_is_compressed(const char *filename)
 {
-#ifdef WITH_COMPRESSED
     if (compression_cmd(filename, 0))
 	return E_PGN_OK;
-#endif
 
     return E_PGN_ERR;
 }

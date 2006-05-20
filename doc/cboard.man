@@ -225,7 +225,7 @@ default is
 .It Cm pattern Ar filter
 When in the file browser you can filter what is displayed with this value.
 Directories, including hidden directories, are always displayed reguardless of
-the pattern. The default is `*.pgn'.
+the pattern. The default is `*.pgn*'.
 .El
 .
 .Sh COLORS

@@ -301,7 +301,7 @@ void set_config_defaults()
 {
     struct stat st;
 
-    config.pattern = strdup("*.pgn");
+    config.pattern = strdup("*.pgn*");
     config.engine_cmd = strdup("gnuchess --xboard");
     config.jumpcount = 5;
     config.linegraphics = 1;
