@@ -114,7 +114,7 @@ static void set_menu_vars(int c, int rows, int items, int *item, int *top)
     if (toppos < 0)
 	toppos = 0;
 
-    if (selected > items) {
+    if (selected >= items) {
 	selected = items;
 	toppos = selected - rows + 1;
     }

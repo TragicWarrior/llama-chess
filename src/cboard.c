@@ -2758,14 +2758,17 @@ void history_menu_print(WIN *win)
     int line = m->print_line - 2;
     short pair;
     attr_t attrs;
+    int total;
 
+    for (total = 0; hm[total]; total++);
     wattr_get(win->w, &attrs, &pair, NULL);
     wattroff(win->w, COLOR_PAIR(pair));
     mvwaddch(win->w, m->print_line, 1, *p++);
 
     if (h->hindex == 0 && line == 0)
 	waddch(win->w, ACS_ULCORNER | CP_HISTORY_MENU_LG);
-    else if (!hm[h->hindex + (win->rows - 5) + 1] && line == win->rows - 5)
+    else if ((!hm[h->hindex + (win->rows - 5) + 1] && line == win->rows - 5) ||
+	    (m->top + line == total - 1))
 	waddch(win->w, ACS_LLCORNER | CP_HISTORY_MENU_LG);
     else if (hm[m->top + 1]->ravlevel != h->ravlevel || !h->ravlevel)
 	waddch(win->w, ACS_LTEE | CP_HISTORY_MENU_LG);
