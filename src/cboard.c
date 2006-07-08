@@ -3565,6 +3565,30 @@ void do_global_new_game()
     do_new_game();
 }
 
+void do_global_copy_game()
+{
+    int g = gindex;
+    int i, n;
+    struct userdata_s *d;
+
+    do_global_new_game();
+    n = pgn_history_total(game[g].history);
+
+    // FIXME RAV
+    for (i = 0; i < n; i++)
+	pgn_history_add(&game[gindex], game[g].history[i]->move);
+
+    n = pgn_tag_total(game[g].tag);
+
+    for (i = 0; i < n; i++)
+	pgn_tag_add(&game[gindex].tag, game[g].tag[i]->name,
+		game[g].tag[i]->value);
+
+    d = game[gindex].data;
+    pgn_board_update(&game[gindex], d->b, 
+	    pgn_history_total(game[gindex].hp));
+}
+
 void do_global_new_all()
 {
     construct_message(NULL, YESNO, 1, NULL, NULL, NULL, 

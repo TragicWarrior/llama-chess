@@ -284,6 +284,7 @@ void set_default_keys()
     add_key_binding(&global_keys, do_global_find_prev, '{', "find previous game", 1);
     add_key_binding(&global_keys, do_global_new_game, CTRL('n'), "new game or round", 0);
     add_key_binding(&global_keys, do_global_new_all, CTRL('k'), "new game from scratch", 0);
+    add_key_binding(&global_keys, do_global_copy_game, CTRL('i'), "copy current game", 0);
     add_key_binding(&global_keys, do_global_next_game, '>', "next game", 1);
     add_key_binding(&global_keys, do_global_prev_game, '<', "previous game", 1);
     add_key_binding(&global_keys, do_global_game_jump, 'J', "jump to game", 1);

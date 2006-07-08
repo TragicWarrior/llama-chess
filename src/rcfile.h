@@ -71,6 +71,7 @@ static const struct custom_key_s {
     { -1, "find_prev", do_global_find_prev, 1},
     { -1, "new_game", do_global_new_game, 0},
     { -1, "new_all", do_global_new_all, 0},
+    { -1, "copy_game", do_global_copy_game, 0},
     { -1, "next_game", do_global_next_game, 1},
     { -1, "prev_game", do_global_prev_game, 1},
     { -1, "game_jump", do_global_game_jump, 1},
