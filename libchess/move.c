@@ -1284,7 +1284,7 @@ again:
 	rank = RANKTOINT(*p++);
 
 	if (*p == '=')
-	    promo == *++p;
+	    promo = *++p;
 
 	black_opening(g, b, rank);
 
