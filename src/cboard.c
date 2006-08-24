@@ -36,12 +36,12 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
+#ifdef HAVE_GLOB_H
+#include <glob.h>
 #endif
 
-#ifdef HAVE_WORDEXP_H
-#include <wordexp.h>
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
 #endif
 
 #ifdef HAVE_DIRENT_H
@@ -332,14 +332,6 @@ void view_annotation(HISTORY *h)
 		'n', 0, "%s", NO_ANNOTATIONS);
 }
 
-static int sort_files(const void *a, const void *b)
-{
-    struct file_s **aa = (struct file_s **)a;
-    struct file_s **bb = (struct file_s **)b;
-
-    return strcmp((*aa)->name, (*bb)->name);
-}
-
 void free_file_browser()
 {
     int i;
@@ -366,22 +358,19 @@ struct menu_item_s **get_file_items(WIN *win)
     struct menu_item_s **items = m->items;
     char *p;
     char pattern[255];
-    wordexp_t w;
     int i, n = 0;
     struct stat st;
-    int which = 1;
+    int which = 2;
     int len;
-    int x = WRDE_NOCMD;
-    int d = 0;
+    int x = GLOB_ERR;
+    int ret;
+    glob_t g;
 
     /*
-     * First find directories (including hidden) in the working directory.
-     * Then apply the config.pattern to regular files.
+     * First find hidden directories in the working directory. Then non-hidden
+     * directories, then apply the config.pattern to regular files.
      */
-    if ((p = word_split_append(path, '/', ".* *")) == NULL)
-	return NULL;
-
-    strncpy(pattern, p, sizeof(pattern));
+    snprintf(pattern, sizeof(pattern), "%s/.?*", path);
 
     if (items) {
 	for (i = 0; items[i]; i++)
@@ -393,24 +382,24 @@ struct menu_item_s **get_file_items(WIN *win)
     free_file_browser();
     m->nofree = 1;
 
-new_we:
-    if (wordexp(pattern, &w, x) != 0) {
-	cmessage(ERROR, ANYKEY, "Error in pattern\n%s", pattern);
+new_glob:
+    if ((ret = glob(pattern, x, NULL, &g)) != 0 && ret != GLOB_NOMATCH) {
+	cmessage(ERROR, ANYKEY, "glob() failed:\n%s", pattern);
 	return NULL;
     }
 
-    for (i = 0; i < w.we_wordc; i++) {
+    for (i = 0; i < g.gl_pathc; i++) {
 	struct tm *tp;
 	char tbuf[16];
 	char sbuf[64];
 
-	if (stat(w.we_wordv[i], &st) == -1)
+	if (stat(g.gl_pathv[i], &st) == -1)
 	    continue;
 
-	if ((p = strrchr(w.we_wordv[i], '/')) != NULL)
+	if ((p = strrchr(g.gl_pathv[i], '/')) != NULL)
 	    p++;
 	else
-	    p = w.we_wordv[i];
+	    p = g.gl_pathv[i];
 
 	if (which) {
 	    if (!S_ISDIR(st.st_mode))
@@ -426,7 +415,7 @@ new_we:
 
 	files = Realloc(files, (n + 2) * sizeof(struct file_s *));
 	files[n] = Malloc(sizeof(struct file_s));
-	files[n]->path = strdup(w.we_wordv[i]);
+	files[n]->path = strdup(g.gl_pathv[i]);
 	len = strlen(p) + 2;
 	files[n]->name = Malloc(len);
 	strcpy(files[n]->name, p);
@@ -465,20 +454,18 @@ new_we:
     which--;
     files[n] = NULL;
 
-    if (which == 0) {
-	d = n;
-	qsort(files, n, sizeof(struct file_s *), sort_files);
-
-	if ((p = word_split_append(path, '/', config.pattern)) == NULL)
-	    return NULL;
-
-	strncpy(pattern, p, sizeof(pattern));
-	x |= WRDE_REUSE;
-	goto new_we;
+    if (which > 0) {
+	snprintf(pattern, sizeof(pattern), "%s/*", path);
+	globfree(&g);
+	goto new_glob;
+    }
+    else if (which == 0) {
+	snprintf(pattern, sizeof(pattern), "%s/%s", path, config.pattern);
+	x |= GLOB_APPEND;
+	goto new_glob;
     }
 
-    wordfree(&w);
-    qsort(files + d, i, sizeof(struct file_s *), sort_files);
+    globfree(&g);
 
     for (i = 0; files[i]; i++) {
 	items = Realloc(items, (i+2) * sizeof(struct menu_item_s *));
@@ -581,7 +568,7 @@ void file_browser(void *arg)
     char path[FILENAME_MAX];
 
     if (config.savedirectory) {
-	if ((p = word_expand(config.savedirectory)) == NULL)
+	if ((p = pathfix(config.savedirectory)) == NULL)
 	    return;
 
 	strncpy(path, p, sizeof(path));
@@ -3262,7 +3249,7 @@ void do_load_file(WIN *win)
 	return;
     }
 
-    if ((tmp = word_expand(tmp)) == NULL)
+    if ((tmp = pathfix(tmp)) == NULL)
 	goto done;
 
     if ((fp = pgn_open(tmp)) == NULL) {
@@ -3315,7 +3302,7 @@ void do_game_save(WIN *win)
     char tfile[FILENAME_MAX];
     char *p;
 
-    if (!tmp || (tmp = word_expand(tmp)) == NULL)
+    if (!tmp || (tmp = pathfix(tmp)) == NULL)
 	goto done;
 
     if (pgn_is_compressed(tmp)) {

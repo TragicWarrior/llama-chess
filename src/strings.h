@@ -75,7 +75,6 @@
 #define E_DUPLICATE_TAG	"Could not add duplicate tag"
 #define E_DELETE_GAME	"Cannot delete last game."
 #define E_A2A4_PARSE	"Parse error. Probably a bug."
-#define E_PGN_PARSE	"PGN parse error."
 #define E_FEN_PARSE	"FEN parse error."
 #define E_BROKEN_PIPE	"Broken pipe. Quitting."
 #define E_NOTADIR	"Not a directory."

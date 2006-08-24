@@ -192,7 +192,7 @@ the board. This can be toggled with the `d' key.
 .Pp
 .It Cm save_directory Pa path
 If set, the default directory where games will be saved and restored from.
-Tildes `~' and environment variables are supported.
+A tilde `~' will be expanded to your home directory.
 .Pp
 .It Cm mpl Ar integer
 The maximum number of full moves to write per line when saving. If
@@ -223,9 +223,10 @@ default is
 .Ar on .
 .Pp
 .It Cm pattern Ar filter
-When in the file browser you can filter what is displayed with this value.
-Directories, including hidden directories, are always displayed reguardless of
-the pattern. The default is `*.pgn*'.
+When in the file browser you can filter what is displayed with a
+.Xr glob 7
+pattern. Directories, including hidden directories, are always
+displayed reguardless of the pattern. The default is `*.pgn*'.
 .El
 .
 .Sh COLORS
@@ -314,7 +315,8 @@ reserved by the PGN standard.
 .Sh SEE ALSO
 .Xr gnuchess 6 ,
 .Xr ncurses 3 ,
-.Xr wordexp 3 ,
+.Xr glob 3 ,
+.Xr glob 7 ,
 .Xr regex 7
 .
 .Sh AUTHORS

@@ -35,6 +35,10 @@
 #include <panel.h>
 #endif
 
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 #include "chess.h"
 #include "common.h"
 #include "conf.h"

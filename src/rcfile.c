@@ -33,6 +33,10 @@
 #include <ncurses.h>
 #endif
 
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 #include "chess.h"
 #include "conf.h"
 #include "misc.h"

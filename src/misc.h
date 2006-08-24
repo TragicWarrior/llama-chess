@@ -28,7 +28,6 @@ char *itoa(long n);
 int integer_len(long n);
 int isinteger(const char *str);
 FILE *open_file(const char *filename);
-char *word_expand(const char *);
-char *word_split_append(const char *, int, char *);
+char *pathfix(const char *);
 
 #endif
