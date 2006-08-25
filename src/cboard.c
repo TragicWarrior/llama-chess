@@ -363,7 +363,9 @@ struct menu_item_s **get_file_items(WIN *win)
     int which = 2;
     int len;
     int x = GLOB_ERR;
+#ifdef HAVE_GLOB_NOMATCH
     int ret;
+#endif
     glob_t g;
 
     /*
@@ -383,7 +385,11 @@ struct menu_item_s **get_file_items(WIN *win)
     m->nofree = 1;
 
 new_glob:
+#ifdef HAVE_GLOB_NOMATCH
     if ((ret = glob(pattern, x, NULL, &g)) != 0 && ret != GLOB_NOMATCH) {
+#else
+    if (glob(pattern, x, NULL, &g) != 0) {
+#endif
 	cmessage(ERROR, ANYKEY, "glob() failed:\n%s", pattern);
 	return NULL;
     }

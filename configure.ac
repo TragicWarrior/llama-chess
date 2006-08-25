@@ -63,6 +63,14 @@ AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
 		select socket strcasecmp strdup strerror strrchr strstr \
 		vasprintf])
 
+AC_TRY_COMPILE([#include <glob.h>], [
+		int n = GLOB_NOMATCH;
+		int main() {}], [glob_nomatch=yes], [glob_nomatch=no])
+
+if test "$glob_nomatch" = "yes"; then
+    AC_DEFINE([HAVE_GLOB_NOMATCH], 1, [Define if glob.h defines GLOB_NOMATCH.])
+fi
+
 AC_DEFUN([AC_DEBUG],
 [
     if test "$1"; then
