@@ -1420,6 +1420,10 @@ static int read_file(FILE *fp)
 	 */
 	if (parse_error) {
 	    pgn_ret = E_PGN_PARSE;
+
+	    if (!game)
+		pgn_new_game();
+
 	    SET_FLAG(game[gindex].flags, GF_PERROR);
 	}
 
