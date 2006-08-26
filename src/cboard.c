@@ -3741,6 +3741,7 @@ void game_loop()
     int error_recover = 0;
     struct userdata_s *d = game[gindex].data;
     int macro_match = -1;
+    char *iobuf = NULL;
 
     gindex = gtotal - 1;
 
@@ -3813,8 +3814,22 @@ void game_loop()
 				}
 			    }
 			    else {
-				if (len)
-				    parse_engine_output(&game[i], fdbuf);
+				if (len) {
+				    if (iobuf)
+					iobuf = Realloc(iobuf, len + 
+						strlen(iobuf) + 1);
+				    else
+					iobuf = Calloc(1, len + 1);
+
+				    strcat(iobuf, fdbuf);
+
+				    if (iobuf[strlen(iobuf) - 1] != '\n')
+					continue;
+
+				    parse_engine_output(&game[i], iobuf);
+				    free(iobuf);
+				    iobuf = NULL;
+				}
 			    }
 			}
 
