@@ -339,12 +339,11 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
 	menu_print_func *pfunc, window_exit_func *efunc)
 {
     WIN *win;
-    int h = 1, w = 1;
     struct menu_input_s *m;
 
     m = Calloc(1, sizeof(struct menu_input_s));
-    win = window_create(rows, cols, (y >= 0) ? y : CALCPOSY(h), 
-	    (x >= 0) ? x : CALCPOSX(w), display_menu, m, efunc);
+    win = window_create((rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols, 
+	    (y >= 0) ? y : 0, (x >= 0) ? x : 0, display_menu, m, efunc);
     m = win->data;
     m->ystatic = y;
     m->xstatic = x;

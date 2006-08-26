@@ -3759,7 +3759,7 @@ void game_loop()
     flushinp();
     update_all(game[gindex]);
     update_tag_window(game[gindex].tag);
-    wtimeout(boardw, 70);
+    wtimeout(boardw, WINDOW_TIMEOUT);
 
     while (!quit) {
 	int n = 0, i;

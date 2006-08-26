@@ -24,6 +24,8 @@
 #include <string.h>
 #include <errno.h>
 #include <pwd.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
