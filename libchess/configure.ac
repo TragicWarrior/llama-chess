@@ -29,6 +29,10 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([fcntl.h limits.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([err.h],, [AC_CHECK_FUNCS([fputs_unlocked putwc_unlocked \
+		 putw_unlocked])])
+
+AM_CONDITIONAL([NO_ERR_H], [test "x$ac_cv_header_err_h" = "xno"])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -39,7 +43,9 @@ dnl Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRFTIME
-AC_CHECK_FUNCS([bzero isascii memset strcasecmp strdup])
+AC_CHECK_FUNCS([bzero isascii memset strcasecmp strdup strsep])
+
+AM_CONDITIONAL([NO_STRSEP], [test "x$ac_cv_func_strsep" = "xno"])
 
 AC_DEFUN([AC_DEBUG],
 [

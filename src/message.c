@@ -25,8 +25,12 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
+#ifdef HAVE_CURSES_H
+#include <curses.h>
 #endif
 
 #ifdef HAVE_PANEL_H

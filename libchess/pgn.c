@@ -24,13 +24,13 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <pwd.h>
-#include <err.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <err.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -719,25 +719,25 @@ static void set_default_tags(GAME *g)
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    if (pgn_tag_add(&g->tag, "Event", "?"))
+    if (pgn_tag_add(&g->tag, "Event", "?") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Site", "?"))
+    if (pgn_tag_add(&g->tag, "Site", "?") != E_PGN_OK)
 	warn("pgn_tag_add()");
 	
-    if (pgn_tag_add(&g->tag, "Date", tbuf))
+    if (pgn_tag_add(&g->tag, "Date", tbuf) != E_PGN_OK)
 	warn("pgn_tag_add()");
 	
-    if (pgn_tag_add(&g->tag, "Round", "-"))
+    if (pgn_tag_add(&g->tag, "Round", "-") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "White", pw->pw_gecos))
+    if (pgn_tag_add(&g->tag, "White", pw->pw_gecos) != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Black", "?"))
+    if (pgn_tag_add(&g->tag, "Black", "?") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Result", "*"))
+    if (pgn_tag_add(&g->tag, "Result", "*") != E_PGN_OK)
 	warn("pgn_tag_add()");
 }
 

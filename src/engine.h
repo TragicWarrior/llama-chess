@@ -19,6 +19,13 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+/*
+ * Solaris 5.9
+ */
+#ifndef _PATH_DEV
+#define _PATH_DEV	"/dev/"
+#endif
+
 #define RETURN(d)	{d->engine->status = ENGINE_READY; return;}
 
 enum {

@@ -28,20 +28,41 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 dnl Checks for library functions.
-AC_CHECK_LIB(ncurses, initscr, ,
-	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
+AC_CHECK_LIB(curses, initscr, ,
+	     AC_CHECK_LIB(ncurses, initscr, ,
+	     [AC_MSG_ERROR([Missing or incomplete curses installation.])]))
 AC_CHECK_LIB(panel, new_panel, ,
-	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
+	     [AC_MSG_ERROR([Missing or incomplete curses installation.])])
 AC_CHECK_LIB(form, new_form, ,
-	     [AC_MSG_ERROR([Missing or incomplete ncurses installation.])])
+	     [AC_MSG_ERROR([Missing or incomplete curses installation.])])
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h paths.h sys/socket.h limits.h sys/time.h unistd.h \
-		  stdlib.h string.h strings.h ncurses.h panel.h form.h \
-		  getopt.h sys/param.h regex.h glob.h])
+		  stdlib.h string.h strings.h curses.h panel.h form.h wchar.h \
+		  getopt.h sys/param.h regex.h glob.h stdarg.h paths.h])
+AC_CHECK_HEADERS([err.h],, [AC_CHECK_FUNCS([fputs_unlocked putwc_unlocked \
+		 putw_unlocked])])
+
+AM_CONDITIONAL([NO_ERR_H], [test "x$ac_cv_header_err_h" = "xno"])
+
+AC_TRY_COMPILE([#include <curses.h>], [attr_t n = 0;],
+	       AC_DEFINE([HAVE_ATTR_T], 1, \
+			 [Define if your curses installation contains attr_t.]))
+
+AC_TRY_LINK([#include <err.h>], [extern char *__progname;],
+	       AC_DEFINE([HAVE_PROGNAME], 1, \
+			 [Define if your system has __progname.]))
+
+AC_TRY_COMPILE([#include <glob.h>], [int n = GLOB_NOMATCH;],
+	       AC_DEFINE([HAVE_GLOB_NOMATCH], 1, \
+			 [Define if glob.h defines GLOB_NOMATCH.]))
+
+AC_TRY_COMPILE([#include <form.h>], [FIELDTYPE *t = TYPE_IPV4;],
+	       AC_DEFINE([HAVE_TYPE_IPV4], 1, \
+			 [Define if form.h defines TYPE_IPV4.]))
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -52,6 +73,9 @@ AC_HEADER_TIME
 AC_STRUCT_TM
 
 dnl Checks for library functions.
+AC_FUNC_ALLOCA
+AC_FUNC_MEMCMP
+AC_FUNC_VPRINTF
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
@@ -61,15 +85,13 @@ AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
 		select socket strcasecmp strdup strerror strrchr strstr \
-		vasprintf])
+		vasprintf strsep strchr strncasecmp strpbrk])
 
-AC_TRY_COMPILE([#include <glob.h>], [
-		int n = GLOB_NOMATCH;
-		int main() {}], [glob_nomatch=yes], [glob_nomatch=no])
+AM_CONDITIONAL([NO_STRSEP], [test "x$ac_cv_func_strsep" = "xno"])
 
-if test "$glob_nomatch" = "yes"; then
-    AC_DEFINE([HAVE_GLOB_NOMATCH], 1, [Define if glob.h defines GLOB_NOMATCH.])
-fi
+AC_TRY_LINK([#include <curses.h>], [WINDOW *w; wresize(w, 0, 0);],
+           AC_DEFINE([HAVE_WRESIZE], 1, \
+		     [Define if your curses installation contains wresize().]))
 
 AC_DEFUN([AC_DEBUG],
 [

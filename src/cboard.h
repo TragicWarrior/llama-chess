@@ -137,4 +137,8 @@ void dump_flags(int);
 char *debug_board(BOARD);
 #endif
 
+#ifndef HAVE_PROGNAME
+char *__progname;
+#endif
+
 #endif

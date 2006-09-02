@@ -26,6 +26,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
 #ifdef HAVE_FORM_H
 #include <form.h>
 #endif
@@ -296,9 +300,12 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
 	case FIELD_TYPE_REGEXP:
 	    set_field_type(in->fields[0], TYPE_REGEXP, va_arg(ap, char *));
 	    break;
+/* Solaris 5.9 */
+#ifdef HAVE_TYPE_IPV4
 	case FIELD_TYPE_IPV4:
 	    set_field_type(in->fields[0], TYPE_IPV4);
 	    break;
+#endif
 	default:
 	    set_field_type(in->fields[0], NULL);
 	    break;

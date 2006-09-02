@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <err.h>
 #include <limits.h>
 #include <string.h>
 #include <sys/types.h>
@@ -30,14 +29,22 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <errno.h>
-#include <paths.h>
+#include <err.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
+
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
+#ifdef HAVE_CURSES_H
+#include <curses.h>
 #endif
 
 #ifdef HAVE_PANEL_H

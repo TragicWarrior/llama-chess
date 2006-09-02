@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <err.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -31,9 +30,14 @@
 #include <pwd.h>
 #include <signal.h>
 #include <time.h>
+#include <err.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
 #endif
 
 #ifdef HAVE_GLOB_H
@@ -1692,6 +1696,7 @@ static void draw_window_decor()
 	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
 }
 
+#ifdef HAVE_WRESIZE
 static void do_window_resize()
 {
     if (LINES < 24 || COLS < 80)
@@ -1710,6 +1715,7 @@ static void do_window_resize()
     draw_window_decor();
     update_all(game[gindex]);
 }
+#endif
 
 void stop_clock()
 {
@@ -2118,6 +2124,7 @@ void do_play_select()
     start_clock();
 }
 
+/* FIXME: keys with the same function should comma deliminated. */
 static char *build_help(struct key_s **keys)
 {
     int i, nlen = 1, len, t, n;
@@ -2128,6 +2135,9 @@ static char *build_help(struct key_s **keys)
 	return NULL;
 
     for (i = len = t = 0; keys[i]; i++) {
+	if (!keys[i]->d)
+	    continue;
+
 	if (keys[i]->key) {
 	    if (strlen(keys[i]->key) > nlen) {
 		nlen = strlen(keys[i]->key);
@@ -2151,6 +2161,9 @@ static char *build_help(struct key_s **keys)
     p = buf;
 
     for (i = 0; keys[i]; i++) {
+	if (!keys[i]->d)
+	    continue;
+
 	if (keys[i]->key)
 	    n = strlen(keys[i]->key);
 	else
@@ -2219,7 +2232,7 @@ void do_main_help(WIN *win)
 
 void do_more_help(WIN *win)
 {
-    if (win->c == KEY_F(1))
+    if (win->c == KEY_F(1) || win->c == CTRL('g'))
 	construct_message(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT, 0, 
 		NULL, NULL, NULL, do_main_help, 0, 0, "%s", mainhelp);
 }
@@ -2749,13 +2762,21 @@ void history_menu_print(WIN *win)
     int i;
     char *p = m->item->name;
     int line = m->print_line - 2;
-    short pair;
+/*
+ * Solaris 5.9 doesn't have wattr_get() or any function that requires an
+ * attr_t data type.
+ */
+#ifdef HAVE_ATTR_T
     attr_t attrs;
+    short pair;
+#endif
     int total;
 
     for (total = 0; hm[total]; total++);
+#ifdef HAVE_ATTR_T
     wattr_get(win->w, &attrs, &pair, NULL);
     wattroff(win->w, COLOR_PAIR(pair));
+#endif
     mvwaddch(win->w, m->print_line, 1, *p++);
 
     if (h->hindex == 0 && line == 0)
@@ -2768,7 +2789,9 @@ void history_menu_print(WIN *win)
     else
 	waddch(win->w, ACS_VLINE | CP_HISTORY_MENU_LG);
 
+#ifdef HAVE_ATTR_T
     wattron(win->w, COLOR_PAIR(pair) | attrs);
+#endif
 
     for (i = 2; *p; p++, i++)
 	waddch(win->w, (*p == '!') ? *p | A_BOLD : *p);
@@ -3719,9 +3742,11 @@ static int globalkeys()
 		      d->c_col = 1;
 
 		  return 1;
+#ifdef HAVE_WRESIZE
 	case KEY_RESIZE:
 		  do_window_resize();
 		  return 1;
+#endif
 	case 0:
 	default:
 		  for (i = 0; global_keys[i]; i++) {
@@ -3982,7 +4007,7 @@ done:
 void usage(const char *pn, int ret)
 {
     fprintf((ret) ? stderr : stdout, "%s",
-    "Usage: cboard [-hvE] [-VtRS] [-p <file>]\n"
+    "Usage: cboard [-hv] [-p [-VtRSE] <file>]\n"
     "  -p  Load PGN file.\n"
     "  -V  Validate a game file.\n"
     "  -S  Validate and output a PGN formatted game.\n"
@@ -4119,6 +4144,11 @@ int main(int argc, char *argv[])
     FILE *fp;
     int i = 0;
 
+/* Solaris 5.9 */
+#ifndef HAVE_PROGNAME
+    __progname = argv[0];
+#endif
+
     if ((config.pwd = getpwuid(getuid())) == NULL)
 	err(EXIT_FAILURE, "getpwuid()");
 
@@ -4162,8 +4192,8 @@ int main(int argc, char *argv[])
 		validate_only = 1;
 		break;
 	    case 'v':
-		printf("%s (%s)\n%s\n", PACKAGE_STRING, curses_version(), 
-			COPYRIGHT);
+		printf("%s (%s, %s)\n%s\n", PACKAGE_STRING, pgn_version(), 
+			curses_version(), COPYRIGHT);
 		exit(EXIT_SUCCESS);
 	    case 'p':
 		filetype = PGN_FILE;

@@ -19,18 +19,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <err.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <err.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
+#ifdef HAVE_CURSES_H
+#include <curses.h>
 #endif
 
 #ifdef HAVE_STRINGS_H
@@ -253,6 +253,7 @@ void set_default_keys()
     add_key_binding(&history_keys, do_history_rav_prev, '-', "previous variation of the previous move", 0);
     add_key_binding(&history_keys, do_history_menu, 'M', "move history tree", 0);
     add_key_binding(&history_keys, do_history_help, KEY_F(1), "help", 0);
+    add_key_binding(&history_keys, do_history_help, CTRL('g'), NULL, 0);
     add_key_binding(&history_keys, do_history_toggle, 'h', "exit history mode", 0);
 
     add_key_binding(&edit_keys, do_edit_select, ' ', "select piece for movement", 0);
@@ -264,6 +265,7 @@ void set_default_keys()
     add_key_binding(&edit_keys, do_edit_enpassant, 'p', "toggle enpassant square", 0);
     add_key_binding(&edit_keys, do_edit_switch_turn, 'w', "toggle turn", 0);
     add_key_binding(&edit_keys, do_edit_help, KEY_F(1), "help", 0);
+    add_key_binding(&history_keys, do_edit_help, CTRL('g'), NULL, 0);
     add_key_binding(&edit_keys, do_edit_exit, 'e', "exit edit mode", 0);
 
     add_key_binding(&play_keys, do_play_select, ' ', "select piece for movement", 0);
@@ -280,6 +282,7 @@ void set_default_keys()
     add_key_binding(&play_keys, do_play_history_mode, 'h', "enter history mode", 0);
     add_key_binding(&play_keys, do_play_edit_mode, 'e', "enter edit mode", 0);
     add_key_binding(&play_keys, do_play_help, KEY_F(1), "help", 0);
+    add_key_binding(&play_keys, do_play_help, CTRL('g'), NULL, 0);
 
     add_key_binding(&global_keys, do_global_tag_edit, CTRL('t'), "edit roster tags", 0);
     add_key_binding(&global_keys, do_global_tag_view, 't', "view roster tags", 0);

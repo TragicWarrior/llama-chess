@@ -18,7 +18,6 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <err.h>
 #include <string.h>
 #include <ctype.h>
 #include <string.h>
@@ -26,6 +25,7 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <err.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

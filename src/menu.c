@@ -25,8 +25,8 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
+#ifdef HAVE_CURSES_H
+#include <curses.h>
 #endif
 
 #ifdef HAVE_PANEL_H
@@ -134,9 +134,17 @@ static void fix_menu_vals(WIN *win)
 {
     struct menu_input_s *m = win->data;
     char buf[COLS - 4];
-    int i = 0, n;
-    int nlen = 0;
+    int i = 0;
+#ifdef HAVE_WRESIZE
+    int n, nlen = 0;
+#endif
 
+    for (i = 0; m->items[i]; i++);
+    m->total = i;
+    snprintf(buf, sizeof(buf), "Item %i %s %i  %s", m->selected + 1,
+	    N_OF_N_STR, m->total, HELP_PROMPT);
+
+#ifdef HAVE_WRESIZE
     if (!m->cstatic) {
 	win->cols = 0;
 
@@ -159,9 +167,6 @@ static void fix_menu_vals(WIN *win)
     if (!m->rstatic)
 	win->rows = i;
 
-    for (i = 0; m->items[i]; i++);
-    m->total = i;
-
     if (!m->rstatic && m->title)
 	win->rows++;
 
@@ -174,9 +179,6 @@ static void fix_menu_vals(WIN *win)
     if (!m->rstatic && win->rows > MAX_MENU_HEIGHT)
 	win->rows = MAX_MENU_HEIGHT;
 
-    snprintf(buf, sizeof(buf), "Item %i %s %i  %s", m->selected + 1,
-	    N_OF_N_STR, m->total, HELP_PROMPT);
-
     if (win->cols < strlen(buf))
 	win->cols = strlen(buf) + 2; // 2 box
 
@@ -185,6 +187,7 @@ static void fix_menu_vals(WIN *win)
 
     wresize(win->w, win->rows, win->cols);
     replace_panel(win->p, win->w);
+#endif
     move_panel(win->p, (m->ystatic == -1) ? CALCPOSY(win->rows) : m->ystatic, 
 	    (m->xstatic == -1) ? CALCPOSX(win->cols) : m->xstatic);
     keypad(win->w, TRUE);
@@ -341,6 +344,14 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
     WIN *win;
     struct menu_input_s *m;
 
+#ifndef HAVE_WRESIZE
+    if (rows <= 0)
+	rows = MAX_MENU_HEIGHT;
+
+    if (cols <= 0)
+	cols = MAX_MENU_WIDTH;
+#endif
+
     m = Calloc(1, sizeof(struct menu_input_s));
     win = window_create((rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols, 
 	    (y >= 0) ? y : 0, (x >= 0) ? x : 0, display_menu, m, efunc);
@@ -348,11 +359,16 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
     m->ystatic = y;
     m->xstatic = x;
 
-    if (rows)
+#ifndef HAVE_WRESIZE
+    m->rstatic = 1;
+    m->cstatic = 1;
+#else
+    if (rows > 0)
 	m->rstatic = 1;
 
-    if (cols)
+    if (cols > 0)
 	m->cstatic = 1;
+#endif
 
     m->print_func = pfunc;
     m->func = func;
