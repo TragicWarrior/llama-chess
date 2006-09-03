@@ -4034,8 +4034,10 @@ void cleanup_all()
     free(config.configfile);
 
     if (config.keys) {
-	for (i = 0; config.keys[i]; i++)
+	for (i = 0; config.keys[i]; i++) {
 	    free(config.keys[i]->str);
+	    free(config.keys[i]);
+	}
 
 	free(config.keys);
     }

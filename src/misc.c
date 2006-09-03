@@ -73,6 +73,9 @@ char *rtrim(char *str)
 {
     int i;
 
+    if (!*str)
+	return str;
+
     for (i = strlen(str) - 1; isspace(str[i]); i--)
 	str[i] = 0;
 
