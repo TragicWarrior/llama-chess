@@ -156,6 +156,15 @@ typedef enum {
      */
     PGN_STOP_ON_ERROR,
 
+#ifdef DEBUG
+    /*
+     * If the following is set to a value > 0 and DEBUG was defined
+     * at compile time then debugging output will be written to
+     * "libchess.debug" in the current directory.
+     */
+    PGN_DEBUG,
+#endif
+
     /*
      * After PGN_PROGRESS amount of bytes have been read from a file, call
      * PGN_PROGRESS_FUNC. The type for PGN_PROGRESS is a long.

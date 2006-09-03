@@ -72,7 +72,7 @@
 #include "cboard.h"
 
 #ifdef DEBUG
-#include "debug.h"
+#include <debug.h>
 #endif
 
 #ifdef WITH_DMALLOC
@@ -4007,7 +4007,12 @@ done:
 void usage(const char *pn, int ret)
 {
     fprintf((ret) ? stderr : stdout, "%s",
+#ifdef DEBUG
+    "Usage: cboard [-hvD] [-p [-VtRSE] <file>]\n"
+    "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
+#else
     "Usage: cboard [-hv] [-p [-VtRSE] <file>]\n"
+#endif
     "  -p  Load PGN file.\n"
     "  -V  Validate a game file.\n"
     "  -S  Validate and output a PGN formatted game.\n"
@@ -4178,8 +4183,17 @@ int main(int argc, char *argv[])
 
     set_defaults();
 
+#ifdef DEBUG
+    while ((opt = getopt(argc, argv, "DEVtSRhp:v")) != -1) {
+#else
     while ((opt = getopt(argc, argv, "EVtSRhp:v")) != -1) {
+#endif
 	switch (opt) {
+#ifdef DEBUG
+	    case 'D':
+		pgn_config_set(PGN_DEBUG, 1);
+		break;
+#endif
 	    case 't':
 		write_custom_tags = 1;
 		break;

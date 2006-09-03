@@ -16,10 +16,9 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#ifdef DEBUG
 #include <stdio.h>
 #include <stdlib.h>
-#include <ncurses.h>
+#include <stdarg.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -31,7 +30,7 @@
 #include <dmalloc.h>
 #endif
 
-void write_debug_output(int file, const char *format, ...)
+void write_debug_output(const char *filename, const char *format, ...)
 {
     FILE *fp = stderr;
     va_list ap;
@@ -41,15 +40,15 @@ void write_debug_output(int file, const char *format, ...)
     vasprintf(&buf, format, ap);
     va_end(ap);
 
-    if (file) {
-	if ((fp = fopen("debug", "a")) == NULL)
+    if (filename) {
+	if ((fp = fopen(filename, "a")) == NULL)
 	    return;
     }
 
     fprintf(fp, "%s", buf);
     fflush(fp);
 
-    if (file)
+    if (filename)
 	fclose(fp);
 
     free(buf);
@@ -78,8 +77,7 @@ char *debug_board(BOARD b)
     return buf;
 }
 
-void dump_board(int file, BOARD b)
+void dump_board(const char *file, BOARD b)
 {
     write_debug_output(file, "%s", debug_board(b));
 }
-#endif

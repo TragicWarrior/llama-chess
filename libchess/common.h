@@ -19,8 +19,16 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#ifdef DEBUG
+#define PGN_DUMP(fmt, args...)	if (dumptofile) DUMP_F("libchess.debug", fmt, ## args)
+#endif
+
 int validate;
 int done_fen_tag;
 int pgn_fen_tag;
+
+#ifdef DEBUG
+int dumptofile;
+#endif
 
 #endif

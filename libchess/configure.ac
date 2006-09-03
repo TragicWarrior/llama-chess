@@ -55,10 +55,7 @@ AC_DEFUN([AC_DEBUG],
 
     AC_CACHE_CHECK([if debugging is wanted], [ac_cv_sys_debug],
 	[ac_cv_sys_debug=no])
-
-    if test "$ac_cv_sys_debug" = "yes"; then
-	CPPFLAGS="$CPPFLAGS -DDEBUG"
-    fi
+    AM_CONDITIONAL([WITH_DEBUG], [test "x$ac_cv_sys_debug" = "xyes"])
 ])
 
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debugging.]),

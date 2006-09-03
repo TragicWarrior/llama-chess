@@ -16,18 +16,14 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#ifdef DEBUG
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#define DUMP(fmt, args...)	(write_debug_output(0, fmt, ## args))
-#define DUMP_F(fmt, args...)	(write_debug_output(1, fmt, ## args))
+#define DUMP(fmt, args...)	write_debug_output(NULL, fmt, ## args)
+#define DUMP_F(file, fmt, args...)	write_debug_output(file, fmt, ## args)
 
-void write_debug_output(int, const char *, ...);
+void write_debug_output(const char *, const char *, ...);
+char *debug_board(BOARD b);
+void dump_board(const char *, BOARD b);
 
-#ifdef CHESS_H
-void dump_board(int which, BOARD b);
-#endif
-
-#endif
 #endif

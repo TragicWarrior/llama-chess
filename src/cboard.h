@@ -131,12 +131,6 @@ void update_status_notify(GAME g, char *fmt, ...);
 void edit_tags(GAME g, BOARD b, int edit);
 void add_custom_tags(TAG ***t);
 
-#ifdef DEBUG
-void dump_board(int, BOARD);
-void dump_flags(int);
-char *debug_board(BOARD);
-#endif
-
 #ifndef HAVE_PROGNAME
 char *__progname;
 #endif

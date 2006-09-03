@@ -107,6 +107,10 @@ void pgn_reset_valid_moves(BOARD b)
 {
     int row, col;
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: resetting valid moves\n", __FILE__, __LINE__);
+#endif
+
     for (row = 0; row < 8; row++) {
 	for (col = 0; col < 8; col++)
 	    b[row][col].valid = 0;
@@ -146,6 +150,10 @@ char *pgn_game_to_fen(GAME g, BOARD b)
     int oldturn = g.turn;
     char enpassant[3] = {0}, *e;
     int castle = 0;
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: creating FEN tag\n", __FILE__, __LINE__);
+#endif
 
     for (i = pgn_history_total(g.hp); i >= g.hindex - 1; i--)
 	pgn_switch_turn(&g);
@@ -271,6 +279,10 @@ void pgn_history_free(HISTORY **h, int start)
 {
     int i;
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: freeing history\n", __FILE__, __LINE__);
+#endif
+
     if (!h || start > pgn_history_total(h))
 	return;
 
@@ -320,6 +332,10 @@ int pgn_history_add(GAME *g, const char *m)
     HISTORY **h = NULL;
     int ri = (g->ravlevel) ? g->rav[g->ravlevel - 1].hindex : 0;
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: adding '%s' to move history\n", __FILE__, __LINE__, m);
+#endif
+
     if (g->ravlevel)
 	o = g->rav[g->ravlevel - 1].hp[ri-1]->rav - g->hp;
     else
@@ -363,6 +379,10 @@ int pgn_board_update(GAME *g, BOARD b, int n)
     int ret = E_PGN_OK;
     int p_error = TEST_FLAG(g->flags, GF_PERROR);
     int black_opening = TEST_FLAG(g->flags, GF_BLACK_OPENING);
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: updating board\n", __FILE__, __LINE__);
+#endif
 
     if (!g->ravlevel && TEST_FLAG(g->flags, GF_BLACK_OPENING))
 	g->turn = BLACK;
@@ -471,6 +491,9 @@ int pgn_piece_to_int(register int p)
 	    break;
     }
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: invalid piece '%c'\n", __FILE__, __LINE__, p);
+#endif
     return E_PGN_ERR;
 }
 
@@ -506,6 +529,10 @@ int pgn_int_to_piece(char turn, int n)
 	    p = '.';
 	    break;
 	default:
+#ifdef DEBUG
+	    PGN_DUMP("%s:%d: unknown piece integer %i\n", __FILE__,
+		    __LINE__, n);
+#endif
 	    return E_PGN_ERR;
 	    break;
     }
@@ -579,6 +606,10 @@ int pgn_tag_add(TAG ***dst, char *name, char *value)
     int len = 0;
     int t = pgn_tag_total(tdata);
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: adding tag\n", __FILE__, __LINE__);
+#endif
+
     if (!name)
 	return E_PGN_ERR;
 
@@ -632,6 +663,12 @@ int pgn_tag_add(TAG ***dst, char *name, char *value)
     tdata[t]->name[0] = toupper(tdata[t]->name[0]);
     tdata[++t] = NULL;
     *dst = tdata;
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: added tag: name='%s' value='%s'\n", __FILE__, __LINE__, 
+	    name, (value) ? value : "null");
+#endif
+
     return E_PGN_OK;
 }
 
@@ -662,6 +699,10 @@ static char *remove_tag_escapes(const char *str)
 void pgn_board_init(BOARD b)
 {
     int row, col;
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: initializing board\n", __FILE__, __LINE__);
+#endif
 
     memset(b, 0, sizeof(BOARD));
 
@@ -749,6 +790,10 @@ void pgn_tag_free(TAG **tags)
     int i;
     int t = pgn_tag_total(tags);
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: freeing tags\n", __FILE__, __LINE__);
+#endif
+
     if (!tags)
 	return;
 
@@ -766,6 +811,9 @@ void pgn_tag_free(TAG **tags)
  */
 void pgn_free(GAME g)
 {
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: freeing game\n", __FILE__, __LINE__);
+#endif
     pgn_history_free(g.history, 0);
     free(g.history);
     pgn_tag_free(g.tag);
@@ -778,6 +826,10 @@ void pgn_free(GAME g)
 void pgn_free_all()
 {
     int i;
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: freeing game data\n", __FILE__, __LINE__);
+#endif
 
     for (i = 0; i < gtotal; i++) {
 	pgn_free(game[i]);
@@ -797,6 +849,9 @@ void pgn_free_all()
 
 static void reset_game_data()
 {
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: resetting game data\n", __FILE__, __LINE__);
+#endif
     pgn_free_all();
     gtotal = gindex = 0;
     pgn_isfile = 0;
@@ -844,7 +899,7 @@ static int move_text(GAME *g, FILE *fp)
     }
 
 #ifdef DEBUG
-    DUMP("%s\n", p);
+    PGN_DUMP("%s\n", p);
     dump_board(0, pgn_board);
 #endif
 
@@ -1209,6 +1264,9 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
     int row = 8, col = 1;
     int moven;
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: FEN line is '%s'\n", __FILE__, __LINE__, str);
+#endif
     strncpy(line, str, sizeof(line));
     s = line;
     pgn_reset_enpassant(b);
@@ -1334,6 +1392,9 @@ int pgn_board_init_fen(GAME *g, BOARD b, char *fen)
     char turn = g->turn;
     char ply = 0;
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: initializing board from FEN\n", __FILE__, __LINE__);
+#endif
     pgn_board_init(tmpboard);
 
     if (!fen) {
@@ -1376,6 +1437,9 @@ int pgn_new_game()
 {
     GAME *g;
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: allocating new game\n", __FILE__, __LINE__);
+#endif
     gindex = ++gtotal - 1;
 
     if ((g = realloc(game, gtotal * sizeof(GAME))) == NULL) {
@@ -1667,7 +1731,7 @@ static int read_file(FILE *fp)
 #ifdef DEBUG
 	*p++ = c;
 
-	DUMP("unparsed: '%s'\n", buf);
+	PGN_DUMP("%s:%d: unparsed: '%s'\n", __FILE__, __LINE__, buf);
 
 	if (strlen(buf) + 1 == sizeof(buf))
 	    bzero(buf, sizeof(buf));
@@ -1706,8 +1770,15 @@ int pgn_parse(FILE *fp)
     fseek(fp, 0, SEEK_END);
     pgn_fsize = ftell(fp);
     fseek(fp, offset, SEEK_SET);
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: BEGIN parsing...\n", __FILE__, __LINE__);
+#endif
     pgn_ret = read_file(fp);
     fclose(fp);
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: END parsing...\n", __FILE__, __LINE__);
+#endif
 
     if (gtotal < 1)
 	pgn_new_game();
@@ -1798,6 +1869,10 @@ static void putstring(FILE *fp, char *str, int *len)
 static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
 {
     int i;
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: writing comments and nag\n", __FILE__, __LINE__);
+#endif
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
 	if (h->nag[i]) {
@@ -1956,6 +2031,10 @@ FILE *pgn_open(const char *filename)
     char *p;
     char *command = NULL;
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: BEGIN opening %s\n", __FILE__, __LINE__, filename);
+#endif
+
     if (access(filename, R_OK) == -1)
 	return NULL;
 
@@ -2045,6 +2124,12 @@ int pgn_config_set(pgn_config_flag f, ...)
 	case PGN_PROGRESS_FUNC:
 	    pgn_config.pfunc = va_arg(ap, pgn_progress *);
 	    break;
+#ifdef DEBUG
+	case PGN_DEBUG:
+	    n = va_arg(ap, int);
+	    dumptofile = (n > 0) ? 1 : 0;
+	    break;
+#endif
 	default:
 	    ret = E_PGN_ERR;
 	    break;
@@ -2066,6 +2151,10 @@ int pgn_write(FILE *fp, GAME g)
 
     pgn_write_turn = (TEST_FLAG(g.flags, GF_BLACK_OPENING)) ? BLACK : WHITE;
     pgn_tag_sort(g.tag);
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: writing tag section\n", __FILE__, __LINE__);
+#endif
 
     for (i = 0; g.tag[i]; i++) {
 	struct tm tp;
@@ -2148,6 +2237,9 @@ int pgn_write(FILE *fp, GAME g)
 		pgn_tag_add_escapes(g.tag[i]->value) : "");
     }
 
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: writing move section\n", __FILE__, __LINE__);
+#endif
     Fputc('\n', fp, &len);
     g.hp = g.history;
     ravlevel = pgn_mpl = 0;
@@ -2173,6 +2265,10 @@ int pgn_write(FILE *fp, GAME g)
 void pgn_reset_enpassant(BOARD b)
 {
     int r, c;
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: resetting enpassant\n", __FILE__, __LINE__);
+#endif
 
     for (r = 0; r < 8; r++) {
 	for (c = 0; c < 8; c++)

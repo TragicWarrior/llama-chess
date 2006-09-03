@@ -7,6 +7,10 @@ cboard_SOURCES = cboard.c message.c message.h cboard.h misc.c engine.c \
 LDADD = $(top_builddir)/libchess/.libs/libchess.a
 CPPFLAGS += -DDATA_PATH=\"$(pkgdatadir)\" -I$(top_builddir)/libchess
 
+if WITH_DEBUG
+CPPFLAGS += -DDEBUG
+endif
+
 if NO_STRSEP
 cboard_SOURCES += $(top_builddir)/osdep/strsep.c
 endif
