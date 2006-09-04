@@ -288,18 +288,18 @@ char *pgn_game_to_fen(GAME g, BOARD b);
 void pgn_board_init(BOARD b);
 
 /* 
- * Valididate move 'mp' against the game state 'g' and game board 'b' and
- * update board 'b'. 'mp' is updated to SAN format for moves which aren't
- * (a2a4 or e8Q for example). Returns E_PGN_PARSE if there was a move text
- * parsing error, E_PGN_INVALID if the move is invalid, E_PGN_AMBIGUOUS if the
- * move is invalid with ambiguities or E_PGN_OK if * successful.
+ * Valididate move 'm' against the game state 'g' and game board 'b' and
+ * update board 'b'. 'm' is ensured to be in SAN format and 'frfr' will the
+ * file/rank representation of 'm'. Returns E_PGN_PARSE if there was a move
+ * text parsing error, E_PGN_INVALID if the move is invalid, E_PGN_AMBIGUOUS
+ * if the move is invalid with ambiguities or E_PGN_OK if successful.
  */
-int pgn_parse_move(GAME *g, BOARD b, char **mp);
+int pgn_parse_move(GAME *g, BOARD b, char **m, char **frfr);
 
 /*
  * Like pgn_parse_move() but don't modify game flags in 'g' or board 'b'.
  */
-int pgn_validate_move(GAME *g, BOARD b, char **mp);
+int pgn_validate_move(GAME *g, BOARD b, char **m, char **frfr);
 
 /*
  * Returns the total number of moves in 'h' or 0 if there are none.

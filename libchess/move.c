@@ -1020,11 +1020,25 @@ static void black_opening(GAME *g, BOARD b, int rank)
 #endif
 }
 
+static char *format_santofrfr(int promo, int sfile, int srank, int file, 
+	int rank)
+{
+    static char frfr[6] = {0};
+
+    snprintf(frfr, sizeof(frfr), "%c%c%c%c", INTTOFILE(sfile), 
+	    INTTORANK(srank), INTTOFILE(file), INTTORANK(rank));
+
+    if (promo)
+	frfr[4] = pgn_int_to_piece(BLACK, promo);
+
+    return frfr;
+}
+
 /*
  * Converts a2a3 formatted moves to SAN format. The promotion piece should be
  * appended (a7a8q).
  */
-static int frfrtosan(GAME *g, BOARD b, char **m)
+static int frfrtosan(GAME *g, BOARD b, char **m, char **dst)
 {
     char *bp = *m;
     int icon, p, dp, promo = 0;
@@ -1080,6 +1094,7 @@ static int frfrtosan(GAME *g, BOARD b, char **m)
 	if (check)
 	    strcat(bp, (check == CHECK) ? "+" : "#");
 
+	*dst = format_santofrfr(promo, sfile, srank, file, rank);
 	return E_PGN_OK;
     }
 
@@ -1159,59 +1174,21 @@ capture:
 	*bp++ = (check == CHECK) ? '+' : '#';
 
     *bp = check = 0;
+    *dst = format_santofrfr(promo, sfile, srank, file, rank);
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END validating %s\n", __FILE__, __LINE__, *m);
 #endif
     return E_PGN_OK;
 }
 
-/* 
- * Valididate move 'mp' against the game state 'g' and game board 'b' and
- * update board 'b'. 'mp' is updated to SAN format for moves which aren't
- * (frfr or e8Q for example). Returns E_PGN_PARSE if there was a move text
- * parsing error, E_PGN_INVALID if the move is invalid or E_PGN_OK if
- * successful.
- */
-int pgn_parse_move(GAME *g, BOARD b, char **mp)
+static int do_santofrfr(GAME *g, BOARD b, char **san, int *promo, int *sfile, 
+	int *srank, int *file, int *rank)
 {
+    static char frfr[6];
     char *p;
     int piece;
     int i = 0;
-    int srank = 0, sfile = 0, rank, file;
-    int promo = -1;
-    char *m = *mp;
-
-#ifdef DEBUG
-    PGN_DUMP("%s:%d: BEGIN validating '%s' (%s)...\n", __FILE__, __LINE__, m, 
-	    (g->turn == WHITE) ? "white" : "black");
-#endif
-
-    capture = check_testing = 0;
-    srank = rank = file = sfile = promo = piece = 0;
-    find_king_squares(*g, b, &kfile, &krank, &okfile, &okrank);
-
-    if (VALIDCOL(*m) && VALIDROW(*(m + 1)) && VALIDCOL(*(m + 2)) && 
-	    VALIDROW(*(m + 3)))
-	return frfrtosan(g, b, mp);
-    else if (*m == 'O') {
-	if (strcmp(m, "O-O") == 0)
-	    i = KINGSIDE;
-	else if (strcmp(m, "O-O-O") == 0)
-	    i = QUEENSIDE;
-	else
-	    return E_PGN_PARSE;
-
-	if (parse_castle_move(*g, b, i, &sfile, &srank, &file, &rank) !=
-		E_PGN_OK)
-	    return E_PGN_INVALID;
-
-	*m++ = INTTOFILE(sfile);
-	*m++ = INTTORANK(srank);
-	*m++ = INTTOFILE(file);
-	*m++ = INTTORANK(rank);
-	*m = 0;
-	return frfrtosan(g, b, mp);
-    }
+    char *m = *san;
 
 again:
     if (strlen(m) < 2)
@@ -1221,7 +1198,7 @@ again:
 
     while (!isdigit(*--p) && *p != 'O') {
 	if (*p == '=') {
-	    promo = pgn_piece_to_int(i);
+	    *promo = pgn_piece_to_int(i);
 	    i = 0;
 	    break;
 	}
@@ -1250,27 +1227,27 @@ again:
 	for (i = 0; *p; i++) {
 	    if (VALIDCOL(*p)) {
 		if (i > 0)
-		    file = FILETOINT(*p++);
+		    *file = FILETOINT(*p++);
 		else
-		    file = sfile = FILETOINT(*p++);
+		    *file = *sfile = FILETOINT(*p++);
 	    }
 	    else if (VALIDROW(*p)) {
 		if (1 > 1)
-		    rank = RANKTOINT(*p++);
+		    *rank = RANKTOINT(*p++);
 		else
-		    rank = RANKTOINT(*p++);
+		    *rank = RANKTOINT(*p++);
 	    }
 	    else if (*p == 'x') {
-		file = FILETOINT(*++p);
-		rank = RANKTOINT(*++p);
+		*file = FILETOINT(*++p);
+		*rank = RANKTOINT(*++p);
 		capture++;
 	    }
 	    else if (*p == '=') {
-		if (promo == -1 || promo == KING || promo == PAWN)
+		if (*promo == -1 || *promo == KING || *promo == PAWN)
 		    return E_PGN_PARSE;
 
 		*p++ = '=';
-		*p++ = toupper(pgn_int_to_piece(g->turn, promo));
+		*p++ = toupper(pgn_int_to_piece(g->turn, *promo));
 		*p = '\0';
 		break;
 	    }
@@ -1283,15 +1260,15 @@ again:
 	    }
 	}
 
-	black_opening(g, b, rank);
+	black_opening(g, b, *rank);
 
-	if (find_source_square(*g, b, PAWN, &sfile, &srank, file, rank) != 1)
+	if (find_source_square(*g, b, PAWN, sfile, srank, *file, *rank) != 1)
 	    return E_PGN_INVALID;
 
-	if (!promo && (rank == 8 || rank == 1)) {
-	    promo = pgn_piece_to_int('q');
+	if (!*promo && (*rank == 8 || *rank == 1)) {
+	    *promo = pgn_piece_to_int('q');
 	    *p++ = '=';
-	    *p++ = pgn_int_to_piece(WHITE, promo);
+	    *p++ = pgn_int_to_piece(WHITE, *promo);
 	    *p = 0;
 	}
     }
@@ -1315,18 +1292,18 @@ again:
 	     * rfr
 	     */
 	    if (isdigit(*p))
-		srank = RANKTOINT(*p++);
+		*srank = RANKTOINT(*p++);
 	    /*
 	     * f[r]fr
 	     */
 	    else if (VALIDCOL(*p)) {
-		sfile = FILETOINT(*p++);
+		*sfile = FILETOINT(*p++);
 
 		/*
 		 * frfr
 		 */
 		if (isdigit(*p))
-		    srank = RANKTOINT(*p++);
+		    *srank = RANKTOINT(*p++);
 	    }
 
 	    /*
@@ -1343,15 +1320,15 @@ again:
 	 *
 	 * The destination square.
 	 */
-	file = FILETOINT(*p++);
-	rank = RANKTOINT(*p++);
+	*file = FILETOINT(*p++);
+	*rank = RANKTOINT(*p++);
 
 	if (*p == '=')
-	    promo = *++p;
+	    *promo = *++p;
 
-	black_opening(g, b, rank);
+	black_opening(g, b, *rank);
 
-	if ((i = find_source_square(*g, b, piece, &sfile, &srank, file, rank))
+	if ((i = find_source_square(*g, b, piece, sfile, srank, *file, *rank))
 		!= 1 && !check)
 	    return (i == 0) ? E_PGN_INVALID : E_PGN_AMBIGUOUS;
 
@@ -1360,13 +1337,71 @@ again:
 	 * The move is a valid one. Find the source file and rank so we
 	 * can later update the board positions.
 	 */
-	if (find_source_square(*g, b, piece, &sfile, &srank, file, rank)
+	if (find_source_square(*g, b, piece, sfile, srank, *file, *rank)
 		!= 1 && !check)
 	    return E_PGN_INVALID;
 #endif
     }
 
     *p = 0;
+    snprintf(frfr, sizeof(frfr), "%c%c%c%c", INTTOFILE(*sfile), 
+	    INTTORANK(*srank), INTTOFILE(*file), INTTORANK(*rank));
+
+    *san = m;
+    return E_PGN_OK;
+}
+
+/* 
+ * Valididate move 'mp' against the game state 'g' and game board 'b' and
+ * update board 'b'. 'mp' is updated to SAN format for moves which aren't
+ * (frfr or e8Q for example). Returns E_PGN_PARSE if there was a move text
+ * parsing error, E_PGN_INVALID if the move is invalid or E_PGN_OK if
+ * successful.
+ */
+int pgn_parse_move(GAME *g, BOARD b, char **mp, char **dst)
+{
+    int srank = 0, sfile = 0, rank, file;
+    char *m = *mp, *p;
+    int i;
+    int promo = -1;
+
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: BEGIN validating '%s' (%s)...\n", __FILE__, __LINE__, m, 
+	    (g->turn == WHITE) ? "white" : "black");
+#endif
+
+    check_testing = 0;
+    srank = rank = file = sfile = promo = 0;
+    find_king_squares(*g, b, &kfile, &krank, &okfile, &okrank);
+
+    if (VALIDCOL(*m) && VALIDROW(*(m + 1)) && VALIDCOL(*(m + 2)) && 
+	    VALIDROW(*(m + 3)))
+	return frfrtosan(g, b, mp, dst);
+    else if (*m == 'O') {
+	if (strcmp(m, "O-O") == 0)
+	    i = KINGSIDE;
+	else if (strcmp(m, "O-O-O") == 0)
+	    i = QUEENSIDE;
+	else
+	    return E_PGN_PARSE;
+
+	if (parse_castle_move(*g, b, i, &sfile, &srank, &file, &rank) !=
+		E_PGN_OK)
+	    return E_PGN_INVALID;
+
+	*m++ = INTTOFILE(sfile);
+	*m++ = INTTORANK(srank);
+	*m++ = INTTOFILE(file);
+	*m++ = INTTORANK(rank);
+	*m = 0;
+	return frfrtosan(g, b, mp, dst);
+    }
+
+    if ((i = do_santofrfr(g, b, &m, &promo, &sfile, &srank, &file, &rank))
+	    != E_PGN_OK)
+	return i;
+
+    p = m + strlen(m);
 
     if (finalize_move(g, b, promo, sfile, srank, file, rank) != E_PGN_OK)
 	return E_PGN_INVALID;
@@ -1375,7 +1410,8 @@ again:
 	*p++ = (check == CHECK) ? '+' : '#';
 
     *p = check = 0;
-    *mp = m;
+    *dst = format_santofrfr(promo, sfile, srank, file, rank);
+
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END validating %s\n", __FILE__, __LINE__, m);
 #endif
@@ -1385,7 +1421,7 @@ again:
 /*
  * Like pgn_parse_move() but don't modify game flags in 'g' or board 'b'.
  */
-int pgn_validate_move(GAME *g, BOARD b, char **m)
+int pgn_validate_move(GAME *g, BOARD b, char **m, char **dst)
 {
     int ret;
 
@@ -1393,7 +1429,7 @@ int pgn_validate_move(GAME *g, BOARD b, char **m)
     PGN_DUMP("%s:%d: BEGIN validate only\n", __FILE__, __LINE__);
 #endif
     validate = 1;
-    ret = pgn_parse_move(g, b, m);
+    ret = pgn_parse_move(g, b, m, dst);
     validate = 0;
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END validate only\n", __FILE__, __LINE__);

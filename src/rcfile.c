@@ -311,6 +311,7 @@ void set_config_defaults()
 
     config.pattern = strdup("*.pgn*");
     config.engine_cmd = strdup("gnuchess --xboard");
+    config.engine_protocol = 1;
     config.jumpcount = 5;
     config.linegraphics = 1;
     config.saveprompt = 1;
@@ -672,6 +673,16 @@ void parse_rcfile(const char *filename)
 	    config.details = on_or_off(filename, lines, val);
 	else if (strcmp(var, "engine_cmd") == 0)
 	    altengine = strdup(val);
+	else if (strcmp(var, "engine_protocol") == 0) {
+	    if (!isinteger(val))
+		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
+			lines);
+
+	    config.engine_protocol = atoi(val);
+
+	    if (config.engine_protocol != 1 && config.engine_protocol != 2)
+		errx(EXIT_FAILURE, "%s(%i): invalid value", filename, lines);
+	}
 	else if (strcmp(var, "color_board_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BDWINDOW]);
 	else if (strcmp(var, "color_board_selected") == 0)

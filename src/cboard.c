@@ -1005,9 +1005,10 @@ void do_validate_move(char *m)
 {
     struct userdata_s *d = game[gindex].data;
     int n;
+    char *frfr = NULL;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	if ((n = pgn_parse_move(&game[gindex], d->b, &m)) != E_PGN_OK) {
+	if ((n = pgn_parse_move(&game[gindex], d->b, &m, &frfr)) != E_PGN_OK) {
 	    invalid_move(d->n + 1, n, m);
 	    free(m);
 	    return;
@@ -1017,13 +1018,14 @@ void do_validate_move(char *m)
 	pgn_switch_turn(&game[gindex]);
     }
     else {
-	if ((n = pgn_validate_move(&game[gindex], d->b, &m)) != E_PGN_OK) {
+	if ((n = pgn_validate_move(&game[gindex], d->b, &m, &frfr)) != E_PGN_OK) {
 	    invalid_move(d->n + 1, n, m);
 	    free(m);
 	    return;
 	}
 
-	add_engine_command(&game[gindex], ENGINE_THINKING, "%s\n", m);
+	add_engine_command(&game[gindex], ENGINE_THINKING, "%s\n", 
+		(config.engine_protocol == 1) ? frfr : m);
     }
 
     d->sp.srow = d->sp.scol = d->sp.icon = 0;

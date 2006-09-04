@@ -23,6 +23,15 @@
 #define PGN_DUMP(fmt, args...)	if (dumptofile) DUMP_F("libchess.debug", fmt, ## args)
 #endif
 
+struct {
+    int mpl;
+    int stop;
+    int reduced;
+    int fmd;
+    long progress;
+    pgn_progress *pfunc;
+} pgn_config;
+
 int validate;
 int done_fen_tag;
 int pgn_fen_tag;

@@ -25,15 +25,6 @@
 extern char *strptime(const char *, const char *, struct tm *);
 #endif
 
-static struct {
-    int mpl;
-    int stop;
-    int reduced;
-    int fmd;
-    long progress;
-    pgn_progress *pfunc;
-} pgn_config;
-
 static BOARD pgn_board;
 static int nulltags;
 static int tag_section;

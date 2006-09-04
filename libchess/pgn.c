@@ -379,6 +379,7 @@ int pgn_board_update(GAME *g, BOARD b, int n)
     int ret = E_PGN_OK;
     int p_error = TEST_FLAG(g->flags, GF_PERROR);
     int black_opening = TEST_FLAG(g->flags, GF_BLACK_OPENING);
+    char *frfr;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: updating board\n", __FILE__, __LINE__);
@@ -409,7 +410,7 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 	
 	p = h->move;
 
-	if ((ret = pgn_parse_move(g, tb, &p)) != E_PGN_OK)
+	if ((ret = pgn_parse_move(g, tb, &p, &frfr)) != E_PGN_OK)
 	    break;
 
 	pgn_switch_turn(g);
@@ -877,6 +878,7 @@ static int move_text(GAME *g, FILE *fp)
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
+    char *frfr;
 
     while((c = Fgetc(fp)) != EOF) {
 	if (isdigit(c) || isspace(c) || c == '.')
@@ -887,13 +889,13 @@ static int move_text(GAME *g, FILE *fp)
 
     Ungetc(c, fp);
 
-    if (fscanf(fp, " %[a-hPRNBQK1-9#+=Ox-]%n", m, &count) != 1)
+    if (fscanf(fp, " %[a-hPpRrNnBbQqKk1-9#+=Ox-]%n", m, &count) != 1)
 	return 1;
 
     m[MAX_SAN_MOVE_LEN] = 0;
     p = m;
 
-    if (pgn_parse_move(g, pgn_board, &p)) {
+    if (pgn_parse_move(g, pgn_board, &p, &frfr)) {
 	pgn_switch_turn(g);
 	return 1;
     }

@@ -9,6 +9,10 @@
 # protocol should work.
 #engine_cmd	gnuchess --xboard
 
+# The version of the XBoard protocol the engine uses. Version 2 of the
+# protocol supports SAN formatted moves. Version 1 does not.
+#engine_protocol	1
+
 # Send a command to the chess engine each time a new game is started or reset.
 # Can be used more than once to specify as many commands as needed.
 #engine_init	depth 3

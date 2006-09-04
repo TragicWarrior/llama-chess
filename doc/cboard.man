@@ -108,6 +108,13 @@ The chess engine command to execute with any arguments. The default is
 \&". Others haven\&'t been tested but any engine that supports the XBoard
 protocol should work.
 .Pp
+.It Cm engine_protocol Ar protocol
+The version of the XBoard protocol to use. At the moment all this means is
+whether to send SAN formatted moves (protocol version
+.Ar 2 )
+or regular FRFR formatted moves. The default is
+.Ar 1 .
+.Pp
 .It Cm engine_init Ar command
 A command to send to the chess engine each time a new game or round is started
 or reset. Can be specified more than once.
