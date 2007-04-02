@@ -101,6 +101,28 @@ char *itoa(long n)
     return buf;
 }
 
+char *trim_multi(char *value)
+{
+    char *p;
+    int lastc;
+    char *str, *s;
+
+    if (!value || !*value)
+	return value;
+
+    str = Malloc(strlen(value) + 1);
+
+    for (p = value, lastc = 0, s = str; *p; p++) {
+	if (isspace(lastc) && isspace(*p))
+	    continue;
+
+	lastc = *s++ = *p;
+    }
+
+    *s = 0;
+    return str;
+}
+
 int integer_len(long n)
 {
     return strlen(itoa(n));

@@ -237,6 +237,7 @@ static void edit_tag_add_finalize(WIN *w)
     char buf[32];
     struct tm *tm;
     time_t now;
+    char *tmp;
 
     if (!value || !*value) {
 	if (strcasecmp(name, "Round") == 0)
@@ -253,7 +254,9 @@ static void edit_tag_add_finalize(WIN *w)
 	    value = "?";
     }
 
-    pgn_tag_add(&t, name, value);
+    tmp = trim_multi(value);
+    pgn_tag_add(&t, name, tmp);
+    free(tmp);
     m->data = t;
     m->selected = m->total;
 

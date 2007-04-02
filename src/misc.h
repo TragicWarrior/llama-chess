@@ -29,5 +29,6 @@ int integer_len(long n);
 int isinteger(const char *str);
 FILE *open_file(const char *filename);
 char *pathfix(const char *);
+char *trim_multi(char *);
 
 #endif
