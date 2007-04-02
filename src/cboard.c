@@ -471,7 +471,7 @@ new_glob:
     }
     else if (which == 0) {
 	snprintf(pattern, sizeof(pattern), "%s/%s", path, config.pattern);
-	x |= GLOB_APPEND;
+	globfree(&g);
 	goto new_glob;
     }
 

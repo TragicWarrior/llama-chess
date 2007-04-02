@@ -309,7 +309,7 @@ void set_config_defaults()
 {
     struct stat st;
 
-    config.pattern = strdup("*.pgn*");
+    config.pattern = strdup("*.[Pp][Gg][Nn]*");
     config.engine_cmd = strdup("gnuchess --xboard");
     config.engine_protocol = 1;
     config.jumpcount = 5;
