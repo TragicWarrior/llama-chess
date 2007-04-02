@@ -1,4 +1,3 @@
-dnl $Id: configure.ac,v 1.18 2003-02-07 19:27:39 bjk Exp $
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
 AC_INIT(libchess, 0.6, [Ben Kibbey bjk@luxsci.net])
