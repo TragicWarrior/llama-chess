@@ -1748,7 +1748,7 @@ static void update_clocks()
     for (i = 0; i < gtotal; i++) {
 	d = game[i].data;
 
-	if (d->mode == MODE_PLAY) {
+	if (d && d->mode == MODE_PLAY) {
 	    if (d->paused == 1 || TEST_FLAG(d->flags, CF_NEW))
 		continue;
 	    else if (d->paused == -1) {
