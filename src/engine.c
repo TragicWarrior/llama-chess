@@ -381,6 +381,7 @@ static void parse_xboard_line(GAME *g, char *str)
     struct userdata_s *d = g->data;
     int n;
     char *frfr;
+    int count;
 
     p = str;
 
@@ -405,7 +406,13 @@ static void parse_xboard_line(GAME *g, char *str)
 	return;
 
     // We should now have the real move which may be in SAN or frfr format.
-    if (sscanf(p, "%[0-9a-hprnqkxPRNBQKO+=#-]", m) == 1) {
+    if (sscanf(p, "%[0-9a-hprnqkxPRNBQKO+=#-]%n", m, &count) == 1) {
+	/* 
+	 * For engine commands (the '|' key). Don't try and validate them.
+	 */
+	if (count != strlen(p))
+	    RETURN(d);
+
 	if (TEST_FLAG(g->flags, GF_GAMEOVER))
 	    RETURN(d);
 
