@@ -163,6 +163,7 @@
 #define BROWSER_HELP		"File Browser Keys"
 #define BROWSER_CHDIR_TITLE	"Change Directory"
 #define BROWSER_PROMPT		"Type TAB for file browser"
+#define BROWSER_EXPR		"Filename Expression"
 
 /* Miscellaneous strings. */
 #define PRESS_ENTER		"Press ENTER"

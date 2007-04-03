@@ -100,6 +100,7 @@ const char *filebrowser_help = {
     "  a-zA-Z0-9 - jump to item\n" \
     "      ENTER - select item\n" \
     "          ~ - change to home directory\n" \
+    "     CTRL-e - change filename expression\n" \
     "     ESCAPE - abort"
 };
 

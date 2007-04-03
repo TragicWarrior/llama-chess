@@ -549,6 +549,28 @@ void file_browser_home(struct menu_input_s *m)
     m->selected = 0;
 }
 
+void do_file_browser_expression_finalize(WIN *win)
+{
+    struct input_data_s *in = win->data;
+
+    if (config.pattern)
+	free(config.pattern);
+
+    config.pattern = strdup(in->str);
+    free(in->str);
+    free(in);
+    pushkey = REFRESH_MENU;
+}
+
+void file_browser_expression(struct menu_input_s *m)
+{
+    struct input_data_s *in;
+
+    in = Calloc(1, sizeof(struct input_data_s));
+    in->efunc = do_file_browser_expression_finalize;
+    construct_input(BROWSER_EXPR, config.pattern, 1, 1, NULL, NULL, NULL, 0, in, -1);
+}
+
 void file_browser_abort(struct menu_input_s *m)
 {
     pushkey = -1;
@@ -595,6 +617,7 @@ void file_browser(void *arg)
     add_menu_key(&keys, '\n', file_browser_select);
     add_menu_key(&keys, KEY_F(1), file_browser_help);
     add_menu_key(&keys, '~', file_browser_home);
+    add_menu_key(&keys, CTRL('e'), file_browser_expression);
     add_menu_key(&keys, KEY_ESCAPE, file_browser_abort);
     construct_menu(LINES - 4, 0, -1, -1, NULL, 0, get_file_items, keys, in,
 	    file_browser_print, file_browser_finalize);
