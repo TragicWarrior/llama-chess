@@ -180,6 +180,7 @@
 #define UNAVAILABLE	"not available"
 #define HELP_PROMPT	"Type F1 for help"
 #define ENGINE_CMD_TITLE "Engine Command"
+#define ENGINE_IO_TITLE	"Engine IO Window"
 #define N_OF_N_STR	"of"
 #define WHITE_STR	"white"
 #define BLACK_STR	"black"

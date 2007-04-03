@@ -1096,7 +1096,7 @@ void update_engine_window()
 	    mvwprintw(enginew, i + 2, 1, "%s", enginebuf[i]);
     }
 
-    window_draw_title(enginew, "Engine IO Window", COLS, CP_MESSAGE_TITLE,
+    window_draw_title(enginew, ENGINE_IO_TITLE, COLS, CP_MESSAGE_TITLE,
 	    CP_MESSAGE_BORDER);
 }
 
@@ -3351,7 +3351,7 @@ void do_global_toggle_engine_window()
     if (!enginew) {
 	enginew = newwin(LINES, COLS, 0, 0);
 	enginep = new_panel(enginew);
-	window_draw_title(enginew, "Engine IO Window", COLS, CP_MESSAGE_TITLE,
+	window_draw_title(enginew, ENGINE_IO_TITLE, COLS, CP_MESSAGE_TITLE,
 		CP_MESSAGE_BORDER);
 	hide_panel(enginep);
     }
