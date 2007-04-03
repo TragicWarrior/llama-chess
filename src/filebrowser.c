@@ -278,6 +278,9 @@ static void do_file_browser_expression_finalize(WIN *win)
 {
     struct input_data_s *in = win->data;
 
+    if (!in->str)
+	return;
+
     if (config.pattern)
 	free(config.pattern);
 
