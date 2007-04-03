@@ -67,14 +67,6 @@ enum {
     NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
 };
 
-struct file_s {
-    char *path;
-    char *name;
-    char *st;
-};
-
-struct file_s **files;
-
 const char *history_menu_help_str = {
     "    UP/DOWN - previous/next menu item\n" \
     "   HOME/END - first/last menu item\n" \
@@ -91,17 +83,6 @@ const char *mainhelp = {
     "h - history mode keys\n" \
     "e - board edit mode keys\n" \
     "g - global game keys"
-};
-
-const char *filebrowser_help = {
-    "    UP/DOWN - previous/next menu item\n" \
-    "   HOME/END - first/last menu item\n" \
-    "  PGDN/PGUP - next/previous page\n" \
-    "  a-zA-Z0-9 - jump to item\n" \
-    "      ENTER - select item\n" \
-    "          ~ - change to home directory\n" \
-    "     CTRL-e - change filename expression\n" \
-    "     ESCAPE - abort"
 };
 
 const char *naghelp = {
