@@ -5,7 +5,7 @@ cboard_SOURCES = cboard.c message.c message.h cboard.h misc.c engine.c \
 		 menu.c menu.h tags.c tags.h keys.h
 
 LDADD = $(top_builddir)/libchess/libchess.a
-CPPFLAGS += -DDATA_PATH=\"$(pkgdatadir)\" -I$(top_builddir)/libchess
+CPPFLAGS += -DDATA_PATH=\"$(pkgdatadir)\" -I$(top_srcdir)/libchess
 
 if WITH_DEBUG
 CPPFLAGS += -DDEBUG
