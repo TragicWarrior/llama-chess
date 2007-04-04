@@ -159,7 +159,8 @@ static int display_message(WIN *win)
 	    CP_MESSAGE_BORDER);
 
     for (i = 0; m->lines[i]; i++)
-	mvwprintw(win->w, (win->title) ? 2 + i: 1 + i, (m->center) ?
+	mvwprintw(win->w, (win->title) ? 2 + i: 1 + i, 
+		(m->center || (!i && !m->lines[i+1])) ?
 		CENTERX(m->w, m->lines[i]) : 1, "%s", m->lines[i]);
 
     if (m->extra)

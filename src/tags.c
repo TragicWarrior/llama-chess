@@ -428,7 +428,7 @@ static void view_tag_value(struct menu_input_s *m)
     char buf[COLS - 4];
 
     snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_VIEW_TAG_TITLE, item->name);
-    cmessage(buf, ANYKEY, "%s", item->value);
+    message(buf, ANYKEY, "%s", item->value);
 }
 
 static void tag_print(WIN *win)
