@@ -160,7 +160,7 @@ char *pathfix(const char *str)
 char *str_etc(const char *str, int maxlen, int rev)
 {
     int len;
-    static char buf[80], *p = buf;
+    static char buf[LINE_MAX], *p = buf;
     int i;
 
     if (!str)

@@ -443,8 +443,10 @@ static void tag_print(WIN *win)
 	    len = n;
     }
 
+    i = win->cols - len - 4;
+
     mvwprintw(win->w, m->print_line, 1, "%*s: %-*s", len, m->item->name, 
-	    win->cols - len - 4, m->item->value);
+	    i, str_etc(m->item->value, i, 0));
 }
 
 void edit_tags(GAME g, BOARD b, int edit)
