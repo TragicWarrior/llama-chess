@@ -119,7 +119,7 @@ static void build_message_lines(const char *title, const char *prompt,
 	    continue;
 
 	lines = Realloc(lines, (total + 2) * sizeof(char *));
-	lines[total++] = strdup(tmp);
+	lines[total++] = strdup(trim(tmp));
     }
 
     lines[total] = NULL;
