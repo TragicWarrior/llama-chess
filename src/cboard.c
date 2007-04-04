@@ -72,41 +72,6 @@
 #include <dmalloc.h>
 #endif
 
-static char *str_etc(const char *str, int maxlen, int rev)
-{
-    int len;
-    static char buf[80], *p = buf;
-    int i;
-
-    if (!str)
-	return NULL;
-
-    len = strlen(str);
-    strncpy(buf, str, sizeof(buf));
-
-    if (len > maxlen) {
-	if (rev) {
-	    p = buf;
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p++ = '.';
-
-	    for (i = 0; i < maxlen + 3; i++)
-		*p++ = buf[(len - maxlen) + i + 3]; 
-	}
-	else {
-	    p = buf + maxlen - 4;
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p++ = '.';
-	}
-
-	*p = '\0';
-    }
-
-    return buf;
-}
-
 void update_cursor(GAME g, int idx)
 {
     char *p;

@@ -103,7 +103,7 @@ static int get_input(WIN *win)
     struct input_data_s *data = in->data;
 
     curs_set(1);
-    window_draw_title(win->w, in->t, in->w, CP_INPUT_TITLE,
+    window_draw_title(win->w, win->title, in->w, CP_INPUT_TITLE,
 	    CP_INPUT_BORDER);
 
     if (in->extra) {
@@ -197,9 +197,6 @@ done:
     free_form(in->f);
     free_field(in->fields[0]);
 
-    if (in->t)
-	free(in->t);
-
     if (in->extra)
 	free(in->extra);
 
@@ -252,10 +249,8 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
 	in->extra = strdup(extra_help);
     }
 
-    if (title) {
+    if (title)
 	l++;
-	in->t = strdup(title);
-    }
 
     if (!hasrun) {
 	TYPE_PGN_TAG_NAME = new_fieldtype(NULL, validate_pgn_tag_name);
@@ -324,7 +319,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     in->arg = arg;
     in->c = key;
     in->lines = (lines) ? lines : 1;
-    win = window_create(in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w), 
+    win = window_create(title, in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w), 
 	    get_input, in, id->efunc);
     in = win->data;
     in->data = id;

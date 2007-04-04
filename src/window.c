@@ -39,8 +39,8 @@
  * structure. The 'func' parameter is a function pointer that is called from
  * game_loop(). 'efunc' is called just before the window is destroyed.
  */
-WIN *window_create(int h, int w, int y, int x, window_func func, void *data,
-	window_exit_func efunc)
+WIN *window_create(const char *title, int h, int w, int y, int x, 
+	window_func func, void *data, window_exit_func efunc)
 {
     int i = 0;
 
@@ -56,6 +56,7 @@ WIN *window_create(int h, int w, int y, int x, window_func func, void *data,
     wins[i]->cols = w;
     wins[i]->func = func;
     wins[i]->efunc = efunc;
+    wins[i]->title = (title) ? strdup(title) : NULL;
     wins[i+1] = NULL;
     return wins[i];
 }
@@ -73,6 +74,9 @@ void window_destroy(WIN *win)
     while (i > 0 && wins[--i]->keep) {
 	if (win && memcmp(win, wins[i], sizeof(WIN)) == 0)
 	    win = NULL;
+
+	if (wins[i]->title)
+	    free(wins[i]->title);
 
 	if (wins[i]->p)
 	    del_panel(wins[i]->p);
@@ -125,12 +129,20 @@ void window_draw_title(WINDOW *win, const char *title, int width, chtype attr,
     int i;
 
     if (title) {
+	const char *p;
+
 	wattron(win, attr);
 
 	for (i = 1; i < width - 1; i++)
 	    mvwaddch(win, 1, i, ' ');
 
-	mvwprintw(win, 1, CENTERX(width, title), "%s", title);
+	if (strlen(title) > width) {
+	    p = str_etc(title, width - 2, 1);
+	}
+	else
+	    p = title;
+
+	mvwprintw(win, 1, CENTERX(width, p), "%s", p);
 	wattroff(win, attr);
     }
 

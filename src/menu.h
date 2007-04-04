@@ -50,7 +50,6 @@ struct menu_input_s {
     menu_key *draw_exit_func;
     menu_print_func *print_func;
     int print_line;
-    char *title;
     int name_only;
     struct menu_item_s **items;
     struct menu_item_s *item;

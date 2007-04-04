@@ -167,7 +167,7 @@ static void fix_menu_vals(WIN *win)
     if (!m->rstatic)
 	win->rows = i;
 
-    if (!m->rstatic && m->title)
+    if (!m->rstatic && win->title)
 	win->rows++;
 
     if (!m->cstatic)
@@ -193,7 +193,7 @@ static void fix_menu_vals(WIN *win)
     keypad(win->w, TRUE);
     wmove(win->w, 0, 0);
     wclrtobot(win->w);
-    window_draw_title(win->w, m->title, win->cols, CP_INPUT_TITLE, 
+    window_draw_title(win->w, win->title, win->cols, CP_INPUT_TITLE, 
 	    CP_INPUT_BORDER);
     window_draw_prompt(win->w, win->rows - 2, win->cols, buf, CP_INPUT_PROMPT);
 }
@@ -330,9 +330,6 @@ done:
 	free(m->keys);
     }
 
-    if (m->title)
-	free(m->title);
-
     free(m);
     return 0;
 }
@@ -353,7 +350,7 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
 #endif
 
     m = Calloc(1, sizeof(struct menu_input_s));
-    win = window_create((rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols, 
+    win = window_create(title, (rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols, 
 	    (y >= 0) ? y : 0, (x >= 0) ? x : 0, display_menu, m, efunc);
     m = win->data;
     m->ystatic = y;
@@ -377,7 +374,7 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
     m->name_only = name_only;
 
     if (title)
-	m->title = strdup(title);
+	win->title = strdup(title);
     
     wbkgd(win->w, CP_MENU);
     cbreak();

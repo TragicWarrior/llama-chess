@@ -38,6 +38,7 @@ struct window_s {
     int cols;
     int posy;
     int posx;
+    char *title;
     /* 
      * Function that is called when a key is pressed from game_loop(). This is
      * the only place where a key is gotten from. This is for the top window
@@ -55,8 +56,8 @@ struct window_s {
 WIN **wins;
 int pushkey;
 
-WIN *window_create(int h, int w, int y, int x, window_func, void *data,
-	window_exit_func);
+WIN *window_create(const char *title, int h, int w, int y, int x, window_func,
+	void *data, window_exit_func);
 void window_destroy(WIN *);
 void window_draw_title(WINDOW *, const char *, int, chtype, chtype);
 void window_draw_prompt(WINDOW *, int, int, const char *, chtype);

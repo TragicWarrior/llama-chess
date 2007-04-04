@@ -41,7 +41,6 @@ struct input_s {
     int w;
     int h;
     int lines;
-    char *t;
     char *init;
     char *extra;
     input_func *func;

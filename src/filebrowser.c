@@ -210,10 +210,8 @@ new_glob:
 	items[i]->selected = 0;
     }
 
-    if (m->title)
-	free(m->title);
-
-    m->title = strdup(path);
+    free(win->title);
+    win->title = strdup(path);
     items[i] = NULL;
     m->items = items;
     return items;

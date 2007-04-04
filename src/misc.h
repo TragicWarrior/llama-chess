@@ -30,5 +30,6 @@ int isinteger(const char *str);
 FILE *open_file(const char *filename);
 char *pathfix(const char *);
 char *trim_multi(char *);
+char *str_etc(const char *str, int maxlen, int rev);
 
 #endif
