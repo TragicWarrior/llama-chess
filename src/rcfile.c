@@ -592,7 +592,7 @@ void parse_rcfile(const char *filename)
 
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
 	int n;
-	char var[30], val[50];
+	char var[30], val[LINE_MAX - sizeof(var) - 1];
 	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
 	char *p;
 
