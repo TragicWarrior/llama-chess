@@ -1,3 +1,19 @@
+CBoard version 0.2.5
+--------------------
+Added global CTRL-i which copies the current game to a new one.
+
+Added -D command line option to enable debugging if debugging was enabled at
+compile time.
+
+Added configuration parameter "engine_protocol" which specifies the XBoard
+protocol that the engine uses. Right now this only means whether to send SAN
+formatted moves (version 2) or FRFR formatted moves (version 1, the default).
+
+Added file browser binding CTRL-e to change the filename expression.
+
+Bugfixes and invisible changes. See ChangeLog for details.
+
+
 CBoard version 0.2.4
 --------------------
 libchess: Castling bugfix.
