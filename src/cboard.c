@@ -3886,6 +3886,7 @@ int main(int argc, char *argv[])
 	switch (opt) {
 #ifdef DEBUG
 	    case 'D':
+		unlink("libchess.debug");
 		pgn_config_set(PGN_DEBUG, 1);
 		break;
 #endif
