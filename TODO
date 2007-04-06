@@ -20,3 +20,13 @@ order):
 - A menu to select a game from a file.
 
 - Internationalization (gettext).
+
+- When a game contains alot of moves (> 100 or so) the move validator slows
+  things down quite a bit when browsing history or adding a move to the
+  history. A solution to fix this is to only update the board without
+  validating up to the last known validated move. It'll be tricky because the
+  game flags (castling, en passent, etc) will need to be updated some how.
+  This can be fixed by saving the game state for each move at the cost of
+  memory.
+
+- GPM mouse support.
