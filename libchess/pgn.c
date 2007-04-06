@@ -416,7 +416,7 @@ int pgn_board_update(GAME *g, BOARD b, int n)
 	pgn_switch_turn(g);
     }
 
-    if (ret == 0)
+    if (ret == E_PGN_OK)
 	memcpy(b, tb, sizeof(BOARD));
 
     if (p_error)
