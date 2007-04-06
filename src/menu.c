@@ -372,10 +372,6 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
     m->keys = keys;
     m->data = data;
     m->name_only = name_only;
-
-    if (title)
-	win->title = strdup(title);
-    
     wbkgd(win->w, CP_MENU);
     cbreak();
     noecho();

@@ -95,6 +95,9 @@ void window_destroy(WIN *win)
 	    if (win->p)
 		del_panel(win->p);
 
+	    if (win->title)
+		free(win->title);
+
 	    delwin(win->w);
 	    free(win);
 	    continue;
