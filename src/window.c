@@ -82,11 +82,11 @@ void window_destroy(WIN *win)
 	    del_panel(wins[i]->p);
 
 	delwin(wins[i]->w);
-	free(wins[i]);
 
 	if (wins[i]->freedata && wins[i]->data)
 	    free(wins[i]->data);
 
+	free(wins[i]);
 	wins[i] = NULL;
     }
 
