@@ -1346,7 +1346,8 @@ int rav_next_prev(GAME *g, BOARD b, int n)
 {
     // Next RAV.
     if (n) {
-	if ((!g->ravlevel && g->hp[g->hindex - 1]->rav == NULL) ||
+	if ((!g->ravlevel && g->hindex && g->hp[g->hindex - 1]->rav == NULL) ||
+		(!g->ravlevel && !g->hindex && g->hp[g->hindex]->rav == NULL) ||
 		(g->ravlevel && g->hp[g->hindex]->rav == NULL))
 	    return 1;
 
@@ -1355,7 +1356,7 @@ int rav_next_prev(GAME *g, BOARD b, int n)
 	g->rav[g->ravlevel].flags = g->flags;
 	g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(*g, b));
 	g->rav[g->ravlevel].hindex = g->hindex;
-	g->hp = (!g->ravlevel) ? g->hp[g->hindex - 1]->rav : g->hp[g->hindex]->rav;
+	g->hp = (!g->ravlevel) ? (g->hindex) ? g->hp[g->hindex - 1]->rav : g->hp[g->hindex]->rav : g->hp[g->hindex]->rav;
 	g->hindex = 0;
 	g->ravlevel++;
 	pgn_board_update(g, b, g->hindex + 1);
