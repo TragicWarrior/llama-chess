@@ -53,8 +53,8 @@
 #endif
 
 static void build_message_lines(const char *title, const char *prompt,
-	const char *extra, int *h, int *w, char ***str, const char *fmt, 
-	va_list ap)
+	int force_trim, const char *extra, int *h, int *w, char ***str,
+	const char *fmt, va_list ap)
 {
     int i, n, pos;
     char *line, **lines = NULL;
@@ -119,7 +119,7 @@ static void build_message_lines(const char *title, const char *prompt,
 	    continue;
 
 	lines = Realloc(lines, (total + 2) * sizeof(char *));
-	lines[total++] = strdup(trim(tmp));
+	lines[total++] = (force_trim) ? strdup(trim(tmp)) : strdup(tmp);
     }
 
     lines[total] = NULL;
@@ -198,8 +198,12 @@ static int display_message(WIN *win)
     return 1;
 }
 
+/*
+ * The force_trim parameter will trim whitespace reguardless if there is more
+ * than one line or not (help text vs. tag viewing).
+ */
 WIN *construct_message(const char *title, const char *prompt, int center,
-	const char *extra_help, message_func *func, void *arg, 
+	int force_trim, const char *extra_help, message_func *func, void *arg,
 	window_exit_func *efunc, int ckey, int freedata, const char *fmt, ...)
 {
     char **lines = NULL;
@@ -209,7 +213,7 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     int h, w;
     
     va_start(ap, fmt);
-    build_message_lines(title, prompt, extra_help, &h, &w, &lines, fmt, ap);
+    build_message_lines(title, prompt, force_trim, extra_help, &h, &w, &lines, fmt, ap);
     va_end(ap);
 
     m = Calloc(1, sizeof(struct message_s));

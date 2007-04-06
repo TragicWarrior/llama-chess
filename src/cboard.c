@@ -285,12 +285,12 @@ void view_annotation(HISTORY *h)
     snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_VIEW_TITLE, h->move);
 
     if (comment)
-	construct_message(buf, (nag) ? ANY_OTHER_KEY : ANYKEY, 2,
+	construct_message(buf, (nag) ? ANY_OTHER_KEY : ANYKEY, 0, 1,
 		(nag) ? VIEW_NAG : NULL, 
 		(nag) ? view_nag : NULL, (nag) ? h : NULL, NULL,
 		(nag) ? 'n' : 0, 0, "%s", h->comment);
     else
-	construct_message(buf, ANY_OTHER_KEY, 1, VIEW_NAG, view_nag, h, NULL, 
+	construct_message(buf, ANY_OTHER_KEY, 0, 1, VIEW_NAG, view_nag, h, NULL, 
 		'n', 0, "%s", NO_ANNOTATIONS);
 }
 
@@ -415,7 +415,7 @@ void save_pgn(char *filename, int saveindex)
 	s->filename = strdup(filename);
 	s->start = saveindex;
 	s->end = end;
-	construct_message(NULL, GAME_SAVE_OVERWRITE_PROMPT, 1, NULL, NULL,
+	construct_message(NULL, GAME_SAVE_OVERWRITE_PROMPT, 1, 1, NULL, NULL,
 		s, do_save_game_overwrite_confirm, 0, 0, "%s \"%s\"",
 		E_FILEEXISTS, filename);
 	return;
@@ -767,7 +767,7 @@ static void move_to_engine(GAME *g)
     piece = pgn_piece_to_int(d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon);
 
     if (piece == PAWN && (d->sp.row == 8 || d->sp.row == 1)) {
-	construct_message(PROMOTION_TITLE, PROMOTION_PROMPT, 1, NULL, NULL,
+	construct_message(PROMOTION_TITLE, PROMOTION_PROMPT, 1, 1, NULL, NULL,
 		str, do_promotion_piece_finalize, 0, 0, "%s", PROMOTION_TEXT);
 	return;
     }
@@ -1903,22 +1903,22 @@ void do_main_help(WIN *win)
     switch (win->c) {
 	case 'p':
 	    buf = build_help(play_keys);
-	    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0,
+	    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	case 'h':
 	    buf = build_help(history_keys);
-	    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0,
+	    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	case 'e':
 	    buf = build_help(edit_keys);
-	    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0,
+	    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	case 'g':
 	    buf = build_help(global_keys);
-	    construct_message(GAME_HELP_GAME_TITLE, ANYKEY, 0,
+	    construct_message(GAME_HELP_GAME_TITLE, ANYKEY, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	default:
@@ -1929,7 +1929,7 @@ void do_main_help(WIN *win)
 void do_more_help(WIN *win)
 {
     if (win->c == KEY_F(1) || win->c == CTRL('g'))
-	construct_message(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT, 0, 
+	construct_message(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT, 0, 0, 
 		NULL, NULL, NULL, do_main_help, 0, 0, "%s", mainhelp);
 }
 
@@ -1937,7 +1937,7 @@ void do_play_help()
 {
     char *buf = build_help(play_keys);
 
-    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0, NULL, NULL, buf, 
+    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0, 0, NULL, NULL, buf, 
 	    do_more_help, 0, 1, "%s", buf);
 }
 
@@ -2057,7 +2057,7 @@ void do_edit_insert()
 {
     struct userdata_s *d = game[gindex].data;
 
-    construct_message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, 0, NULL, NULL,
+    construct_message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, 0, 0, NULL, NULL,
 	    d->b, do_edit_insert_finalize, 0, 0, "%s", GAME_EDIT_TEXT);
 }
 
@@ -2075,7 +2075,7 @@ void do_edit_help()
 {
     char *buf = build_help(edit_keys);
 
-    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0, NULL, NULL, buf, 
+    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0, 0, NULL, NULL, buf, 
 	    do_more_help, 0, 1, "%s", buf);
 }
 
@@ -2606,7 +2606,7 @@ void do_history_toggle()
     // FIXME Resuming from previous history could append to a RAV.
     if (game[gindex].hindex != pgn_history_total(game[gindex].hp)) {
 	if (!pushkey)
-	    construct_message(NULL, "(r)esume or abort", 0, NULL, NULL, NULL, 
+	    construct_message(NULL, "(r)esume or abort", 0, 1, NULL, NULL, NULL, 
 		    do_history_mode_confirm, 0, 0, "%s", 
 		    GAME_RESUME_HISTORY_TEXT);
 
@@ -2636,7 +2636,7 @@ void do_history_help()
 {
     char *buf = build_help(history_keys);
 
-    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0, NULL, NULL, buf, 
+    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0, 0, NULL, NULL, buf, 
 	    do_more_help, 0, 1, "%s", buf);
 }
 
@@ -2884,7 +2884,7 @@ void do_game_delete()
     if (config.deleteprompt) {
 	p = Malloc(sizeof(int));
 	*p = n;
-	construct_message(NULL, YESNO, 1, NULL, NULL, p,
+	construct_message(NULL, YESNO, 1, 1, NULL, NULL, p,
 		do_game_delete_confirm, 0, 0, tmp);
 	return;
     }
@@ -3264,7 +3264,7 @@ void do_global_resume_game()
 void do_global_save_game()
 {
     if (gtotal > 1) {
-	construct_message(NULL, GAME_SAVE_MULTI_PROMPT, 1, NULL, NULL, NULL, 
+	construct_message(NULL, GAME_SAVE_MULTI_PROMPT, 1, 1, NULL, NULL, NULL, 
 		do_game_save_multi_confirm, 0, 0, "%s", GAME_SAVE_MULTI_TEXT);
 	return;
     }
@@ -3303,7 +3303,7 @@ void do_global_copy_game()
 
 void do_global_new_all()
 {
-    construct_message(NULL, YESNO, 1, NULL, NULL, NULL, 
+    construct_message(NULL, YESNO, 1, 1, NULL, NULL, NULL, 
 	    do_new_game_from_scratch, 0, 0, "%s", GAME_NEW_PROMPT);
 }
 
