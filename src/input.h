@@ -38,6 +38,7 @@ struct input_s {
     WINDOW *sw;
     FIELD *fields[2];
     FORM *f;
+    FIELDTYPE *ft;
     int w;
     int h;
     int lines;
@@ -56,11 +57,6 @@ struct input_data_s {
     char *str;
     window_exit_func *efunc;
 };
-
-FIELDTYPE *TYPE_PGN_TAG_NAME;
-FIELDTYPE *TYPE_PGN_DATE;
-FIELDTYPE *TYPE_PGN_ROUND;
-FIELDTYPE *TYPE_PGN_RESULT;
 
 WIN *construct_input(const char *title, const char *init, int lines, int reset,
 	const char *extra_help, input_func *func, void *arg, int key,

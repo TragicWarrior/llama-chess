@@ -202,6 +202,7 @@ done:
 
     data->str = (in->buf[0]) ? strdup(in->buf) : NULL;
     win->data = data;
+    free_fieldtype(in->ft);
     free(in);
     curs_set(0);
     return 0;
@@ -239,7 +240,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     struct input_s *in;
     int l = (lines > 0) ? lines : 1;
     va_list ap;
-    static int hasrun;
+    FIELDTYPE *ft = NULL;
 
     l += 2;
     in = Calloc(1, sizeof(struct input_s));
@@ -252,27 +253,36 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     if (title)
 	l++;
 
-    if (!hasrun) {
-	TYPE_PGN_TAG_NAME = new_fieldtype(NULL, validate_pgn_tag_name);
-	TYPE_PGN_DATE = new_fieldtype(NULL, validate_pgn_date);
-	TYPE_PGN_ROUND = new_fieldtype(NULL, validate_pgn_round);
-	TYPE_PGN_RESULT = new_fieldtype(NULL, validate_pgn_result);
-    }
-
+    in->h = l + 1;
+    in->w = INPUT_WIDTH;
+    in->func = func;
+    in->arg = arg;
+    in->c = key;
+    in->lines = (lines) ? lines : 1;
+    win = window_create(title, in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w), 
+	    get_input, in, id->efunc);
+    in = win->data;
+    in->data = id;
+    in->reset = reset;
+    in->fields[0] = new_field(in->lines, in->w - 2, 0, 0, 0, 0);
     va_start(ap, type);
 
     switch (type) {
 	case FIELD_TYPE_PGN_ROUND:
-	    set_field_type(in->fields[0], TYPE_PGN_ROUND);
+	    ft = new_fieldtype(NULL, validate_pgn_round);
+	    set_field_type(in->fields[0], ft);
 	    break;
 	case FIELD_TYPE_PGN_RESULT:
-	    set_field_type(in->fields[0], TYPE_PGN_RESULT);
+	    ft = new_fieldtype(NULL, validate_pgn_result);
+	    set_field_type(in->fields[0], ft);
 	    break;
 	case FIELD_TYPE_PGN_DATE:
-	    set_field_type(in->fields[0], TYPE_PGN_DATE);
+	    ft = new_fieldtype(NULL, validate_pgn_date);
+	    set_field_type(in->fields[0], ft);
 	    break;
 	case FIELD_TYPE_PGN_TAG_NAME:
-	    set_field_type(in->fields[0], TYPE_PGN_TAG_NAME);
+	    ft = new_fieldtype(NULL, validate_pgn_tag_name);
+	    set_field_type(in->fields[0], ft);
 	    break;
 	case FIELD_TYPE_ALNUM:
 	    set_field_type(in->fields[0], TYPE_ALNUM, va_arg(ap, int));
@@ -313,18 +323,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
 	set_field_buffer(in->fields[0], 0, init);
     }
 
-    in->h = l + 1;
-    in->w = INPUT_WIDTH;
-    in->func = func;
-    in->arg = arg;
-    in->c = key;
-    in->lines = (lines) ? lines : 1;
-    win = window_create(title, in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w), 
-	    get_input, in, id->efunc);
-    in = win->data;
-    in->data = id;
-    in->reset = reset;
-    in->fields[0] = new_field(in->lines, in->w - 2, 0, 0, 0, 0);
+    in->ft = ft;
 
     if (in->lines == 1)
 	field_opts_off(in->fields[0], O_STATIC);
