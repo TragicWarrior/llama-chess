@@ -468,7 +468,7 @@ void parse_engine_output(GAME *g, char *str)
 	    *p = '\0';
 
 	    if (*buf) {
-		append_enginebuf(buf);
+		append_enginebuf(g, buf);
 		parse_xboard_line(g, buf);
 	    }
 

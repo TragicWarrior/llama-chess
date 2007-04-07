@@ -1024,41 +1024,43 @@ void update_tag_window(TAG **t)
 		str_etc(t[i]->value, w, 0));
 }
 
-void append_enginebuf(char *line)
+void append_enginebuf(GAME *g, char *line)
 {
     int i = 0;
+    struct userdata_s *d = g->data;
 
-    if (enginebuf)
-	for (i = 0; enginebuf[i]; i++);
+    if (d->engine->enginebuf)
+	for (i = 0; d->engine->enginebuf[i]; i++);
 
     if (i >= LINES - 3) {
-	free(enginebuf[0]);
+	free(d->engine->enginebuf[0]);
 
-	for (i = 0; enginebuf[i+1]; i++)
-	    enginebuf[i] = enginebuf[i+1];
+	for (i = 0; d->engine->enginebuf[i+1]; i++)
+	    d->engine->enginebuf[i] = d->engine->enginebuf[i+1];
 
-	enginebuf[i] = strdup(line);
+	d->engine->enginebuf[i] = strdup(line);
     }
     else {
-	enginebuf = Realloc(enginebuf, (i + 2) * sizeof(char *));
-	enginebuf[i++] = strdup(line);
-	enginebuf[i] = NULL;
+	d->engine->enginebuf = Realloc(d->engine->enginebuf, (i + 2) * sizeof(char *));
+	d->engine->enginebuf[i++] = strdup(line);
+	d->engine->enginebuf[i] = NULL;
     }
 }
 
-void update_engine_window()
+void update_engine_window(GAME g)
 {
     int i;
+    struct userdata_s *d = g.data;
 
-    if (!enginebuf)
+    if (!d->engine || !d->engine->enginebuf)
 	return;
 
     wmove(enginew, 0, 0);
     wclrtobot(enginew);
 
-    if (enginebuf) {
-	for (i = 0; enginebuf[i]; i++)
-	    mvwprintw(enginew, i + 2, 1, "%s", enginebuf[i]);
+    if (d->engine->enginebuf) {
+	for (i = 0; d->engine->enginebuf[i]; i++)
+	    mvwprintw(enginew, i + 2, 1, "%s", d->engine->enginebuf[i]);
     }
 
     window_draw_title(enginew, ENGINE_IO_TITLE, COLS, CP_MESSAGE_TITLE,
@@ -1076,7 +1078,7 @@ void update_all(GAME g)
     update_status_window(g);
     update_history_window(g);
     update_tag_window(g.tag);
-    update_engine_window();
+    update_engine_window(g);
 }
 
 static void game_next_prev(GAME g, int n, int count)
@@ -2727,6 +2729,14 @@ static void free_userdata()
 
 	    if (d->engine) {
 		stop_engine(&game[i]);
+
+		if (d->engine->enginebuf) {
+		    for (i = 0; d->engine->enginebuf[i]; i++)
+			free(d->engine->enginebuf[i]);
+
+		    free(d->engine->enginebuf);
+		}
+
 		free(d->engine);
 	    }
 
@@ -3323,7 +3333,7 @@ void do_global_toggle_engine_window()
     }
 
     if (panel_hidden(enginep)) {
-	update_engine_window();
+	update_engine_window(game[gindex]);
 	top_panel(enginep);
 	refresh_all();
     }
@@ -3768,13 +3778,6 @@ void cleanup_all()
 	if (enginew) {
 	    del_panel(enginep);
 	    delwin(enginew);
-
-	    if (enginebuf) {
-		for (i = 0; enginebuf[i]; i++)
-		    free(enginebuf[i]);
-
-		free(enginebuf);
-	    }
 	}
 
 	endwin();
