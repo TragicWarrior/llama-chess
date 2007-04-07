@@ -3472,7 +3472,6 @@ void game_loop()
     int error_recover = 0;
     struct userdata_s *d = game[gindex].data;
     int macro_match = -1;
-    char *iobuf = NULL;
 
     gindex = gtotal - 1;
 
@@ -3547,20 +3546,26 @@ void game_loop()
 			    }
 			    else {
 				if (len) {
-				    if (iobuf)
-					iobuf = Realloc(iobuf, len + 
-						strlen(iobuf) + 1);
+				    if (d->engine->iobuf)
+					d->engine->iobuf = Realloc(d->engine->iobuf, len + 
+						strlen(d->engine->iobuf) + 1);
 				    else
-					iobuf = Calloc(1, len + 1);
+					d->engine->iobuf = Calloc(1, len + 1);
 
-				    strcat(iobuf, fdbuf);
+				    memcpy(d->engine->iobuf, &fdbuf, len);
+				    d->engine->iobuf[len] = 0;
 
-				    if (iobuf[strlen(iobuf) - 1] != '\n')
+				    /*
+				     * The fdbuf is full and no newline
+				     * was found. So we'll append the next
+				     * read() to this games buffer.
+				     */
+				    if (d->engine->iobuf[strlen(d->engine->iobuf) - 1] != '\n')
 					continue;
 
-				    parse_engine_output(&game[i], iobuf);
-				    free(iobuf);
-				    iobuf = NULL;
+				    parse_engine_output(&game[i], d->engine->iobuf);
+				    free(d->engine->iobuf);
+				    d->engine->iobuf = NULL;
 				}
 			    }
 			}

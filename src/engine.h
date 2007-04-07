@@ -52,6 +52,7 @@ struct engine_s {
     int status;
     struct queue_s **queue;
     char **enginebuf;
+    char *iobuf;
 };
 
 int send_signal_to_engine(pid_t, int);
