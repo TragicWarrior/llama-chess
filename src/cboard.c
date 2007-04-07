@@ -3493,11 +3493,12 @@ void game_loop()
 	WINDOW *wp = NULL;
 
 	FD_ZERO(&rfds);
+	FD_ZERO(&wfds);
 
 	for (i = 0; i < gtotal; i++) {
 	    d = game[i].data;
 
-	    if (d->engine) {
+	    if (d->engine && d->engine->pid != -1) {
 		if (d->engine->fd[ENGINE_IN_FD] > 2) {
 		    if (d->engine->fd[ENGINE_IN_FD] > n)
 			n = d->engine->fd[ENGINE_IN_FD];
@@ -3519,7 +3520,7 @@ void game_loop()
 		for (i = 0; i < gtotal; i++) {
 		    d = game[i].data;
 
-		    if (d->engine) {
+		    if (d->engine && d->engine->pid != -1) {
 			if (FD_ISSET(d->engine->fd[ENGINE_IN_FD], &rfds)) {
 			    len = read(d->engine->fd[ENGINE_IN_FD], fdbuf,
 				    sizeof(fdbuf));
@@ -3568,10 +3569,11 @@ void game_loop()
 	    }
 	}
 
+	d = game[gindex].data;
+
 	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
 	    d->mode = MODE_HISTORY;
 
-	d = game[gindex].data;
 	error_recover = 0;
 	draw_board(&game[gindex]);
 	update_all(game[gindex]);

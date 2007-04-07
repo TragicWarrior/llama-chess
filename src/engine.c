@@ -319,6 +319,7 @@ void stop_engine(GAME *g)
     }
 
     waitpid(d->engine->pid, &s, 0);
+    d->engine->pid = -1;
 }
 
 void set_engine_defaults(GAME *g, char **init)
@@ -413,8 +414,10 @@ static void parse_xboard_line(GAME *g, char *str)
 	if (count != strlen(p))
 	    RETURN(d);
 
-	if (TEST_FLAG(g->flags, GF_GAMEOVER))
+	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
+	    stop_engine(g);
 	    RETURN(d);
+	}
 
 	if (strlen(m) < 2)
 	    RETURN(d);
@@ -441,8 +444,10 @@ static void parse_xboard_line(GAME *g, char *str)
 	if (TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
 	    update_cursor(*g, g->hindex);
 
-	    if (TEST_FLAG(g->flags, GF_GAMEOVER))
+	    if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
+		stop_engine(g);
 		RETURN(d);
+	    }
 
 	    add_engine_command(g, ENGINE_THINKING, "go\n");
 	}
