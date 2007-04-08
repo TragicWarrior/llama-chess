@@ -1374,6 +1374,9 @@ int pgn_parse_move(GAME *g, BOARD b, char **mp, char **dst)
     srank = rank = file = sfile = promo = 0;
     find_king_squares(*g, b, &kfile, &krank, &okfile, &okrank);
 
+    if (m[strlen(m) - 1] == '+')
+	m[strlen(m) - 1] = 0;
+
     if (VALIDCOL(*m) && VALIDROW(*(m + 1)) && VALIDCOL(*(m + 2)) && 
 	    VALIDROW(*(m + 3)))
 	return frfrtosan(g, b, mp, dst);
