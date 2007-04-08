@@ -3632,6 +3632,14 @@ void game_loop()
 		input_c = pushkey;
 
 	    if (win) {
+		switch (input_c) {
+		    case CTRL('L'):
+			endwin();
+			keypad(boardw, TRUE);
+			refresh_all();
+			continue;
+		}
+
 		win->c = input_c;
 
 		/*
