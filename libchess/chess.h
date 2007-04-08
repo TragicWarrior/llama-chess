@@ -172,6 +172,12 @@ typedef enum {
      */
     PGN_PROGRESS,
     PGN_PROGRESS_FUNC,
+
+    /*
+     * If set to 1 and an opponent can attack a castling square the castling
+     * move will not be a valid one.
+     */
+    PGN_STRICT_CASTLING,
 } pgn_config_flag;
 
 /*

@@ -2125,6 +2125,10 @@ int pgn_config_set(pgn_config_flag f, ...)
 	case PGN_PROGRESS_FUNC:
 	    pgn_config.pfunc = va_arg(ap, pgn_progress *);
 	    break;
+	case PGN_STRICT_CASTLING:
+	    n = va_arg(ap, int);
+	    pgn_config.strict_castling = n;
+	    break;
 #ifdef DEBUG
 	case PGN_DEBUG:
 	    n = va_arg(ap, int);

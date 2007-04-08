@@ -30,6 +30,7 @@ struct {
     int fmd;
     long progress;
     pgn_progress *pfunc;
+    int strict_castling;
 } pgn_config;
 
 int validate;

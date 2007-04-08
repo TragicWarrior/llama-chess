@@ -250,11 +250,14 @@ static int validate_castle_move(GAME g, BOARD b, int side, int sfile,
 		!= pgn_int_to_piece(g.turn, OPEN_SQUARE))
 	    return E_PGN_INVALID;
 
-	if (opponent_can_attack(g, b, sfile + 1, srank))
+
+	if (pgn_config.strict_castling > 0) {
+	    if (opponent_can_attack(g, b, sfile + 1, srank))
 		return E_PGN_INVALID;
 
-	if (opponent_can_attack(g, b, sfile + 2, srank))
+	    if (opponent_can_attack(g, b, sfile + 2, srank))
 		return E_PGN_INVALID;
+	}
     }
     else {
 	if (b[RANKTOBOARD(srank)][FILETOBOARD((sfile - 1))].icon != 
@@ -265,14 +268,16 @@ static int validate_castle_move(GAME g, BOARD b, int side, int sfile,
 		pgn_int_to_piece(g.turn, OPEN_SQUARE))
 	    return E_PGN_INVALID;
 
-	if (opponent_can_attack(g, b, sfile - 1, srank))
+	if (pgn_config.strict_castling > 0) {
+	    if (opponent_can_attack(g, b, sfile - 1, srank))
 		return E_PGN_INVALID;
 
-	if (opponent_can_attack(g, b, sfile - 2, srank))
+	    if (opponent_can_attack(g, b, sfile - 2, srank))
 		return E_PGN_INVALID;
 
-	if (opponent_can_attack(g, b, sfile - 3, srank))
+	    if (opponent_can_attack(g, b, sfile - 3, srank))
 		return E_PGN_INVALID;
+	}
     }
 
     n = check_testing;
