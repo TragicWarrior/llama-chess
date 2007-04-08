@@ -238,6 +238,7 @@ static void edit_tag_add_finalize(WIN *w)
     struct tm *tm;
     time_t now;
     char *tmp;
+    int count;
 
     if (!value || !*value) {
 	if (strcasecmp(name, "Round") == 0)
@@ -255,10 +256,13 @@ static void edit_tag_add_finalize(WIN *w)
     }
 
     tmp = trim_multi(value);
+    count = pgn_tag_total(t);
     pgn_tag_add(&t, name, tmp);
     free(tmp);
     m->data = t;
-    m->selected = m->total;
+
+    if (count != pgn_tag_total(t))
+	m->selected = m->total;
 
     if (in->str)
 	free(in->str);
