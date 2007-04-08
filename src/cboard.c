@@ -2731,8 +2731,10 @@ static void free_userdata()
 		stop_engine(&game[i]);
 
 		if (d->engine->enginebuf) {
-		    for (i = 0; d->engine->enginebuf[i]; i++)
-			free(d->engine->enginebuf[i]);
+		    int n;
+
+		    for (n = 0; d->engine->enginebuf[n]; n++)
+			free(d->engine->enginebuf[n]);
 
 		    free(d->engine->enginebuf);
 		}
