@@ -518,7 +518,7 @@ static int checkmate_test(GAME g, BOARD b)
     register int kf = kfile, kr = krank, okf = okfile, okr = okrank;
 
 #ifdef DEBUG
-    PGN_DUMP("%s:%d: BEGIN checkmate test\n");
+    PGN_DUMP("%s:%d: BEGIN checkmate test\n", __FILE__, __LINE__);
 #endif
     /*
      * The king squares need to be switched also for find_source_squares()
