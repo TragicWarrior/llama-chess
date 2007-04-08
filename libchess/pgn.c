@@ -901,8 +901,7 @@ static int move_text(GAME *g, FILE *fp)
     }
 
 #ifdef DEBUG
-    PGN_DUMP("%s\n", p);
-    dump_board(0, pgn_board);
+    PGN_DUMP("%s\n%s", p, debug_board(pgn_board));
 #endif
 
     pgn_history_add(g, p);
