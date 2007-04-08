@@ -1048,6 +1048,17 @@ static int annotation_text(GAME *g, FILE *fp, int terminator)
 
     *a = '\0';
 
+    if (hindex < 0)
+	hindex = 0;
+
+    /*
+     * This annotation is before any move text or NAG. Allocate a new move.
+     */
+    if (!g->hp[hindex]) {
+	if ((g->hp[hindex] = calloc(1, sizeof(HISTORY))) == NULL)
+	    return E_PGN_ERR;
+    }
+
     if ((g->hp[hindex]->comment = strdup(buf)) == NULL)
 	return E_PGN_ERR;
 

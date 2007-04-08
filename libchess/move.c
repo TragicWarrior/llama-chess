@@ -1370,6 +1370,12 @@ int pgn_parse_move(GAME *g, BOARD b, char **mp, char **dst)
     int i;
     int promo = -1;
 
+    /*
+     * This may be an empty move with only an annotation. Kinda strange.
+     */
+    if (!m)
+	return E_PGN_OK;
+
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN validating '%s' (%s)...\n", __FILE__, __LINE__, m, 
 	    (g->turn == WHITE) ? "white" : "black");
