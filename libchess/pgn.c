@@ -880,6 +880,8 @@ static int move_text(GAME *g, FILE *fp)
     int count;
     char *frfr;
 
+    g->oflags = g->flags;
+
     while((c = Fgetc(fp)) != EOF) {
 	if (isdigit(c) || isspace(c) || c == '.')
 	    continue;
@@ -1208,6 +1210,7 @@ static int rav_text(GAME *g, FILE *fp, int which, BOARD o)
 	g->rav[g->ravlevel].hp = g->hp;
 	g->rav[g->ravlevel].hindex = g->hindex;
 	memcpy(&tg, g, sizeof(GAME));
+	g->flags = g->oflags;
 	memcpy(pgn_board, o, sizeof(BOARD));
 
 	if ((g->hp[g->hindex - 1]->rav = calloc(1, sizeof(HISTORY *))) == NULL) {

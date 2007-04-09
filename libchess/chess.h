@@ -113,6 +113,7 @@ typedef struct games {
     int ravlevel;		// An index to *rav.
     unsigned short hindex;	// Current move in *hp.
     unsigned short flags;	// Game flags.
+    unsigned short oflags;	// Game flags for the previous move.
     unsigned char side: 1,      // This playing side. BLACK or WHITE.
                   turn: 1;      // BLACK or WHITE.
     unsigned short ply;         // Move count.
