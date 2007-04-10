@@ -10,6 +10,8 @@ order):
 
 - ICS network game support.
 
+- Email correspondence games.
+
 + RAV move text support. Will parse into the move history and also save
   (buggy) but still need a (working) interface to it. Also add the RAV depth
   next to the piece on the board and a window showing the move tree (?).
@@ -19,9 +21,15 @@ order):
 
 - A menu to select a game from a file.
 
-- Internationalization (gettext).
+- Better matching of tag expressions when searching for games. Maybe a comma
+  separated list of tag/value expressions.
 
-- When a game contains alot of moves (> 100 or so) the move validator slows
+? Match move text expressions across games.
+
+? Internationalization (gettext). This with quadruple the amount of allocated
+  memory.
+
+? When a game contains alot of moves (> 100 or so) the move validator slows
   things down quite a bit when browsing history or adding a move to the
   history. A solution to fix this is to only update the board without
   validating up to the last known validated move. It'll be tricky because the
@@ -30,3 +38,5 @@ order):
   memory.
 
 - GPM mouse support.
+
+- EPD game format.
