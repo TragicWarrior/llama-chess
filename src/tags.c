@@ -437,20 +437,24 @@ static void view_tag_value(struct menu_input_s *m)
 
 static void tag_print(WIN *win)
 {
-    int i, len = 0;
+    int i, len = 0, n;
     struct menu_input_s *m = win->data;
 
     for (i = 0; m->items[i]; i++) {
-	int n = strlen(m->items[i]->name);
+	n = strlen(m->items[i]->name);
 
 	if (len < n)
 	    len = n;
     }
 
-    i = win->cols - len - 4;
+    mvwprintw(win->w, m->print_line, 1, "%s", m->item->name);
 
-    mvwprintw(win->w, m->print_line, 1, "%*s: %-*s", len, m->item->name, 
-	    i, str_etc(m->item->value, i, 0));
+    for (n = strlen(m->item->name) + 1; n <= len; n++)
+	mvwprintw(win->w, m->print_line, n, "%c", '.');
+
+    mvwprintw(win->w, m->print_line, n, ": ");
+    i = win->cols - n - 2;
+    mvwprintw(win->w, m->print_line, n + 2, "%-*s", i - 1, str_etc(m->item->value, i, 0));
 }
 
 void edit_tags(GAME g, BOARD b, int edit)

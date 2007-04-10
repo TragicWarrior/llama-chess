@@ -136,7 +136,7 @@ static void fix_menu_vals(WIN *win)
     char buf[COLS - 4];
     int i = 0;
 #ifdef HAVE_WRESIZE
-    int n, nlen = 0;
+    int n, nlen = 0, vlen = 0;
 #endif
 
     for (i = 0; m->items[i]; i++);
@@ -154,8 +154,14 @@ static void fix_menu_vals(WIN *win)
 	    if (nlen < n)
 		nlen = n;
 
-	    if (m->items[i]->value)
-		n = strlen(m->items[i]->value) + nlen;
+	    if (m->items[i]->value) {
+	 	n = strlen(m->items[i]->value);
+
+		if (vlen < n)
+		    vlen = n;
+
+		n = vlen + nlen;
+	    }
 	    else
 		n = (!m->name_only) ? strlen(UNKNOWN) + nlen : nlen;
 
