@@ -1,2 +1,9 @@
 Speed up the move validator. It's alot slower since 0.1.6. I need suggestions 
 on this.
+
+An annotation without any move text is broken. For example:
+
+    { game forfeited } 1-0
+
+with or without game tags. Not sure how to handle this. Maybe allocate a new
+history item for the empty board.
