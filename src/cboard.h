@@ -108,7 +108,6 @@ int curses_initialized;
 int movestep;
 
 void update_all(GAME g);
-void parse_engine_output(GAME *g, char *str);
 void update_status_notify(GAME g, char *fmt, ...);
 void edit_tags(GAME g, BOARD b, int edit);
 void add_custom_tags(TAG ***t);

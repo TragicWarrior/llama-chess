@@ -104,7 +104,7 @@ typedef struct {
  * This is an array of 'games' structures. One for each game in a file, or
  * the current game.
  */
-typedef struct games {
+typedef struct game_s {
     TAG **tag;			// Roster tags.
     HISTORY **history;		// Move history for this game.
     HISTORY **hp; 		// History pointer pointing to the location 
@@ -119,7 +119,7 @@ typedef struct games {
     unsigned short ply;         // Move count.
     void *data;			/* User data associated with this game. Must
 				 * be freed by the user. */
-} GAME;
+} *GAME;
 
 /*
  * Global GAME array. pgn_new_game() appends to this array.
@@ -281,7 +281,7 @@ void pgn_tag_free(TAG **);
  * if there was no FEN tag or there was a SetUp tag with a value of 0. Returns
  * E_PGN_OK on success.
  */
-int pgn_board_init_fen(GAME *g, BOARD b, char *fen);
+int pgn_board_init_fen(GAME g, BOARD b, char *fen);
 
 /*
  * Creates a FEN tag from the current game 'g', history move (g.hindex) and
@@ -301,12 +301,12 @@ void pgn_board_init(BOARD b);
  * text parsing error, E_PGN_INVALID if the move is invalid, E_PGN_AMBIGUOUS
  * if the move is invalid with ambiguities or E_PGN_OK if successful.
  */
-int pgn_parse_move(GAME *g, BOARD b, char **m, char **frfr);
+int pgn_parse_move(GAME g, BOARD b, char **m, char **frfr);
 
 /*
  * Like pgn_parse_move() but don't modify game flags in 'g' or board 'b'.
  */
-int pgn_validate_move(GAME *g, BOARD b, char **m, char **frfr);
+int pgn_validate_move(GAME g, BOARD b, char **m, char **frfr);
 
 /*
  * Returns the total number of moves in 'h' or 0 if there are none.
@@ -325,7 +325,7 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n);
  * not in a RAV then g->history will be updated. Returns E_PGN_ERR if
  * realloc() failed or E_PGN_OK on success.
  */
-int pgn_history_add(GAME *g, const char *m);
+int pgn_history_add(GAME g, const char *m);
 
 /*
  * Deallocates all of the history data from position 'start' in the array 'h'.
@@ -339,19 +339,19 @@ void pgn_history_free(HISTORY **h, int start);
  * parsing of it failed. Or returns E_PGN_INVALID if somehow the move failed
  * validation while resetting.
  */
-int pgn_board_update(GAME *g, BOARD b, int n);
+int pgn_board_update(GAME g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the next 'n'th history move.
  * Returns nothing.
  */
-void pgn_history_prev(GAME *g, BOARD b, int n);
+void pgn_history_prev(GAME g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the previous 'n'th history move.
  * Returns nothing.
  */
-void pgn_history_next(GAME *g, BOARD b, int n);
+void pgn_history_next(GAME g, BOARD b, int n);
 
 /*
  * Converts the character piece 'p' to an integer. Returns the integer
@@ -369,13 +369,13 @@ int pgn_int_to_piece(char turn, int n);
 /*
  * Toggles g->turn. Returns nothing.
  */
-void pgn_switch_turn(GAME *);
+void pgn_switch_turn(GAME);
 
 /*
  * Toggles g->side and switches the White and Black roster tags. Returns
  * nothing.
  */
-void pgn_switch_side(GAME *g);
+void pgn_switch_side(GAME g);
 
 /*
  * Clears the enpassant flag for all positions on board 'b'. Returns nothing.

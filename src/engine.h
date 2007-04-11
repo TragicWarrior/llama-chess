@@ -56,16 +56,17 @@ struct engine_s {
 };
 
 int send_signal_to_engine(pid_t, int);
-int send_to_engine(GAME *g, int, const char *format, ...);
-int start_chess_engine(GAME *);
-void set_engine_defaults(GAME *, char **);
-void stop_engine(GAME *);
+int send_to_engine(GAME g, int, const char *format, ...);
+int start_chess_engine(GAME);
+void set_engine_defaults(GAME, char **);
+void stop_engine(GAME);
 void update_cursor(GAME, int);
 void refresh_all(void);
-void append_enginebuf(GAME *, char *);
-void send_engine_command(GAME *g);
-void add_engine_command(GAME *g, int s, char *fmt, ...);
+void append_enginebuf(GAME, char *);
+void send_engine_command(GAME g);
+void add_engine_command(GAME g, int s, char *fmt, ...);
 void invalid_move(int n, int e, const char *m);
 void update_status_window(GAME g);
+void parse_engine_output(GAME g, char *str);
 
 #endif

@@ -76,20 +76,20 @@ void update_cursor(GAME g, int idx)
 {
     char *p;
     int len;
-    int t = pgn_history_total(g.hp);
-    struct userdata_s *d = g.data;
+    int t = pgn_history_total(g->hp);
+    struct userdata_s *d = g->data;
 
     /*
      * If not deincremented then r and c would be the next move.
      */
     idx--;
 
-    if (idx > t || idx < 0 || !t || !g.hp[idx]->move) {
+    if (idx > t || idx < 0 || !t || !g->hp[idx]->move) {
 	d->c_row = 2, d->c_col = 5;
 	return;
     }
 
-    p = g.hp[idx]->move;
+    p = g->hp[idx]->move;
     len = strlen(p);
 
     if (*p == 'O') {
@@ -98,7 +98,7 @@ void update_cursor(GAME g, int idx)
 	else
 	    d->c_col = 3;
 
-	d->c_row = (g.turn == WHITE) ? 8 : 1;
+	d->c_row = (g->turn == WHITE) ? 8 : 1;
 	return;
     }
 
@@ -315,7 +315,7 @@ void do_game_write(char *filename, char *mode, int start, int end)
     }
 
     for (i = (start == -1) ? 0 : start; i < end; i++) {
-	d = game[i].data;
+	d = game[i]->data;
 	pgn_write(fp, game[i]);
 	CLEAR_FLAG(d->flags, CF_MODIFIED);
     }
@@ -424,7 +424,7 @@ void save_pgn(char *filename, int saveindex)
     do_game_write(filename, "a", saveindex, end);
 }
 
-static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod)
+static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 {
     if (pgn_piece_to_int(piece) == ROOK && col == 7
 	    && row == 7 &&
@@ -494,7 +494,7 @@ static int castling_state(GAME *g, BOARD b, int row, int col, int piece, int mod
     return 0;
 }
 
-static void draw_board(GAME *g)
+static void draw_board(GAME g)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -504,7 +504,7 @@ static void draw_board(GAME *g)
     struct userdata_s *d = g->data;
 
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
-	update_cursor(*g, g->hindex);
+	update_cursor(g, g->hindex);
 
     for (row = 0; row < maxy; row++) {
 	bcol = 0;
@@ -658,7 +658,7 @@ void invalid_move(int n, int e, const char *m)
 		? E_AMBIGUOUS : E_INVALID_MOVE, m, n);
 }
 
-static void update_clock(GAME *g, struct itimerval it)
+static void update_clock(GAME g, struct itimerval it)
 {
     struct userdata_s *d = g->data;
     long n;
@@ -696,28 +696,28 @@ static void update_clock(GAME *g, struct itimerval it)
 
 void do_validate_move(char *m)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     int n;
     char *frfr = NULL;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	if ((n = pgn_parse_move(&game[gindex], d->b, &m, &frfr)) != E_PGN_OK) {
+	if ((n = pgn_parse_move(game[gindex], d->b, &m, &frfr)) != E_PGN_OK) {
 	    invalid_move(d->n + 1, n, m);
 	    free(m);
 	    return;
 	}
 
-	pgn_history_add(&game[gindex], m);
-	pgn_switch_turn(&game[gindex]);
+	pgn_history_add(game[gindex], m);
+	pgn_switch_turn(game[gindex]);
     }
     else {
-	if ((n = pgn_validate_move(&game[gindex], d->b, &m, &frfr)) != E_PGN_OK) {
+	if ((n = pgn_validate_move(game[gindex], d->b, &m, &frfr)) != E_PGN_OK) {
 	    invalid_move(d->n + 1, n, m);
 	    free(m);
 	    return;
 	}
 
-	add_engine_command(&game[gindex], ENGINE_THINKING, "%s\n", 
+	add_engine_command(game[gindex], ENGINE_THINKING, "%s\n", 
 		(config.engine_protocol == 1) ? frfr : m);
     }
 
@@ -726,7 +726,7 @@ void do_validate_move(char *m)
     if (config.validmoves)
 	pgn_reset_valid_moves(d->b);
 
-    if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
+    if (TEST_FLAG(game[gindex]->flags, GF_GAMEOVER))
 	d->mode = MODE_HISTORY;
     else
 	SET_FLAG(d->flags, CF_MODIFIED);
@@ -749,7 +749,7 @@ void do_promotion_piece_finalize(WIN *win)
     do_validate_move(str);
 }
 
-static void move_to_engine(GAME *g)
+static void move_to_engine(GAME g)
 {
     struct userdata_s *d = g->data;
     char *str;
@@ -810,7 +810,7 @@ void update_status_window(GAME g)
     char *p;
     int maxy, maxx;
     int len;
-    struct userdata_s *d = g.data;
+    struct userdata_s *d = g->data;
 
     getmaxyx(statusw, maxy, maxx);
     w = maxx - 2 - 8;
@@ -826,7 +826,7 @@ void update_status_window(GAME g)
 	i++;
     }
 
-    if (TEST_FLAG(g.flags, GF_PERROR)) {
+    if (TEST_FLAG(g->flags, GF_PERROR)) {
 	if (!i)
 	    *p++ = '(';
 	else
@@ -913,7 +913,7 @@ void update_status_window(GAME g)
     wattroff(statusw, CP_STATUS_ENGINE);
 
     mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
-	    (g.turn == WHITE) ? WHITE_STR : BLACK_STR);
+	    (g->turn == WHITE) ? WHITE_STR : BLACK_STR);
 
     mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
 	    clock_to_char((TEST_FLAG(d->flags, CF_CLOCK)) ?
@@ -945,9 +945,9 @@ void update_history_window(GAME g)
     char buf[HISTORY_WIDTH - 1];
     HISTORY *h = NULL;
     int n, total;
-    int t = pgn_history_total(g.hp);
+    int t = pgn_history_total(g->hp);
 
-    n = (g.hindex + 1) / 2;
+    n = (g->hindex + 1) / 2;
 
     if (t % 2)
 	total = (t + 1) / 2;
@@ -963,7 +963,7 @@ void update_history_window(GAME g)
     mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    h = pgn_history_by_n(g.hp, g.hindex);
+    h = pgn_history_by_n(g->hp, g->hindex);
     snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
     n = 0;
 
@@ -977,7 +977,7 @@ void update_history_window(GAME g)
 	n++;
     }
 
-    if (g.ravlevel) {
+    if (g->ravlevel) {
 	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
 	n++;
     }
@@ -988,7 +988,7 @@ void update_history_window(GAME g)
     mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
 	    HISTORY_WIDTH - 13, buf);
 
-    h = pgn_history_by_n(g.hp, g.hindex - 1);
+    h = pgn_history_by_n(g->hp, g->hindex - 1);
     snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
     n = 0;
 
@@ -1002,7 +1002,7 @@ void update_history_window(GAME g)
 	n++;
     }
 
-    if (g.ravlevel) {
+    if (g->ravlevel) {
 	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
 	n++;
     }
@@ -1024,7 +1024,7 @@ void update_tag_window(TAG **t)
 		str_etc(t[i]->value, w, 0));
 }
 
-void append_enginebuf(GAME *g, char *line)
+void append_enginebuf(GAME g, char *line)
 {
     int i = 0;
     struct userdata_s *d = g->data;
@@ -1050,7 +1050,7 @@ void append_enginebuf(GAME *g, char *line)
 void update_engine_window(GAME g)
 {
     int i;
-    struct userdata_s *d = g.data;
+    struct userdata_s *d = g->data;
 
     if (!d->engine || !d->engine->enginebuf)
 	return;
@@ -1077,7 +1077,7 @@ void update_all(GAME g)
 {
     update_status_window(g);
     update_history_window(g);
-    update_tag_window(g.tag);
+    update_tag_window(g->tag);
     update_engine_window(g);
 }
 
@@ -1116,18 +1116,19 @@ static void delete_game(int which)
     struct userdata_s *d;
 
     for (i = 0; i < gtotal; i++) {
-	d = game[i].data;
+	d = game[i]->data;
 
 	if (i == which || TEST_FLAG(d->flags, CF_DELETE)) {
 	    pgn_free(game[i]);
 	    continue;
 	}
 
-	g = Realloc(g, (gi + 1) * sizeof(GAME));
-	memcpy(&g[gi], &game[i], sizeof(GAME));
-	g[gi].tag = game[i].tag;
-	g[gi].history = game[i].history;
-	g[gi].hp = game[i].hp;
+	g = Realloc(g, (gi + 1) * sizeof(GAME *));
+	g[gi] = Calloc(1, sizeof(struct game_s));
+	memcpy(g[gi], game[i], sizeof(struct game_s));
+	g[gi]->tag = game[i]->tag;
+	g[gi]->history = game[i]->history;
+	g[gi]->hp = game[i]->hp;
 	gi++;
     }
 
@@ -1143,7 +1144,7 @@ static void delete_game(int which)
     else
 	gindex = gtotal - 1;
 
-    game[gindex].hp = game[gindex].history;
+    game[gindex]->hp = game[gindex]->history;
 }
 
 /*
@@ -1159,17 +1160,17 @@ static int find_move_exp(GAME g, regex_t r, int which, int count)
 
     incr = (which == 0) ? -1 : 1;
 
-    for (i = g.hindex + incr - 1, found = 0; ; i += incr) {
-	if (i == g.hindex - 1)
+    for (i = g->hindex + incr - 1, found = 0; ; i += incr) {
+	if (i == g->hindex - 1)
 	    break;
 
-	if (i >= pgn_history_total(g.hp))
+	if (i >= pgn_history_total(g->hp))
 	    i = 0;
 	else if (i < 0)
-	    i = pgn_history_total(g.hp) - 1;
+	    i = pgn_history_total(g->hp) - 1;
 
 	// FIXME RAV
-	ret = regexec(&r, g.hp[i]->move, 0, 0, 0);
+	ret = regexec(&r, g->hp[i]->move, 0, 0, 0);
 
 	if (ret == 0) {
 	    if (count == ++found) {
@@ -1191,14 +1192,14 @@ static int find_move_exp(GAME g, regex_t r, int which, int count)
 static int toggle_delete_flag(int n)
 {
     int i, x;
-    struct userdata_s *d = game[n].data;
+    struct userdata_s *d = game[n]->data;
 
     TOGGLE_FLAG(d->flags, CF_DELETE);
     gindex = n;
     update_all(game[gindex]);
 
     for (i = x = 0; i < gtotal; i++) {
-	d = game[i].data;
+	d = game[i]->data;
 
 	if (TEST_FLAG(d->flags, CF_DELETE))
 	    x++;
@@ -1206,7 +1207,7 @@ static int toggle_delete_flag(int n)
 
     if (x == gtotal) {
 	cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
-	d = game[n].data;
+	d = game[n]->data;
 	CLEAR_FLAG(d->flags, CF_DELETE);
 	return 1;
     }
@@ -1265,10 +1266,10 @@ static int find_game_exp(char *str, int which, int count)
 	else if (g < 0)
 	    g = gtotal - 1;
 
-	for (t = 0; game[g].tag[t]; t++) {
+	for (t = 0; game[g]->tag[t]; t++) {
 	    if (nstr) {
-		if (regexec(&nexp, game[g].tag[t]->name, 0, 0, 0) == 0) {
-		    if (regexec(&vexp, game[g].tag[t]->value, 0, 0, 0) == 0) {
+		if (regexec(&nexp, game[g]->tag[t]->name, 0, 0, 0) == 0) {
+		    if (regexec(&vexp, game[g]->tag[t]->value, 0, 0, 0) == 0) {
 			if (count == ++found) {
 			    ret = g;
 			    goto cleanup;
@@ -1277,7 +1278,7 @@ static int find_game_exp(char *str, int which, int count)
 		}
 	    }
 	    else {
-		if (regexec(&vexp, game[g].tag[t]->value, 0, 0, 0) == 0) {
+		if (regexec(&vexp, game[g]->tag[t]->value, 0, 0, 0) == 0) {
 		    if (count == ++found) {
 			ret = g;
 			goto cleanup;
@@ -1344,7 +1345,7 @@ void update_status_notify(GAME g, char *fmt, ...)
 	update_status_window(g);
 }
 
-int rav_next_prev(GAME *g, BOARD b, int n)
+int rav_next_prev(GAME g, BOARD b, int n)
 {
     // Next RAV.
     if (n) {
@@ -1356,7 +1357,7 @@ int rav_next_prev(GAME *g, BOARD b, int n)
 	g->rav = Realloc(g->rav, (g->ravlevel + 1) * sizeof(RAV));
 	g->rav[g->ravlevel].hp = g->hp;
 	g->rav[g->ravlevel].flags = g->flags;
-	g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(*g, b));
+	g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(g, b));
 	g->rav[g->ravlevel].hindex = g->hindex;
 	g->hp = (!g->ravlevel) ? (g->hindex) ? g->hp[g->hindex - 1]->rav : g->hp[g->hindex]->rav : g->hp[g->hindex]->rav;
 	g->hindex = 0;
@@ -1442,24 +1443,24 @@ static void update_clocks()
     getitimer(ITIMER_REAL, &it);
 
     for (i = 0; i < gtotal; i++) {
-	d = game[i].data;
+	d = game[i]->data;
 
 	if (d && d->mode == MODE_PLAY) {
 	    if (d->paused == 1 || TEST_FLAG(d->flags, CF_NEW))
 		continue;
 	    else if (d->paused == -1) {
-		if (game[i].side == game[i].turn) {
+		if (game[i]->side == game[i]->turn) {
 		    d->paused = 1;
 		    continue;
 		}
 	    }
 
-	    update_clock(&game[i], it);
+	    update_clock(game[i], it);
 	}
     }
 }
 
-static int init_chess_engine(GAME *g)
+static int init_chess_engine(GAME g)
 {
     struct userdata_s *d = g->data;
     int w, x;
@@ -1477,7 +1478,7 @@ static int init_chess_engine(GAME *g)
 	add_engine_command(g, ENGINE_READY, "setboard %s\n", g->tag[x]->value);
     else
 	add_engine_command(g, ENGINE_READY, "setboard %s\n",
-		pgn_game_to_fen(*g, d->b));
+		pgn_game_to_fen(g, d->b));
 
     return 0;
 }
@@ -1554,7 +1555,7 @@ static int parse_clock_input(struct userdata_s *d, char *str)
 
 void do_clock_input_finalize(WIN *win)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     struct input_data_s *in = win->data;
 
     if (!in->str)
@@ -1569,7 +1570,7 @@ void do_clock_input_finalize(WIN *win)
 
 void do_engine_command_finalize(WIN *win)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     struct input_data_s *in = win->data;
     int x;
 
@@ -1579,7 +1580,7 @@ void do_engine_command_finalize(WIN *win)
     }
 
     x = d->engine->status;
-    send_to_engine(&game[gindex], -1, "%s\n", in->str);
+    send_to_engine(game[gindex], -1, "%s\n", in->str);
     d->engine->status = x;
     free(in->str);
     free(in);
@@ -1601,12 +1602,12 @@ void do_play_set_clock()
 
 void do_play_toggle_human()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     TOGGLE_FLAG(d->flags, CF_HUMAN);
 
-    if (!TEST_FLAG(d->flags, CF_HUMAN) && pgn_history_total(game[gindex].hp)) {
-	if (init_chess_engine(&game[gindex]))
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && pgn_history_total(game[gindex]->hp)) {
+	if (init_chess_engine(game[gindex]))
 	    return;
     }
 
@@ -1620,15 +1621,15 @@ void do_play_toggle_human()
 
 void do_play_toggle_engine()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     TOGGLE_FLAG(d->flags, CF_ENGINE_LOOP);
     CLEAR_FLAG(d->flags, CF_HUMAN);
 
     if (d->engine && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
-	pgn_board_update(&game[gindex], d->b,
-		pgn_history_total(game[gindex].hp));
-	add_engine_command(&game[gindex], ENGINE_READY, 
+	pgn_board_update(game[gindex], d->b,
+		pgn_history_total(game[gindex]->hp));
+	add_engine_command(game[gindex], ENGINE_READY, 
 		"setboard %s\n", pgn_game_to_fen(game[gindex], d->b));
     }
 
@@ -1637,7 +1638,7 @@ void do_play_toggle_engine()
 
 void do_play_send_command()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     struct input_data_s *in;
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE)
@@ -1650,38 +1651,38 @@ void do_play_send_command()
 
 void do_play_switch_turn()
 {
-    pgn_switch_side(&game[gindex]);
-    pgn_switch_turn(&game[gindex]);
-    add_engine_command(&game[gindex], -1, 
-	    (game[gindex].side == WHITE) ? "white\n" : "black\n");
+    pgn_switch_side(game[gindex]);
+    pgn_switch_turn(game[gindex]);
+    add_engine_command(game[gindex], -1, 
+	    (game[gindex]->side == WHITE) ? "white\n" : "black\n");
     update_status_window(game[gindex]);
 }
 
 void do_play_undo()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    if (!pgn_history_total(game[gindex].hp))
+    if (!pgn_history_total(game[gindex]->hp))
 	return;
 
     if (d->engine && d->engine->status == ENGINE_READY) {
-	add_engine_command(&game[gindex], ENGINE_READY, "remove\n");
+	add_engine_command(game[gindex], ENGINE_READY, "remove\n");
 	d->engine->status = ENGINE_READY;
     }
 
-    game[gindex].hindex -= 2;
-    pgn_history_free(game[gindex].hp, game[gindex].hindex);
-    game[gindex].hindex = pgn_history_total(game[gindex].hp);
-    pgn_board_update(&game[gindex], d->b, game[gindex].hindex);
+    game[gindex]->hindex -= 2;
+    pgn_history_free(game[gindex]->hp, game[gindex]->hindex);
+    game[gindex]->hindex = pgn_history_total(game[gindex]->hp);
+    pgn_board_update(game[gindex], d->b, game[gindex]->hindex);
     update_history_window(game[gindex]);
 }
 
 void do_play_toggle_pause()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    if (!TEST_FLAG(d->flags, CF_HUMAN) && game[gindex].turn != 
-	    game[gindex].side) {
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && game[gindex]->turn != 
+	    game[gindex]->side) {
 	d->paused = -1;
 	return;
     }
@@ -1691,22 +1692,22 @@ void do_play_toggle_pause()
 
 void do_play_go()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     if (TEST_FLAG(d->flags, CF_HUMAN))
 	return;
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
-	if (init_chess_engine(&game[gindex]))
+	if (init_chess_engine(game[gindex]))
 	    return;
     }
 
-    add_engine_command(&game[gindex], ENGINE_THINKING, "go\n");
+    add_engine_command(game[gindex], ENGINE_THINKING, "go\n");
 }
 
 void do_play_config_command()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     int x, w;
 
     if (!d->engine)
@@ -1717,14 +1718,14 @@ void do_play_config_command()
 	    if (config.keys[x]->c == input_c) {
 		switch (config.keys[x]->type) {
 		    case KEY_DEFAULT:
-			add_engine_command(&game[gindex], -1, "%s\n", 
+			add_engine_command(game[gindex], -1, "%s\n", 
 				config.keys[x]->str);
 			break;
 		    case KEY_SET:
 			if (!keycount)
 			    break;
 
-			add_engine_command(&game[gindex], -1, 
+			add_engine_command(game[gindex], -1, 
 				"%s %i\n", config.keys[x]->str, keycount);
 			keycount = 0;
 			break;
@@ -1733,7 +1734,7 @@ void do_play_config_command()
 			    break;
 
 			for (w = 0; w < keycount; w++)
-			    add_engine_command(&game[gindex], -1,
+			    add_engine_command(game[gindex], -1,
 				    "%s\n", config.keys[x]->str);
 			keycount = 0;
 			break;
@@ -1747,7 +1748,7 @@ void do_play_config_command()
 
 void do_play_cancel_selected()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     d->sp.icon = d->sp.srow = d->sp.scol = 0;
     keycount = 0;
@@ -1756,7 +1757,7 @@ void do_play_cancel_selected()
 
 void do_play_commit()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     pushkey = keycount = 0;
     update_status_notify(game[gindex], NULL);
@@ -1770,16 +1771,16 @@ void do_play_commit()
 
     d->sp.row = d->c_row;
     d->sp.col = d->c_col;
-    move_to_engine(&game[gindex]);
+    move_to_engine(game[gindex]);
 }
 
 void do_play_select()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     if (!TEST_FLAG(d->flags, CF_HUMAN) && (!d->engine ||
 		d->engine->status == ENGINE_OFFLINE)) {
-	if (init_chess_engine(&game[gindex]))
+	if (init_chess_engine(game[gindex]))
 	    return;
     }
 
@@ -1793,22 +1794,22 @@ void do_play_select()
 	return;
     }
 
-    if (((islower(d->sp.icon) && game[gindex].turn != BLACK)
-		|| (isupper(d->sp.icon) && game[gindex].turn != WHITE))) {
-	if (pgn_history_total(game[gindex].hp)) {
+    if (((islower(d->sp.icon) && game[gindex]->turn != BLACK)
+		|| (isupper(d->sp.icon) && game[gindex]->turn != WHITE))) {
+	if (pgn_history_total(game[gindex]->hp)) {
 	    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
 	    d->sp.icon = 0;
 	    return;
 	}
 	else {
-	    if (pgn_tag_find(game[gindex].tag, "FEN") != E_PGN_ERR)
+	    if (pgn_tag_find(game[gindex]->tag, "FEN") != E_PGN_ERR)
 		return;
 
-	    add_engine_command(&game[gindex], ENGINE_READY, "black\n");
-	    pgn_switch_turn(&game[gindex]);
+	    add_engine_command(game[gindex], ENGINE_READY, "black\n");
+	    pgn_switch_turn(game[gindex]);
 
-	    if (game[gindex].side != BLACK)
-		pgn_switch_side(&game[gindex]);
+	    if (game[gindex]->side != BLACK)
+		pgn_switch_side(game[gindex]);
 	}
     }
 
@@ -1945,25 +1946,25 @@ void do_play_help()
 
 void do_play_history_mode()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    if (!pgn_history_total(game[gindex].hp) || 
+    if (!pgn_history_total(game[gindex]->hp) || 
 	    (d->engine && d->engine->status == ENGINE_THINKING))
 	return;
 
     d->mode = MODE_HISTORY;
-    pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+    pgn_board_update(game[gindex], d->b, pgn_history_total(game[gindex]->hp));
     update_all(game[gindex]);
 }
 
 void do_play_edit_mode()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    if (pgn_history_total(game[gindex].hp))
+    if (pgn_history_total(game[gindex]->hp))
 	return;
 
-    pgn_board_init_fen(&game[gindex], d->b, NULL);
+    pgn_board_init_fen(game[gindex], d->b, NULL);
     config.details++;
     d->mode = MODE_EDIT;
     update_all(game[gindex]);
@@ -1981,7 +1982,7 @@ void do_edit_insert_finalize(WIN *win)
 
 void do_edit_select()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     if (d->sp.icon)
 	return;
@@ -2000,7 +2001,7 @@ void do_edit_select()
 void do_edit_commit()
 {
     int p;
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     pushkey = keycount = 0;
     update_status_notify(game[gindex], NULL);
@@ -2013,27 +2014,27 @@ void do_edit_commit()
     p = d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon;
     d->b[RANKTOBOARD(d->sp.row)][FILETOBOARD(d->sp.col)].icon = p;
     d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon =
-	pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+	pgn_int_to_piece(game[gindex]->turn, OPEN_SQUARE);
     d->sp.icon = d->sp.srow = d->sp.scol = 0;
 }
 
 void do_edit_delete()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     if (d->sp.icon)
 	d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon = 
-	    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+	    pgn_int_to_piece(game[gindex]->turn, OPEN_SQUARE);
     else
 	d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon =
-	    pgn_int_to_piece(game[gindex].turn, OPEN_SQUARE);
+	    pgn_int_to_piece(game[gindex]->turn, OPEN_SQUARE);
 
     d->sp.icon = d->sp.srow = d->sp.scol = 0;
 }
 
 void do_edit_cancel_selected()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     d->sp.icon = d->sp.srow = d->sp.scol = 0;
     keycount = 0;
@@ -2042,22 +2043,22 @@ void do_edit_cancel_selected()
 
 void do_edit_switch_turn()
 {
-    pgn_switch_turn(&game[gindex]);
+    pgn_switch_turn(game[gindex]);
     update_all(game[gindex]);
 }
 
 void do_edit_toggle_castle()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    castling_state(&game[gindex], d->b, RANKTOBOARD(d->c_row), 
+    castling_state(game[gindex], d->b, RANKTOBOARD(d->c_row), 
 	    FILETOBOARD(d->c_col),
 	    d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon, 1);
 }
 
 void do_edit_insert()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     construct_message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, 0, 0, NULL, NULL,
 	    d->b, do_edit_insert_finalize, 0, 0, "%s", GAME_EDIT_TEXT);
@@ -2065,7 +2066,7 @@ void do_edit_insert()
 
 void do_edit_enpassant()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     if (d->c_row == 6 || d->c_row == 3) {
 	pgn_reset_enpassant(d->b);
@@ -2083,12 +2084,12 @@ void do_edit_help()
 
 void do_edit_exit()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     config.details--;
-    pgn_tag_add(&game[gindex].tag, "FEN", pgn_game_to_fen(game[gindex], d->b));
-    pgn_tag_add(&game[gindex].tag, "SetUp", "1");
-    pgn_tag_sort(game[gindex].tag);
+    pgn_tag_add(&game[gindex]->tag, "FEN", pgn_game_to_fen(game[gindex], d->b));
+    pgn_tag_add(&game[gindex]->tag, "SetUp", "1");
+    pgn_tag_sort(game[gindex]->tag);
     d->mode = MODE_PLAY;
     update_all(game[gindex]);
 }
@@ -2119,7 +2120,7 @@ void really_do_annotate_finalize(struct input_data_s *in,
 
 void do_annotate_finalize(WIN *win)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     struct input_data_s *in = win->data;
 
     really_do_annotate_finalize(in, d);
@@ -2128,7 +2129,7 @@ void do_annotate_finalize(WIN *win)
 void do_find_move_exp_finalize(int init, int which)
 {
     int n;
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     static int firstrun;
     static regex_t r;
     int ret;
@@ -2151,8 +2152,8 @@ void do_find_move_exp_finalize(int init, int which)
 		    (which == -1) ? 0 : 1, (keycount) ? keycount : 1)) == -1)
 	return;
 
-    game[gindex].hindex = n;
-    pgn_board_update(&game[gindex], d->b, game[gindex].hindex);
+    game[gindex]->hindex = n;
+    pgn_board_update(game[gindex], d->b, game[gindex]->hindex);
     update_all(game[gindex]);
 }
 
@@ -2174,15 +2175,15 @@ void do_find_move_exp(WIN *win)
 
 void do_move_jump_finalize(int n)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    if (n < 0 || n > (pgn_history_total(game[gindex].hp) / 2))
+    if (n < 0 || n > (pgn_history_total(game[gindex]->hp) / 2))
 	return;
 
     keycount = 0;
     update_status_notify(game[gindex], NULL);
-    game[gindex].hindex = (n) ? n * 2 - 1 : n * 2;
-    pgn_board_update(&game[gindex], d->b, game[gindex].hindex);
+    game[gindex]->hindex = (n) ? n * 2 - 1 : n * 2;
+    pgn_board_update(game[gindex], d->b, game[gindex]->hindex);
     update_all(game[gindex]);
 }
 
@@ -2271,18 +2272,18 @@ void get_history_data(HISTORY **hp, struct history_menu_s ***menu, int m,
 
 void history_draw_update(struct menu_input_s *m)
 {
-    GAME *g = m->data;
+    GAME g = m->data;
     struct userdata_s *d = g->data;
 
     g->hindex = m->selected + 1;
-    update_cursor(*g, m->selected);
+    update_cursor(g, m->selected);
     pgn_board_update(g, d->b, m->selected + 1);
 }
 
 struct menu_item_s **get_history_items(WIN *win)
 {
     struct menu_input_s *m = win->data;
-    GAME *g = m->data;
+    GAME g = m->data;
     struct userdata_s *d = g->data;
     struct history_menu_s **hm = d->data;
     struct menu_item_s **items = m->items;
@@ -2332,7 +2333,7 @@ void history_menu_quit(struct menu_input_s *m)
 
 void history_menu_exit(WIN *win)
 {
-    GAME *g = win->data;
+    GAME g = win->data;
     struct userdata_s *d = g->data;
     struct history_menu_s **hm = d->data;
     int i;
@@ -2352,7 +2353,7 @@ void history_menu_exit(WIN *win)
 // FIXME RAV
 void history_menu_next(struct menu_input_s *m)
 {
-    GAME *g = m->data;
+    GAME g = m->data;
     struct userdata_s *d = g->data;
     struct history_menu_s **hm = d->data;
     int n, t;
@@ -2371,7 +2372,7 @@ void history_menu_next(struct menu_input_s *m)
 // FIXME RAV
 void history_menu_prev(struct menu_input_s *m)
 {
-    GAME *g = m->data;
+    GAME g = m->data;
     struct userdata_s *d = g->data;
     struct history_menu_s **hm = d->data;
     int n, t;
@@ -2407,7 +2408,7 @@ void do_annotate_move(HISTORY *hp)
 
 void history_menu_view_annotation(struct menu_input_s *m)
 {
-    GAME *g = m->data;
+    GAME g = m->data;
 
     // FIXME RAV
     view_annotation(g->history[m->selected]);
@@ -2416,7 +2417,7 @@ void history_menu_view_annotation(struct menu_input_s *m)
 void history_menu_annotate_finalize(WIN *win)
 {
     struct input_data_s *in = win->data;
-    GAME *g = in->moredata;
+    GAME g = in->moredata;
     struct userdata_s *d = g->data;
     struct history_menu_s **hm = d->data;
 
@@ -2430,7 +2431,7 @@ void history_menu_annotate_finalize(WIN *win)
 
 void history_menu_annotate(struct menu_input_s *m)
 {
-    GAME *g = m->data;
+    GAME g = m->data;
     char buf[COLS - 4];
     struct input_data_s *in;
     HISTORY *hp = g->history[m->selected]; // FIXME RAV
@@ -2453,7 +2454,7 @@ void history_menu_details(struct menu_input_s *m)
 void history_menu_print(WIN *win)
 {
     struct menu_input_s *m = win->data;
-    GAME *g = m->data;
+    GAME g = m->data;
     struct userdata_s *d = g->data;
     struct history_menu_s **hm = d->data;
     struct history_menu_s *h = hm[m->top];
@@ -2498,7 +2499,7 @@ void history_menu_print(WIN *win)
 	waddch(win->w, ' ');
 }
 
-void history_menu(GAME *g)
+void history_menu(GAME g)
 {
     struct menu_key_s **keys = NULL;
 
@@ -2515,7 +2516,7 @@ void history_menu(GAME *g)
 
 void do_history_menu()
 {
-    history_menu(&game[gindex]);
+    history_menu(game[gindex]);
 }
 
 void do_history_half_move_toggle()
@@ -2526,9 +2527,9 @@ void do_history_half_move_toggle()
 
 void do_history_jump_next()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    pgn_history_next(&game[gindex], d->b, (keycount > 0) ?
+    pgn_history_next(game[gindex], d->b, (keycount > 0) ?
 	    config.jumpcount * keycount * movestep : 
 	    config.jumpcount * movestep);
     update_all(game[gindex]);
@@ -2536,9 +2537,9 @@ void do_history_jump_next()
 
 void do_history_jump_prev()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    pgn_history_prev(&game[gindex], d->b, (keycount) ?
+    pgn_history_prev(game[gindex], d->b, (keycount) ?
 	    config.jumpcount * keycount * movestep : 
 	    config.jumpcount * movestep);
     update_all(game[gindex]);
@@ -2546,18 +2547,18 @@ void do_history_jump_prev()
 
 void do_history_prev()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    pgn_history_prev(&game[gindex], d->b,
+    pgn_history_prev(game[gindex], d->b,
 	    (keycount) ? keycount * movestep : movestep);
     update_all(game[gindex]);
 }
 
 void do_history_next()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    pgn_history_next(&game[gindex], d->b, (keycount) ? 
+    pgn_history_next(game[gindex], d->b, (keycount) ? 
 	    keycount * movestep : movestep);
     update_all(game[gindex]);
 }
@@ -2571,21 +2572,21 @@ void do_history_mode_finalize(struct userdata_s *d)
 
 void do_history_mode_confirm(WIN *win)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     switch (win->c) {
 	case 'R':
 	case 'r':
-	    pgn_history_free(game[gindex].hp, 
-		    game[gindex].hindex);
-	    pgn_board_update(&game[gindex], d->b, 
-		    pgn_history_total(game[gindex].hp));
+	    pgn_history_free(game[gindex]->hp, 
+		    game[gindex]->hindex);
+	    pgn_board_update(game[gindex], d->b, 
+		    pgn_history_total(game[gindex]->hp));
 	    break;
 #if 0
 	case 'C':
 	case 'c':
-	    if (pgn_history_rav_new(&game[gindex], d->b,
-			game[gindex].hindex) != E_PGN_OK)
+	    if (pgn_history_rav_new(game[gindex], d->b,
+			game[gindex]->hindex) != E_PGN_OK)
 		return;
 
 	    break;
@@ -2595,7 +2596,7 @@ void do_history_mode_confirm(WIN *win)
     }
 
     if (!TEST_FLAG(d->flags, CF_HUMAN))
-	add_engine_command(&game[gindex], ENGINE_READY,
+	add_engine_command(game[gindex], ENGINE_READY,
 		"setboard %s\n", pgn_game_to_fen(game[gindex], d->b));
 
     do_history_mode_finalize(d);
@@ -2603,10 +2604,10 @@ void do_history_mode_confirm(WIN *win)
 
 void do_history_toggle()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     // FIXME Resuming from previous history could append to a RAV.
-    if (game[gindex].hindex != pgn_history_total(game[gindex].hp)) {
+    if (game[gindex]->hindex != pgn_history_total(game[gindex]->hp)) {
 	if (!pushkey)
 	    construct_message(NULL, "(r)esume or abort", 0, 1, NULL, NULL, NULL, 
 		    do_history_mode_confirm, 0, 0, "%s", 
@@ -2615,7 +2616,7 @@ void do_history_toggle()
 	return;
     }
     else {
-	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
+	if (TEST_FLAG(game[gindex]->flags, GF_GAMEOVER))
 	    return;
     }
 
@@ -2624,14 +2625,14 @@ void do_history_toggle()
 
 void do_history_annotate()
 {
-    int n = game[gindex].hindex;
+    int n = game[gindex]->hindex;
 
-    if (n && game[gindex].hp[n - 1]->move)
+    if (n && game[gindex]->hp[n - 1]->move)
 	n--;
     else
 	return;
 
-    do_annotate_move(game[gindex].hp[n]);
+    do_annotate_move(game[gindex]->hp[n]);
 }
 
 void do_history_help()
@@ -2647,7 +2648,7 @@ void do_history_find(int which)
     struct input_data_s *in;
     int *p;
 
-    if (pgn_history_total(game[gindex].hp) < 2)
+    if (pgn_history_total(game[gindex]->hp) < 2)
 	return;
 
     in = Calloc(1, sizeof(struct input_data_s));
@@ -2682,9 +2683,9 @@ void do_history_find_next()
 
 void do_history_rav(int which)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
-    rav_next_prev(&game[gindex], d->b, which);
+    rav_next_prev(game[gindex], d->b, which);
     update_all(game[gindex]);
 }
 
@@ -2702,7 +2703,7 @@ void do_history_jump()
 {
     struct input_data_s *in;
 
-    if (pgn_history_total(game[gindex].hp) < 2)
+    if (pgn_history_total(game[gindex]->hp) < 2)
 	return;
 
     if (!keycount) {
@@ -2724,11 +2725,11 @@ static void free_userdata()
     for (i = 0; i < gtotal; i++) {
 	struct userdata_s *d;
 
-	if (game[i].data) {
-	    d = game[i].data;
+	if (game[i]->data) {
+	    d = game[i]->data;
 
 	    if (d->engine) {
-		stop_engine(&game[i]);
+		stop_engine(game[i]);
 
 		if (d->engine->enginebuf) {
 		    int n;
@@ -2742,8 +2743,8 @@ static void free_userdata()
 		free(d->engine);
 	    }
 
-	    free(game[i].data);
-	    game[i].data = NULL;
+	    free(game[i]->data);
+	    game[i]->data = NULL;
 	}
     }
 }
@@ -2762,12 +2763,12 @@ void update_loading_window(int n)
     box(loadingw, ACS_VLINE, ACS_HLINE);
     wattroff(loadingw, CP_MESSAGE_BORDER);
     mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
-		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
+		11 + strlen(itoa(gtotal))), "Loading->.. %i%% (%i games)", n, 
 	    gtotal);
     refresh_all();
 }
 
-static void init_userdata_once(GAME *g, int n)
+static void init_userdata_once(GAME g, int n)
 {
     struct userdata_s *d = NULL;
 
@@ -2786,7 +2787,7 @@ void init_userdata()
     int i;
 
     for (i = 0; i < gtotal; i++)
-	init_userdata_once(&game[i], i);
+	init_userdata_once(game[i], i);
 }
 
 void fix_marks(int *start, int *end)
@@ -2805,13 +2806,13 @@ void fix_marks(int *start, int *end)
     *end = (*end > gtotal) ? gtotal : *end;
 }
 
-void do_new_game_finalize(GAME *g)
+void do_new_game_finalize(GAME g)
 {
     struct userdata_s *d = g->data;
 
     d->mode = MODE_PLAY;
-    update_status_notify(*g, NULL);
-    update_all(*g);
+    update_status_notify(g, NULL);
+    update_all(g);
 }
 
 void do_new_game_from_scratch(WIN *win)
@@ -2822,18 +2823,18 @@ void do_new_game_from_scratch(WIN *win)
     stop_clock();
     free_userdata();
     pgn_parse(NULL);
-    add_custom_tags(&game[gindex].tag);
+    add_custom_tags(&game[gindex]->tag);
     init_userdata();
     loadfile[0] = 0;
-    do_new_game_finalize(&game[gindex]);
+    do_new_game_finalize(game[gindex]);
 }
 
 void do_new_game()
 {
     pgn_new_game();
-    add_custom_tags(&game[gindex].tag);
-    init_userdata_once(&game[gindex], gindex);
-    do_new_game_finalize(&game[gindex]);
+    add_custom_tags(&game[gindex]->tag);
+    init_userdata_once(game[gindex], gindex);
+    do_new_game_finalize(game[gindex]);
 }
 
 void do_game_delete_finalize(int n)
@@ -2841,8 +2842,8 @@ void do_game_delete_finalize(int n)
     struct userdata_s *d;
 
     delete_game((!n) ? gindex : -1);
-    d = game[gindex].data;
-    pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+    d = game[gindex]->data;
+    pgn_board_update(game[gindex], d->b, pgn_history_total(game[gindex]->hp));
     update_all(game[gindex]);
 }
 
@@ -2876,7 +2877,7 @@ void do_game_delete()
     tmp = NULL;
 
     for (i = n = 0; i < gtotal; i++) {
-	d = game[i].data;
+	d = game[i]->data;
 
 	if (TEST_FLAG(d->flags, CF_DELETE))
 	    n++;
@@ -2906,7 +2907,7 @@ void do_game_delete()
 
 void do_find_game_exp_finalize(int c)
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     int n;
 
     if ((n = find_game_exp(gameexp, (c == '{') ? 0 : 1, 
@@ -2914,12 +2915,12 @@ void do_find_game_exp_finalize(int c)
 	return;
 
     gindex = n;
-    d = game[gindex].data;
+    d = game[gindex]->data;
 
-    if (pgn_history_total(game[gindex].hp))
+    if (pgn_history_total(game[gindex]->hp))
 	d->mode = MODE_HISTORY;
 
-    pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+    pgn_board_update(game[gindex], d->b, pgn_history_total(game[gindex]->hp));
     update_all(game[gindex]);
 }
 
@@ -2951,8 +2952,8 @@ void do_game_jump_finalize(int n)
 	return;
 
     gindex = n;
-    d = game[gindex].data;
-    pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+    d = game[gindex]->data;
+    pgn_board_update(game[gindex], d->b, pgn_history_total(game[gindex]->hp));
     update_status_notify(game[gindex], NULL);
     update_all(game[gindex]);
 }
@@ -3015,12 +3016,12 @@ void do_load_file(WIN *win)
     loadingp = NULL;
     init_userdata();
     strncpy(loadfile, tmp, sizeof(loadfile));
-    d = game[gindex].data;
+    d = game[gindex]->data;
 
-    if (pgn_history_total(game[gindex].hp))
+    if (pgn_history_total(game[gindex]->hp))
 	d->mode = MODE_HISTORY;
 
-    pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+    pgn_board_update(game[gindex], d->b, pgn_history_total(game[gindex]->hp));
     update_all(game[gindex]);
 
 done:
@@ -3117,7 +3118,7 @@ void global_game_next_prev(int which)
 
     game_next_prev(game[gindex], (which == 1) ? 1 : 0,
 	    (keycount) ? keycount : 1);
-    d = game[gindex].data;
+    d = game[gindex]->data;
 
     if (delete_count) {
 	if (which == 1) {
@@ -3134,7 +3135,7 @@ void global_game_next_prev(int which)
     }
 
     if (d->mode != MODE_EDIT)
-	pgn_board_update(&game[gindex], d->b, pgn_history_total(game[gindex].hp));
+	pgn_board_update(game[gindex], d->b, pgn_history_total(game[gindex]->hp));
 
     update_status_notify(game[gindex], NULL);
     update_all(game[gindex]);
@@ -3251,14 +3252,14 @@ void do_global_delete_game()
 
 void do_global_tag_edit()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     edit_tags(game[gindex], d->b, 1);
 }
 
 void do_global_tag_view()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
 
     edit_tags(game[gindex], d->b, 0);
 }
@@ -3296,21 +3297,21 @@ void do_global_copy_game()
     struct userdata_s *d;
 
     do_global_new_game();
-    n = pgn_history_total(game[g].history);
+    n = pgn_history_total(game[g]->history);
 
     // FIXME RAV
     for (i = 0; i < n; i++)
-	pgn_history_add(&game[gindex], game[g].history[i]->move);
+	pgn_history_add(game[gindex], game[g]->history[i]->move);
 
-    n = pgn_tag_total(game[g].tag);
+    n = pgn_tag_total(game[g]->tag);
 
     for (i = 0; i < n; i++)
-	pgn_tag_add(&game[gindex].tag, game[g].tag[i]->name,
-		game[g].tag[i]->value);
+	pgn_tag_add(&game[gindex]->tag, game[g]->tag[i]->name,
+		game[g]->tag[i]->value);
 
-    d = game[gindex].data;
-    pgn_board_update(&game[gindex], d->b, 
-	    pgn_history_total(game[gindex].hp));
+    d = game[gindex]->data;
+    pgn_board_update(game[gindex], d->b, 
+	    pgn_history_total(game[gindex]->hp));
 }
 
 void do_global_new_all()
@@ -3353,7 +3354,7 @@ void do_global_toggle_board_details()
 // Global and other keys.
 static int globalkeys()
 {
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     int i;
 
     /*
@@ -3472,26 +3473,26 @@ static int globalkeys()
 void game_loop()
 {  
     int error_recover = 0;
-    struct userdata_s *d = game[gindex].data;
+    struct userdata_s *d = game[gindex]->data;
     int macro_match = -1;
 
     gindex = gtotal - 1;
 
-    if (pgn_history_total(game[gindex].hp))
+    if (pgn_history_total(game[gindex]->hp))
 	d->mode = MODE_HISTORY;
     else
 	d->mode = MODE_PLAY;
 
     if (d->mode == MODE_HISTORY) {
-	pgn_board_update(&game[gindex], d->b,
-		pgn_history_total(game[gindex].hp));
+	pgn_board_update(game[gindex], d->b,
+		pgn_history_total(game[gindex]->hp));
     }
 
     update_status_notify(game[gindex], "%s", GAME_HELP_PROMPT);
     movestep = 2;
     flushinp();
     update_all(game[gindex]);
-    update_tag_window(game[gindex].tag);
+    update_tag_window(game[gindex]->tag);
     wtimeout(boardw, WINDOW_TIMEOUT);
 
     while (!quit) {
@@ -3507,7 +3508,7 @@ void game_loop()
 	FD_ZERO(&wfds);
 
 	for (i = 0; i < gtotal; i++) {
-	    d = game[i].data;
+	    d = game[i]->data;
 
 	    if (d->engine && d->engine->pid != -1) {
 		if (d->engine->fd[ENGINE_IN_FD] > 2) {
@@ -3529,7 +3530,7 @@ void game_loop()
 	if (n) {
 	    if ((n = select(n + 1, &rfds, &wfds, NULL, &tv)) > 0) {
 		for (i = 0; i < gtotal; i++) {
-		    d = game[i].data;
+		    d = game[i]->data;
 
 		    if (d->engine && d->engine->pid != -1) {
 			if (FD_ISSET(d->engine->fd[ENGINE_IN_FD], &rfds)) {
@@ -3565,7 +3566,7 @@ void game_loop()
 				    if (d->engine->iobuf[strlen(d->engine->iobuf) - 1] != '\n')
 					continue;
 
-				    parse_engine_output(&game[i], d->engine->iobuf);
+				    parse_engine_output(game[i], d->engine->iobuf);
 				    free(d->engine->iobuf);
 				    d->engine->iobuf = NULL;
 				}
@@ -3574,7 +3575,7 @@ void game_loop()
 
 			if (FD_ISSET(d->engine->fd[ENGINE_OUT_FD], &wfds)) {
 			    if (d->engine->queue)
-				send_engine_command(&game[i]);
+				send_engine_command(game[i]);
 			}
 		    }
 		}
@@ -3586,13 +3587,13 @@ void game_loop()
 	    }
 	}
 
-	d = game[gindex].data;
+	d = game[gindex]->data;
 
-	if (TEST_FLAG(game[gindex].flags, GF_GAMEOVER))
+	if (TEST_FLAG(game[gindex]->flags, GF_GAMEOVER))
 	    d->mode = MODE_HISTORY;
 
 	error_recover = 0;
-	draw_board(&game[gindex]);
+	draw_board(game[gindex]);
 	update_all(game[gindex]);
 	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
 	refresh_all();
@@ -3841,7 +3842,7 @@ void loading_progress(long total, long offset)
     if (curses_initialized)
 	update_loading_window(n);
     else {
-	fprintf(stderr, "Loading... %i%% (%i games)\r", n, gtotal);
+	fprintf(stderr, "Loading->.. %i%% (%i games)\r", n, gtotal);
 	fflush(stderr);
     }
 }
@@ -3971,7 +3972,7 @@ int main(int argc, char *argv[])
 	default:
 	    // No file specified. Empty game.
 	    ret = pgn_parse(NULL);
-	    add_custom_tags(&game[gindex].tag);
+	    add_custom_tags(&game[gindex]->tag);
 	    break;
     }
 
@@ -3979,7 +3980,7 @@ int main(int argc, char *argv[])
 	if (validate_and_write) {
 	    for (i = 0; i < gtotal; i++) {
 		if (write_custom_tags)
-		    add_custom_tags(&game[i].tag);
+		    add_custom_tags(&game[i]->tag);
 
 		pgn_write(stdout, game[i]);
 	    }

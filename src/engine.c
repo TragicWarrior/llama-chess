@@ -76,7 +76,7 @@ int send_signal_to_engine(pid_t pid, int sig)
     return 0;
 }
 
-int send_to_engine(GAME *g, int status, const char *format, ...)
+int send_to_engine(GAME g, int status, const char *format, ...)
 {
     va_list ap;
     int len;
@@ -231,7 +231,7 @@ static char **parseargs(char *str)
 }
 
 /* Is this dangerous if pty permissions are wrong? */
-static pid_t init_chess_engine(GAME *g, char **args)
+static pid_t init_chess_engine(GAME g, char **args)
 {
     pid_t pid;
     int from[2], to[2];
@@ -303,7 +303,7 @@ static pid_t init_chess_engine(GAME *g, char **args)
     return 0;
 }
 
-void stop_engine(GAME *g)
+void stop_engine(GAME g)
 {
     struct userdata_s *d = g->data;
     int s;
@@ -322,7 +322,7 @@ void stop_engine(GAME *g)
     d->engine->pid = -1;
 }
 
-void set_engine_defaults(GAME *g, char **init)
+void set_engine_defaults(GAME g, char **init)
 {
     int i;
 
@@ -333,7 +333,7 @@ void set_engine_defaults(GAME *g, char **init)
 	add_engine_command(g, ENGINE_READY, "%s\n", init[i]);
 }
 
-int start_chess_engine(GAME *g)
+int start_chess_engine(GAME g)
 {
     char **args;
     int i;
@@ -347,7 +347,7 @@ int start_chess_engine(GAME *g)
 
     d->engine = Calloc(1, sizeof(struct engine_s));
     d->engine->status = ENGINE_INITIALIZING;
-    update_status_window(*g);
+    update_status_window(g);
     refresh_all();
 
     switch (init_chess_engine(g, args)) {
@@ -372,11 +372,11 @@ int start_chess_engine(GAME *g)
 	free(args[i]);
 
     free(args);
-    update_status_window(*g);
+    update_status_window(g);
     return ret;
 }
 
-static void parse_xboard_line(GAME *g, char *str)
+static void parse_xboard_line(GAME g, char *str)
 {
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
     struct userdata_s *d = g->data;
@@ -442,7 +442,7 @@ static void parse_xboard_line(GAME *g, char *str)
 	pgn_switch_turn(g);
 
 	if (TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
-	    update_cursor(*g, g->hindex);
+	    update_cursor(g, g->hindex);
 
 	    if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 		stop_engine(g);
@@ -459,7 +459,7 @@ static void parse_xboard_line(GAME *g, char *str)
     return;
 }
 
-void parse_engine_output(GAME *g, char *str)
+void parse_engine_output(GAME g, char *str)
 {
     char buf[255], *p = buf;
 
@@ -485,7 +485,7 @@ void parse_engine_output(GAME *g, char *str)
     }
 }
 
-void send_engine_command(GAME *g)
+void send_engine_command(GAME g)
 {
     struct userdata_s *d = g->data;
     struct queue_s **q = d->engine->queue;
@@ -498,8 +498,8 @@ void send_engine_command(GAME *g)
 	return;
 
     if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
-	if (memcmp(g, &game[gindex], sizeof(GAME)))
-	    update_status_window(*g);
+	if (g == game[gindex])
+	    update_status_window(g);
     }
 
     free(q[0]->line);
@@ -515,7 +515,7 @@ void send_engine_command(GAME *g)
     }
 }
 
-void add_engine_command(GAME *g, int s, char *fmt, ...)
+void add_engine_command(GAME g, int s, char *fmt, ...)
 {
     va_list ap;
     int i = 0;
