@@ -2911,12 +2911,12 @@ void do_game_delete()
     do_game_delete_finalize(n);
 }
 
-void do_find_game_exp_finalize(int c)
+void do_find_game_exp_finalize(int which)
 {
     struct userdata_s *d = game[gindex]->data;
     int n;
 
-    if ((n = find_game_exp(gameexp, (c == '{') ? 0 : 1, 
+    if ((n = find_game_exp(gameexp, (which == -1) ? 0 : 1, 
 		    (keycount) ? keycount : 1)) == -1)
 	return;
 
