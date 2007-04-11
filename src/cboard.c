@@ -2255,6 +2255,7 @@ void get_history_data(HISTORY **hp, struct history_menu_s ***menu, int m,
 	n++;
 	hmenu[n] = NULL;
 	
+#if 0
 	if (hp[i]->rav) {
 	    depth++;
 	    get_history_data(hp[i]->rav, &hmenu, m, turn);
@@ -2264,6 +2265,7 @@ void get_history_data(HISTORY **hp, struct history_menu_s ***menu, int m,
 	    if (depth)
 		m--;
 	}
+#endif
 
 	turn = (turn == WHITE) ? BLACK : WHITE;
     }
