@@ -95,6 +95,7 @@ const char *naghelp = {
 };
 
 char **nags;
+int nag_total;
 
 // Status window.
 struct {

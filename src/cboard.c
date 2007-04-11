@@ -134,6 +134,7 @@ static int init_nag()
     }
 
     nags[i] = NULL;
+    nag_total = i;
     return 0;
 }
 
@@ -256,7 +257,11 @@ static void *view_nag(void *arg)
 	if (!h->nag[i])
 	    break;
 
-	strncat(line, nags[h->nag[i]], sizeof(line));
+	if (h->nag[i] >= nag_total)
+	    strncat(line, itoa(h->nag[i]), sizeof(line));
+	else
+	    strncat(line, nags[h->nag[i]], sizeof(line));
+
 	strncat(line, "\n", sizeof(line));
     }
 
