@@ -308,7 +308,7 @@ void stop_engine(GAME g)
     struct userdata_s *d = g->data;
     int s;
 
-    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
+    if (!d->engine || d->engine->pid == -1 || d->engine->status == ENGINE_OFFLINE)
 	return;
 
     send_to_engine(g, ENGINE_READY, "quit\n");
