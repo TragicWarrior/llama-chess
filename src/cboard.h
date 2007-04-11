@@ -111,6 +111,7 @@ void update_all(GAME g);
 void update_status_notify(GAME g, char *fmt, ...);
 void edit_tags(GAME g, BOARD b, int edit);
 void add_custom_tags(TAG ***t);
+static void free_userdata_once(GAME g);
 
 #ifndef HAVE_PROGNAME
 char *__progname;

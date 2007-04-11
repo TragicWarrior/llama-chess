@@ -1119,6 +1119,7 @@ static void delete_game(int which)
 	d = game[i]->data;
 
 	if (i == which || TEST_FLAG(d->flags, CF_DELETE)) {
+	    free_userdata_once(game[i]);
 	    pgn_free(game[i]);
 	    continue;
 	}
@@ -2718,34 +2719,39 @@ void do_history_jump()
     do_move_jump_finalize(keycount);
 }
 
+static void free_userdata_once(GAME g)
+{
+    struct userdata_s *d = g->data;
+
+    if (!d)
+	return;
+
+    if (d->engine) {
+	stop_engine(g);
+
+	if (d->engine->enginebuf) {
+	    int n;
+
+	    for (n = 0; d->engine->enginebuf[n]; n++)
+		free(d->engine->enginebuf[n]);
+
+	    free(d->engine->enginebuf);
+	}
+
+	free(d->engine);
+    }
+
+    free(d);
+    g->data = NULL;
+}
+
 static void free_userdata()
 {
     int i;
 
     for (i = 0; i < gtotal; i++) {
-	struct userdata_s *d;
-
-	if (game[i]->data) {
-	    d = game[i]->data;
-
-	    if (d->engine) {
-		stop_engine(game[i]);
-
-		if (d->engine->enginebuf) {
-		    int n;
-
-		    for (n = 0; d->engine->enginebuf[n]; n++)
-			free(d->engine->enginebuf[n]);
-
-		    free(d->engine->enginebuf);
-		}
-
-		free(d->engine);
-	    }
-
-	    free(game[i]->data);
-	    game[i]->data = NULL;
-	}
+	free_userdata_once(game[i]);
+	game[i]->data = NULL;
     }
 }
 
