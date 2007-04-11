@@ -2763,7 +2763,7 @@ void update_loading_window(int n)
     box(loadingw, ACS_VLINE, ACS_HLINE);
     wattroff(loadingw, CP_MESSAGE_BORDER);
     mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
-		11 + strlen(itoa(gtotal))), "Loading->.. %i%% (%i games)", n, 
+		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
 	    gtotal);
     refresh_all();
 }
