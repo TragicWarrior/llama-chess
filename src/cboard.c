@@ -3140,7 +3140,9 @@ void global_game_next_prev(int which)
 	fix_marks(&markstart, &markend);
     }
 
-    if (d->mode != MODE_EDIT)
+    if (d->mode == MODE_HISTORY)
+	pgn_board_update(game[gindex], d->b, game[gindex]->hindex);
+    else if (d->mode == MODE_PLAY)
 	pgn_board_update(game[gindex], d->b, pgn_history_total(game[gindex]->hp));
 
     update_status_notify(game[gindex], NULL);
