@@ -1,6 +1,6 @@
 /* vim:tw=78:ts=8:sw=4:set ft=c:  */
 /*
-    Copyright (C) 2002-2006 Ben Kibbey <bjk@luxsci.net>
+    Copyright (C) 2002-2007 Ben Kibbey <bjk@luxsci.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -3120,7 +3120,7 @@ void do_game_save_multi_confirm(WIN *win)
 void do_global_about()
 {
     cmessage("ABOUT", ANYKEY, "%s (%s)\nUsing %s with %i colors "
-	    "and %i color pairs\nCopyright 2002-2006 %s",
+	    "and %i color pairs\nCopyright 2002-2007 %s",
 	    PACKAGE_STRING, pgn_version(), curses_version(), COLORS,
 	    COLOR_PAIRS, PACKAGE_BUGREPORT);
 }
