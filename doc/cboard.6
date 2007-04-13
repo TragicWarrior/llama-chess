@@ -221,6 +221,11 @@ will be flagged and the rest of the file will still be parsed.
 .Pp
 .It Cm valid_moves Ar BOOL
 When a piece is selected, show valid squares the piece can move to. The
+.Pp
+.It Cm strict_castling Ar BOOL
+When enabled a castling move will be invalid if the opponent can attack a
+castling square, beit the King, Rook or the squares between the two. The
+default is off.
 .Cm color_board_white_moves
 and
 .Cm color_board_black_moves
@@ -233,7 +238,7 @@ default is
 When in the file browser you can filter what is displayed with a
 .Xr glob 7
 pattern. Directories, including hidden directories, are always
-displayed reguardless of the pattern. The default is `*.pgn*'.
+displayed reguardless of the pattern. The default is `*.[Pp][Gg][Nn]*'.
 .El
 .
 .Sh COLORS

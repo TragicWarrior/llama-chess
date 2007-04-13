@@ -11,6 +11,10 @@ formatted moves (version 2) or FRFR formatted moves (version 1, the default).
 
 Added file browser binding CTRL-e to change the filename expression.
 
+Added configuration parameter 'strict_castling'. When enabled a castling move
+will be invalid if the opponent can attack a castling square, beit the King,
+Rook or the squares between the two. The default is off.
+
 Bugfixes and invisible changes. See ChangeLog for details.
 
 
