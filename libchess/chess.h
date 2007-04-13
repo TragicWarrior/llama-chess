@@ -182,6 +182,17 @@ typedef enum {
 } pgn_config_flag;
 
 /*
+ * Errors returned from the following functions.
+ */
+typedef enum {
+    E_PGN_ERR = -1,
+    E_PGN_OK,
+    E_PGN_PARSE,
+    E_PGN_AMBIGUOUS,
+    E_PGN_INVALID
+} pgn_error_t;
+
+/*
  * The prototype of the PGN_PROGRESS_FUNC function pointer.
  */
 typedef void (pgn_progress)(long size, long offset);
@@ -191,20 +202,20 @@ typedef void (pgn_progress)(long size, long offset);
  * E_PGN_ERR if 'f' is an invalid flag or E_PGN_INVALID if 'val' is an invalid
  * flag value.
  */
-int pgn_config_set(pgn_config_flag f, ...);
+pgn_error_t pgn_config_set(pgn_config_flag f, ...);
 
 /*
  * Gets the value of config flag 'f'. The next argument should be a pointer of
  * the config type which is set to the value of 'f'. Returns E_PGN_ERR if 'f'
  * is an invalid flag or E_PGN_OK on success.
  */
-int pgn_config_get(pgn_config_flag f, ...);
+pgn_error_t pgn_config_get(pgn_config_flag f, ...);
 
 /* 
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
  * E_PGN_ERR if not.
  */
-int pgn_is_compressed(const char *filename);
+pgn_error_t pgn_is_compressed(const char *filename);
 
 /*
  * Returns a file pointer associated with 'filename' or NULL on error with
@@ -223,21 +234,21 @@ FILE *pgn_open(const char *filename);
  * global 'gtotal' is set to the total number of games in the file. The file
  * will be closed when the parsing is done.
  */
-int pgn_parse(FILE *fp);
+pgn_error_t pgn_parse(FILE *fp);
 
 /*
  * Allocates a new game and increments 'gtotal'. 'gindex' is then set to the
  * new game. Returns E_PGN_ERR if there was a memory allocation error or
  * E_PGN_OK on success.
  */
-int pgn_new_game();
+pgn_error_t pgn_new_game();
 
 /*
  * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. See
  * 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
  * memory allocation or write error and E_PGN_OK on success.
  */
-int pgn_write(FILE *fp, GAME g);
+pgn_error_t pgn_write(FILE *fp, GAME g);
 
 /*
  * Frees all games in the global 'game' array. Returns nothing.
@@ -255,7 +266,7 @@ void pgn_free(GAME g);
  * is updated to the new 'value'. Returns E_PGN_ERR if there was a memory
  * allocation error or E_PGN_OK on success.
  */
-int pgn_tag_add(TAG ***dst, char *name, char *value);
+pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value);
 
 /*
  * Returns the total number of tags in 't' or 0 if 't' is NULL.
@@ -266,7 +277,7 @@ int pgn_tag_total(TAG **t);
  * Finds a tag 'name' in the structure array 't'. Returns the location in the
  * array of the found tag or E_PGN_ERR if the tag could not be found.
  */
-int pgn_tag_find(TAG **t, const char *name);
+pgn_error_t pgn_tag_find(TAG **t, const char *name);
 
 /*
  * Sorts a tag array. The first seven tags are in order of the PGN standard so
@@ -288,7 +299,7 @@ void pgn_tag_free(TAG **);
  * if there was no FEN tag or there was a SetUp tag with a value of 0. Returns
  * E_PGN_OK on success.
  */
-int pgn_board_init_fen(GAME g, BOARD b, char *fen);
+pgn_error_t pgn_board_init_fen(GAME g, BOARD b, char *fen);
 
 /*
  * Creates a FEN tag from the current game 'g', history move (g.hindex) and
@@ -308,12 +319,12 @@ void pgn_board_init(BOARD b);
  * text parsing error, E_PGN_INVALID if the move is invalid, E_PGN_AMBIGUOUS
  * if the move is invalid with ambiguities or E_PGN_OK if successful.
  */
-int pgn_parse_move(GAME g, BOARD b, char **m, char **frfr);
+pgn_error_t pgn_parse_move(GAME g, BOARD b, char **m, char **frfr);
 
 /*
  * Like pgn_parse_move() but don't modify game flags in 'g' or board 'b'.
  */
-int pgn_validate_move(GAME g, BOARD b, char **m, char **frfr);
+pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **frfr);
 
 /*
  * Returns the total number of moves in 'h' or 0 if there are none.
@@ -332,7 +343,7 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n);
  * not in a RAV then g->history will be updated. Returns E_PGN_ERR if
  * realloc() failed or E_PGN_OK on success.
  */
-int pgn_history_add(GAME g, const char *m);
+pgn_error_t pgn_history_add(GAME g, const char *m);
 
 /*
  * Deallocates all of the history data from position 'start' in the array 'h'.
@@ -346,7 +357,7 @@ void pgn_history_free(HISTORY **h, int start);
  * parsing of it failed. Or returns E_PGN_INVALID if somehow the move failed
  * validation while resetting.
  */
-int pgn_board_update(GAME g, BOARD b, int n);
+pgn_error_t pgn_board_update(GAME g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the next 'n'th history move.
@@ -364,14 +375,14 @@ void pgn_history_next(GAME g, BOARD b, int n);
  * Converts the character piece 'p' to an integer. Returns the integer
  * associated with 'p' or E_PGN_ERR if 'p' is invalid.
  */
-int pgn_piece_to_int(int p);
+pgn_error_t pgn_piece_to_int(int p);
 
 /*
  * Converts the integer piece 'n' to a character whose turn is 'turn'. WHITE
  * piece are uppercase and BLACK pieces are lowercase. Returns the character
  * associated with 'n' or E_PGN_ERR if 'n' is an invalid piece.
  */
-int pgn_int_to_piece(char turn, int n);
+pgn_error_t pgn_int_to_piece(char turn, int n);
 
 /*
  * Toggles g->turn. Returns nothing.
@@ -404,16 +415,5 @@ void pgn_find_valid_moves(GAME g, BOARD b, int rank, int file);
  * Returns the version string of the library.
  */
 char *pgn_version(void);
-
-/*
- * Errors returned from the above functions.
- */
-typedef enum {
-    E_PGN_ERR = -1,
-    E_PGN_OK,
-    E_PGN_PARSE,
-    E_PGN_AMBIGUOUS,
-    E_PGN_INVALID
-} pgn_error;
 
 #endif

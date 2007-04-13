@@ -1363,7 +1363,7 @@ again:
  * parsing error, E_PGN_INVALID if the move is invalid or E_PGN_OK if
  * successful.
  */
-int pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
+pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
 {
     int srank = 0, sfile = 0, rank, file;
     char *m = *mp, *p;
@@ -1435,7 +1435,7 @@ int pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
 /*
  * Like pgn_parse_move() but don't modify game flags in 'g' or board 'b'.
  */
-int pgn_validate_move(GAME g, BOARD b, char **m, char **dst)
+pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **dst)
 {
     int ret;
 

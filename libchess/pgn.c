@@ -325,7 +325,7 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n)
  * not in a RAV then g->history will be updated. Returns E_PGN_ERR if
  * realloc() failed or E_PGN_OK on success.
  */
-int pgn_history_add(GAME g, const char *m)
+pgn_error_t pgn_history_add(GAME g, const char *m)
 {
     int t = pgn_history_total(g->hp);
     int o;
@@ -372,7 +372,7 @@ int pgn_history_add(GAME g, const char *m)
  * parsing of it failed. Or returns E_PGN_INVALID if somehow the move failed
  * validation while resetting.
  */
-int pgn_board_update(GAME g, BOARD b, int n)
+pgn_error_t pgn_board_update(GAME g, BOARD b, int n)
 {
     int i = 0;
     BOARD tb;
@@ -468,7 +468,7 @@ void pgn_history_next(GAME g, BOARD b, int n)
  * Converts the character piece 'p' to an integer. Returns the integer
  * associated with 'p' or E_PGN_ERR if 'p' is invalid.
  */
-int pgn_piece_to_int(register int p)
+pgn_error_t pgn_piece_to_int(register int p)
 {
     if (p == '.')
 	return OPEN_SQUARE;
@@ -503,7 +503,7 @@ int pgn_piece_to_int(register int p)
  * piece are uppercase and BLACK pieces are lowercase. Returns the character
  * associated with 'n' or E_PGN_ERR if 'n' is an invalid piece.
  */
-int pgn_int_to_piece(char turn, int n)
+pgn_error_t pgn_int_to_piece(char turn, int n)
 {
     int p = 0;
 
@@ -545,7 +545,7 @@ int pgn_int_to_piece(char turn, int n)
  * Finds a tag 'name' in the structure array 't'. Returns the location in the
  * array of the found tag or E_PGN_ERR if the tag could not be found.
  */
-int pgn_tag_find(TAG **t, const char *name)
+pgn_error_t pgn_tag_find(TAG **t, const char *name)
 {
     int i;
 
@@ -599,7 +599,7 @@ int pgn_tag_total(TAG **tags)
  * is updated to the new 'value'. Returns E_PGN_ERR if there was a memory
  * allocation error or E_PGN_OK on success.
  */
-int pgn_tag_add(TAG ***dst, char *name, char *value)
+pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value)
 {
     int i;
     TAG **tdata = *dst;
@@ -1398,7 +1398,7 @@ other:
  * if there was no FEN tag or there was a SetUp tag with a value of 0. Returns
  * E_PGN_OK on success.
  */
-int pgn_board_init_fen(GAME g, BOARD b, char *fen)
+pgn_error_t pgn_board_init_fen(GAME g, BOARD b, char *fen)
 {
     int n = -1, i = -1;
     BOARD tmpboard;
@@ -1447,7 +1447,7 @@ int pgn_board_init_fen(GAME g, BOARD b, char *fen)
  * new game. Returns E_PGN_ERR if there was a memory allocation error or
  * E_PGN_OK on success.
  */
-int pgn_new_game()
+pgn_error_t pgn_new_game()
 {
     GAME *g;
     GAME newg;
@@ -1770,7 +1770,7 @@ static int read_file(FILE *fp)
  * global 'gtotal' is set to the total number of games in the file. The file
  * will be closed when the parsing is done.
  */
-int pgn_parse(FILE *fp)
+pgn_error_t pgn_parse(FILE *fp)
 {
     int i;
     long offset;
@@ -2083,7 +2083,7 @@ FILE *pgn_open(const char *filename)
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
  * E_PGN_ERR if not.
  */
-int pgn_is_compressed(const char *filename)
+pgn_error_t pgn_is_compressed(const char *filename)
 {
     if (compression_cmd(filename, 0))
 	return E_PGN_OK;
@@ -2096,7 +2096,7 @@ int pgn_is_compressed(const char *filename)
  * the config type which is set to the value of 'f'. Returns E_PGN_ERR if 'f'
  * is an invalid flag or E_PGN_OK on success.
  */
-int pgn_config_get(pgn_config_flag f, ...)
+pgn_error_t pgn_config_get(pgn_config_flag f, ...)
 {
     va_list ap;
     int *intval;
@@ -2155,7 +2155,7 @@ int pgn_config_get(pgn_config_flag f, ...)
  * E_PGN_ERR if 'f' is an invalid flag or E_PGN_INVALID if 'val' is an invalid
  * flag value.
  */
-int pgn_config_set(pgn_config_flag f, ...)
+pgn_error_t pgn_config_set(pgn_config_flag f, ...)
 {
     va_list ap;
     int n;
@@ -2225,7 +2225,7 @@ int pgn_config_set(pgn_config_flag f, ...)
  * 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
  * memory allocation or write error and E_PGN_OK on success.
  */
-int pgn_write(FILE *fp, GAME g)
+pgn_error_t pgn_write(FILE *fp, GAME g)
 {
     int i;
     int len = 0;
