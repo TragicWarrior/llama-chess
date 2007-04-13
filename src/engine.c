@@ -412,7 +412,7 @@ static void parse_xboard_line(GAME g, char *str)
 	 * For engine commands (the '|' key). Don't try and validate them.
 	 */
 	if (count != strlen(p))
-	    RETURN(d);
+	    return;
 
 	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 	    stop_engine(g);
@@ -450,6 +450,7 @@ static void parse_xboard_line(GAME g, char *str)
 	    }
 
 	    add_engine_command(g, ENGINE_THINKING, "go\n");
+	    return;
 	}
 
 	if (g->side == g->turn)
