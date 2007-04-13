@@ -672,6 +672,8 @@ void parse_rcfile(const char *filename)
 	    config.validmoves = on_or_off(filename, lines, val);
 	else if (strcmp(var, "board_details") == 0)
 	    config.details = on_or_off(filename, lines, val);
+	else if (strcmp(var, "strict_castling") == 0)
+	    pgn_config_set(PGN_STRICT_CASTLING, on_or_off(filename, lines, val));
 	else if (strcmp(var, "engine_cmd") == 0)
 	    altengine = strdup(val);
 	else if (strcmp(var, "engine_protocol") == 0) {
