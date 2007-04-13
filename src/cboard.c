@@ -3969,8 +3969,8 @@ int main(int argc, char *argv[])
 		validate_only = 1;
 		break;
 	    case 'v':
-		printf("%s (%s, %s)\n%s\n", PACKAGE_STRING, pgn_version(), 
-			curses_version(), COPYRIGHT);
+		printf("%s (%s)\n%s\n", PACKAGE_STRING, curses_version(),
+			COPYRIGHT);
 		exit(EXIT_SUCCESS);
 	    case 'p':
 		filetype = PGN_FILE;

@@ -5,9 +5,11 @@ AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
 AC_PROG_MAKE_SET
+AC_DISABLE_SHARED
+AC_PROG_LIBTOOL
 AC_CONFIG_SRCDIR([src/cboard.c])
 AM_CONFIG_HEADER([config.h])
-AC_CONFIG_SUBDIRS([libchess])
+#AC_CONFIG_SUBDIRS([libchess])
 
 case "$target_os" in
     darwin*)
@@ -168,5 +170,5 @@ fi
 AM_WITH_DMALLOC
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile data/Makefile \
-		 test/Makefile])
+		 test/Makefile libchess/Makefile])
 AC_OUTPUT
