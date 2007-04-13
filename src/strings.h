@@ -189,6 +189,7 @@
 #define STATUS_FILE_STR		"File:"
 #define STATUS_MODE_STR		"Mode:"
 #define STATUS_GAME_STR		"Game:"
+#define STATUS_FLAGS_STR	"Flags:"
 #define STATUS_ENGINE_STR	"Engine:"
 #define STATUS_TURN_STR		"Turn:"
 #define STATUS_CLOCK_STR	"Clock:"

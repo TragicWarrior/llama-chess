@@ -300,6 +300,7 @@ void set_default_keys()
     add_key_binding(&global_keys, do_global_resume_game, CTRL('r'), "load a PGN file", 0);
     add_key_binding(&global_keys, do_global_save_game, 's', "save game", 0);
     add_key_binding(&global_keys, do_global_toggle_board_details, CTRL('d'), "toggle board details", 0);
+    add_key_binding(&global_keys, do_global_toggle_strict_castling, CTRL('p'), "toggle strict castling", 0);
     add_key_binding(&global_keys, do_global_toggle_engine_window, 'W', "toggle chess engine IO window", 0);
     add_key_binding(&global_keys, do_global_about, KEY_F(10), "version information", 0);
     add_key_binding(&global_keys, do_global_quit, 'Q', "quit", 0);

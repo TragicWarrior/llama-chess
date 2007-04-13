@@ -109,5 +109,6 @@ key_func do_global_about;
 key_func do_global_quit;
 key_func do_global_toggle_engine_window;
 key_func do_global_toggle_board_details;
+key_func do_global_toggle_strict_castling;
 
 #endif

@@ -2092,6 +2092,65 @@ int pgn_is_compressed(const char *filename)
 }
 
 /*
+ * Gets the value of config flag 'f'. The next argument should be a pointer of
+ * the config type which is set to the value of 'f'. Returns E_PGN_ERR if 'f'
+ * is an invalid flag or E_PGN_OK on success.
+ */
+int pgn_config_get(pgn_config_flag f, ...)
+{
+    va_list ap;
+    int *intval;
+    long *longval;
+    pgn_progress *progress;
+
+    va_start(ap, f);
+
+    switch (f) {
+	case PGN_STRICT_CASTLING:
+	    intval = va_arg(ap, int *);
+	    *intval = pgn_config.strict_castling;
+	    va_end(ap);
+	    return E_PGN_OK;
+	case PGN_REDUCED:
+	    intval = va_arg(ap, int *);
+	    *intval = pgn_config.reduced;
+	    va_end(ap);
+	    return E_PGN_OK;
+	case PGN_MPL:
+	    intval = va_arg(ap, int *);
+	    *intval = pgn_config.mpl;
+	    va_end(ap);
+	    return E_PGN_OK;
+	case PGN_STOP_ON_ERROR:
+	    intval = va_arg(ap, int *);
+	    *intval = pgn_config.stop;
+	    va_end(ap);
+	    return E_PGN_OK;
+	case PGN_PROGRESS:
+	    longval = va_arg(ap, long *);
+	    *longval = pgn_config.stop;
+	    va_end(ap);
+	    return E_PGN_OK;
+	case PGN_PROGRESS_FUNC:
+	    progress = va_arg(ap, pgn_progress *);
+	    progress = pgn_config.pfunc;
+	    va_end(ap);
+	    return E_PGN_OK;
+#ifdef DEBUG
+	case PGN_DEBUG:
+	    intval = va_arg(ap, int *);
+	    *intval = dumptofile;
+	    va_end(ap);
+	    return E_PGN_OK;
+#endif
+	default:
+	    break;
+    }
+
+    return E_PGN_ERR;
+}
+
+/*
  * Sets config flag 'f' to the next argument. Returns E_PGN_OK on success or
  * E_PGN_ERR if 'f' is an invalid flag or E_PGN_INVALID if 'val' is an invalid
  * flag value.

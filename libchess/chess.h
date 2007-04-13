@@ -193,6 +193,13 @@ typedef void (pgn_progress)(long size, long offset);
  */
 int pgn_config_set(pgn_config_flag f, ...);
 
+/*
+ * Gets the value of config flag 'f'. The next argument should be a pointer of
+ * the config type which is set to the value of 'f'. Returns E_PGN_ERR if 'f'
+ * is an invalid flag or E_PGN_OK on success.
+ */
+int pgn_config_get(pgn_config_flag f, ...);
+
 /* 
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
  * E_PGN_ERR if not.

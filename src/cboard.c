@@ -649,8 +649,6 @@ static void draw_board(GAME g)
 
 	brow = row / 2;
     }
-
-    mvwaddch(boardw, maxy - 1, maxx - 2, (config.details) ? '!' : ' ');
 }
 
 void invalid_move(int n, int e, const char *m)
@@ -816,25 +814,38 @@ void update_status_window(GAME g)
     int maxy, maxx;
     int len;
     struct userdata_s *d = g->data;
+    int y;
+    int n;
 
     getmaxyx(statusw, maxy, maxx);
     w = maxx - 2 - 8;
     len = maxx - 2;
     buf = Malloc(len);
+    y = 2;
+
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_FILE_STR, w,
+	    (loadfile[0]) ? str_etc(loadfile, w, 1) : UNAVAILABLE);
+    snprintf(buf, len, "%i %s %i", gindex + 1, N_OF_N_STR, gtotal);
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
 
     *tmp = '\0';
     p = tmp;
 
+    if (config.details) {
+	*p++ = 'D';
+	i++;
+    }
+
     if (TEST_FLAG(d->flags, CF_DELETE)) {
-	*p++ = '(';
-	*p++ = 'x';
+	if (i)
+	    *p++ = '/';
+
+	*p++ = 'X';
 	i++;
     }
 
     if (TEST_FLAG(g->flags, GF_PERROR)) {
-	if (!i)
-	    *p++ = '(';
-	else
+	if (i)
 	    *p++ = '/';
 
 	*p++ = '!';
@@ -842,25 +853,25 @@ void update_status_window(GAME g)
     }
 
     if (TEST_FLAG(d->flags, CF_MODIFIED)) {
-	if (!i)
-	    *p++ = '(';
-	else
+	if (i)
 	    *p++ = '/';
 
 	*p++ = '*';
 	i++;
     }
 
-    if (*tmp != '\0')
-	*p++ = ')';
+    pgn_config_get(PGN_STRICT_CASTLING, &n);
+
+    if (n == 1) {
+	if (i)
+	    *p++ = '/';
+
+	*p++ = 'C';
+	i++;
+    }
 
     *p = '\0';
-
-    mvwprintw(statusw, 2, 1, "%*s %-*s", 7, STATUS_FILE_STR, w,
-	    (loadfile[0]) ? str_etc(loadfile, w, 1) : UNAVAILABLE);
-    snprintf(buf, len, "%i %s %i %s", gindex + 1, N_OF_N_STR, gtotal, 
-	    (*tmp) ? tmp : "");
-    mvwprintw(statusw, 3, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_FLAGS_STR, w, tmp);
 
     switch (d->mode) {
 	case MODE_HISTORY:
@@ -888,7 +899,7 @@ void update_status_window(GAME g)
 	    strncat(buf, " (human/engine)", len - 1);
     }
 
-    mvwprintw(statusw, 4, 1, "%-*s", len, buf);
+    mvwprintw(statusw, y++, 1, "%-*s", len, buf);
 
     if (d->engine) {
 	switch (d->engine->status) {
@@ -912,25 +923,25 @@ void update_status_window(GAME g)
     else
 	engine = ENGINE_OFFLINE_STR;
 
-    mvwprintw(statusw, 5, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
+    mvwprintw(statusw, y, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
-    mvwaddstr(statusw, 5, 9, engine);
+    mvwaddstr(statusw, y++, 9, engine);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, 6, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
 	    (g->turn == WHITE) ? WHITE_STR : BLACK_STR);
 
-    mvwprintw(statusw, 7, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
 	    clock_to_char((TEST_FLAG(d->flags, CF_CLOCK)) ?
 		    d->limit - d->elapsed : 0));
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, 8, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->wc));
+    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->wc));
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, 9, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->bc));
+    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->bc));
     free(buf);
 
     for (i = 1; i < maxx - 4; i++)
@@ -1595,6 +1606,18 @@ void do_engine_command_finalize(WIN *win)
 void do_board_details()
 {
     config.details = (config.details) ? 0 : 1;
+}
+
+void do_toggle_strict_castling()
+{
+    int n;
+
+    pgn_config_get(PGN_STRICT_CASTLING, &n);
+
+    if (n == 0)
+	pgn_config_set(PGN_STRICT_CASTLING, 1);
+    else
+	pgn_config_set(PGN_STRICT_CASTLING, 0);
 }
 
 void do_play_set_clock()
@@ -3364,6 +3387,11 @@ void do_global_toggle_engine_window()
 void do_global_toggle_board_details()
 {
     do_board_details();
+}
+
+void do_global_toggle_strict_castling()
+{
+    do_toggle_strict_castling();
 }
 
 // Global and other keys.
