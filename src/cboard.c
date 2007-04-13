@@ -871,7 +871,7 @@ void update_status_window(GAME g)
     }
 
     *p = '\0';
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_FLAGS_STR, w, tmp);
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_FLAGS_STR, w, (tmp[0]) ? tmp : "-");
 
     switch (d->mode) {
 	case MODE_HISTORY:
