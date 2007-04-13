@@ -19,7 +19,7 @@
 
 # The number of moves to jump when browsing move history and pressing the UP
 # or DOWN keys.
-jump_count	5
+#jump_count	5
 
 # If set, the default directory where games will be saved to and opened from.
 # A tilde '~' will be expanded to your home directory.
@@ -28,34 +28,38 @@ jump_count	5
 # When saving a game, prompt to edit PGN data. When saving in history mode,
 # prompt for the history type. If off, you can override it using the ingame 'S'
 # command. BOOL
-save_prompt	on
+#save_prompt	on
 
 # When deleting games with the 'X' command and this is on, prompt before
 # deleting. BOOL
-delete_prompt	on
+#delete_prompt	on
 
 # If enabled, chess board line graphics will be drawn. BOOL
-line_graphics	on
+#line_graphics	on
 
 # If on, show valid moves for the selected piece. BOOL
-valid_moves	on
+#valid_moves	on
 
 # When enabled castling availability and the en passasnt square will be shown
 # on the board. This can be toggled with the `d' key. BOOL
-board_details	off
+#board_details	on
 
 # If enabled and there is a parsing error when loading a file, stop processing
 # immediately. Normally a game or round will be flagged as having an error and
 # other games will be loaded. BOOL
-stop_on_error	off
+#stop_on_error	off
 
 # The number of full moves to write per linea (up to 80 columns) when saving a
 # game. If 0, then try and fit as many as possible in 80 columns.
-mpl		0
+#mpl		0
+
+# When enabled a castling move will be invalid if the opponent can attack a
+# castling square, beit the King, Rook or the squares between the two.
+#strict_castling	off
 
 # Custom roster tags to add to new games and existing games with the -t
 # switch. If an existing tag with the same name exists then the tag will be
-# updated with the new value. You can specify as many tags as needed.
+# updated with the new value. You can add as many tags as needed.
 #tag		White	Ben Kibbey
 
 # When browsing files in the file browser filter files in the current
@@ -78,45 +82,45 @@ mpl		0
 # a single comma. The following attributes are available: bold, blink,
 # reverse, dim, standout, underline, invisible, or none. Note that not all
 # terminals support all attributes.
-color_board_window		white	black
-color_board_graphics		white	black
-color_board_selected		white	yellow	none	bold,reverse
-color_board_cursor		white	green	none	bold,reverse
-color_board_black		white	black
-color_board_white		white	red	none	reverse
-color_board_coords		yellow	black	bold
-color_board_count		magenta	cyan	bold	bold,reverse
-color_board_white_moves	white	magenta	none	reverse
-color_board_black_moves	white	blue	none	reverse
-
-color_status_window	white	black
-color_status_title	white	blue	none	reverse
-color_status_border	cyan	black
-color_status_notify	green	black	none	bold
-color_status_engine	yellow	black	none	bold
-
-color_tag_window	white	black
-color_tag_title	white	blue	none	reverse
-color_tag_border	cyan	black
-
-color_history_window	white	black
-color_history_title	white	blue	none	reverse
-color_history_border	cyan	black
-
-color_message_window	white	black
-color_message_title	white	magenta	none	reverse
-color_message_border	cyan	black
-color_message_prompt	white	magenta	none	bold
-
-color_input_window	white	black
-color_input_title	white	magenta	none	reverse
-color_input_border	cyan	black
-color_input_prompt	white	magenta	none	bold
-
-color_menu		white	black	none	none
-color_menu_selected	white	red	none	bold
-color_menu_highlight	blue	yellow	none	bold
-color_menu_graphics	green	black	bold	bold
+#color_board_window		white	black
+#color_board_graphics		white	black
+#color_board_selected		white	yellow	none	bold,reverse
+#color_board_cursor		white	green	none	bold,reverse
+#color_board_black		white	black
+#color_board_white		white	red	none	reverse
+#color_board_coords		yellow	black	bold
+#color_board_count		magenta	cyan	bold	bold,reverse
+#color_board_white_moves	white	magenta	none	reverse
+#color_board_black_moves	white	blue	none	reverse
+#
+#color_status_window	white	black
+#color_status_title	white	blue	none	reverse
+#color_status_border	cyan	black
+#color_status_notify	green	black	none	bold
+#color_status_engine	yellow	black	none	bold
+#
+#color_tag_window	white	black
+#color_tag_title	white	blue	none	reverse
+#color_tag_border	cyan	black
+#
+#color_history_window	white	black
+#color_history_title	white	blue	none	reverse
+#color_history_border	cyan	black
+#
+#color_message_window	white	black
+#color_message_title	white	magenta	none	reverse
+#color_message_border	cyan	black
+#color_message_prompt	white	magenta	none	bold
+#
+#color_input_window	white	black
+#color_input_title	white	magenta	none	reverse
+#color_input_border	cyan	black
+#color_input_prompt	white	magenta	none	bold
+#
+#color_menu		white	black	none	none
+#color_menu_selected	white	red	none	bold
+#color_menu_highlight	blue	yellow	none	bold
+#color_menu_graphics	green	black	bold	bold
 
 # Sends a command to the chess engine when the specified key is pressed. The
 # bound key will only be available in play mode and will only get sent if it
@@ -143,51 +147,51 @@ color_menu_graphics	green	black	bold	bold
 
 # Play mode keys.
 #    Mode       Key             Command
-bind play	"<space>"	select
-bind play	"<enter>"	commit
-bind play	"<escape>"	cancel_selected
-bind play	"C"		set_clock
-bind play	"w"		switch_turn
-bind play	"u"		undo
-bind play	"g"		go
-bind play	"|"		send_command
-bind play	"E"		toggle_engine
-bind play	"H"		toggle_human
-bind play	"<F1>"		help
-bind play	"p"		toggle_pause
-bind play	"h"		history_mode
-bind play	"e"		edit_mode
-
+#bind play	"<space>"	select
+#bind play	"<enter>"	commit
+#bind play	"<escape>"	cancel_selected
+#bind play	"C"		set_clock
+#bind play	"w"		switch_turn
+#bind play	"u"		undo
+#bind play	"g"		go
+#bind play	"|"		send_command
+#bind play	"E"		toggle_engine
+#bind play	"H"		toggle_human
+#bind play	"<F1>"		help
+#bind play	"p"		toggle_pause
+#bind play	"h"		history_mode
+#bind play	"e"		edit_mode
+#
 # History mode keys.
 #    Mode       Key             Command
-bind history	"<up>"		jump_next
-bind history	"<down>"	jump_prev
-bind history	"<right>"	next
-bind history	"<left>"	prev
-bind history	"<space>"	half_move_toggle
-bind history	"j"		jump
-bind history	"/"		find_new
-bind history	"]"		find_next
-bind history	"["		find_prev
-bind history	"<^a>"		annotate
-bind history	"+"		rav_next
-bind history	"-"		rav_prev
-bind history	"M"		menu
-bind history	"h"		toggle
-bind history	"<f1>"		help
+#bind history	"<up>"		jump_next
+#bind history	"<down>"	jump_prev
+#bind history	"<right>"	next
+#bind history	"<left>"	prev
+#bind history	"<space>"	half_move_toggle
+#bind history	"j"		jump
+#bind history	"/"		find_new
+#bind history	"]"		find_next
+#bind history	"["		find_prev
+#bind history	"<^a>"		annotate
+#bind history	"+"		rav_next
+#bind history	"-"		rav_prev
+#bind history	"M"		menu
+#bind history	"h"		toggle
+#bind history	"<f1>"		help
 
 # Board editing keys.
 #    Mode       Key             Command
-bind edit	"<space>"	select
-bind edit	"<enter>"	commit
-bind edit	"<escape>"	cancel_selected
-bind edit	"d"		delete
-bind edit	"i"		insert
-bind edit	"c"		toggle_castle
-bind edit	"p"		enpassant
-bind edit	"w"		switch_turn
-bind edit	"<f1>"		help
-bind edit	"e"		exit
+#bind edit	"<space>"	select
+#bind edit	"<enter>"	commit
+#bind edit	"<escape>"	cancel_selected
+#bind edit	"d"		delete
+#bind edit	"i"		insert
+#bind edit	"c"		toggle_castle
+#bind edit	"p"		enpassant
+#bind edit	"w"		switch_turn
+#bind edit	"<f1>"		help
+#bind edit	"e"		exit
 
 # Macros should be defined AFTER all key bindings. The bound key "presses" a
 # series of keys in the specified game mode. The "any" game mode can be used
@@ -195,4 +199,4 @@ bind edit	"e"		exit
 
 # This would edit the "White" roster tag when pressing CTRL-o.
 #	Mode	Key		Key sequence
-macro 	any	"<^o>"		"<^t><^a>white<enter>"
+#macro 	any	"<^o>"		"<^t><^a>white<enter>"
