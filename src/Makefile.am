@@ -12,10 +12,10 @@ CPPFLAGS += -DDEBUG
 endif
 
 if NO_STRSEP
-cboard_SOURCES += $(top_builddir)/osdep/strsep.c
+cboard_SOURCES += $(top_srcdir)/osdep/strsep.c
 endif
 
 if NO_ERR_H
-cboard_SOURCES += $(top_builddir)/osdep/err.c
-CPPFLAGS += -I$(top_builddir)/osdep
+cboard_SOURCES += $(top_srcdir)/osdep/err.c
+CPPFLAGS += -I$(top_srcdir)/osdep
 endif
