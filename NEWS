@@ -1,5 +1,8 @@
-CBoard version 0.2.5
+CBoard version 0.3
 --------------------
+New versioning scheme. It's less confusing and easier for me to use X.X
+format. I really only work and release on one branch anyway.
+
 Added global CTRL-i which copies the current game to a new one.
 
 Added -D command line option to enable debugging if debugging was enabled at
