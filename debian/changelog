@@ -1,3 +1,9 @@
+cboard (0.3-1) unstable; urgency=low
+
+  * New upstream. 
+
+ -- Ben Kibbey <bjk@luxsci.net>  Fri, 13 Apr 2007 21:01:53 -0400
+
 cboard (0.2.4) unstable; urgency=low
 
   * New upstream. 

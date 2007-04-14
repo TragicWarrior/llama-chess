@@ -43,7 +43,7 @@ The following command line options are available:
 .
 .Bl -tag -width
 .It Fl p Ar pgnfile
-Load a PGN formatted file. If the filename extension ends with .Z, .bz, .bz2,
+Load a PGN formatted file. If the filename extension ends with .Z, .bz2,
 \&.gz or \&.zip, then it will be uncompressed (and compressed if saving)
 automatically provided you have
 .Xr compress 1 ,
@@ -221,11 +221,6 @@ will be flagged and the rest of the file will still be parsed.
 .Pp
 .It Cm valid_moves Ar BOOL
 When a piece is selected, show valid squares the piece can move to. The
-.Pp
-.It Cm strict_castling Ar BOOL
-When enabled a castling move will be invalid if the opponent can attack a
-castling square, beit the King, Rook or the squares between the two. The
-default is off.
 .Cm color_board_white_moves
 and
 .Cm color_board_black_moves
@@ -233,6 +228,12 @@ color parameters can specify alternate colors for the valid move squares.
 The
 default is 
 .Ar on .
+.Pp
+.It Cm strict_castling Ar BOOL
+When enabled a castling move will be invalid if the opponent can attack a
+castling square, beit the King, Rook or the squares between the two. The
+default is
+.Ar off .
 .Pp
 .It Cm pattern Ar filter
 When in the file browser you can filter what is displayed with a

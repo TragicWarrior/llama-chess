@@ -13,8 +13,9 @@ Read INSTALL for build and installation details. After installing, type
 "cboard -h" for command-line options or just "cboard". Then type F1 for
 help on in-game command keys.
 
-Feel free to send me a description of any bugs you find along with the
-associated .pgn (if any), feature requests and patches.
+The latest version can be found at http://bjk.sourceforge.net/cboard/. Feel
+free to send me a description of any bugs you find along with the associated
+.pgn (if any), feature requests and patches.
 
 Benjamin J. Kibbey       bjk/freenode/@luxsci.net
 3019 F5FC AA33 5BC7 BE9F 09D2 393E DBD2 40D5 FA7E
