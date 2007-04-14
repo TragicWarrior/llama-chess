@@ -4037,6 +4037,14 @@ int main(int argc, char *argv[])
 
     init_userdata();
 
+    /*
+     * This fixes window resizing in an xterm.
+     */
+    if (getenv("DISPLAY") != NULL) {
+	putenv("LINES=");
+	putenv("COLUMNS=");
+    }
+
     if (initscr() == NULL)
 	errx(EXIT_FAILURE, "%s", E_INITCURSES);
     else
