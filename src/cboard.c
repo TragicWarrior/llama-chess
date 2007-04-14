@@ -3580,7 +3580,30 @@ void game_loop()
 			    len = read(d->engine->fd[ENGINE_IN_FD], fdbuf,
 				    sizeof(fdbuf));
 
-			    if (len == -1) {
+			    if (len > 0) {
+				if (d->engine->iobuf)
+				    d->engine->iobuf = Realloc(d->engine->iobuf, d->engine->len + len + 1); 
+				else
+				    d->engine->iobuf = Calloc(1, len + 1);
+
+				memcpy(&(d->engine->iobuf[d->engine->len]), &fdbuf, len);
+				d->engine->len += len;
+				d->engine->iobuf[d->engine->len] = 0;
+
+				/*
+				 * The fdbuf is full or no newline
+				 * was found. So we'll append the next
+				 * read() to this games buffer.
+				 */
+				if (d->engine->iobuf[d->engine->len - 1] != '\n')
+				    continue;
+
+				parse_engine_output(game[i], d->engine->iobuf);
+				free(d->engine->iobuf);
+				d->engine->iobuf = NULL;
+				d->engine->len = 0;
+			    }
+			    else if (len == -1) {
 				if (errno != EAGAIN) {
 				    cmessage(ERROR, ANYKEY, "Engine read(): %s",
 					    strerror(errno));
@@ -3588,30 +3611,6 @@ void game_loop()
 				    free(d->engine);
 				    d->engine = NULL;
 				    break;
-				}
-			    }
-			    else {
-				if (len) {
-				    if (d->engine->iobuf)
-					d->engine->iobuf = Realloc(d->engine->iobuf, len + 
-						strlen(d->engine->iobuf) + 1);
-				    else
-					d->engine->iobuf = Calloc(1, len + 1);
-
-				    memcpy(d->engine->iobuf, &fdbuf, len);
-				    d->engine->iobuf[len] = 0;
-
-				    /*
-				     * The fdbuf is full and no newline
-				     * was found. So we'll append the next
-				     * read() to this games buffer.
-				     */
-				    if (d->engine->iobuf[strlen(d->engine->iobuf) - 1] != '\n')
-					continue;
-
-				    parse_engine_output(game[i], d->engine->iobuf);
-				    free(d->engine->iobuf);
-				    d->engine->iobuf = NULL;
 				}
 			    }
 			}
