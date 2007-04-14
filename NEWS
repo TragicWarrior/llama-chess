@@ -13,7 +13,10 @@ Added file browser binding CTRL-e to change the filename expression.
 
 Added configuration parameter 'strict_castling'. When enabled a castling move
 will be invalid if the opponent can attack a castling square, beit the King,
-Rook or the squares between the two. The default is off.
+Rook or the squares between the two. The default is off. This also adds a
+keyboard binding CTRL-p to toggle strict castling.
+
+New status window line 'Flags' which shows game flags for the current game.
 
 Bugfixes and invisible changes. See ChangeLog for details.
 
