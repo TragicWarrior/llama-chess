@@ -3075,6 +3075,8 @@ void do_game_save(WIN *win)
     char *tmp = in->str;
     char tfile[FILENAME_MAX];
     char *p;
+    int i;
+    struct userdata_s *d;
 
     if (!tmp || (tmp = pathfix(tmp)) == NULL)
 	goto done;
@@ -3099,6 +3101,22 @@ void do_game_save(WIN *win)
 	    snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
 	    tmp = tfile;
 	}
+    }
+
+    /*
+     * When in edit mode, update the FEN tag.
+     */
+    if (n == -1) {
+	for (i = 0; i < gtotal; i++) {
+	    d = game[i]->data;
+
+	    if (d->mode == MODE_EDIT)
+		pgn_tag_add(&game[i]->tag, "FEN", pgn_game_to_fen(game[i], d->b));
+	}
+    }
+    else {
+	d = game[n]->data;
+	pgn_tag_add(&game[n]->tag, "FEN", pgn_game_to_fen(game[n], d->b));
     }
 
     save_pgn(tmp, n);
