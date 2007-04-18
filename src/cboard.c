@@ -1825,6 +1825,10 @@ void do_play_select()
 
     if (((islower(d->sp.icon) && game[gindex]->turn != BLACK)
 		|| (isupper(d->sp.icon) && game[gindex]->turn != WHITE))) {
+	message(NULL, ANYKEY, "%s", E_SELECT_TURN);
+	d->sp.icon = 0;
+	return;
+#if 0
 	if (pgn_history_total(game[gindex]->hp)) {
 	    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
 	    d->sp.icon = 0;
@@ -1840,6 +1844,7 @@ void do_play_select()
 	    if (game[gindex]->side != BLACK)
 		pgn_switch_side(game[gindex]);
 	}
+#endif
     }
 
     d->sp.srow = d->c_row;
