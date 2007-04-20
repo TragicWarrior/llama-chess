@@ -1694,15 +1694,29 @@ void do_play_undo()
     if (!pgn_history_total(game[gindex]->hp))
 	return;
 
-    if (d->engine && d->engine->status == ENGINE_READY) {
-	add_engine_command(game[gindex], ENGINE_READY, "remove\n");
-	d->engine->status = ENGINE_READY;
+    if (keycount) {
+	if (game[gindex]->hindex - keycount < 0)
+	    game[gindex]->hindex = 0;
+	else
+	    game[gindex]->hindex -= keycount * 2;
+    }
+    else {
+	if (game[gindex]->hindex - 2 < 0)
+	    game[gindex]->hindex = 0;
+	else
+	    game[gindex]->hindex -= 2;
     }
 
-    game[gindex]->hindex -= 2;
     pgn_history_free(game[gindex]->hp, game[gindex]->hindex);
     game[gindex]->hindex = pgn_history_total(game[gindex]->hp);
     pgn_board_update(game[gindex], d->b, game[gindex]->hindex);
+
+    if (d->engine && d->engine->status == ENGINE_READY) {
+	add_engine_command(game[gindex], ENGINE_READY, "setboard %s\n",
+		pgn_game_to_fen(game[gindex], d->b));
+	d->engine->status = ENGINE_READY;
+    }
+
     update_history_window(game[gindex]);
 }
 
