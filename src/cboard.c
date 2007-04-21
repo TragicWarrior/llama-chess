@@ -3561,7 +3561,6 @@ static int globalkeys()
 
 void game_loop()
 {  
-    int error_recover = 0;
     struct userdata_s *d = game[gindex]->data;
     int macro_match = -1;
 
@@ -3680,7 +3679,6 @@ void game_loop()
 	if (TEST_FLAG(game[gindex]->flags, GF_GAMEOVER))
 	    d->mode = MODE_HISTORY;
 
-	error_recover = 0;
 	draw_board(game[gindex]);
 	update_all(game[gindex]);
 	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
