@@ -3811,10 +3811,10 @@ void usage(const char *pn, int ret)
 {
     fprintf((ret) ? stderr : stdout, "%s",
 #ifdef DEBUG
-    "Usage: cboard [-hvD] [-p [-VtRSE] <file>]\n"
+    "Usage: cboard [-hvCD] [-p [-VtRSE] <file>]\n"
     "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
 #else
-    "Usage: cboard [-hv] [-p [-VtRSE] <file>]\n"
+    "Usage: cboard [-hvC] [-p [-VtRSE] <file>]\n"
 #endif
     "  -p  Load PGN file.\n"
     "  -V  Validate a game file.\n"
@@ -3822,6 +3822,7 @@ void usage(const char *pn, int ret)
     "  -R  Like -S but write a reduced PGN formatted game.\n"
     "  -t  Also write custom PGN tags from config file.\n"
     "  -E  Stop processing on file parsing error (overrides config).\n"
+    "  -C  Enable strict castling (overrides config).\n"
     "  -v  Version information.\n"
     "  -h  This help text.\n");
 
@@ -3980,9 +3981,9 @@ int main(int argc, char *argv[])
     set_defaults();
 
 #ifdef DEBUG
-    while ((opt = getopt(argc, argv, "DEVtSRhp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "DCEVtSRhp:v")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "EVtSRhp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "ECVtSRhp:v")) != -1) {
 #endif
 	switch (opt) {
 #ifdef DEBUG
@@ -3991,6 +3992,9 @@ int main(int argc, char *argv[])
 		pgn_config_set(PGN_DEBUG, 1);
 		break;
 #endif
+	    case 'C':
+		pgn_config_set(PGN_STRICT_CASTLING, 1);
+		break;
 	    case 't':
 		write_custom_tags = 1;
 		break;

@@ -26,8 +26,8 @@
 .Sh SYNOPSIS
 .
 .Nm cboard
-.Op Fl hvN
-.Op Fl E Fl t Fl V Fl S 
+.Op Fl hvC
+.Op Fl E Fl t Fl V Fl S Fl R 
 .Op Fl p Ar pgnfile
 .
 .Sh DESCRIPTION
@@ -55,8 +55,6 @@ installed.
 .It Fl E
 Stop processing a file when a parse error occurs. Overrides configuration
 parameter.
-.It Fl N
-Enable two human player mode disabling the chess engine.
 .It Fl V
 Validate the specified file only. If a parse error occurs
 .Nm cboard
@@ -77,6 +75,9 @@ Normally when
 is specified custom tags aren't written. This option enables custom tags in
 .Pa ~/.cboard/config
 to be added to the output.
+.It Fl C
+Enable strict castling. Useful when only validating a file. This option
+overrides the config value.
 .It Fl v
 Version information.
 .It Fl h
