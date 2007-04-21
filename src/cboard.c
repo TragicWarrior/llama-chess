@@ -1596,9 +1596,14 @@ void do_engine_command_finalize(WIN *win)
 	return;
     }
 
+    if (!d->engine)
+	goto done;
+
     x = d->engine->status;
     send_to_engine(game[gindex], -1, "%s\n", in->str);
     d->engine->status = x;
+
+done:
     free(in->str);
     free(in);
 }
