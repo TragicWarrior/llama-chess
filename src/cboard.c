@@ -3199,12 +3199,12 @@ void global_game_next_prev(int which)
 	    delete_count = 0;
 	}
 	else {
-	    markend = markstart - delete_count;
+	    markend = markstart - delete_count + 1;
 	    delete_count = -1; // to fix gindex in the other direction
 	}
 
-	pushkey = 'x';
 	fix_marks(&markstart, &markend);
+	do_global_toggle_delete();
     }
 
     if (d->mode == MODE_HISTORY)
