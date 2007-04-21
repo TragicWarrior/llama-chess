@@ -1675,8 +1675,10 @@ void do_play_send_command()
     struct userdata_s *d = game[gindex]->data;
     struct input_data_s *in;
 
-    if (!d->engine || d->engine->status == ENGINE_OFFLINE)
-	return;
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
+	if (init_chess_engine(game[gindex]))
+	    return;
+    }
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_engine_command_finalize;
