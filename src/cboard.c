@@ -2787,6 +2787,15 @@ static void free_userdata_once(GAME g)
 	    free(d->engine->enginebuf);
 	}
 
+	if (d->engine->queue) {
+	    struct queue_s **q;
+
+	    for (q = d->engine->queue; *q; q++)
+		free(*q);
+
+	    free(d->engine->queue);
+	}
+
 	free(d->engine);
     }
 
