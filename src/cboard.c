@@ -3180,9 +3180,9 @@ void do_game_save_multi_confirm(WIN *win)
 void do_global_about()
 {
     cmessage("ABOUT", ANYKEY, "%s\nUsing %s with %i colors "
-	    "and %i color pairs\nCopyright 2002-2007 %s",
+	    "and %i color pairs\n%s",
 	    PACKAGE_STRING, curses_version(), COLORS, COLOR_PAIRS,
-	    PACKAGE_BUGREPORT);
+	    COPYRIGHT);
 }
 
 void global_game_next_prev(int which)
