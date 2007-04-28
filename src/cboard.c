@@ -678,6 +678,7 @@ static void update_clock(GAME g, struct itimerval it)
 	if (TEST_FLAG(d->flags, CF_CLOCK)) {
 	    if (d->wc.tv_sec >= d->limit) {
 		SET_FLAG(g->flags, GF_GAMEOVER);
+		stop_engine(g);
 		pgn_tag_add(&g->tag, "Result", "0-1");
 	    }
 	}
@@ -694,6 +695,7 @@ static void update_clock(GAME g, struct itimerval it)
 	if (TEST_FLAG(d->flags, CF_CLOCK)) {
 	    if (d->bc.tv_sec >= d->limit) {
 		SET_FLAG(g->flags, GF_GAMEOVER);
+		stop_engine(g);
 		pgn_tag_add(&g->tag, "Result", "1-0");
 	    }
 	}
