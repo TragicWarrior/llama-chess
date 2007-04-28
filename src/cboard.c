@@ -1477,29 +1477,6 @@ static void update_clocks()
     }
 }
 
-static int init_chess_engine(GAME g)
-{
-    struct userdata_s *d = g->data;
-    int w, x;
-
-    if (start_chess_engine(g) > 0) {
-	d->sp.icon = 0;
-	return 1;
-    }
-
-    x = pgn_tag_find(g->tag, "FEN");
-    w = pgn_tag_find(g->tag, "SetUp");
-
-    if ((w >= 0 && x >= 0 && atoi(g->tag[w]->value) == 1) || 
-	    (x >= 0 && w == -1))
-	add_engine_command(g, ENGINE_READY, "setboard %s\n", g->tag[x]->value);
-    else
-	add_engine_command(g, ENGINE_READY, "setboard %s\n",
-		pgn_game_to_fen(g, d->b));
-
-    return 0;
-}
-
 static int parse_clock_input(struct userdata_s *d, char *str)
 {
     char *p = str;

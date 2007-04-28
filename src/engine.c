@@ -230,8 +230,31 @@ static char **parseargs(char *str)
     return pptr;
 }
 
+int init_chess_engine(GAME g)
+{
+    struct userdata_s *d = g->data;
+    int w, x;
+
+    if (start_chess_engine(g) > 0) {
+	d->sp.icon = 0;
+	return 1;
+    }
+
+    x = pgn_tag_find(g->tag, "FEN");
+    w = pgn_tag_find(g->tag, "SetUp");
+
+    if ((w >= 0 && x >= 0 && atoi(g->tag[w]->value) == 1) || 
+	    (x >= 0 && w == -1))
+	add_engine_command(g, ENGINE_READY, "setboard %s\n", g->tag[x]->value);
+    else
+	add_engine_command(g, ENGINE_READY, "setboard %s\n",
+		pgn_game_to_fen(g, d->b));
+
+    return 0;
+}
+
 /* Is this dangerous if pty permissions are wrong? */
-static pid_t init_chess_engine(GAME g, char **args)
+static pid_t exec_chess_engine(GAME g, char **args)
 {
     pid_t pid;
     int from[2], to[2];
@@ -350,7 +373,7 @@ int start_chess_engine(GAME g)
     update_status_window(g);
     refresh_all();
 
-    switch (init_chess_engine(g, args)) {
+    switch (exec_chess_engine(g, args)) {
 	case -1:
 	    /* Pty allocation. */
 	    message(ERROR, ANYKEY, "Could not allocate PTY");
@@ -525,7 +548,7 @@ void add_engine_command(GAME g, int s, char *fmt, ...)
     char *line;
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
-	if (start_chess_engine(g))
+	if (init_chess_engine(g))
 	    return;
     }
 
