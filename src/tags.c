@@ -409,6 +409,11 @@ static void edit_tag_save(struct menu_input_s *m)
     game[gindex]->tag = t;
     pushkey = -1;
     SET_FLAG(d->flags, CF_MODIFIED);
+
+    /*
+     * In case of editing a FEN tag.
+     */
+    pgn_board_update(game[gindex], d->b, game[gindex]->hindex);
 }
 
 static void edit_tag_help(struct menu_input_s *m)
