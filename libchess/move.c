@@ -1193,6 +1193,8 @@ static int do_santofrfr(GAME g, BOARD b, char **san, int *promo, int *sfile,
     int i = 0;
     char *m = *san;
 
+    capture = 0;
+
 again:
     if (strlen(m) < 2)
 	return E_PGN_PARSE;
