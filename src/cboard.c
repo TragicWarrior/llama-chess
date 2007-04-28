@@ -2116,6 +2116,7 @@ void do_edit_exit()
     pgn_tag_add(&game[gindex]->tag, "FEN", pgn_game_to_fen(game[gindex], d->b));
     pgn_tag_add(&game[gindex]->tag, "SetUp", "1");
     pgn_tag_sort(game[gindex]->tag);
+    pgn_board_update(game[gindex], d->b, game[gindex]->hindex);
     d->mode = MODE_PLAY;
     update_all(game[gindex]);
 }
