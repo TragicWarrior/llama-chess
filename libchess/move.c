@@ -993,7 +993,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	else
 	    g->ply++;
 
-	if (g->ply / 2 >= 50) {
+	if (g->ply >= 50) {
 	    if (g->tag[6]->value[0] == '*') {
 		pgn_tag_add(&g->tag, "Result", "1/2-1/2");
 		SET_FLAG(g->flags, GF_GAMEOVER);
