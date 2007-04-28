@@ -717,6 +717,7 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     struct game_s newg;
     int oldv = validate;
     int nkfile, nkrank, nokfile, nokrank;
+    int go;
 
     validate = 0;
     check_testing = 1;
@@ -735,6 +736,7 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     else
 	nkfile = kfile, nkrank = krank;
 
+    go = TEST_FLAG(newg.flags, GF_GAMEOVER);
     memcpy(&newg, g, sizeof(struct game_s));
 
     if (check_self(&newg, tmpb, nkfile, nkrank) == CHECK_SELF) {
@@ -743,8 +745,12 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
 	return 0;
     }
 
-    if (!validate && !validate_find)
+    if (!validate && !validate_find) {
 	g->flags = newg.flags;
+
+	if (go)
+	    SET_FLAG(g->flags, GF_GAMEOVER);
+    }
 
     validate = oldv;
     check_testing = 0;
