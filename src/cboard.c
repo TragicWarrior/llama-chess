@@ -674,6 +674,13 @@ static void update_clock(GAME g, struct itimerval it)
 	    d->wc.tv_sec += d->wc.tv_usec / 1000000;
 	    d->wc.tv_usec = d->wc.tv_usec % 1000000;
 	}
+
+	if (TEST_FLAG(d->flags, CF_CLOCK)) {
+	    if (d->wc.tv_sec >= d->limit) {
+		SET_FLAG(g->flags, GF_GAMEOVER);
+		pgn_tag_add(&g->tag, "Result", "0-1");
+	    }
+	}
     }
     else {
 	d->bc.tv_sec += it.it_value.tv_sec;
@@ -683,18 +690,18 @@ static void update_clock(GAME g, struct itimerval it)
 	    d->bc.tv_sec += d->bc.tv_usec / 1000000;
 	    d->bc.tv_usec = d->bc.tv_usec % 1000000;
 	}
+
+	if (TEST_FLAG(d->flags, CF_CLOCK)) {
+	    if (d->bc.tv_sec >= d->limit) {
+		SET_FLAG(g->flags, GF_GAMEOVER);
+		pgn_tag_add(&g->tag, "Result", "1-0");
+	    }
+	}
     }
 
     d->elapsed = d->wc.tv_sec + d->bc.tv_sec;
     n = d->wc.tv_usec + d->bc.tv_usec;
     d->elapsed += (n > 1000000 - 1) ? n / 1000000 : 0;
-
-    if (TEST_FLAG(d->flags, CF_CLOCK)) {
-	if (d->elapsed >= d->limit) {
-	    SET_FLAG(g->flags, GF_GAMEOVER);
-	    pgn_tag_add(&g->tag, "Result", "1/2-1/2");
-	}
-    }
 }
 
 void do_validate_move(char *m)
@@ -790,17 +797,16 @@ static char *clock_to_char(long n)
     return buf;
 }
 
-static char *timeval_to_char(struct timeval t)
+static char *timeval_to_char(struct timeval t, long limit)
 {
     static char buf[16];
     int h = 0, m = 0, s = 0;
-    int n = t.tv_sec;
+    int n = (limit == 0) ? 0 : limit - t.tv_sec;
 
     h = n / 3600;
     m = (n % 3600) / 60;
     s = (n % 3600) % 60;
-    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i.%.2i", h, m, s, 
-	    (int)t.tv_usec / 10000);
+    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
     return buf;
 }
 
@@ -931,18 +937,18 @@ void update_status_window(GAME g)
     mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
 	    (g->turn == WHITE) ? WHITE_STR : BLACK_STR);
 
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
-	    clock_to_char((TEST_FLAG(d->flags, CF_CLOCK)) ?
-		    d->limit - d->elapsed : 0));
-
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->wc));
+    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->wc, d->limit));
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->bc));
+    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->bc, d->limit));
     free(buf);
+
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
+	    clock_to_char((TEST_FLAG(d->flags, CF_CLOCK)) ?
+		    d->elapsed : 0));
 
     for (i = 1; i < maxx - 4; i++)
 	mvwprintw(statusw, maxy - 2, i, " ");
@@ -1462,6 +1468,9 @@ static void update_clocks()
     for (i = 0; i < gtotal; i++) {
 	d = game[i]->data;
 
+	if (!TEST_FLAG(d->flags, CF_CLOCK))
+	    return;
+
 	if (d && d->mode == MODE_PLAY) {
 	    if (d->paused == 1 || TEST_FLAG(d->flags, CF_NEW))
 		continue;
@@ -1484,67 +1493,104 @@ static int parse_clock_input(struct userdata_s *d, char *str)
     int t = 0;
     int plus = 0;
 
+    while (isspace(*p))
+	p++;
+
+    if (!*p)
+	return 0;
+
     if (*p == '+') {
 	plus = 1;
 	p++;
     }
 
-    while (*p) {
-	if (isdigit(*p)) {
-	    t = atoi(p);
+    if (isdigit(*p)) {
+	while (*p) {
+	    if (isdigit(*p)) {
+		t = atoi(p);
 
-	    while (isdigit(*p))
-		p++;
+		while (isdigit(*p))
+		    p++;
 
-	    continue;
+		continue;
+	    }
+
+	    if (!t && *p != ' ')
+		return 1;
+
+	    switch (*p) {
+		case 'H':
+		case 'h':
+		    n += t * (60 * 60);
+		    t = 0;
+		    break;
+		case 'M':
+		case 'm':
+		    n += t * 60;
+		    t = 0;
+		    break;
+		case 'S':
+		case 's':
+		    n += t;
+		    t = 0;
+		    break;
+		case ' ':
+		    t = 0;
+		    break;
+		default:
+		    return 1;
+	    }
+
+	    p++;
 	}
 
-	if (!t && *p != ' ')
+	if (t)
+	    n += t;
+
+	if (!n) {
+	    d->limit = 0;
+	    CLEAR_FLAG(d->flags, CF_CLOCK);
+	}
+	else {
+	    SET_FLAG(d->flags, CF_CLOCK);
+
+	    if (plus)
+		d->limit += n;
+	    else
+		d->limit = (n <= d->elapsed) ? d->elapsed + n : n;
+	}
+
+	return 0;
+    }
+    else if (toupper(*p++) == 'G') {
+	if (strlen(p) < 2)
 	    return 1;
 
-	switch (*p) {
-	    case 'H':
-	    case 'h':
-		n += t * (60 * 60);
-		t = 0;
-		break;
-	    case 'M':
-	    case 'm':
-		n += t * 60;
-		t = 0;
-		break;
-	    case 'S':
-	    case 's':
-		n += t;
-		t = 0;
-		break;
-	    case ' ':
-		t = 0;
-		break;
-	    default:
-		return 1;
+	if (*p++ != '/')
+	    return 1;
+
+	if (!isinteger(p))
+	    return 1;
+
+	n = strtol(p, NULL, 10);
+
+	if (n < 0)
+	    return 1;
+	else if (n == 0) {
+	    d->limit = 0;
+	    CLEAR_FLAG(d->flags, CF_CLOCK);
+	    return 0;
 	}
 
-	p++;
-    }
-
-    if (t)
-	n += t;
-
-    if (!n) {
-	d->limit = 0;
-	CLEAR_FLAG(d->flags, CF_CLOCK);
-    }
-    else {
 	SET_FLAG(d->flags, CF_CLOCK);
-
-	if (plus)
-	    d->limit += n;
-	else
-	    d->limit = (n <= d->elapsed) ? d->elapsed + n : n;
+	d->limit = n * 60;
+	d->elapsed = 0;
+	memset(&d->wc, 0, sizeof(d->wc));
+	memset(&d->bc, 0, sizeof(d->bc));
+	return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 void do_clock_input_finalize(WIN *win)

@@ -139,7 +139,7 @@
 
 /* Clock setting input window. */
 #define CLOCK_TITLE		"Set Clock"
-#define CLOCK_HELP		"Format is: [+]digit[hms] [digit[hms]] ..."
+#define CLOCK_HELP		"Format: spec (e.g., G/5) | [+]N[hms] to add time"
 
 /* Country code menu window when editing the "Site" tag. */
 #define CC_PROMPT	"Type CTRL-t for country codes"
@@ -192,7 +192,7 @@
 #define STATUS_FLAGS_STR	"Flags:"
 #define STATUS_ENGINE_STR	"Engine:"
 #define STATUS_TURN_STR		"Turn:"
-#define STATUS_CLOCK_STR	"Clock:"
+#define STATUS_CLOCK_STR	"Total:"
 
 /* Engine status strings. */
 #define ENGINE_READY_STR	"ready"
