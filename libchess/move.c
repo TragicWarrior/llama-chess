@@ -735,6 +735,8 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     else
 	nkfile = kfile, nkrank = krank;
 
+    memcpy(&newg, g, sizeof(struct game_s));
+
     if (check_self(&newg, tmpb, nkfile, nkrank) == CHECK_SELF) {
 	check_testing = 0;
 	validate = oldv;
