@@ -524,8 +524,10 @@ void add_engine_command(GAME g, int s, char *fmt, ...)
     struct queue_s **q;
     char *line;
 
-    if (!d->engine)
-	return;
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
+	if (start_chess_engine(g))
+	    return;
+    }
 
     q = d->engine->queue;
 

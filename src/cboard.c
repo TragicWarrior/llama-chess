@@ -1670,6 +1670,9 @@ void do_play_toggle_engine()
     update_all(game[gindex]);
 }
 
+/*
+ * This will send a command to the engine skipping the command queue.
+ */
 void do_play_send_command()
 {
     struct userdata_s *d = game[gindex]->data;
@@ -1747,21 +1750,12 @@ void do_play_go()
     if (TEST_FLAG(d->flags, CF_HUMAN))
 	return;
 
-    if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
-	if (init_chess_engine(game[gindex]))
-	    return;
-    }
-
     add_engine_command(game[gindex], ENGINE_THINKING, "go\n");
 }
 
 void do_play_config_command()
 {
-    struct userdata_s *d = game[gindex]->data;
     int x, w;
-
-    if (!d->engine)
-	return;
 
     if (config.keys) {
 	for (x = 0; config.keys[x]; x++) {
