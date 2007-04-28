@@ -1552,8 +1552,10 @@ void do_clock_input_finalize(WIN *win)
     struct userdata_s *d = game[gindex]->data;
     struct input_data_s *in = win->data;
 
-    if (!in->str)
+    if (!in->str) {
+	free(in);
 	return;
+    }
 
     if (parse_clock_input(d, in->str))
 	cmessage(ERROR, ANYKEY, "Invalid time specification");
