@@ -675,12 +675,10 @@ static void update_clock(GAME g, struct itimerval it)
 	    d->wc.tv_usec = d->wc.tv_usec % 1000000;
 	}
 
-	if (TEST_FLAG(d->flags, CF_CLOCK)) {
-	    if (d->wc.tv_sec >= d->limit) {
-		SET_FLAG(g->flags, GF_GAMEOVER);
-		stop_engine(g);
-		pgn_tag_add(&g->tag, "Result", "0-1");
-	    }
+	if (d->wc.tv_sec >= d->limit) {
+	    SET_FLAG(g->flags, GF_GAMEOVER);
+	    stop_engine(g);
+	    pgn_tag_add(&g->tag, "Result", "0-1");
 	}
     }
     else {
@@ -692,12 +690,10 @@ static void update_clock(GAME g, struct itimerval it)
 	    d->bc.tv_usec = d->bc.tv_usec % 1000000;
 	}
 
-	if (TEST_FLAG(d->flags, CF_CLOCK)) {
-	    if (d->bc.tv_sec >= d->limit) {
-		SET_FLAG(g->flags, GF_GAMEOVER);
-		stop_engine(g);
-		pgn_tag_add(&g->tag, "Result", "1-0");
-	    }
+	if (d->bc.tv_sec >= d->limit) {
+	    SET_FLAG(g->flags, GF_GAMEOVER);
+	    stop_engine(g);
+	    pgn_tag_add(&g->tag, "Result", "1-0");
 	}
     }
 
@@ -801,14 +797,16 @@ static char *clock_to_char(long n)
 
 static char *timeval_to_char(struct timeval t, long limit)
 {
-    static char buf[16];
+    static char buf[11];
     int h = 0, m = 0, s = 0;
     int n = (limit == 0) ? 0 : limit - t.tv_sec;
+    int i = -((int)t.tv_usec / 10000 / 10) + 10;
 
+    i = (i == 10) ? i - 10 : i;
     h = n / 3600;
     m = (n % 3600) / 60;
     s = (n % 3600) % 60;
-    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
+    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i.%i", h, m, s, i);
     return buf;
 }
 
@@ -1470,10 +1468,7 @@ static void update_clocks()
     for (i = 0; i < gtotal; i++) {
 	d = game[i]->data;
 
-	if (!TEST_FLAG(d->flags, CF_CLOCK))
-	    return;
-
-	if (d && d->mode == MODE_PLAY) {
+	if (d && d->mode == MODE_PLAY && TEST_FLAG(d->flags, CF_CLOCK)) {
 	    if (d->paused == 1 || TEST_FLAG(d->flags, CF_NEW))
 		continue;
 	    else if (d->paused == -1) {
