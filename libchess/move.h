@@ -30,6 +30,7 @@ enum {
 
 static int check, check_testing;
 static int kfile, krank, okfile, okrank;
+static int validate_find;
 
 enum {
     WHITEWINS, BLACKWINS, DRAW
@@ -38,5 +39,13 @@ enum {
 enum {
     KINGSIDE = 1, QUEENSIDE
 };
+
+static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank, 
+	int file, int rank);
+static int find_source_square(GAME, BOARD, int, int *, int *, int, int);
+static int check_self(GAME g, BOARD b, int file, int rank);
+static int validate_pawn(GAME g, BOARD b, int sfile, int srank, int file,
+	int rank);
+static int find_source_square(GAME, BOARD, int, int *, int *, int, int);
 
 #endif

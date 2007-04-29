@@ -1,3 +1,15 @@
+CBoard version 0.4
+--------------------
+The status window is now on top of the roster tag window.
+
+Added command line option -C to enable strict castling.
+
+A better clock. Each player has its own clock. The input format is the same as
+before and also supports 'G/5' format. I'll add more features later.
+
+A few (some important) bugfixes. See ChangeLog for details.
+
+
 CBoard version 0.3
 --------------------
 New versioning scheme. It's less confusing and easier for me to use X.X

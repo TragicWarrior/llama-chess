@@ -230,8 +230,31 @@ static char **parseargs(char *str)
     return pptr;
 }
 
+int init_chess_engine(GAME g)
+{
+    struct userdata_s *d = g->data;
+    int w, x;
+
+    if (start_chess_engine(g) > 0) {
+	d->sp.icon = 0;
+	return 1;
+    }
+
+    x = pgn_tag_find(g->tag, "FEN");
+    w = pgn_tag_find(g->tag, "SetUp");
+
+    if ((w >= 0 && x >= 0 && atoi(g->tag[w]->value) == 1) || 
+	    (x >= 0 && w == -1))
+	add_engine_command(g, ENGINE_READY, "setboard %s\n", g->tag[x]->value);
+    else
+	add_engine_command(g, ENGINE_READY, "setboard %s\n",
+		pgn_game_to_fen(g, d->b));
+
+    return 0;
+}
+
 /* Is this dangerous if pty permissions are wrong? */
-static pid_t init_chess_engine(GAME g, char **args)
+static pid_t exec_chess_engine(GAME g, char **args)
 {
     pid_t pid;
     int from[2], to[2];
@@ -320,6 +343,7 @@ void stop_engine(GAME g)
 
     waitpid(d->engine->pid, &s, 0);
     d->engine->pid = -1;
+    d->engine->status = ENGINE_OFFLINE;
 }
 
 void set_engine_defaults(GAME g, char **init)
@@ -350,7 +374,7 @@ int start_chess_engine(GAME g)
     update_status_window(g);
     refresh_all();
 
-    switch (init_chess_engine(g, args)) {
+    switch (exec_chess_engine(g, args)) {
 	case -1:
 	    /* Pty allocation. */
 	    message(ERROR, ANYKEY, "Could not allocate PTY");
@@ -415,8 +439,8 @@ static void parse_xboard_line(GAME g, char *str)
 	    return;
 
 	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-	    stop_engine(g);
-	    RETURN(d);
+	    gameover(g);
+	    return;
 	}
 
 	if (strlen(m) < 2)
@@ -445,8 +469,8 @@ static void parse_xboard_line(GAME g, char *str)
 	    update_cursor(g, g->hindex);
 
 	    if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-		stop_engine(g);
-		RETURN(d);
+		gameover(g);
+		return;
 	    }
 
 	    add_engine_command(g, ENGINE_THINKING, "go\n");
@@ -499,7 +523,7 @@ void send_engine_command(GAME g)
 	return;
 
     if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
-	if (g == game[gindex])
+	if (g == gp)
 	    update_status_window(g);
     }
 
@@ -524,8 +548,10 @@ void add_engine_command(GAME g, int s, char *fmt, ...)
     struct queue_s **q;
     char *line;
 
-    if (!d->engine)
-	return;
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
+	if (init_chess_engine(g))
+	    return;
+    }
 
     q = d->engine->queue;
 

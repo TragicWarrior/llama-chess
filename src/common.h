@@ -55,4 +55,13 @@ struct userdata_s {
     void *data; // For the history menu
 };
 
+/* A pointer to the game in focus. */
+GAME gp;
+
+void gameover(GAME);
+void update_cursor(GAME, int);
+void refresh_all(void);
+void invalid_move(int n, int e, const char *m);
+void update_status_window(GAME g);
+
 #endif

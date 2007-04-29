@@ -130,10 +130,13 @@ int integer_len(long n)
 
 int isinteger(const char *str)
 {
-    int i;
+    int i = 0;
     int len = strlen(str);
 
-    for (i = 0; i < len; i++) {
+    if (*str == '-' && isdigit(*(str + 1)))
+	i = 1;
+
+    for (; i < len; i++) {
 	if (!isdigit(str[i]))
 	    return 0;
     }

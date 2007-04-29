@@ -194,7 +194,6 @@ static int count_by_rank_file(GAME g, BOARD b, register int piece,
     return count + count_by_file(g, b, piece, sfile, srank, file, rank);
 }
 
-static int find_source_square(GAME, BOARD, int, int *, int *, int, int);
 static int opponent_can_attack(GAME g, BOARD b, register int file,
 	register int rank)
 {
@@ -226,7 +225,6 @@ static int opponent_can_attack(GAME g, BOARD b, register int file,
     return 0;
 }
 
-static int check_self(GAME g, BOARD b, int file, int rank);
 static int validate_castle_move(GAME g, BOARD b, int side, int sfile, 
 	int srank, int file, int rank)
 {
@@ -418,8 +416,6 @@ static int validate_piece(GAME g, BOARD b, register int p, register int sfile,
  * function or set to 0 if unknown. Returns 0 if the move is impossible for
  * the piece 'p'.
  */
-static int validate_pawn(GAME g, BOARD b, int sfile, int srank, int file,
-	int rank);
 static int find_ambiguous(GAME g, BOARD b, register int p, register int sfile,
 	register int srank, register int file, register int rank)
 {
@@ -556,7 +552,6 @@ done:
     return n;
 }
 
-static int find_source_square(GAME, BOARD, int, int *, int *, int, int);
 static int check_opponent(GAME g, BOARD b, register int file, register int rank)
 {
     int f, r;
@@ -715,8 +710,6 @@ static int validate_pawn(GAME g, BOARD b, register int sfile,
     return 1;
 }
 
-static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank, 
-	int file, int rank);
 static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
 	int file, int rank)
 {
@@ -724,11 +717,12 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     struct game_s newg;
     int oldv = validate;
     int nkfile, nkrank, nokfile, nokrank;
+    int go;
 
     validate = 0;
     check_testing = 1;
     memcpy(tmpb, b, sizeof(BOARD));
-    memcpy(&newg, &(*g), sizeof(struct game_s));
+    memcpy(&newg, g, sizeof(struct game_s));
 
     if (finalize_move(&newg, tmpb, 0, sfile, srank, file, rank) 
 	    != E_PGN_OK) {
@@ -742,10 +736,20 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     else
 	nkfile = kfile, nkrank = krank;
 
+    go = TEST_FLAG(newg.flags, GF_GAMEOVER);
+    memcpy(&newg, g, sizeof(struct game_s));
+
     if (check_self(&newg, tmpb, nkfile, nkrank) == CHECK_SELF) {
 	check_testing = 0;
 	validate = oldv;
 	return 0;
+    }
+
+    if (!validate && !validate_find) {
+	g->flags = newg.flags;
+
+	if (go)
+	    SET_FLAG(g->flags, GF_GAMEOVER);
     }
 
     validate = oldv;
@@ -990,7 +994,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	else
 	    g->ply++;
 
-	if (g->ply / 2 == 50) {
+	if (g->ply >= 50) {
 	    if (g->tag[6]->value[0] == '*') {
 		pgn_tag_add(&g->tag, "Result", "1/2-1/2");
 		SET_FLAG(g->flags, GF_GAMEOVER);
@@ -1194,6 +1198,8 @@ static int do_santofrfr(GAME g, BOARD b, char **san, int *promo, int *sfile,
     int piece;
     int i = 0;
     char *m = *san;
+
+    capture = 0;
 
 again:
     if (strlen(m) < 2)
@@ -1465,6 +1471,7 @@ void pgn_find_valid_moves(GAME g, BOARD b, int file, int rank)
 	    __LINE__, INTTOFILE(file), INTTORANK(rank));
 #endif
 
+    validate_find = 1;
     find_king_squares(g, b, &kfile, &krank, &okfile, &okrank);
 
     for (r = 1; VALIDRANK(r); r++) {
@@ -1487,4 +1494,5 @@ void pgn_find_valid_moves(GAME g, BOARD b, int file, int rank)
 	    __LINE__, INTTOFILE(file), INTTORANK(rank));
 #endif
     check_testing = 0;
+    validate_find = 0;
 }

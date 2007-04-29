@@ -49,6 +49,7 @@
 #include "misc.h"
 #include "message.h"
 #include "menu.h"
+#include "keys.h"
 #include "tags.h"
 
 static int init_country_codes()
@@ -184,7 +185,7 @@ static struct menu_item_s **get_tag_items(WIN *win)
     int i, n;
     struct menu_input_s *m = win->data;
     struct menu_item_s **items = m->items;
-    TAG **t = (m->data) ? m->data : game[gindex]->tag;
+    TAG **t = (m->data) ? m->data : gp->tag;
 
     if (items) {
 	for (i = 0; items[i]; i++)
@@ -211,9 +212,9 @@ static struct menu_item_s **get_tag_items(WIN *win)
 static void edit_tag_add_fen(struct menu_input_s *m)
 {
     TAG **t = m->data;
-    struct userdata_s *d = game[gindex]->data;
+    struct userdata_s *d = gp->data;
 
-    pgn_tag_add(&t, "FEN", pgn_game_to_fen(game[gindex], d->b));
+    pgn_tag_add(&t, "FEN", pgn_game_to_fen(gp, d->b));
     m->data = t;
 }
 
@@ -224,7 +225,7 @@ static void edit_tag_abort(struct menu_input_s *m)
     pgn_tag_free(t);
     m->data = NULL;
     pushkey = -1;
-    update_status_notify(game[gindex], "Tag edit aborted.");
+    update_status_notify(gp, "Tag edit aborted.");
 }
 
 static void edit_tag_add_finalize(WIN *w)
@@ -399,16 +400,23 @@ static void edit_tag_add_custom(struct menu_input_s *m)
 static void edit_tag_save(struct menu_input_s *m)
 {
     TAG **t = m->data;
-    struct userdata_s *d = game[gindex]->data;
+    struct userdata_s *d = gp->data;
 
     if (!m->data)
 	return;
 
-    pgn_tag_free(game[gindex]->tag);
+    pgn_tag_free(gp->tag);
     pgn_tag_sort(t);
-    game[gindex]->tag = t;
+    gp->tag = t;
     pushkey = -1;
     SET_FLAG(d->flags, CF_MODIFIED);
+
+    /*
+     * In case of editing a FEN tag. Must not be MODE_PLAY. Also updates the
+     * games ply count for the fifty move draw rule.
+     */
+    if (d->mode != MODE_PLAY)
+	pgn_board_update(gp, d->b, gp->hindex);
 }
 
 static void edit_tag_help(struct menu_input_s *m)
@@ -464,9 +472,9 @@ void edit_tags(GAME g, BOARD b, int edit)
     int i;
 
     if (edit) {
-	for (i = 0; game[gindex]->tag[i]; i++)
-	    pgn_tag_add(&data, game[gindex]->tag[i]->name, 
-		    game[gindex]->tag[i]->value);
+	for (i = 0; gp->tag[i]; i++)
+	    pgn_tag_add(&data, gp->tag[i]->name, 
+		    gp->tag[i]->value);
 
 	add_menu_key(&keys, '\n', edit_tag_value);
 	add_menu_key(&keys, CTRL('f'), edit_tag_add_fen);
@@ -479,7 +487,7 @@ void edit_tags(GAME g, BOARD b, int edit)
     }
     else {
 	add_menu_key(&keys, '\n', view_tag_value);
-	data = game[gindex]->tag;
+	data = gp->tag;
 	add_menu_key(&keys, KEY_ESCAPE, view_tag_quit);
 	add_menu_key(&keys, KEY_F(1), view_tag_help);
     }

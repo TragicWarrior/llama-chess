@@ -788,6 +788,10 @@ void parse_rcfile(const char *filename)
 		p++;
 
 	    config.keys[k]->c = *p++;
+
+	    while (isspace(*p))
+		p++;
+
 	    config.keys[k++]->str = strdup(p);
 	    config.keys[k] = NULL;
 	}

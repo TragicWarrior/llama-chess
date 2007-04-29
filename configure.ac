@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT(cboard, 0.3, [Ben Kibbey bjk@luxsci.net])
+AC_INIT(cboard, 0.4, [Ben Kibbey bjk@luxsci.net])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
