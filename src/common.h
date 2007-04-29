@@ -55,6 +55,9 @@ struct userdata_s {
     void *data; // For the history menu
 };
 
+/* A pointer to the game in focus. */
+GAME gp;
+
 void gameover(GAME);
 
 #endif

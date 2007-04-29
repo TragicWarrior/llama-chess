@@ -343,6 +343,7 @@ void stop_engine(GAME g)
 
     waitpid(d->engine->pid, &s, 0);
     d->engine->pid = -1;
+    d->engine->status = ENGINE_OFFLINE;
 }
 
 void set_engine_defaults(GAME g, char **init)
@@ -522,7 +523,7 @@ void send_engine_command(GAME g)
 	return;
 
     if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
-	if (g == game[gindex])
+	if (g == gp)
 	    update_status_window(g);
     }
 
