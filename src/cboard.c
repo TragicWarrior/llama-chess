@@ -3735,7 +3735,9 @@ void game_loop()
 	draw_board(gp);
 	update_all(gp);
 	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
-	refresh_all();
+
+	if (macro_match == -1)
+	    refresh_all();
 
 	/*
 	 * Finds the top level window in the window stack so we know what
