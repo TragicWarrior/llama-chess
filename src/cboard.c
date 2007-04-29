@@ -661,6 +661,12 @@ void invalid_move(int n, int e, const char *m)
 		? E_AMBIGUOUS : E_INVALID_MOVE, m, n);
 }
 
+void gameover(GAME g)
+{
+    SET_FLAG(g->flags, GF_GAMEOVER);
+    stop_engine(g);
+}
+
 static void update_clock(GAME g, struct itimerval it)
 {
     struct userdata_s *d = g->data;
@@ -676,9 +682,8 @@ static void update_clock(GAME g, struct itimerval it)
 	}
 
 	if (d->wc.tv_sec >= d->limit) {
-	    SET_FLAG(g->flags, GF_GAMEOVER);
-	    stop_engine(g);
 	    pgn_tag_add(&g->tag, "Result", "0-1");
+	    gameover(g);
 	}
     }
     else {
@@ -691,9 +696,8 @@ static void update_clock(GAME g, struct itimerval it)
 	}
 
 	if (d->bc.tv_sec >= d->limit) {
-	    SET_FLAG(g->flags, GF_GAMEOVER);
-	    stop_engine(g);
 	    pgn_tag_add(&g->tag, "Result", "1-0");
+	    gameover(g);
 	}
     }
 

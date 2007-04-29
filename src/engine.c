@@ -438,7 +438,7 @@ static void parse_xboard_line(GAME g, char *str)
 	    return;
 
 	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-	    stop_engine(g);
+	    gameover(g);
 	    RETURN(d);
 	}
 
@@ -468,7 +468,7 @@ static void parse_xboard_line(GAME g, char *str)
 	    update_cursor(g, g->hindex);
 
 	    if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
-		stop_engine(g);
+		gameover(g);
 		RETURN(d);
 	    }
 

@@ -55,4 +55,6 @@ struct userdata_s {
     void *data; // For the history menu
 };
 
+void gameover(GAME);
+
 #endif
