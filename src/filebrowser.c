@@ -243,6 +243,11 @@ static void file_browser_select(struct menu_input_s *m)
 	path = strdup(files[m->selected]->path);
 	in->arg = path;
 	m->selected = 0;
+
+	if (oldwd)
+	    free(oldwd);
+
+	oldwd = strdup(path);
 	return;
     }
 
@@ -270,6 +275,11 @@ static void file_browser_home(struct menu_input_s *m)
     path = strdup(pw->pw_dir);
     in->arg = path;
     m->selected = 0;
+
+    if (oldwd)
+	free(oldwd);
+
+    oldwd = strdup(path);
 }
 
 static void do_file_browser_expression_finalize(WIN *win)
@@ -325,7 +335,7 @@ void file_browser(void *arg)
     char *p;
     char path[FILENAME_MAX];
 
-    if (config.savedirectory) {
+    if (!oldwd && config.savedirectory) {
 	if ((p = pathfix(config.savedirectory)) == NULL)
 	    return;
 
@@ -336,8 +346,10 @@ void file_browser(void *arg)
 	    getcwd(path, sizeof(path));
 	}
     }
-    else
+    else if (!oldwd)
 	getcwd(path, sizeof(path));
+    else
+	strncpy(path, oldwd, sizeof(path));
     
     in->arg = strdup(path);
     add_menu_key(&keys, '\n', file_browser_select);
