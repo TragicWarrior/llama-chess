@@ -440,7 +440,7 @@ static void parse_xboard_line(GAME g, char *str)
 
 	if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 	    gameover(g);
-	    RETURN(d);
+	    return;
 	}
 
 	if (strlen(m) < 2)
@@ -470,7 +470,7 @@ static void parse_xboard_line(GAME g, char *str)
 
 	    if (TEST_FLAG(g->flags, GF_GAMEOVER)) {
 		gameover(g);
-		RETURN(d);
+		return;
 	    }
 
 	    add_engine_command(g, ENGINE_THINKING, "go\n");
