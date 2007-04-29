@@ -3131,6 +3131,7 @@ void do_load_file(WIN *win)
     loadingp = NULL;
     init_userdata();
     strncpy(loadfile, tmp, sizeof(loadfile));
+    gp = game[gindex];
     d = gp->data;
 
     if (pgn_history_total(gp->hp))
