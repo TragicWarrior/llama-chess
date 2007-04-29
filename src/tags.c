@@ -49,6 +49,7 @@
 #include "misc.h"
 #include "message.h"
 #include "menu.h"
+#include "keys.h"
 #include "tags.h"
 
 static int init_country_codes()
@@ -411,9 +412,11 @@ static void edit_tag_save(struct menu_input_s *m)
     SET_FLAG(d->flags, CF_MODIFIED);
 
     /*
-     * In case of editing a FEN tag.
+     * In case of editing a FEN tag. Must not be MODE_PLAY. Also updates the
+     * games ply count for the fifty move draw rule.
      */
-    pgn_board_update(gp, d->b, gp->hindex);
+    if (d->mode != MODE_PLAY)
+	pgn_board_update(gp, d->b, gp->hindex);
 }
 
 static void edit_tag_help(struct menu_input_s *m)
