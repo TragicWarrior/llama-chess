@@ -1042,12 +1042,29 @@ void update_history_window(GAME g)
 
 void update_tag_window(TAG **t)
 {
-    int i;
-    int w = TAG_WIDTH - 10;
+    int i, l, w;
+    int namel = 0, valuel = 0;
 
-    for (i = 0; i < 7; i++)
-	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", 6, t[i]->name, w, 
+    for (i = 0; t[i]; i++) {
+	l = strlen(t[i]->name);
+
+	if (l > namel)
+	    namel = l;
+
+	l = strlen(t[i]->value);
+
+	if (l > valuel)
+	    valuel = l;
+    }
+
+    w = TAG_WIDTH - namel - 4;
+
+    for (i = 0; t[i] && i < TAG_HEIGHT - 3; i++)
+	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", namel, t[i]->name, w,
 		str_etc(t[i]->value, w, 0));
+
+    for (; i < TAG_HEIGHT - 3; i++)
+	mvwprintw(tagw, (i + 2), 1, "%*s", namel + w + 2, " ");
 }
 
 void append_enginebuf(GAME g, char *line)
@@ -1095,6 +1112,8 @@ void update_engine_window(GAME g)
 
 void refresh_all()
 {
+    wmove(stdscr, 0, 0);
+    wclrtobot(stdscr);
     update_panels();
     doupdate();
 }
@@ -1411,6 +1430,7 @@ static void draw_window_decor()
 {
     move_panel(historyp, LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
     move_panel(boardp, 0, COLS - BOARD_WIDTH);
+    move_panel(statusp, LINES - STATUS_HEIGHT, 0);
     wbkgd(boardw, CP_BOARD_WINDOW);
     wbkgd(statusw, CP_STATUS_WINDOW);
     window_draw_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
@@ -3591,20 +3611,20 @@ static int globalkeys()
 
 void game_loop()
 {  
-    struct userdata_s *d = gp->data;
+    struct userdata_s *d;
     int macro_match = -1;
 
     gindex = gtotal - 1;
+    gp = game[gindex];
+    d = gp->data;
 
     if (pgn_history_total(gp->hp))
 	d->mode = MODE_HISTORY;
     else
 	d->mode = MODE_PLAY;
 
-    if (d->mode == MODE_HISTORY) {
-	pgn_board_update(gp, d->b,
-		pgn_history_total(gp->hp));
-    }
+    if (d->mode == MODE_HISTORY)
+	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
 
     update_status_notify(gp, "%s", GAME_HELP_PROMPT);
     movestep = 2;

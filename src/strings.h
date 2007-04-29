@@ -117,7 +117,7 @@
 
 /* Window titles. */
 #define HISTORY_WINDOW_TITLE	"Move History"
-#define TAG_WINDOW_TITLE	"Seven Tag Roster"
+#define TAG_WINDOW_TITLE	"Roster Tags"
 #define STATUS_WINDOW_TITLE	"Game Status"
 
 /* Annotation viewing and editing windows. */
