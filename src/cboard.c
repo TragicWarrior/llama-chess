@@ -954,16 +954,16 @@ void update_status_window(GAME g)
 	    clock_to_char((TEST_FLAG(d->flags, CF_CLOCK)) ?
 		    d->elapsed : 0));
 
-    for (i = 1; i < maxx - 4; i++)
-	mvwprintw(statusw, maxy - 2, i, " ");
+    for (i = 0; i < STATUS_WIDTH; i++)
+	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
 
     if (!status.notify)
 	status.notify = strdup(GAME_HELP_PROMPT);
 
-    wattron(statusw, CP_STATUS_NOTIFY);
-    mvwprintw(statusw, maxy - 2, CENTERX(maxx, status.notify), "%s",
+    wattron(stdscr, CP_STATUS_NOTIFY);
+    mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify), "%s",
 	    status.notify);
-    wattroff(statusw, CP_STATUS_NOTIFY);
+    wattroff(stdscr, CP_STATUS_NOTIFY);
 }
 
 void update_history_window(GAME g)
@@ -1114,6 +1114,7 @@ void refresh_all()
 {
     wmove(stdscr, 0, 0);
     wclrtobot(stdscr);
+    update_status_window(gp);
     update_panels();
     doupdate();
 }
@@ -1430,7 +1431,7 @@ static void draw_window_decor()
 {
     move_panel(historyp, LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
     move_panel(boardp, 0, COLS - BOARD_WIDTH);
-    move_panel(statusp, LINES - STATUS_HEIGHT, 0);
+    move_panel(statusp, 0, 0);
     wbkgd(boardw, CP_BOARD_WINDOW);
     wbkgd(statusw, CP_STATUS_WINDOW);
     window_draw_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
@@ -4162,9 +4163,9 @@ int main(int argc, char *argv[])
     historyw = newwin(HISTORY_HEIGHT, HISTORY_WIDTH, LINES - HISTORY_HEIGHT,
 	    COLS - HISTORY_WIDTH);
     historyp = new_panel(historyw);
-    statusw = newwin(STATUS_HEIGHT, STATUS_WIDTH, LINES - STATUS_HEIGHT, 0);
+    statusw = newwin(STATUS_HEIGHT, STATUS_WIDTH, 0, 0);
     statusp = new_panel(statusw);
-    tagw = newwin(TAG_HEIGHT, TAG_WIDTH, 0, 0);
+    tagw = newwin(TAG_HEIGHT, TAG_WIDTH, STATUS_HEIGHT + 1, 0);
     tagp = new_panel(tagw);
     keypad(boardw, TRUE);
 //  leaveok(boardw, TRUE);
