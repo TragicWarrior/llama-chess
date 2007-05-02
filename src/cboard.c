@@ -499,6 +499,8 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
     return 0;
 }
 
+#define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_COORDS : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
+
 static void draw_board(GAME g)
 {
     int row, col;
@@ -516,8 +518,9 @@ static void draw_board(GAME g)
 
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
-	    chtype attrs = 0;
-	    unsigned char piece;
+	    chtype attrs = 0, old_attrs = 0;
+	    unsigned char p;
+	    int pi;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -589,22 +592,34 @@ static void draw_board(GAME g)
 		    else
 			attrwhich = WHITE;
 
-		    if (config.validmoves && d->b[brow][bcol].valid) {
-			attrs = (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE :
-			    CP_BOARD_MOVES_BLACK;
+		    p = d->b[row / 2][bcol].icon;
+		    pi = pgn_piece_to_int(p);
+
+		    if (config.details && d->b[row / 2][bcol].enpassant) {
+			p = pi = 'x'; 
+			attrs = IS_ENPASSANT(p);
 		    }
-		    else
-			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE :
-			    CP_BOARD_BLACK;
+
+		    if (config.validmoves && d->b[brow][bcol].valid) {
+			old_attrs = -1;
+
+			if (attrwhich == WHITE)
+			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p), B_FG_A_BG);
+			else
+			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p), B_FG_A_BG);
+		    }
+		    else if (p != 'x')
+			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
 		    if (row == ROWTOMATRIX(d->c_row) && col == 
 			    COLTOMATRIX(d->c_col)) {
-			attrs = CP_BOARD_CURSOR;
+			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p), B_FG_A_BG);
+			old_attrs = -1;
 		    }
-
-		    if (row == ROWTOMATRIX(d->sp.srow) && 
+		    else if (row == ROWTOMATRIX(d->sp.srow) && 
 			    col == COLTOMATRIX(d->sp.scol)) {
-			attrs = CP_BOARD_SELECTED;
+			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p), B_FG_A_BG);
+			old_attrs = -1;
 		    }
 
 		    if (row == maxy - 1)
@@ -615,24 +630,35 @@ static void draw_board(GAME g)
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			if (config.details && d->b[row / 2][bcol].enpassant)
-			    piece = 'x';
-			else
-			    piece = d->b[row / 2][bcol].icon;
+			if (old_attrs == -1) {
+			    old_attrs = attrs;
+			    goto printc;
+			}
 
+			old_attrs = attrs;
+
+			if (pi != OPEN_SQUARE && p != 'x') {
+			    if (attrwhich == WHITE) {
+				if (isupper(p))
+				    attrs = CP_BOARD_W_W;
+				else
+				    attrs = CP_BOARD_W_B;
+			    }
+			    else {
+				if (isupper(p))
+				    attrs = CP_BOARD_B_W;
+				else
+				    attrs = CP_BOARD_B_B;
+			    }
+			}
+
+printc:
 			if (config.details && castling_state(g, d->b, brow,
-				    bcol, piece, 0))
-			    attrs |= A_REVERSE;
-
-			if (g->side == WHITE && isupper(piece))
-			    attrs |= A_BOLD;
-			else if (g->side == BLACK && islower(piece))
+				    bcol, p, 0))
 			    attrs |= A_BOLD;
 
-			waddch(boardw, (pgn_piece_to_int(piece) != OPEN_SQUARE) ? piece | attrs : ' ' | attrs);
-
-			CLEAR_FLAG(attrs, A_BOLD);
-			CLEAR_FLAG(attrs, A_REVERSE);
+			waddch(boardw, (pi != OPEN_SQUARE) ? p | attrs : ' ' | attrs);
+			attrs = old_attrs;
 		    }
 
 		    waddch(boardw, ' ' | attrs);

@@ -86,7 +86,7 @@
 #color_board_graphics		white	black
 #color_board_selected		white	yellow	none	bold,reverse
 #color_board_cursor		white	green	none	bold,reverse
-#color_board_black		white	black
+#color_board_black		cyan	black
 #color_board_white		white	red	none	reverse
 #color_board_coords		yellow	black	bold
 #color_board_count		magenta	cyan	bold	bold,reverse
