@@ -172,8 +172,12 @@ enum {
 	COLOR_PAIR(37) | config.color[CONF_BWHITE].attrs : \
 	config.color[CONF_BBLACK].nattrs)
 
+#define CP_BOARD_CASTLING	((COLORS) ? \
+	COLOR_PAIR(38) | config.color[CONF_BCASTLING].attrs : \
+	config.color[CONF_BCASTLING].nattrs)
+
 void init_color_pairs();
 void set_default_colors();
-chtype mix_cp(chtype a, chtype b, int which);
+chtype mix_cp(chtype a, chtype b, attr_t, int which);
 
 #endif

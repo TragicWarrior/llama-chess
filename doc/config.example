@@ -72,7 +72,11 @@
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
 # names which must be one of: black, white, red, magenta, yellow, blue, cyan
-# or green. 
+# or green. Not all parameters actually use both the fore and background
+# colors (i.e., with color_board_white, the foreground color is used as the
+# color piece while the background color is used as the background for the
+# white square), they may be mixed with other color settings when needed
+# especially when drawing the board.
 #
 # Each ..._window parameter sets the defaults for all characters in the
 # associated window.
@@ -92,6 +96,7 @@
 #color_board_count		magenta	cyan	bold	bold,reverse
 #color_board_white_moves	white	magenta	none	reverse
 #color_board_black_moves	white	blue	none	reverse
+#color_board_castling		yellow	black	bold	bold
 #
 #color_status_window	white	black
 #color_status_title	white	blue	none	reverse

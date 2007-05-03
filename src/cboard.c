@@ -500,6 +500,7 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 }
 
 #define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_COORDS : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
+#define ATTRS(cp) (cp & (A_BOLD|A_STANDOUT|A_BLINK|A_DIM|A_UNDERLINE|A_INVIS|A_REVERSE))
 
 static void draw_board(GAME g)
 {
@@ -604,21 +605,25 @@ static void draw_board(GAME g)
 			old_attrs = -1;
 
 			if (attrwhich == WHITE)
-			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p), B_FG_A_BG);
+			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p), 
+				    ATTRS(CP_BOARD_MOVES_WHITE), B_FG_A_BG);
 			else
-			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p), B_FG_A_BG);
+			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p),
+				    ATTRS(CP_BOARD_MOVES_BLACK), B_FG_A_BG);
 		    }
 		    else if (p != 'x')
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
 		    if (row == ROWTOMATRIX(d->c_row) && col == 
 			    COLTOMATRIX(d->c_col)) {
-			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p), B_FG_A_BG);
+			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p), 
+				ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
 			old_attrs = -1;
 		    }
 		    else if (row == ROWTOMATRIX(d->sp.srow) && 
 			    col == COLTOMATRIX(d->sp.scol)) {
-			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p), B_FG_A_BG);
+			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
+				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
 			old_attrs = -1;
 		    }
 
@@ -654,8 +659,10 @@ static void draw_board(GAME g)
 
 printc:
 			if (config.details && castling_state(g, d->b, brow,
-				    bcol, p, 0))
-			    attrs |= A_BOLD;
+				    bcol, p, 0)) {
+			    attrs = mix_cp(CP_BOARD_CASTLING, attrs, 
+				    ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
+			}
 
 			waddch(boardw, (pi != OPEN_SQUARE) ? p | attrs : ' ' | attrs);
 			attrs = old_attrs;

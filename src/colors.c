@@ -39,7 +39,7 @@ static int next_cp;
 /*
  * Looks for a matching color pair or creates a new color pair if not found.
  */
-static chtype find_cp(short fg, short bg)
+static chtype find_cp(short fg, short bg, attr_t attrs)
 {
     int i;
     short xfg, xbg;
@@ -48,17 +48,17 @@ static chtype find_cp(short fg, short bg)
 	pair_content(i, &xfg, &xbg);
 
 	if (xfg == fg && xbg == bg)
-	    return COLOR_PAIR(i);
+	    return COLOR_PAIR(i) | attrs;
     }
 
     init_pair(next_cp, fg, bg);
-    return COLOR_PAIR(next_cp++);
+    return COLOR_PAIR(next_cp++) | attrs;
 }
 
 /*
  * Mixes two color pairs' fg and bg colors determined by 'which'.
  */
-chtype mix_cp(chtype a, chtype b, int which)
+chtype mix_cp(chtype a, chtype b, attr_t attrs, int which)
 {
     short afg, abg;
     short bfg, bbg;
@@ -68,19 +68,19 @@ chtype mix_cp(chtype a, chtype b, int which)
 
     switch (which) {
 	case A_FG_B_BG:
-	    return find_cp(afg, bbg);
+	    return find_cp(afg, bbg, attrs);
 	case A_FG_B_FG:
-	    return find_cp(afg, bfg);
+	    return find_cp(afg, bfg, attrs);
 	case A_BG_B_BG:
-	    return find_cp(abg, bbg);
+	    return find_cp(abg, bbg, attrs);
 	case B_FG_A_BG:
-	    return find_cp(bfg, abg);
+	    return find_cp(bfg, abg, attrs);
 	case B_BG_B_FG:
-	    return find_cp(bbg, bfg);
+	    return find_cp(bbg, bfg, attrs);
 	case A_BG_A_FG:
-	    return find_cp(abg, afg);
+	    return find_cp(abg, afg, attrs);
 	case B_BG_A_FG:
-	    return find_cp(bbg, afg);
+	    return find_cp(bbg, afg, attrs);
     }
 
     return 0;
@@ -171,6 +171,9 @@ void init_color_pairs()
 	    config.color[CONF_BBLACK].bg);
     init_pair(next_cp++, config.color[CONF_BWHITE].fg,
 	    config.color[CONF_BBLACK].bg);
+
+    init_pair(next_cp++, config.color[CONF_BCASTLING].fg, 
+	    config.color[CONF_BCASTLING].bg);
 }
 
 void set_default_colors()
@@ -259,4 +262,8 @@ void set_default_colors()
     config.color[CONF_MENUH].nattrs = A_BOLD;
     config.color[CONF_HISTORY_MENU_LG].fg = COLOR_GREEN;
     config.color[CONF_HISTORY_MENU_LG].bg = COLOR_BLACK;
+    config.color[CONF_BCASTLING].fg = COLOR_YELLOW;
+    config.color[CONF_BCASTLING].bg = COLOR_BLACK;
+    config.color[CONF_BCASTLING].attrs = A_BOLD;
+    config.color[CONF_BCASTLING].nattrs = A_BOLD;
 }

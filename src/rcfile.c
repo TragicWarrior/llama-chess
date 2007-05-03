@@ -706,6 +706,8 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_BGRAPHICS]);
 	else if (strcmp(var, "color_board_coords") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BCOORDS]);
+	else if (strcmp(var, "color_board_castling") == 0)
+	    parse_color(filename, lines, val, &config.color[CONF_BCASTLING]);
 	else if (strcmp(var, "color_status_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_SWINDOW]);
 	else if (strcmp(var, "color_status_title") == 0)
