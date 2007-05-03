@@ -318,6 +318,7 @@ void set_config_defaults()
     config.saveprompt = 1;
     config.deleteprompt = 1;
     config.validmoves = 1;
+    config.details = 1;
 
     set_default_colors();
 

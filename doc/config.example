@@ -41,7 +41,7 @@
 #valid_moves	on
 
 # When enabled castling availability and the en passasnt square will be shown
-# on the board. This can be toggled with the `d' key. BOOL
+# on the board. This can be toggled with the `^d' key. BOOL
 #board_details	on
 
 # If enabled and there is a parsing error when loading a file, stop processing
