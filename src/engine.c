@@ -479,6 +479,8 @@ static void parse_xboard_line(GAME g, char *str)
 
 	if (g->side == g->turn)
 	    RETURN(d);
+
+	d->engine->status = ENGINE_THINKING;
     }
 
     return;
