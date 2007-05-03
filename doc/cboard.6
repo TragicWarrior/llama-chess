@@ -14,7 +14,7 @@
 .\" along with this program; if not, write to the Free Software
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 .
-.Dd January 09, 2003
+.Dd May 03, 2007
 .Os
 .Dt CBOARD 6
 .
@@ -289,9 +289,11 @@ background colors which must be one of:
 .Ar green ,
 .Ar yellow ,
 .Ar cyan ,
-.Ar magenta
+.Ar magenta ,
+.Ar red
 or
-.Ar red .
+.Ar -
+for the default color.
 .Pp
 The third and fourth values are optional and set terminal attributes. The
 third sets attributes for color terminals and the fourth for non-color
@@ -304,9 +306,11 @@ attributes are recognized:
 .Ar standout ,
 .Ar underline ,
 .Ar blink ,
-.Ar invisible 
-and
-.Ar none .
+.Ar invisible ,
+.Ar none
+or
+.Ar -
+for the default attribute.
 .Pp
 Some color parameters have a _window extension. This will set the default
 color and attibutes for all characters for the given parameter set.

@@ -96,6 +96,8 @@ static short color_name(const char *filename, int line, const char *color)
 	return COLOR_RED;
     else if (strcasecmp(color, "CYAN") == 0)
 	return COLOR_CYAN;
+    else if (strcasecmp(color, "-") == 0)
+	;
     else
 	errx(EXIT_FAILURE, "%s(%i): invalid color \"%s\"", filename, line, 
 		color);
@@ -107,24 +109,25 @@ static void parse_color(const char *filename, int line, const char *str,
 	struct color_s *c)
 {
     char fg[16], bg[16], attr[64], nattr[64];
-    struct color_s ctmp = *c;
     int n;
     
-    if ((n = sscanf(str, "%[a-zA-Z] %[a-zA-Z] %[a-zA-Z,] %[a-zA-Z,]", fg, bg,
+    if ((n = sscanf(str, "%[a-zA-Z-] %[a-zA-Z-] %[a-zA-Z,-] %[a-zA-Z,-]", fg, bg,
 		    attr, nattr)) < 2)
 	errx(EXIT_FAILURE, "%s(%i): parse error", filename, line);
 
-    ctmp.fg = color_name(filename, line, fg);
-    ctmp.bg = color_name(filename, line, bg);
-    ctmp.attrs = ctmp.nattrs = 0;
+    if ((n = color_name(filename, line, fg)) >= 0)
+	c->fg = n;
+
+    if ((n = color_name(filename, line, bg)) >= 0)
+	c->bg = n;
+
+    c->attrs = c->nattrs = 0;
 
     if (n > 2)
-	ctmp.attrs = attributes(filename, line, attr);
+	c->attrs = attributes(filename, line, attr);
 
     if (n > 3)
-	ctmp.nattrs = attributes(filename, line, nattr);
-
-    *c = ctmp;
+	c->nattrs = attributes(filename, line, nattr);
 }
 
 static int on_or_off(const char *filename, int lines, const char *str)
