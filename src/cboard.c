@@ -1771,10 +1771,15 @@ void do_play_send_command()
 
 void do_play_switch_turn()
 {
+    struct userdata_s *d = gp->data;
+
     pgn_switch_side(gp);
     pgn_switch_turn(gp);
-    add_engine_command(gp, -1, 
-	    (gp->side == WHITE) ? "white\n" : "black\n");
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN))
+	add_engine_command(gp, -1, 
+		(gp->side == WHITE) ? "white\n" : "black\n");
+
     update_status_window(gp);
 }
 
