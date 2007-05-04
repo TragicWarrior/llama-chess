@@ -194,3 +194,27 @@ char *str_etc(const char *str, int maxlen, int rev)
 
     return buf;
 }
+
+char **split_str(char *str, char *delim, int *n, int force_trim)
+{
+    char *tmp;
+    int total = 0;
+    char **lines = NULL;
+
+    if (!str || !delim)
+	return NULL;
+
+    while ((tmp = strsep(&str, delim)) != NULL) {
+	tmp = rtrim(tmp);
+
+	if (!*tmp)
+	    continue;
+
+	lines = Realloc(lines, (total + 2) * sizeof(char *));
+	lines[total++] = (force_trim) ? strdup(trim(tmp)) : strdup(tmp);
+    }
+
+    lines[total] = NULL;
+    *n += total;
+    return lines;
+}

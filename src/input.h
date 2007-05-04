@@ -43,7 +43,7 @@ struct input_s {
     int h;
     int lines;
     char *init;
-    char *extra;
+    char **extra;
     input_func *func;
     char *arg;
     int c;
