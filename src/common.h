@@ -26,15 +26,21 @@
 #define CF_MODIFIED	0x10
 #define CF_DELETE	0x20
 
+#define MAX_TC		8	/* Time controls. */
+
+struct clock_s {
+    struct timeval elapsed;
+    unsigned short move;	/* move count */
+    int tc[MAX_TC][2];		/* 0 = move count, 1 = time (in seconds) */
+    int tcn;
+    int incr;
+};
+
 /*
  * Attached to game[n].data.
  */
 struct userdata_s {
     BOARD b;
-    struct timeval wc;
-    struct timeval bc;
-    long limit;
-    long elapsed;
     struct engine_s *engine;
     unsigned short flags;
     int c_row;
@@ -42,6 +48,9 @@ struct userdata_s {
     int paused;
     int n;
     int mode;
+    struct clock_s wclock;
+    struct clock_s bclock;
+    struct timeval elapsed;
 
     // The selected piece.
     struct {

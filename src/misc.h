@@ -31,6 +31,6 @@ FILE *open_file(const char *filename);
 char *pathfix(const char *);
 char *trim_multi(char *);
 char *str_etc(const char *str, int maxlen, int rev);
-char **split_str(char *str, char *delim, int *n, int force_trim);
+char **split_str(char *str, char *delim, int *n, int *w, int force_trim);
 
 #endif
