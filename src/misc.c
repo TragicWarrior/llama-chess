@@ -195,26 +195,38 @@ char *str_etc(const char *str, int maxlen, int rev)
     return buf;
 }
 
-char **split_str(char *str, char *delim, int *n, int force_trim)
+char **split_str(char *str, char *delim, int *n, int *width, int force_trim)
 {
     char *tmp;
     int total = 0;
     char **lines = NULL;
+    int w = 0;
 
     if (!str || !delim)
 	return NULL;
 
     while ((tmp = strsep(&str, delim)) != NULL) {
+	char *p;
+
 	tmp = rtrim(tmp);
 
 	if (!*tmp)
 	    continue;
 
 	lines = Realloc(lines, (total + 2) * sizeof(char *));
-	lines[total++] = (force_trim) ? strdup(trim(tmp)) : strdup(tmp);
+	p = force_trim ? strdup(trim(tmp)) : strdup(tmp);
+
+	if (w < strlen(p))
+	    w = strlen(p);
+
+	lines[total++] = p;
     }
 
     lines[total] = NULL;
     *n += total;
+
+    if (*width < w + 2)
+	*width = w + 2;
+
     return lines;
 }

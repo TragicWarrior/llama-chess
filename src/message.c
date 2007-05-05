@@ -111,7 +111,7 @@ static void build_message_lines(const char *title, const char *prompt,
 
     buf[n] = '\0';
     p = buf;
-    lines = split_str(p, "\n", &total, force_trim);
+    lines = split_str(p, "\n", &total, &width, force_trim);
 
     if (prompt && width < strlen(prompt))
 	width = strlen(prompt);

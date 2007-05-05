@@ -252,11 +252,12 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
 
     l += 2;
     in = Calloc(1, sizeof(struct input_s));
+    in->w = INPUT_WIDTH;
 
     if (extra_help) {
 	char *tmp = strdup(extra_help);
 
-	in->extra = split_str(tmp, "\n", &eh, 0);
+	in->extra = split_str(tmp, "\n", &eh, &in->w, 0);
 	l += eh;
 	free(tmp);
     }
@@ -265,7 +266,6 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
 	l++;
 
     in->h = l + 1;
-    in->w = INPUT_WIDTH;
     in->func = func;
     in->arg = arg;
     in->c = key;
