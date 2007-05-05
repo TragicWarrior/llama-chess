@@ -19,8 +19,6 @@ order):
 - When saving multiple games, sort them by tag values specified by the
   standard.
 
-- A menu to select a game from a file.
-
 - Better matching of tag expressions when searching for games. Maybe a comma
   separated list of tag/value expressions.
 
@@ -40,3 +38,5 @@ order):
 - GPM mouse support.
 
 - EPD game format.
+
+- History for the input dialog with smart context.
