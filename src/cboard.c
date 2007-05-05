@@ -2767,7 +2767,9 @@ void history_menu_print(WIN *win)
     wattr_get(win->w, &attrs, &pair, NULL);
     wattroff(win->w, COLOR_PAIR(pair));
 #endif
-    mvwaddch(win->w, m->print_line, 1, *p++);
+    mvwaddch(win->w, m->print_line, 1,
+	    *p == 'W' ? *p | mix_cp(CP_BOARD_WHITE, CP_HISTORY_WINDOW, ATTRS(CP_BOARD_WHITE), A_FG_B_BG) : *p | mix_cp(CP_BOARD_BLACK, CP_HISTORY_WINDOW, ATTRS(CP_BOARD_BLACK), A_FG_B_BG));
+    p++;
 
     if (h->hindex == 0 && line == 0)
 	waddch(win->w, ACS_ULCORNER | CP_HISTORY_MENU_LG);
