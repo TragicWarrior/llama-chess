@@ -310,9 +310,14 @@ static pid_t exec_chess_engine(GAME g, char **args)
 	    break;
     }
 
+    /*
+     * FIXME shouldn't block here. When theres a high load average, the engine
+     * process will fail to start. Better to handle this in game_loop() and
+     * give up after a timer expires.
+     */
     sleep(1);
 
-    if (kill(pid, 0) == -1)
+    if (send_signal_to_engine(pid, 0))
 	return -2;
 
     close(to[0]);
