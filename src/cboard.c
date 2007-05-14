@@ -3130,6 +3130,7 @@ void do_new_game_from_scratch(WIN *win)
     stop_clock();
     free_userdata();
     pgn_parse(NULL);
+    gp = game[gindex];
     add_custom_tags(&gp->tag);
     init_userdata();
     loadfile[0] = 0;
