@@ -598,7 +598,7 @@ static void draw_board(GAME g)
 
 		    if (config.details && d->b[row / 2][bcol].enpassant) {
 			p = pi = 'x'; 
-			attrs = IS_ENPASSANT(p);
+			attrs = mix_cp(CP_BOARD_COORDS, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_COORDS), A_FG_B_BG);
 		    }
 
 		    if (config.validmoves && d->b[brow][bcol].valid) {
