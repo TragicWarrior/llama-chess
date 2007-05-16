@@ -301,38 +301,25 @@ void view_annotation(HISTORY *h)
 
 int do_game_write(char *filename, char *mode, int start, int end)
 {
-    char *command = NULL;
-    FILE *fp;
     int i;
     struct userdata_s *d;
+    PGN_FILE *pgn = pgn_open(filename, mode);
 
-    if (command) {
-	if ((fp = popen(command, "w")) == NULL)
-	    goto error;
-    }
-    else {
-	if ((fp = fopen(filename, mode)) == NULL)
-	    goto error;
-    }
+    if (!pgn)
+	return 1;
 
     for (i = (start == -1) ? 0 : start; i < end; i++) {
 	d = game[i]->data;
-	pgn_write(fp, game[i]);
+	pgn_write(pgn, game[i]);
 	CLEAR_FLAG(d->flags, CF_MODIFIED);
     }
 
-    if (command)
-	pclose(fp);
-    else
-	fclose(fp);
+    pgn_close(pgn);
 
     if (start == -1)
 	strncpy(loadfile, filename, sizeof(loadfile));
 
     return 0;
-
-error:
-    return 1;
 }
 
 struct save_game_s {
@@ -378,7 +365,6 @@ done:
 /* If the saveindex argument is -1, all games will be saved. Otherwise it's a
  * game index number.
  */
-// FIXME command (compression)
 void save_pgn(char *filename, int saveindex)
 {
     char buf[FILENAME_MAX];
@@ -3291,10 +3277,10 @@ void do_game_jump(WIN *win)
 
 void do_load_file(WIN *win)
 {
-    FILE *fp;
     struct input_data_s *in = win->data;
     char *tmp = in->str;
     struct userdata_s *d;
+    PGN_FILE *pgn = NULL;
 
     if (!in->str) {
 	free(in);
@@ -3304,7 +3290,9 @@ void do_load_file(WIN *win)
     if ((tmp = pathfix(tmp)) == NULL)
 	goto done;
 
-    if ((fp = pgn_open(tmp)) == NULL) {
+    pgn = pgn_open(tmp, "r");
+
+    if (!pgn) {
 	cmessage(ERROR, ANYKEY, "%s\n%s", tmp, strerror(errno));
 	goto done;
     }
@@ -3314,7 +3302,7 @@ void do_load_file(WIN *win)
     /*
      * FIXME what is the game state after a parse error?
      */
-    if (pgn_parse(fp) == E_PGN_ERR) {
+    if (pgn_parse(pgn) == E_PGN_ERR) {
 	del_panel(loadingp);
 	delwin(loadingw);
 	loadingw = NULL;
@@ -3338,6 +3326,8 @@ void do_load_file(WIN *win)
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
 
 done:
+    pgn_close(pgn);
+
     if (in->str)
 	free(in->str);
 
@@ -3358,23 +3348,11 @@ void do_game_save(WIN *win)
     if (!tmp || (tmp = pathfix(tmp)) == NULL)
 	goto done;
 
-    if (pgn_is_compressed(tmp)) {
+    if (pgn_is_compressed(tmp) == E_PGN_ERR) {
 	p = tmp + strlen(tmp) - 1;
 
 	if (*p != 'n' || *(p-1) != 'g' || *(p-2) != 'p' ||
 		*(p-3) != '.') {
-	    snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
-	    tmp = tfile;
-	}
-    }
-    else {
-	if ((p = strchr(tmp, '.')) != NULL) {
-	    if (strcmp(p, ".pgn") != 0) {
-		snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
-		tmp = tfile;
-	    }
-	}
-	else {
 	    snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
 	    tmp = tfile;
 	}
@@ -4197,7 +4175,7 @@ static void set_defaults()
 {
     set_config_defaults();
     set_default_keys();
-    filetype = NO_FILE;
+    filetype = FILE_NONE;
     pgn_config_set(PGN_PROGRESS, 1024);
     pgn_config_set(PGN_PROGRESS_FUNC, loading_progress);
 }
@@ -4211,8 +4189,8 @@ int main(int argc, char *argv[])
     int ret = EXIT_SUCCESS;
     int validate_only = 0, validate_and_write = 0;
     int write_custom_tags = 0;
-    FILE *fp;
     int i = 0;
+    PGN_FILE *pgn;
 
 /* Solaris 5.9 */
 #ifndef HAVE_PROGNAME
@@ -4280,7 +4258,7 @@ int main(int argc, char *argv[])
 			COPYRIGHT);
 		exit(EXIT_SUCCESS);
 	    case 'p':
-		filetype = PGN_FILE;
+		filetype = FILE_PGN;
 		strncpy(loadfile, optarg, sizeof(loadfile));
 		break;
 	    case 'h':
@@ -4308,17 +4286,20 @@ int main(int argc, char *argv[])
     srandom(getpid());
 
     switch (filetype) {
-	case PGN_FILE:
-	    if ((fp = pgn_open(loadfile)) == NULL)
+	case FILE_PGN:
+	    pgn = pgn_open(loadfile, "r");
+
+	    if (!pgn)
 		err(EXIT_FAILURE, "%s", loadfile);
 
-	    ret = pgn_parse(fp);
+	    ret = pgn_parse(pgn);
+	    pgn_close(pgn);
 	    break;
-	case FEN_FILE:
+	case FILE_FEN:
 	    //ret = parse_fen_file(loadfile);
 	    break;
-	case EPD_FILE: // Not implemented.
-	case NO_FILE:
+	case FILE_EPD: // Not implemented.
+	case FILE_NONE:
 	default:
 	    // No file specified. Empty game.
 	    ret = pgn_parse(NULL);
@@ -4329,12 +4310,19 @@ int main(int argc, char *argv[])
 
     if (validate_only || validate_and_write) {
 	if (validate_and_write) {
+	    pgn = pgn_open("-", "r");
+
+	    if (!pgn)
+		err(EXIT_FAILURE, "pgn_open()");
+
 	    for (i = 0; i < gtotal; i++) {
 		if (write_custom_tags)
 		    add_custom_tags(&game[i]->tag);
 
-		pgn_write(stdout, game[i]);
+		pgn_write(pgn, game[i]);
 	    }
+
+	    pgn_close(pgn);
 	}
 
 	cleanup_all();

@@ -63,7 +63,7 @@ int input_c;
 // Loaded filename from the command line or from the file input dialog.
 int filetype;
 enum {
-    NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
+    FILE_NONE, FILE_PGN, FILE_FEN, FILE_EPD
 };
 
 const char *history_menu_help_str = {
