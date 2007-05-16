@@ -58,7 +58,6 @@ int markstart = -1, markend = -1;
 int keycount;
 char loadfile[FILENAME_MAX];
 int quit;
-time_t now;
 int input_c;
 
 // Loaded filename from the command line or from the file input dialog.

@@ -299,7 +299,7 @@ void view_annotation(HISTORY *h)
 		'n', 0, "%s", NO_ANNOTATIONS);
 }
 
-void do_game_write(char *filename, char *mode, int start, int end)
+int do_game_write(char *filename, char *mode, int start, int end)
 {
     char *command = NULL;
     FILE *fp;
@@ -307,16 +307,12 @@ void do_game_write(char *filename, char *mode, int start, int end)
     struct userdata_s *d;
 
     if (command) {
-	if ((fp = popen(command, "w")) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	if ((fp = popen(command, "w")) == NULL)
 	    goto error;
-	}
     }
     else {
-	if ((fp = fopen(filename, mode)) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	if ((fp = fopen(filename, mode)) == NULL)
 	    goto error;
-	}
     }
 
     for (i = (start == -1) ? 0 : start; i < end; i++) {
@@ -333,11 +329,10 @@ void do_game_write(char *filename, char *mode, int start, int end)
     if (start == -1)
 	strncpy(loadfile, filename, sizeof(loadfile));
 
-    update_status_notify(gp, "%s", NOTIFY_SAVED);
-    return;
+    return 0;
 
 error:
-    update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+    return 1;
 }
 
 struct save_game_s {
@@ -368,7 +363,12 @@ void do_save_game_overwrite_confirm(WIN *win)
 	    goto done;
     }
 
-    do_game_write(s->filename, mode, s->start, s->end);
+    if (do_game_write(s->filename, mode, s->start, s->end)) {
+	cmessage(ERROR, ANYKEY, "%s: %s", s->filename, strerror(errno));
+	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+    }
+    else
+	update_status_notify(gp, "%s", NOTIFY_SAVED);
 
 done:
     free(s->filename);
@@ -424,7 +424,12 @@ void save_pgn(char *filename, int saveindex)
 	return;
     }
 
-    do_game_write(filename, "a", saveindex, end);
+    if (do_game_write(filename, "a", saveindex, end)) {
+	cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+    }
+    else
+	update_status_notify(gp, "%s", NOTIFY_SAVED);
 }
 
 static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
@@ -4100,6 +4105,8 @@ void cleanup_all()
     if (config.tag)
 	pgn_tag_free(config.tag);
 
+    free(config.datadir);
+
     if (curses_initialized) {
 	del_panel(boardp);
 	del_panel(historyp);
@@ -4117,6 +4124,24 @@ void cleanup_all()
 
 	endwin();
     }
+}
+
+static void signal_save_pgn(int sig)
+{
+    char *buf;
+    time_t now;
+    char *p = config.savedirectory ? config.savedirectory : config.datadir;
+
+    time(&now);
+    asprintf(&buf, "%s/signal-%i-%li.pgn", p, sig, now);
+
+    if (do_game_write(buf, "w+", 0, gtotal)) {
+	cmessage(ERROR, ANYKEY, "%s: %s", p, strerror(errno));
+	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+    }
+
+    free(buf);
+    quit = 1;
 }
 
 void catch_signal(int which)
@@ -4146,8 +4171,10 @@ void catch_signal(int which)
 	    noecho();
 	    break;
 	case SIGINT:
-	case SIGTERM:
 	    quit = 1;
+	    break;
+	case SIGTERM:
+	    signal_save_pgn(which);
 	    break;
 	default:
 	    break;
@@ -4196,6 +4223,7 @@ int main(int argc, char *argv[])
 	err(EXIT_FAILURE, "getpwuid()");
 
     snprintf(datadir, sizeof(datadir), "%s/.cboard", config.pwd->pw_dir);
+    config.datadir = strdup(datadir);
     snprintf(buf, sizeof(buf), "%s/cc.data", datadir);
     config.ccfile = strdup(buf);
     snprintf(buf, sizeof(buf), "%s/nag.data", datadir);

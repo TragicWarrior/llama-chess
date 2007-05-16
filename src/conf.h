@@ -72,6 +72,7 @@ struct {
     			// from the command line).
     char *ccfile;	// The pathname to the Country Code data file.
     char *savedirectory; // Directory where saved games are stored.
+    char *datadir;	// ~/.cboard
     char *engine_cmd;	// Alternate chess engine command. FIXME
     int engine_protocol; // XBoard protocol: 1 or 2
     struct color_s color[CONF_MAX_COLORS]; // Color configuration.
