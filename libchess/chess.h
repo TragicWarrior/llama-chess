@@ -192,6 +192,11 @@ typedef enum {
     E_PGN_INVALID
 } pgn_error_t;
 
+typedef struct {
+    FILE *fp;
+    char *cmd;
+} PGN_FILE;
+
 /*
  * The prototype of the PGN_PROGRESS_FUNC function pointer.
  */
@@ -218,23 +223,28 @@ pgn_error_t pgn_config_get(pgn_config_flag f, ...);
 pgn_error_t pgn_is_compressed(const char *filename);
 
 /*
- * Returns a file pointer associated with 'filename' or NULL on error with
- * errno set to indicate the error. If compressed file support was enabled at
- * compile time and the filetype is supported and the utility is installed
- * then the file will be decompressed.
+ * Returns a pgn file pointer associated with 'filename' or NULL on error with
+ * errno set to indicate the error. 'mode' is the file mode (see fopen(3)).
+ * Files are automatically decompressed or compressed depending on the
+ * filename extension.
  */
-FILE *pgn_open(const char *filename);
+PGN_FILE *pgn_open(const char *filename, const char *mode);
 
 /*
- * Parses a file whose file pointer is 'fp'. 'fp' may have been returned by
- * pgn_open(). If 'fp' is NULL then a single empty game will be allocated. If
- * there is a parsing error E_PGN_PARSE is returned, if there was a memory
- * allocation error E_PGN_ERR is returned, otherwise E_PGN_OK is returned and
- * the global 'gindex' is set to the last parsed game in the file and the
- * global 'gtotal' is set to the total number of games in the file. The file
- * will be closed when the parsing is done.
+ * Closes and free's a PGN file handle.
  */
-pgn_error_t pgn_parse(FILE *fp);
+void pgn_close(PGN_FILE *pgn);
+
+/*
+ * Parses a PGN_FILE which was opened with pgn_open(). If 'pgn' is NULL then a
+ * single empty game will be allocated. If there is a parsing error
+ * E_PGN_PARSE is returned, if there was a memory allocation error E_PGN_ERR
+ * is returned, otherwise E_PGN_OK is returned and the global 'gindex' is set
+ * to the last parsed game in the file and the global 'gtotal' is set to the
+ * total number of games in the file. The file should be closed with
+ * pgn_close() after processing.
+ */
+pgn_error_t pgn_parse(PGN_FILE *pgn);
 
 /*
  * Allocates a new game and increments 'gtotal'. 'gindex' is then set to the
@@ -244,11 +254,11 @@ pgn_error_t pgn_parse(FILE *fp);
 pgn_error_t pgn_new_game();
 
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. See
- * 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
+ * Writes a PGN formatted game 'g' to a file which was opened with pgn_open().
+ * See 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
  * memory allocation or write error and E_PGN_OK on success.
  */
-pgn_error_t pgn_write(FILE *fp, GAME g);
+pgn_error_t pgn_write(PGN_FILE *pgn, GAME g);
 
 /*
  * Frees all games in the global 'game' array. Returns nothing.
