@@ -194,7 +194,9 @@ typedef enum {
 
 typedef struct {
     FILE *fp;
-    char *cmd;
+    char *filename;
+    char *tmpfile;	/* For appending. */
+    int pipe;
 } PGN_FILE;
 
 /*
@@ -223,17 +225,21 @@ pgn_error_t pgn_config_get(pgn_config_flag f, ...);
 pgn_error_t pgn_is_compressed(const char *filename);
 
 /*
- * Returns a pgn file pointer associated with 'filename' or NULL on error with
- * errno set to indicate the error. 'mode' is the file mode (see fopen(3)).
- * Files are automatically decompressed or compressed depending on the
- * filename extension.
+ * Opens a file 'filename' with the given 'mode'. 'mode' should be "r" for
+ * reading, "w" for writing (will truncate if the file exists) or "a" for
+ * appending to an existing file or creating a new one. Returns E_PGN_OK on
+ * success and sets 'result' to a file handle for use will the other file
+ * functions or E_PGN_ERR if there is an error opening the file in which case
+ * errno will be set to the error or E_PGN_INVALID if 'mode' is an invalid
+ * mode.
  */
-PGN_FILE *pgn_open(const char *filename, const char *mode);
+pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result);
 
 /*
- * Closes and free's a PGN file handle.
+ * Closes and free's a PGN file handle. Returns E_PGN_OK on success,
+ * E_PGN_INVALID if 'pgn' is NULL, or E_PGN_ERR if rename() failed.
  */
-void pgn_close(PGN_FILE *pgn);
+pgn_error_t pgn_close(PGN_FILE *pgn);
 
 /*
  * Parses a PGN_FILE which was opened with pgn_open(). If 'pgn' is NULL then a

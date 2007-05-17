@@ -2030,50 +2030,131 @@ static char *compression_cmd(const char *filename, int expand)
     return NULL;
 }
 
+static int copy_file(FILE *fp, const char *dst)
+{
+    FILE *ofp;
+    char line[LINE_MAX];
+    char *cmd = compression_cmd(dst, 0);
+
+    if ((ofp = popen(cmd, "w")) == NULL)
+	return 1;
+
+    fseek(fp, 0, SEEK_SET);
+
+    while ((fgets(line, sizeof(line), fp)) != NULL)
+	fprintf(ofp, "%s", line);
+
+    pclose(ofp);
+    return 0;
+}
+
 /*
  * Closes and free's a PGN file handle.
  */
-void pgn_close(PGN_FILE *pgn)
+pgn_error_t pgn_close(PGN_FILE *pgn)
 {
     if (!pgn)
-	return;
+	return E_PGN_INVALID;
 
-    if (pgn->cmd) {
-	pclose(pgn->fp);
-	free(pgn->cmd);
+    if (pgn->pipe) {
+	/*
+	 * Appending to a compressed file.
+	 */
+	if (pgn->tmpfile) {
+	    if (copy_file(pgn->fp, pgn->filename))
+		return E_PGN_ERR;
+
+	    fclose(pgn->fp);
+	    unlink(pgn->tmpfile);
+	    free(pgn->tmpfile);
+	}
+	else
+	    pclose(pgn->fp);
     }
     else
 	fclose(pgn->fp);
 
+    free(pgn->filename);
     free(pgn);
+    return E_PGN_OK;
 }
 
 /*
- * Returns a pgn file pointer associated with 'filename' or NULL on error with
- * errno set to indicate the error. 'mode' is the file mode (see fopen(3)).
- * Files are automatically decompressed or compressed depending on the
- * filename extension.
+ * Opens a file 'filename' with the given 'mode'. 'mode' should be "r" for
+ * reading, "w" for writing (will truncate if the file exists) or "a" for
+ * appending to an existing file or creating a new one. Returns E_PGN_OK on
+ * success and sets 'result' to a file handle for use will the other file
+ * functions or E_PGN_ERR if there is an error opening the file in which case
+ * errno will be set to the error or E_PGN_INVALID if 'mode' is an invalid
+ * mode.
  */
-PGN_FILE *pgn_open(const char *filename, const char *mode)
+pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 {
     FILE *fp = NULL, *tfp = NULL;
-    char buf[LINE_MAX], *p;
+    char buf[PATH_MAX], *p;
     char *cmd = NULL;
-    PGN_FILE *pgn = calloc(1, sizeof(PGN_FILE));
-    int m = (*mode == 'r') ? 1 : 0;
+    PGN_FILE *pgn;
+    int m;
+    int append = 0;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN opening %s\n", __FILE__, __LINE__, filename);
 #endif
 
+    if (!filename || !mode)
+	return E_PGN_INVALID;
+
+    if (strcmp(mode, "r") == 0)
+	m = 1;
+    else if (strcmp(mode, "w") == 0)
+	m = 0;
+    else if (strcmp(mode, "a") == 0) {
+	m = 0;
+	append = 1;
+    }
+    else {
+	return E_PGN_INVALID;
+    }
+
+    pgn = calloc(1, sizeof(PGN_FILE));
+
     if (!pgn)
 	goto fail;
 
-    if (strcmp(filename, "-")) {
+    if (strcmp(filename, "-") != 0) {
 	if (m && access(filename, R_OK) == -1)
 	    goto fail;
 
 	if ((cmd = compression_cmd(filename, m)) != NULL) {
+	    pgn->pipe = 1;
+
+	    if (append && access(filename, R_OK) == 0) {
+		char tmp[21];
+		int fd;
+
+		cmd = compression_cmd(filename, 1);
+
+		if ((fp = popen(cmd, "r")) == NULL)
+		    goto fail;
+
+		if (tmpnam(tmp) == NULL)
+		    goto fail;
+
+		if ((fd = open(tmp, O_RDWR|O_EXCL|O_CREAT)) == -1)
+		    goto fail;
+
+		if ((tfp = fdopen(fd, "a+")) == NULL)
+		    goto fail;
+
+		while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+		    fprintf(tfp, "%s", p);
+
+		pclose(fp);
+		pgn->fp = tfp;
+		pgn->tmpfile = strdup(tmp);
+		goto done;
+	    }
+
 	    if ((fp = popen(cmd, m ? "r" : "w")) == NULL)
 		goto fail;
 
@@ -2100,12 +2181,30 @@ PGN_FILE *pgn_open(const char *filename, const char *mode)
     else
 	pgn->fp = stdout;
 
-    pgn->cmd = cmd ? strdup(cmd) : NULL;
-    return pgn;
+done:
+    if (*filename != '/') {
+	if (getcwd(buf, sizeof(buf)) == NULL) {
+	    if (pgn->tmpfile)
+		free(pgn->tmpfile);
+
+	    goto fail;
+	}
+
+	asprintf(&p, "%s/%s", buf, filename);
+	pgn->filename = p;
+    }
+    else
+	pgn->filename = strdup(filename);
+
+    *result = pgn;
+    return E_PGN_OK;
 
 fail:
+    if (fp)
+	fclose(fp);
+
     free(pgn);
-    return NULL;
+    return E_PGN_ERR;
 }
 
 /* 
@@ -2252,7 +2351,10 @@ pgn_error_t pgn_config_set(pgn_config_flag f, ...)
 /*
  * Writes a PGN formatted game 'g' to a file which was opened with pgn_open().
  * See 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
- * memory allocation or write error and E_PGN_OK on success.
+ * memory allocation or write error and E_PGN_OK on success. It is important
+ * to use pgn_close() afterwards if the file is a recognized compressed file
+ * type otherwise the created temporary file wont be copied to the destination
+ * filename.
  */
 pgn_error_t pgn_write(PGN_FILE *pgn, GAME g)
 {
