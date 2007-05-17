@@ -303,9 +303,9 @@ int do_game_write(char *filename, char *mode, int start, int end)
 {
     int i;
     struct userdata_s *d;
-    PGN_FILE *pgn = pgn_open(filename, mode);
+    PGN_FILE *pgn;
 
-    if (!pgn)
+    if (pgn_open(filename, mode, &pgn) != E_PGN_OK)
 	return 1;
 
     for (i = (start == -1) ? 0 : start; i < end; i++) {
@@ -314,7 +314,8 @@ int do_game_write(char *filename, char *mode, int start, int end)
 	CLEAR_FLAG(d->flags, CF_MODIFIED);
     }
 
-    pgn_close(pgn);
+    if (pgn_close(pgn) != E_PGN_OK)
+	message(ERROR, ANYKEY, "%s", strerror(errno));
 
     if (start == -1)
 	strncpy(loadfile, filename, sizeof(loadfile));
@@ -336,15 +337,10 @@ void do_save_game_overwrite_confirm(WIN *win)
 
     switch (win->c) {
 	case 'a':
-	    if (pgn_is_compressed(s->filename) == E_PGN_OK) {
-		cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
-		goto done;
-	    }
-
 	    mode = "a";
 	    break;
 	case 'o':
-	    mode = "w+";
+	    mode = "w";
 	    break;
 	default:
 	    goto done;
@@ -3290,9 +3286,7 @@ void do_load_file(WIN *win)
     if ((tmp = pathfix(tmp)) == NULL)
 	goto done;
 
-    pgn = pgn_open(tmp, "r");
-
-    if (!pgn) {
+    if (pgn_open(tmp, "r", &pgn) != E_PGN_OK) {
 	cmessage(ERROR, ANYKEY, "%s\n%s", tmp, strerror(errno));
 	goto done;
     }
@@ -3371,7 +3365,9 @@ void do_game_save(WIN *win)
     }
     else {
 	d = game[n]->data;
-	pgn_tag_add(&game[n]->tag, "FEN", pgn_game_to_fen(game[n], d->b));
+
+	if (d->mode == MODE_EDIT)
+	    pgn_tag_add(&game[n]->tag, "FEN", pgn_game_to_fen(game[n], d->b));
     }
 
     save_pgn(tmp, n);
@@ -4287,9 +4283,7 @@ int main(int argc, char *argv[])
 
     switch (filetype) {
 	case FILE_PGN:
-	    pgn = pgn_open(loadfile, "r");
-
-	    if (!pgn)
+	    if (pgn_open(loadfile, "r", &pgn) != E_PGN_OK)
 		err(EXIT_FAILURE, "%s", loadfile);
 
 	    ret = pgn_parse(pgn);
@@ -4310,9 +4304,7 @@ int main(int argc, char *argv[])
 
     if (validate_only || validate_and_write) {
 	if (validate_and_write) {
-	    pgn = pgn_open("-", "r");
-
-	    if (!pgn)
+	    if (pgn_open("-", "r", &pgn) != E_PGN_OK)
 		err(EXIT_FAILURE, "pgn_open()");
 
 	    for (i = 0; i < gtotal; i++) {
