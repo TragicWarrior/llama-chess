@@ -3890,6 +3890,11 @@ void game_loop()
 	d = gp->data;
 
 	/*
+	 * This is needed to detect terminal resizing.
+	 */
+	doupdate();
+
+	/*
 	 * Finds the top level window in the window stack so we know what
 	 * window the wgetch()ed key belongs to.
 	 */
