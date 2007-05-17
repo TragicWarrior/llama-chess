@@ -4109,7 +4109,7 @@ static void signal_save_pgn(int sig)
     time(&now);
     asprintf(&buf, "%s/signal-%i-%li.pgn", p, sig, now);
 
-    if (do_game_write(buf, "w+", 0, gtotal)) {
+    if (do_game_write(buf, "w", 0, gtotal)) {
 	cmessage(ERROR, ANYKEY, "%s: %s", p, strerror(errno));
 	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
     }
