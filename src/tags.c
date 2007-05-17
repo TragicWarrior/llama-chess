@@ -387,6 +387,7 @@ static void edit_tag_remove(struct menu_input_s *m)
 
     pgn_tag_free(t);
     m->data = data;
+    m->update = 1;
 }
 
 static void edit_tag_add_custom(struct menu_input_s *m)
@@ -463,6 +464,13 @@ static void tag_print(WIN *win)
     mvwprintw(win->w, m->print_line, n, ": ");
     i = win->cols - n - 2;
     mvwprintw(win->w, m->print_line, n + 2, "%-*s", i - 1, str_etc(m->item->value, i, 0));
+
+    if (m->update) {
+	wmove(stdscr, 0, 0);
+	wclrtobot(stdscr);
+	update_all(gp);
+	m->update = 0;
+    }
 }
 
 void edit_tags(GAME g, BOARD b, int edit)

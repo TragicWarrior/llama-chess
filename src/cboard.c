@@ -334,12 +334,10 @@ void do_game_write(char *filename, char *mode, int start, int end)
 	strncpy(loadfile, filename, sizeof(loadfile));
 
     update_status_notify(gp, "%s", NOTIFY_SAVED);
-    update_all(gp);
     return;
 
 error:
     update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
-    update_all(gp);
 }
 
 struct save_game_s {
@@ -502,7 +500,7 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 #define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_COORDS : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
 #define ATTRS(cp) (cp & (A_BOLD|A_STANDOUT|A_BLINK|A_DIM|A_UNDERLINE|A_INVIS|A_REVERSE))
 
-static void draw_board(GAME g)
+void update_board_window(GAME g)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -765,6 +763,80 @@ static void update_time_control(GAME g)
     }
 }
 
+void update_history_window(GAME g)
+{
+    char buf[HISTORY_WIDTH - 1];
+    HISTORY *h = NULL;
+    int n, total;
+    int t = pgn_history_total(g->hp);
+
+    n = (g->hindex + 1) / 2;
+
+    if (t % 2)
+	total = (t + 1) / 2;
+    else
+	total = t / 2;
+
+    if (t)
+	snprintf(buf, sizeof(buf), "%u %s %u%s", n, N_OF_N_STR, total,
+		(movestep == 1) ? HISTORY_PLY_STEP : "");
+    else
+	strncpy(buf, UNAVAILABLE, sizeof(buf));
+
+    mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
+	    HISTORY_WIDTH - 13, buf);
+
+    h = pgn_history_by_n(g->hp, g->hindex);
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+    n = 0;
+
+    if (h && ((h->comment) || h->nag[0])) {
+	strncat(buf, " (Annotated", sizeof(buf));
+	n++;
+    }
+
+    if (h && h->rav) {
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	n++;
+    }
+
+    if (g->ravlevel) {
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	n++;
+    }
+
+    if (n)
+	strncat(buf, ")", sizeof(buf));
+
+    mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
+	    HISTORY_WIDTH - 13, buf);
+
+    h = pgn_history_by_n(g->hp, g->hindex - 1);
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+    n = 0;
+
+    if (h && ((h->comment) || h->nag[0])) {
+	strncat(buf, " (Annotated", sizeof(buf));
+	n++;
+    }
+
+    if (h && h->rav) {
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	n++;
+    }
+
+    if (g->ravlevel) {
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	n++;
+    }
+
+    if (n)
+	strncat(buf, ")", sizeof(buf));
+
+    mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
+	    HISTORY_WIDTH - 13, buf);
+}
+
 void do_validate_move(char *m)
 {
     struct userdata_s *d = gp->data;
@@ -805,6 +877,8 @@ void do_validate_move(char *m)
 
     d->paused = 0;
     free(m);
+    update_history_window(gp);
+    update_board_window(gp);
     return;
 }
 
@@ -905,6 +979,9 @@ void update_status_window(GAME g)
     struct userdata_s *d = g->data;
     int y;
     int n;
+
+    if (!curses_initialized)
+	return;
 
     getmaxyx(statusw, maxy, maxx);
     w = maxx - 2 - 8;
@@ -1050,80 +1127,6 @@ void update_status_window(GAME g)
     wattroff(stdscr, CP_STATUS_NOTIFY);
 }
 
-void update_history_window(GAME g)
-{
-    char buf[HISTORY_WIDTH - 1];
-    HISTORY *h = NULL;
-    int n, total;
-    int t = pgn_history_total(g->hp);
-
-    n = (g->hindex + 1) / 2;
-
-    if (t % 2)
-	total = (t + 1) / 2;
-    else
-	total = t / 2;
-
-    if (t)
-	snprintf(buf, sizeof(buf), "%u %s %u%s", n, N_OF_N_STR, total,
-		(movestep == 1) ? HISTORY_PLY_STEP : "");
-    else
-	strncpy(buf, UNAVAILABLE, sizeof(buf));
-
-    mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
-	    HISTORY_WIDTH - 13, buf);
-
-    h = pgn_history_by_n(g->hp, g->hindex);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
-    n = 0;
-
-    if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (Annotated", sizeof(buf));
-	n++;
-    }
-
-    if (h && h->rav) {
-	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
-	n++;
-    }
-
-    if (g->ravlevel) {
-	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
-	n++;
-    }
-
-    if (n)
-	strncat(buf, ")", sizeof(buf));
-
-    mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
-	    HISTORY_WIDTH - 13, buf);
-
-    h = pgn_history_by_n(g->hp, g->hindex - 1);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
-    n = 0;
-
-    if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (Annotated", sizeof(buf));
-	n++;
-    }
-
-    if (h && h->rav) {
-	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
-	n++;
-    }
-
-    if (g->ravlevel) {
-	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
-	n++;
-    }
-
-    if (n)
-	strncat(buf, ")", sizeof(buf));
-
-    mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
-	    HISTORY_WIDTH - 13, buf);
-}
-
 void update_tag_window(TAG **t)
 {
     int i, l, w;
@@ -1194,21 +1197,33 @@ void update_engine_window(GAME g)
 	    CP_MESSAGE_BORDER);
 }
 
-void refresh_all()
-{
-    wmove(stdscr, 0, 0);
-    wclrtobot(stdscr);
-    update_status_window(gp);
-    update_panels();
-    doupdate();
-}
-
 void update_all(GAME g)
 {
+    struct userdata_s *d = g->data;
+
+    /*
+     * In the middle of a macro. Don't update the screen.
+     */
+    if (macro_match != -1)
+	return;
+
+    /*
+     * No need to update when the engine window is being shown.
+     */
+    if (enginep && panel_hidden(enginep) == ERR) {
+	update_panels();
+	doupdate();
+	return;
+    }
+
+    wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
+    update_board_window(g);
     update_status_window(g);
     update_history_window(g);
     update_tag_window(g->tag);
     update_engine_window(g);
+    update_panels();
+    doupdate();
 }
 
 static void game_next_prev(GAME g, int n, int count)
@@ -1236,6 +1251,8 @@ static void game_next_prev(GAME g, int n, int count)
 	else
 	    gindex -= count;
     }
+
+    gp = game[gindex];
 }
 
 static void delete_game(int which)
@@ -1328,7 +1345,6 @@ static int toggle_delete_flag(int n)
 
     TOGGLE_FLAG(d->flags, CF_DELETE);
     gindex = n;
-    update_all(gp);
 
     for (i = x = 0; i < gtotal; i++) {
 	d = game[i]->data;
@@ -1449,9 +1465,6 @@ void update_status_notify(GAME g, char *fmt, ...)
 	if (status.notify) {
 	    free(status.notify);
 	    status.notify = NULL;
-
-	    if (curses_initialized)
-		update_status_window(g);
 	}
 
 	return;
@@ -1473,8 +1486,6 @@ void update_status_notify(GAME g, char *fmt, ...)
 #ifdef HAVE_VASPRINTF
     free(line);
 #endif
-    if (curses_initialized)
-	update_status_window(g);
 }
 
 int rav_next_prev(GAME g, BOARD b, int n)
@@ -1575,6 +1586,7 @@ static void update_clocks()
     int i;
     struct userdata_s *d;
     struct itimerval it;
+    int update = 0;
 
     getitimer(ITIMER_REAL, &it);
 
@@ -1592,7 +1604,16 @@ static void update_clocks()
 	    }
 
 	    update_clock(game[i], it);
+
+	    if (game[i] == gp)
+		update = 1;
 	}
+    }
+
+    if (update) {
+	update_status_window(gp);
+	update_panels();
+	doupdate();
     }
 }
 
@@ -1883,8 +1904,6 @@ void do_play_toggle_human()
 
     if (d->engine)
 	d->engine->status = ENGINE_READY;
-
-    update_all(gp);
 }
 
 void do_play_toggle_engine()
@@ -1900,8 +1919,6 @@ void do_play_toggle_engine()
 	add_engine_command(gp, ENGINE_READY, 
 		"setboard %s\n", pgn_game_to_fen(gp, d->b));
     }
-
-    update_all(gp);
 }
 
 /*
@@ -2242,7 +2259,6 @@ void do_play_history_mode()
 
     d->mode = MODE_HISTORY;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 }
 
 void do_play_edit_mode()
@@ -2255,7 +2271,6 @@ void do_play_edit_mode()
     pgn_board_init_fen(gp, d->b, NULL);
     config.details++;
     d->mode = MODE_EDIT;
-    update_all(gp);
 }
 
 void do_edit_insert_finalize(WIN *win)
@@ -2332,7 +2347,6 @@ void do_edit_cancel_selected()
 void do_edit_switch_turn()
 {
     pgn_switch_turn(gp);
-    update_all(gp);
 }
 
 void do_edit_toggle_castle()
@@ -2380,7 +2394,6 @@ void do_edit_exit()
     pgn_tag_sort(gp->tag);
     pgn_board_update(gp, d->b, gp->hindex);
     d->mode = MODE_PLAY;
-    update_all(gp);
 }
 
 void really_do_annotate_finalize(struct input_data_s *in, 
@@ -2404,7 +2417,6 @@ void really_do_annotate_finalize(struct input_data_s *in,
     free(in->str);
     free(in);
     SET_FLAG(d->flags, CF_MODIFIED);
-    update_all(gp);
 }
 
 void do_annotate_finalize(WIN *win)
@@ -2443,7 +2455,6 @@ void do_find_move_exp_finalize(int init, int which)
 
     gp->hindex = n;
     pgn_board_update(gp, d->b, gp->hindex);
-    update_all(gp);
 }
 
 void do_find_move_exp(WIN *win)
@@ -2473,7 +2484,6 @@ void do_move_jump_finalize(int n)
     update_status_notify(gp, NULL);
     gp->hindex = (n) ? n * 2 - 1 : n * 2;
     pgn_board_update(gp, d->b, gp->hindex);
-    update_all(gp);
 }
 
 void do_move_jump(WIN *win)
@@ -2825,7 +2835,6 @@ void do_history_jump_next()
     pgn_history_next(gp, d->b, (keycount > 0) ?
 	    config.jumpcount * keycount * movestep : 
 	    config.jumpcount * movestep);
-    update_all(gp);
 }
 
 void do_history_jump_prev()
@@ -2835,7 +2844,6 @@ void do_history_jump_prev()
     pgn_history_prev(gp, d->b, (keycount) ?
 	    config.jumpcount * keycount * movestep : 
 	    config.jumpcount * movestep);
-    update_all(gp);
 }
 
 void do_history_prev()
@@ -2844,7 +2852,6 @@ void do_history_prev()
 
     pgn_history_prev(gp, d->b,
 	    (keycount) ? keycount * movestep : movestep);
-    update_all(gp);
 }
 
 void do_history_next()
@@ -2853,14 +2860,12 @@ void do_history_next()
 
     pgn_history_next(gp, d->b, (keycount) ? 
 	    keycount * movestep : movestep);
-    update_all(gp);
 }
 
 void do_history_mode_finalize(struct userdata_s *d)
 {
     pushkey = 0;
     d->mode = MODE_PLAY;
-    update_all(gp);
 }
 
 void do_history_mode_confirm(WIN *win)
@@ -2979,7 +2984,6 @@ void do_history_rav(int which)
     struct userdata_s *d = gp->data;
 
     rav_next_prev(gp, d->b, which);
-    update_all(gp);
 }
 
 void do_history_rav_next()
@@ -3072,7 +3076,6 @@ void update_loading_window(int n)
     mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
 		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
 	    gtotal);
-    refresh_all();
 }
 
 static void init_userdata_once(GAME g, int n)
@@ -3119,7 +3122,6 @@ void do_new_game_finalize(GAME g)
 
     d->mode = MODE_PLAY;
     update_status_notify(g, NULL);
-    update_all(g);
 }
 
 void do_new_game_from_scratch(WIN *win)
@@ -3153,7 +3155,6 @@ void do_game_delete_finalize(int n)
     delete_game((!n) ? gindex : -1);
     d = gp->data;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 }
 
 void do_game_delete_confirm(WIN *win)
@@ -3230,7 +3231,6 @@ void do_find_game_exp_finalize(int which)
 	d->mode = MODE_HISTORY;
 
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 }
 
 void do_find_game_exp(WIN *win)
@@ -3261,10 +3261,10 @@ void do_game_jump_finalize(int n)
 	return;
 
     gindex = n;
+    gp = game[gindex];
     d = gp->data;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
     update_status_notify(gp, NULL);
-    update_all(gp);
 }
 
 void do_game_jump(WIN *win)
@@ -3315,7 +3315,6 @@ void do_load_file(WIN *win)
 	loadingw = NULL;
 	loadingp = NULL;
 	init_userdata();
-	update_all(gp);
 	goto done;
     }
 
@@ -3332,7 +3331,6 @@ void do_load_file(WIN *win)
 	d->mode = MODE_HISTORY;
 
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 
 done:
     if (in->str)
@@ -3466,9 +3464,6 @@ void global_game_next_prev(int which)
 	pgn_board_update(gp, d->b, gp->hindex);
     else if (d->mode == MODE_PLAY)
 	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-
-    update_status_notify(gp, NULL);
-    update_all(gp);
 }
 
 void do_global_next_game()
@@ -3557,13 +3552,11 @@ void do_global_toggle_delete()
     if (markstart >= 0 && markend >= 0) {
 	for (i = markstart; i < markend; i++) {
 	    if (toggle_delete_flag(i)) {
-		update_all(gp);
 		return;
 	    }
 	}
 
 	gindex = (delete_count < 0) ? markstart : i - 1;
-	update_all(gp);
     }
     else {
 	if (toggle_delete_flag(gindex))
@@ -3668,11 +3661,9 @@ void do_global_toggle_engine_window()
     if (panel_hidden(enginep)) {
 	update_engine_window(gp);
 	top_panel(enginep);
-	refresh_all();
     }
     else {
 	hide_panel(enginep);
-	refresh_all();
     }
 }
 
@@ -3700,7 +3691,8 @@ static int globalkeys()
 	case CTRL('L'):
 	    endwin();
 	    keypad(boardw, TRUE);
-	    refresh_all();
+	    wmove(stdscr, 0, 0);
+	    wclrtobot(stdscr);
 	    return 1;
 	case KEY_ESCAPE:
 	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
@@ -3729,10 +3721,8 @@ static int globalkeys()
 		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
-		  if (keycount) {
+		  if (keycount)
 		      d->c_row += keycount;
-		      pushkey = '\n';
-		  }
 		  else
 		      d->c_row++;
 
@@ -3746,7 +3736,6 @@ static int globalkeys()
 
 		  if (keycount) {
 		      d->c_row -= keycount;
-		      pushkey = '\n';
 		      update_status_notify(gp, NULL);
 		  }
 		  else
@@ -3760,10 +3749,8 @@ static int globalkeys()
 		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
-		  if (keycount) {
+		  if (keycount)
 		      d->c_col -= keycount;
-		      pushkey = '\n';
-		  }
 		  else
 		      d->c_col--;
 
@@ -3775,10 +3762,8 @@ static int globalkeys()
 		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
-		  if (keycount) {
+		  if (keycount)
 		      d->c_col += keycount;
-		      pushkey = '\n';
-		  }
 		  else
 		      d->c_col++;
 
@@ -3808,8 +3793,8 @@ static int globalkeys()
 void game_loop()
 {  
     struct userdata_s *d;
-    int macro_match = -1;
 
+    macro_match = -1;
     gindex = gtotal - 1;
     gp = game[gindex];
     d = gp->data;
@@ -3826,7 +3811,6 @@ void game_loop()
     movestep = 2;
     flushinp();
     update_all(gp);
-    update_tag_window(gp->tag);
     wtimeout(boardw, WINDOW_TIMEOUT);
 
     while (!quit) {
@@ -3926,13 +3910,6 @@ void game_loop()
 	if (TEST_FLAG(gp->flags, GF_GAMEOVER))
 	    d->mode = MODE_HISTORY;
 
-	draw_board(gp);
-	update_all(gp);
-	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
-
-	if (macro_match == -1)
-	    refresh_all();
-
 	/*
 	 * Finds the top level window in the window stack so we know what
 	 * window the wgetch()ed key belongs to.
@@ -3954,6 +3931,7 @@ void game_loop()
 		    if (macros[macro_match]->n >= macros[macro_match]->total) {
 			macros[macro_match]->n = 0;
 			macro_match = -1;
+			update_all(gp);
 			continue;
 		    }
 		    else 
@@ -3972,8 +3950,9 @@ void game_loop()
 		    case CTRL('L'):
 			endwin();
 			keypad(boardw, TRUE);
-			refresh_all();
-			continue;
+			wmove(stdscr, 0, 0);
+			wclrtobot(stdscr);
+			goto refresh;
 		}
 
 		win->c = input_c;
@@ -3995,6 +3974,7 @@ void game_loop()
 
 		    win->keep = 1;
 		    window_destroy(win);
+		    update_all(gp);
 		}
 
 		continue;
@@ -4019,10 +3999,10 @@ void game_loop()
 	    if (macro_match == -1)
 		keycount = 0;
 
-	    continue;
+	    goto refresh;
 	}
 	else if (n == -1)
-	    continue;
+	    goto refresh;
 
 	switch (d->mode) {
 	    case MODE_EDIT:
@@ -4060,6 +4040,9 @@ done:
 	    update_status_notify(gp, NULL);
 
 	keycount = 0;
+
+refresh:
+	update_all(gp);
     }
 }
 

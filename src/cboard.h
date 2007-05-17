@@ -96,6 +96,7 @@ const char *naghelp = {
 
 char **nags;
 int nag_total;
+static int macro_match;
 
 // Status window.
 struct {
