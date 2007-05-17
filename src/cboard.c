@@ -681,7 +681,10 @@ void invalid_move(int n, int e, const char *m)
 
 void gameover(GAME g)
 {
+    struct userdata_s *d = g->data;
+
     SET_FLAG(g->flags, GF_GAMEOVER);
+    d->mode = MODE_HISTORY;
     stop_engine(g);
 }
 
@@ -3885,9 +3888,6 @@ void game_loop()
 
 	gp = game[gindex];
 	d = gp->data;
-
-	if (TEST_FLAG(gp->flags, GF_GAMEOVER))
-	    d->mode = MODE_HISTORY;
 
 	/*
 	 * Finds the top level window in the window stack so we know what
