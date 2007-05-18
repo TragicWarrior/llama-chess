@@ -174,6 +174,8 @@ void init_color_pairs()
 
     init_pair(next_cp++, config.color[CONF_BCASTLING].fg, 
 	    config.color[CONF_BCASTLING].bg);
+    init_pair(next_cp++, config.color[CONF_BENPASSANT].fg, 
+	    config.color[CONF_BENPASSANT].bg);
 }
 
 void set_default_colors()
@@ -266,4 +268,8 @@ void set_default_colors()
     config.color[CONF_BCASTLING].bg = COLOR_BLACK;
     config.color[CONF_BCASTLING].attrs = A_BOLD;
     config.color[CONF_BCASTLING].nattrs = A_BOLD;
+    config.color[CONF_BENPASSANT].fg = COLOR_MAGENTA;
+    config.color[CONF_BENPASSANT].bg = COLOR_BLACK;
+    config.color[CONF_BENPASSANT].attrs = A_BOLD;
+    config.color[CONF_BENPASSANT].nattrs = A_BOLD;
 }

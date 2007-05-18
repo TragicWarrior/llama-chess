@@ -176,6 +176,10 @@ enum {
 	COLOR_PAIR(38) | config.color[CONF_BCASTLING].attrs : \
 	config.color[CONF_BCASTLING].nattrs)
 
+#define CP_BOARD_ENPASSANT	((COLORS) ? \
+	COLOR_PAIR(39) | config.color[CONF_BENPASSANT].attrs : \
+	config.color[CONF_BENPASSANT].nattrs)
+
 void init_color_pairs();
 void set_default_colors();
 chtype mix_cp(chtype a, chtype b, attr_t, int which);

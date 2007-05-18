@@ -484,7 +484,7 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
     return 0;
 }
 
-#define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_COORDS : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
+#define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_ENPASSANT : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
 #define ATTRS(cp) (cp & (A_BOLD|A_STANDOUT|A_BLINK|A_DIM|A_UNDERLINE|A_INVIS|A_REVERSE))
 
 void update_board_window(GAME g)
@@ -583,7 +583,7 @@ void update_board_window(GAME g)
 
 		    if (config.details && d->b[row / 2][bcol].enpassant) {
 			p = pi = 'x'; 
-			attrs = mix_cp(CP_BOARD_COORDS, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_COORDS), A_FG_B_BG);
+			attrs = mix_cp(CP_BOARD_ENPASSANT, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
 
 		    if (config.validmoves && d->b[brow][bcol].valid) {
