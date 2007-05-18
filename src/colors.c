@@ -34,74 +34,148 @@
 #include <dmalloc.h>
 #endif
 
+static int next_cp;
+
+/*
+ * Looks for a matching color pair or creates a new color pair if not found.
+ */
+static chtype find_cp(short fg, short bg, attr_t attrs)
+{
+    int i;
+    short xfg, xbg;
+
+    for (i = 1; i < COLOR_PAIRS; i++) {
+	pair_content(i, &xfg, &xbg);
+
+	if (xfg == fg && xbg == bg)
+	    return COLOR_PAIR(i) | attrs;
+    }
+
+    init_pair(next_cp, fg, bg);
+    return COLOR_PAIR(next_cp++) | attrs;
+}
+
+/*
+ * Mixes two color pairs' fg and bg colors determined by 'which'.
+ */
+chtype mix_cp(chtype a, chtype b, attr_t attrs, int which)
+{
+    short afg, abg;
+    short bfg, bbg;
+
+    pair_content(PAIR_NUMBER(a), &afg, &abg);
+    pair_content(PAIR_NUMBER(b), &bfg, &bbg);
+
+    switch (which) {
+	case A_FG_B_BG:
+	    return find_cp(afg, bbg, attrs);
+	case A_FG_B_FG:
+	    return find_cp(afg, bfg, attrs);
+	case A_BG_B_BG:
+	    return find_cp(abg, bbg, attrs);
+	case B_FG_A_BG:
+	    return find_cp(bfg, abg, attrs);
+	case B_BG_B_FG:
+	    return find_cp(bbg, bfg, attrs);
+	case A_BG_A_FG:
+	    return find_cp(abg, afg, attrs);
+	case B_BG_A_FG:
+	    return find_cp(bbg, afg, attrs);
+    }
+
+    return 0;
+}
+
+
 void init_color_pairs()
 {
-    init_pair(1, config.color[CONF_BCOORDS].fg, 
+    next_cp = 1;
+
+    init_pair(next_cp++, config.color[CONF_BCOORDS].fg, 
 	    config.color[CONF_BCOORDS].bg);
-    init_pair(2, config.color[CONF_BGRAPHICS].fg, 
+    init_pair(next_cp++, config.color[CONF_BGRAPHICS].fg, 
 	    config.color[CONF_BGRAPHICS].bg);
-    init_pair(3, config.color[CONF_BWHITE].fg, 
+    init_pair(next_cp++, config.color[CONF_BWHITE].fg, 
 	    config.color[CONF_BWHITE].bg);
-    init_pair(4, config.color[CONF_BBLACK].fg, 
+    init_pair(next_cp++, config.color[CONF_BBLACK].fg, 
 	    config.color[CONF_BBLACK].bg);
-    init_pair(5, config.color[CONF_BSELECTED].fg, 
+    init_pair(next_cp++, config.color[CONF_BSELECTED].fg, 
 	    config.color[CONF_BSELECTED].bg);
-    init_pair(6, config.color[CONF_BCURSOR].fg, 
+    init_pair(next_cp++, config.color[CONF_BCURSOR].fg, 
 	    config.color[CONF_BCURSOR].bg);
-    init_pair(7, config.color[CONF_SWINDOW].fg, 
+    init_pair(next_cp++, config.color[CONF_SWINDOW].fg, 
 	    config.color[CONF_SWINDOW].bg);
-    init_pair(8, config.color[CONF_SBORDER].fg, 
+    init_pair(next_cp++, config.color[CONF_SBORDER].fg, 
 	    config.color[CONF_SBORDER].bg);
-    init_pair(9, config.color[CONF_STITLE].fg, 
+    init_pair(next_cp++, config.color[CONF_STITLE].fg, 
 	    config.color[CONF_STITLE].bg);
-    init_pair(10, config.color[CONF_SENGINE].fg, 
+    init_pair(next_cp++, config.color[CONF_SENGINE].fg, 
 	    config.color[CONF_SENGINE].bg);
-    init_pair(11, config.color[CONF_SNOTIFY].fg, 
+    init_pair(next_cp++, config.color[CONF_SNOTIFY].fg, 
 	    config.color[CONF_SNOTIFY].bg);
-    init_pair(12, config.color[CONF_TWINDOW].fg, 
+    init_pair(next_cp++, config.color[CONF_TWINDOW].fg, 
 	    config.color[CONF_TWINDOW].bg);
-    init_pair(13, config.color[CONF_TBORDER].fg, 
+    init_pair(next_cp++, config.color[CONF_TBORDER].fg, 
 	    config.color[CONF_TBORDER].bg);
-    init_pair(14, config.color[CONF_TTITLE].fg, 
+    init_pair(next_cp++, config.color[CONF_TTITLE].fg, 
 	    config.color[CONF_TTITLE].bg);
-    init_pair(15, config.color[CONF_HWINDOW].fg, 
+    init_pair(next_cp++, config.color[CONF_HWINDOW].fg, 
 	    config.color[CONF_HWINDOW].bg);
-    init_pair(16, config.color[CONF_HBORDER].fg, 
+    init_pair(next_cp++, config.color[CONF_HBORDER].fg, 
 	    config.color[CONF_HBORDER].bg);
-    init_pair(17, config.color[CONF_HTITLE].fg, 
+    init_pair(next_cp++, config.color[CONF_HTITLE].fg, 
 	    config.color[CONF_HTITLE].bg);
-    init_pair(18, config.color[CONF_MWINDOW].fg, 
+    init_pair(next_cp++, config.color[CONF_MWINDOW].fg, 
 	    config.color[CONF_MWINDOW].bg);
-    init_pair(19, config.color[CONF_MBORDER].fg, 
+    init_pair(next_cp++, config.color[CONF_MBORDER].fg, 
 	    config.color[CONF_MBORDER].bg);
-    init_pair(20, config.color[CONF_MTITLE].fg, 
+    init_pair(next_cp++, config.color[CONF_MTITLE].fg, 
 	    config.color[CONF_MTITLE].bg);
-    init_pair(21, config.color[CONF_MPROMPT].fg, 
+    init_pair(next_cp++, config.color[CONF_MPROMPT].fg, 
 	    config.color[CONF_MPROMPT].bg);
-    init_pair(22, config.color[CONF_IWINDOW].fg, 
+    init_pair(next_cp++, config.color[CONF_IWINDOW].fg, 
 	    config.color[CONF_IWINDOW].bg);
-    init_pair(23, config.color[CONF_IBORDER].fg, 
+    init_pair(next_cp++, config.color[CONF_IBORDER].fg, 
 	    config.color[CONF_IBORDER].bg);
-    init_pair(24, config.color[CONF_ITITLE].fg, 
+    init_pair(next_cp++, config.color[CONF_ITITLE].fg, 
 	    config.color[CONF_ITITLE].bg);
-    init_pair(25, config.color[CONF_IPROMPT].fg, 
+    init_pair(next_cp++, config.color[CONF_IPROMPT].fg, 
 	    config.color[CONF_IPROMPT].bg);
-    init_pair(26, config.color[CONF_BMOVESW].fg, 
+    init_pair(next_cp++, config.color[CONF_BMOVESW].fg, 
 	    config.color[CONF_BMOVESW].bg);
-    init_pair(27, config.color[CONF_BMOVESB].fg, 
+    init_pair(next_cp++, config.color[CONF_BMOVESB].fg, 
 	    config.color[CONF_BMOVESB].bg);
-    init_pair(28, config.color[CONF_BCOUNT].fg, 
+    init_pair(next_cp++, config.color[CONF_BCOUNT].fg, 
 	    config.color[CONF_BCOUNT].bg);
-    init_pair(29, config.color[CONF_BDWINDOW].fg, 
+    init_pair(next_cp++, config.color[CONF_BDWINDOW].fg, 
 	    config.color[CONF_BDWINDOW].bg);
-    init_pair(30, config.color[CONF_MENU].fg, 
+    init_pair(next_cp++, config.color[CONF_MENU].fg, 
 	    config.color[CONF_MENU].bg);
-    init_pair(31, config.color[CONF_MENUS].fg, 
+    init_pair(next_cp++, config.color[CONF_MENUS].fg, 
 	    config.color[CONF_MENUS].bg);
-    init_pair(32, config.color[CONF_MENUH].fg, 
+    init_pair(next_cp++, config.color[CONF_MENUH].fg, 
 	    config.color[CONF_MENUH].bg);
-    init_pair(33, config.color[CONF_HISTORY_MENU_LG].fg, 
+    init_pair(next_cp++, config.color[CONF_HISTORY_MENU_LG].fg, 
 	    config.color[CONF_HISTORY_MENU_LG].bg);
+
+    /*
+     * These are not configurable. They are the color pairs that are mixed
+     * with the background of the current square and foreground of the current
+     * piece. See draw_board() for details.
+     */
+    init_pair(next_cp++, config.color[CONF_BWHITE].fg,
+	    config.color[CONF_BWHITE].bg);
+    init_pair(next_cp++, config.color[CONF_BBLACK].fg,
+	    config.color[CONF_BWHITE].bg);
+    init_pair(next_cp++, config.color[CONF_BBLACK].fg,
+	    config.color[CONF_BBLACK].bg);
+    init_pair(next_cp++, config.color[CONF_BWHITE].fg,
+	    config.color[CONF_BBLACK].bg);
+
+    init_pair(next_cp++, config.color[CONF_BCASTLING].fg, 
+	    config.color[CONF_BCASTLING].bg);
+    init_pair(next_cp++, config.color[CONF_BENPASSANT].fg, 
+	    config.color[CONF_BENPASSANT].bg);
 }
 
 void set_default_colors()
@@ -125,7 +199,7 @@ void set_default_colors()
     config.color[CONF_BWHITE].fg = COLOR_WHITE;
     config.color[CONF_BWHITE].bg = COLOR_RED;
     config.color[CONF_BWHITE].nattrs = A_REVERSE;
-    config.color[CONF_BBLACK].fg = COLOR_WHITE;
+    config.color[CONF_BBLACK].fg = COLOR_CYAN;
     config.color[CONF_BBLACK].bg = COLOR_BLACK;
     config.color[CONF_BSELECTED].fg = COLOR_WHITE;
     config.color[CONF_BSELECTED].bg = COLOR_YELLOW;
@@ -190,4 +264,12 @@ void set_default_colors()
     config.color[CONF_MENUH].nattrs = A_BOLD;
     config.color[CONF_HISTORY_MENU_LG].fg = COLOR_GREEN;
     config.color[CONF_HISTORY_MENU_LG].bg = COLOR_BLACK;
+    config.color[CONF_BCASTLING].fg = COLOR_YELLOW;
+    config.color[CONF_BCASTLING].bg = COLOR_BLACK;
+    config.color[CONF_BCASTLING].attrs = A_BOLD;
+    config.color[CONF_BCASTLING].nattrs = A_BOLD;
+    config.color[CONF_BENPASSANT].fg = COLOR_MAGENTA;
+    config.color[CONF_BENPASSANT].bg = COLOR_BLACK;
+    config.color[CONF_BENPASSANT].attrs = A_BOLD;
+    config.color[CONF_BENPASSANT].nattrs = A_BOLD;
 }

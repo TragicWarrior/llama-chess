@@ -58,13 +58,12 @@ int markstart = -1, markend = -1;
 int keycount;
 char loadfile[FILENAME_MAX];
 int quit;
-time_t now;
 int input_c;
 
 // Loaded filename from the command line or from the file input dialog.
 int filetype;
 enum {
-    NO_FILE, PGN_FILE, FEN_FILE, EPD_FILE
+    FILE_NONE, FILE_PGN, FILE_FEN, FILE_EPD
 };
 
 const char *history_menu_help_str = {
@@ -96,6 +95,7 @@ const char *naghelp = {
 
 char **nags;
 int nag_total;
+static int macro_match;
 
 // Status window.
 struct {

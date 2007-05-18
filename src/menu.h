@@ -42,6 +42,7 @@ typedef void (menu_print_func)(WIN *);
 typedef struct menu_item_s **(menu_items)(WIN *);
 
 struct menu_input_s {
+    int update;
     int selected;
     int nofree;
     int top;

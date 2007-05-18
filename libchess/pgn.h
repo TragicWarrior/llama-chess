@@ -32,7 +32,6 @@ static int pgn_ret;
 static int pgn_write_turn;
 static int pgn_mpl;
 static int pgn_lastc;
-static int pgn_isfile;
 static int ravlevel;
 static long pgn_fsize;
 static int pgn_rav;

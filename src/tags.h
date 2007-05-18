@@ -61,5 +61,6 @@ static struct country_codes {
 } *ccodes;
 
 void update_status_notify(GAME g, char *fmt, ...);
+void update_tag_window(TAG **tags);
 
 #endif

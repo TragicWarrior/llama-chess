@@ -101,19 +101,22 @@ static int get_input(WIN *win)
     struct input_s *in = win->data;
     char *tmp;
     struct input_data_s *data = in->data;
+    int i;
 
     curs_set(1);
     window_draw_title(win->w, win->title, in->w, CP_INPUT_TITLE,
 	    CP_INPUT_BORDER);
 
     if (in->extra) {
-	window_draw_prompt(win->w, in->h - 3, in->w, in->extra, 
-		CP_INPUT_PROMPT);
-	window_draw_prompt(win->w, in->h - 2, in->w, INPUT_HELP_PROMPT,
+	for (i = 0; in->extra[i]; i++)
+	    window_draw_prompt(win->w, in->lines + 2 + i, in->w, in->extra[i], 
+		    CP_INPUT_PROMPT);
+
+	window_draw_prompt(win->w, in->lines + 2 + i, in->w, INPUT_HELP_PROMPT,
 		CP_INPUT_PROMPT);
     }
     else
-	window_draw_prompt(win->w, in->h - 2, in->w, INPUT_HELP_PROMPT,
+	window_draw_prompt(win->w, in->lines + 2, in->w, INPUT_HELP_PROMPT,
 		CP_INPUT_PROMPT);
 
     if (in->func && in->c && win->c == in->c) {
@@ -197,8 +200,12 @@ done:
     free_form(in->f);
     free_field(in->fields[0]);
 
-    if (in->extra)
+    if (in->extra) {
+	for (i = 0; in->extra[i]; i++)
+	    free(in->extra[i]);
+
 	free(in->extra);
+    }
 
     data->str = (in->buf[0]) ? strdup(in->buf) : NULL;
     win->data = data;
@@ -241,20 +248,24 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     int l = (lines > 0) ? lines : 1;
     va_list ap;
     FIELDTYPE *ft = NULL;
+    int eh = 0;
 
     l += 2;
     in = Calloc(1, sizeof(struct input_s));
+    in->w = INPUT_WIDTH;
 
     if (extra_help) {
-	l++;
-	in->extra = strdup(extra_help);
+	char *tmp = strdup(extra_help);
+
+	in->extra = split_str(tmp, "\n", &eh, &in->w, 0);
+	l += eh;
+	free(tmp);
     }
 
     if (title)
 	l++;
 
     in->h = l + 1;
-    in->w = INPUT_WIDTH;
     in->func = func;
     in->arg = arg;
     in->c = key;

@@ -19,6 +19,11 @@
 #ifndef COLORS_H
 #define COLORS_H
 
+enum {
+    A_FG_B_BG, A_FG_B_FG, A_BG_B_BG, B_FG_A_BG, B_BG_B_FG, A_BG_A_FG,
+    A_BG_B_FG, B_BG_A_FG
+};
+
 #define CP_BOARD_COORDS	((COLORS) ? \
 	COLOR_PAIR(1) | config.color[CONF_BCOORDS].attrs : \
 	config.color[CONF_BCOORDS].nattrs)
@@ -151,7 +156,32 @@
 	COLOR_PAIR(33) | config.color[CONF_HISTORY_MENU_LG].attrs : \
 	config.color[CONF_HISTORY_MENU_LG].nattrs)
 
+#define CP_BOARD_W_W		((COLORS) ? \
+	COLOR_PAIR(34) | config.color[CONF_BWHITE].attrs : \
+	config.color[CONF_BWHITE].nattrs)
+
+#define CP_BOARD_W_B		((COLORS) ? \
+	COLOR_PAIR(35) | config.color[CONF_BBLACK].attrs : \
+	config.color[CONF_BWHITE].nattrs)
+
+#define CP_BOARD_B_B		((COLORS) ? \
+	COLOR_PAIR(36) | config.color[CONF_BBLACK].attrs : \
+	config.color[CONF_BBLACK].nattrs)
+
+#define CP_BOARD_B_W		((COLORS) ? \
+	COLOR_PAIR(37) | config.color[CONF_BWHITE].attrs : \
+	config.color[CONF_BBLACK].nattrs)
+
+#define CP_BOARD_CASTLING	((COLORS) ? \
+	COLOR_PAIR(38) | config.color[CONF_BCASTLING].attrs : \
+	config.color[CONF_BCASTLING].nattrs)
+
+#define CP_BOARD_ENPASSANT	((COLORS) ? \
+	COLOR_PAIR(39) | config.color[CONF_BENPASSANT].attrs : \
+	config.color[CONF_BENPASSANT].nattrs)
+
 void init_color_pairs();
 void set_default_colors();
+chtype mix_cp(chtype a, chtype b, attr_t, int which);
 
 #endif

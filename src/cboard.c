@@ -299,47 +299,28 @@ void view_annotation(HISTORY *h)
 		'n', 0, "%s", NO_ANNOTATIONS);
 }
 
-void do_game_write(char *filename, char *mode, int start, int end)
+int do_game_write(char *filename, char *mode, int start, int end)
 {
-    char *command = NULL;
-    FILE *fp;
     int i;
     struct userdata_s *d;
+    PGN_FILE *pgn;
 
-    if (command) {
-	if ((fp = popen(command, "w")) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	    goto error;
-	}
-    }
-    else {
-	if ((fp = fopen(filename, mode)) == NULL) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
-	    goto error;
-	}
-    }
+    if (pgn_open(filename, mode, &pgn) != E_PGN_OK)
+	return 1;
 
     for (i = (start == -1) ? 0 : start; i < end; i++) {
 	d = game[i]->data;
-	pgn_write(fp, game[i]);
+	pgn_write(pgn, game[i]);
 	CLEAR_FLAG(d->flags, CF_MODIFIED);
     }
 
-    if (command)
-	pclose(fp);
-    else
-	fclose(fp);
+    if (pgn_close(pgn) != E_PGN_OK)
+	message(ERROR, ANYKEY, "%s", strerror(errno));
 
     if (start == -1)
 	strncpy(loadfile, filename, sizeof(loadfile));
 
-    update_status_notify(gp, "%s", NOTIFY_SAVED);
-    update_all(gp);
-    return;
-
-error:
-    update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
-    update_all(gp);
+    return 0;
 }
 
 struct save_game_s {
@@ -356,21 +337,21 @@ void do_save_game_overwrite_confirm(WIN *win)
 
     switch (win->c) {
 	case 'a':
-	    if (pgn_is_compressed(s->filename) == E_PGN_OK) {
-		cmessage(NULL, ANYKEY, "%s", E_SAVE_COMPRESS);
-		goto done;
-	    }
-
 	    mode = "a";
 	    break;
 	case 'o':
-	    mode = "w+";
+	    mode = "w";
 	    break;
 	default:
 	    goto done;
     }
 
-    do_game_write(s->filename, mode, s->start, s->end);
+    if (do_game_write(s->filename, mode, s->start, s->end)) {
+	cmessage(ERROR, ANYKEY, "%s: %s", s->filename, strerror(errno));
+	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+    }
+    else
+	update_status_notify(gp, "%s", NOTIFY_SAVED);
 
 done:
     free(s->filename);
@@ -380,7 +361,6 @@ done:
 /* If the saveindex argument is -1, all games will be saved. Otherwise it's a
  * game index number.
  */
-// FIXME command (compression)
 void save_pgn(char *filename, int saveindex)
 {
     char buf[FILENAME_MAX];
@@ -426,7 +406,12 @@ void save_pgn(char *filename, int saveindex)
 	return;
     }
 
-    do_game_write(filename, "a", saveindex, end);
+    if (do_game_write(filename, "a", saveindex, end)) {
+	cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+    }
+    else
+	update_status_notify(gp, "%s", NOTIFY_SAVED);
 }
 
 static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
@@ -499,7 +484,10 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
     return 0;
 }
 
-static void draw_board(GAME g)
+#define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_ENPASSANT : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
+#define ATTRS(cp) (cp & (A_BOLD|A_STANDOUT|A_BLINK|A_DIM|A_UNDERLINE|A_INVIS|A_REVERSE))
+
+void update_board_window(GAME g)
 {
     int row, col;
     int bcol = 0, brow = 0;
@@ -516,8 +504,9 @@ static void draw_board(GAME g)
 
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
-	    chtype attrs = 0;
-	    unsigned char piece;
+	    chtype attrs = 0, old_attrs = 0;
+	    unsigned char p;
+	    int pi;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -589,22 +578,38 @@ static void draw_board(GAME g)
 		    else
 			attrwhich = WHITE;
 
-		    if (config.validmoves && d->b[brow][bcol].valid) {
-			attrs = (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE :
-			    CP_BOARD_MOVES_BLACK;
+		    p = d->b[row / 2][bcol].icon;
+		    pi = pgn_piece_to_int(p);
+
+		    if (config.details && d->b[row / 2][bcol].enpassant) {
+			p = pi = 'x'; 
+			attrs = mix_cp(CP_BOARD_ENPASSANT, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
-		    else
-			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE :
-			    CP_BOARD_BLACK;
+
+		    if (config.validmoves && d->b[brow][bcol].valid) {
+			old_attrs = -1;
+
+			if (attrwhich == WHITE)
+			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p), 
+				    ATTRS(CP_BOARD_MOVES_WHITE), B_FG_A_BG);
+			else
+			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p),
+				    ATTRS(CP_BOARD_MOVES_BLACK), B_FG_A_BG);
+		    }
+		    else if (p != 'x')
+			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
 		    if (row == ROWTOMATRIX(d->c_row) && col == 
 			    COLTOMATRIX(d->c_col)) {
-			attrs = CP_BOARD_CURSOR;
+			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p), 
+				ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
+			old_attrs = -1;
 		    }
-
-		    if (row == ROWTOMATRIX(d->sp.srow) && 
+		    else if (row == ROWTOMATRIX(d->sp.srow) && 
 			    col == COLTOMATRIX(d->sp.scol)) {
-			attrs = CP_BOARD_SELECTED;
+			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
+				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
+			old_attrs = -1;
 		    }
 
 		    if (row == maxy - 1)
@@ -615,24 +620,37 @@ static void draw_board(GAME g)
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
 		    else {
-			if (config.details && d->b[row / 2][bcol].enpassant)
-			    piece = 'x';
-			else
-			    piece = d->b[row / 2][bcol].icon;
+			if (old_attrs == -1) {
+			    old_attrs = attrs;
+			    goto printc;
+			}
 
+			old_attrs = attrs;
+
+			if (pi != OPEN_SQUARE && p != 'x') {
+			    if (attrwhich == WHITE) {
+				if (isupper(p))
+				    attrs = CP_BOARD_W_W;
+				else
+				    attrs = CP_BOARD_W_B;
+			    }
+			    else {
+				if (isupper(p))
+				    attrs = CP_BOARD_B_W;
+				else
+				    attrs = CP_BOARD_B_B;
+			    }
+			}
+
+printc:
 			if (config.details && castling_state(g, d->b, brow,
-				    bcol, piece, 0))
-			    attrs |= A_REVERSE;
+				    bcol, p, 0)) {
+			    attrs = mix_cp(CP_BOARD_CASTLING, attrs, 
+				    ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
+			}
 
-			if (g->side == WHITE && isupper(piece))
-			    attrs |= A_BOLD;
-			else if (g->side == BLACK && islower(piece))
-			    attrs |= A_BOLD;
-
-			waddch(boardw, (pgn_piece_to_int(piece) != OPEN_SQUARE) ? piece | attrs : ' ' | attrs);
-
-			CLEAR_FLAG(attrs, A_BOLD);
-			CLEAR_FLAG(attrs, A_REVERSE);
+			waddch(boardw, (pi != OPEN_SQUARE) ? p | attrs : ' ' | attrs);
+			attrs = old_attrs;
 		    }
 
 		    waddch(boardw, ' ' | attrs);
@@ -663,47 +681,150 @@ void invalid_move(int n, int e, const char *m)
 
 void gameover(GAME g)
 {
+    struct userdata_s *d = g->data;
+
     SET_FLAG(g->flags, GF_GAMEOVER);
+    d->mode = MODE_HISTORY;
     stop_engine(g);
 }
 
 static void update_clock(GAME g, struct itimerval it)
 {
     struct userdata_s *d = g->data;
-    long n;
 
-    if (g->turn == WHITE) {
-	d->wc.tv_sec += it.it_value.tv_sec;
-	d->wc.tv_usec += it.it_value.tv_usec;
+    if (TEST_FLAG(d->flags, CF_CLOCK) && g->turn == WHITE) {
+	d->wclock.elapsed.tv_sec += it.it_value.tv_sec;
+	d->wclock.elapsed.tv_usec += it.it_value.tv_usec;
 
-	if (d->wc.tv_usec > 1000000 - 1) {
-	    d->wc.tv_sec += d->wc.tv_usec / 1000000;
-	    d->wc.tv_usec = d->wc.tv_usec % 1000000;
+	if (d->wclock.elapsed.tv_usec > 1000000 - 1) {
+	    d->wclock.elapsed.tv_sec += d->wclock.elapsed.tv_usec / 1000000;
+	    d->wclock.elapsed.tv_usec = d->wclock.elapsed.tv_usec % 1000000;
 	}
 
-	if (d->wc.tv_sec >= d->limit) {
+	if (d->wclock.tc[d->wclock.tcn][1] &&
+		d->wclock.elapsed.tv_sec >= d->wclock.tc[d->wclock.tcn][1]) {
 	    pgn_tag_add(&g->tag, "Result", "0-1");
 	    gameover(g);
 	}
     }
-    else {
-	d->bc.tv_sec += it.it_value.tv_sec;
-	d->bc.tv_usec += it.it_value.tv_usec;
+    else if (TEST_FLAG(d->flags, CF_CLOCK) && g->turn == BLACK) {
+	d->bclock.elapsed.tv_sec += it.it_value.tv_sec;
+	d->bclock.elapsed.tv_usec += it.it_value.tv_usec;
 
-	if (d->bc.tv_usec > 1000000 - 1) {
-	    d->bc.tv_sec += d->bc.tv_usec / 1000000;
-	    d->bc.tv_usec = d->bc.tv_usec % 1000000;
+	if (d->bclock.elapsed.tv_usec > 1000000 - 1) {
+	    d->bclock.elapsed.tv_sec += d->bclock.elapsed.tv_usec / 1000000;
+	    d->bclock.elapsed.tv_usec = d->bclock.elapsed.tv_usec % 1000000;
 	}
 
-	if (d->bc.tv_sec >= d->limit) {
+	if (d->bclock.tc[d->bclock.tcn][1] &&
+		d->bclock.elapsed.tv_sec >= d->bclock.tc[d->bclock.tcn][1]) {
 	    pgn_tag_add(&g->tag, "Result", "1-0");
 	    gameover(g);
 	}
     }
 
-    d->elapsed = d->wc.tv_sec + d->bc.tv_sec;
-    n = d->wc.tv_usec + d->bc.tv_usec;
-    d->elapsed += (n > 1000000 - 1) ? n / 1000000 : 0;
+    d->elapsed.tv_sec += it.it_value.tv_sec;
+    d->elapsed.tv_usec += it.it_value.tv_usec;
+
+    if (d->elapsed.tv_usec > 1000000 - 1) {
+	d->elapsed.tv_sec += d->elapsed.tv_usec / 1000000;
+	d->elapsed.tv_usec = d->elapsed.tv_usec % 1000000;
+    }
+}
+
+static void update_time_control(GAME g)
+{
+    struct userdata_s *d = g->data;
+    struct clock_s *clk = (g->turn == WHITE) ? &d->wclock : &d->bclock;
+
+    if (clk->incr)
+	clk->tc[clk->tcn][1] += clk->incr;
+
+    if (!clk->tc[clk->tcn][1])
+	return;
+
+    clk->move++;
+
+    if (!clk->tc[clk->tcn][0] || clk->move >= clk->tc[clk->tcn][0]) {
+	clk->move = 0;
+	clk->tc[clk->tcn + 1][1] += abs(clk->elapsed.tv_sec - clk->tc[clk->tcn][1]);
+	memset(&clk->elapsed, 0, sizeof(clk->elapsed));
+	clk->tcn++;
+    }
+}
+
+void update_history_window(GAME g)
+{
+    char buf[HISTORY_WIDTH - 1];
+    HISTORY *h = NULL;
+    int n, total;
+    int t = pgn_history_total(g->hp);
+
+    n = (g->hindex + 1) / 2;
+
+    if (t % 2)
+	total = (t + 1) / 2;
+    else
+	total = t / 2;
+
+    if (t)
+	snprintf(buf, sizeof(buf), "%u %s %u%s", n, N_OF_N_STR, total,
+		(movestep == 1) ? HISTORY_PLY_STEP : "");
+    else
+	strncpy(buf, UNAVAILABLE, sizeof(buf));
+
+    mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
+	    HISTORY_WIDTH - 13, buf);
+
+    h = pgn_history_by_n(g->hp, g->hindex);
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+    n = 0;
+
+    if (h && ((h->comment) || h->nag[0])) {
+	strncat(buf, " (Annotated", sizeof(buf));
+	n++;
+    }
+
+    if (h && h->rav) {
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	n++;
+    }
+
+    if (g->ravlevel) {
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	n++;
+    }
+
+    if (n)
+	strncat(buf, ")", sizeof(buf));
+
+    mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
+	    HISTORY_WIDTH - 13, buf);
+
+    h = pgn_history_by_n(g->hp, g->hindex - 1);
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+    n = 0;
+
+    if (h && ((h->comment) || h->nag[0])) {
+	strncat(buf, " (Annotated", sizeof(buf));
+	n++;
+    }
+
+    if (h && h->rav) {
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	n++;
+    }
+
+    if (g->ravlevel) {
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	n++;
+    }
+
+    if (n)
+	strncat(buf, ")", sizeof(buf));
+
+    mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
+	    HISTORY_WIDTH - 13, buf);
 }
 
 void do_validate_move(char *m)
@@ -719,6 +840,7 @@ void do_validate_move(char *m)
 	    return;
 	}
 
+	update_time_control(gp);
 	pgn_history_add(gp, m);
 	pgn_switch_turn(gp);
     }
@@ -745,6 +867,8 @@ void do_validate_move(char *m)
 
     d->paused = 0;
     free(m);
+    update_history_window(gp);
+    update_board_window(gp);
     return;
 }
 
@@ -801,16 +925,34 @@ static char *clock_to_char(long n)
 
 static char *timeval_to_char(struct timeval t, long limit)
 {
-    static char buf[11];
+    static char buf[9];
     int h = 0, m = 0, s = 0;
-    int n = (limit == 0) ? 0 : limit - t.tv_sec;
-    int i = -((int)t.tv_usec / 10000 / 10) + 10;
+    int n = limit ? abs(limit - t.tv_sec) : 0;
 
-    i = (i == 10) ? i - 10 : i;
     h = n / 3600;
     m = (n % 3600) / 60;
     s = (n % 3600) % 60;
-    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i.%i", h, m, s, i);
+    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
+    return buf;
+}
+
+static char *time_control_status(struct clock_s *clk)
+{
+    static char buf[80];
+
+    buf[0] = 0;
+
+    if (clk->tc[clk->tcn][0] && clk->tc[clk->tcn + 1][1])
+	snprintf(buf, sizeof(buf), " M%.2i/%s", abs(clk->tc[clk->tcn][0] - clk->move),
+		clock_to_char(clk->tc[clk->tcn + 1][1]));
+    else if (!clk->incr)
+	return "";
+
+    if (clk->incr) {
+	strncat(buf, " I", sizeof(buf));
+	strncat(buf, itoa(clk->incr), sizeof(buf));
+    }
+
     return buf;
 }
 
@@ -819,6 +961,7 @@ void update_status_window(GAME g)
     int i = 0;
     char *buf;
     char tmp[15], *engine, *mode;
+    char t[COLS];
     int w;
     char *p;
     int maxy, maxx;
@@ -826,6 +969,9 @@ void update_status_window(GAME g)
     struct userdata_s *d = g->data;
     int y;
     int n;
+
+    if (!curses_initialized)
+	return;
 
     getmaxyx(statusw, maxy, maxx);
     w = maxx - 2 - 8;
@@ -910,6 +1056,7 @@ void update_status_window(GAME g)
     }
 
     mvwprintw(statusw, y++, 1, "%-*s", len, buf);
+    free(buf);
 
     if (d->engine) {
 	switch (d->engine->status) {
@@ -943,16 +1090,20 @@ void update_status_window(GAME g)
 
     strncpy(tmp, WHITE_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->wc, d->limit));
+    snprintf(t, sizeof(t), "%s%s",
+	    timeval_to_char(d->wclock.elapsed, d->wclock.tc[d->wclock.tcn][1]),
+	    time_control_status(&d->wclock));
+    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
 
     strncpy(tmp, BLACK_STR, sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
-    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, timeval_to_char(d->bc, d->limit));
-    free(buf);
+    snprintf(t, sizeof(t), "%s%s",
+	    timeval_to_char(d->bclock.elapsed, d->bclock.tc[d->bclock.tcn][1]),
+	    time_control_status(&d->bclock));
+    mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
 
     mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
-	    clock_to_char((TEST_FLAG(d->flags, CF_CLOCK)) ?
-		    d->elapsed : 0));
+	    clock_to_char(d->elapsed.tv_sec));
 
     for (i = 0; i < STATUS_WIDTH; i++)
 	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
@@ -964,80 +1115,6 @@ void update_status_window(GAME g)
     mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify), "%s",
 	    status.notify);
     wattroff(stdscr, CP_STATUS_NOTIFY);
-}
-
-void update_history_window(GAME g)
-{
-    char buf[HISTORY_WIDTH - 1];
-    HISTORY *h = NULL;
-    int n, total;
-    int t = pgn_history_total(g->hp);
-
-    n = (g->hindex + 1) / 2;
-
-    if (t % 2)
-	total = (t + 1) / 2;
-    else
-	total = t / 2;
-
-    if (t)
-	snprintf(buf, sizeof(buf), "%u %s %u%s", n, N_OF_N_STR, total,
-		(movestep == 1) ? HISTORY_PLY_STEP : "");
-    else
-	strncpy(buf, UNAVAILABLE, sizeof(buf));
-
-    mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
-	    HISTORY_WIDTH - 13, buf);
-
-    h = pgn_history_by_n(g->hp, g->hindex);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
-    n = 0;
-
-    if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (Annotated", sizeof(buf));
-	n++;
-    }
-
-    if (h && h->rav) {
-	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
-	n++;
-    }
-
-    if (g->ravlevel) {
-	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
-	n++;
-    }
-
-    if (n)
-	strncat(buf, ")", sizeof(buf));
-
-    mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
-	    HISTORY_WIDTH - 13, buf);
-
-    h = pgn_history_by_n(g->hp, g->hindex - 1);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
-    n = 0;
-
-    if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (Annotated", sizeof(buf));
-	n++;
-    }
-
-    if (h && h->rav) {
-	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
-	n++;
-    }
-
-    if (g->ravlevel) {
-	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
-	n++;
-    }
-
-    if (n)
-	strncat(buf, ")", sizeof(buf));
-
-    mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
-	    HISTORY_WIDTH - 13, buf);
 }
 
 void update_tag_window(TAG **t)
@@ -1110,21 +1187,33 @@ void update_engine_window(GAME g)
 	    CP_MESSAGE_BORDER);
 }
 
-void refresh_all()
-{
-    wmove(stdscr, 0, 0);
-    wclrtobot(stdscr);
-    update_status_window(gp);
-    update_panels();
-    doupdate();
-}
-
 void update_all(GAME g)
 {
+    struct userdata_s *d = g->data;
+
+    /*
+     * In the middle of a macro. Don't update the screen.
+     */
+    if (macro_match != -1)
+	return;
+
+    /*
+     * No need to update when the engine window is being shown.
+     */
+    if (enginep && panel_hidden(enginep) == ERR) {
+	update_panels();
+	doupdate();
+	return;
+    }
+
+    wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
+    update_board_window(g);
     update_status_window(g);
     update_history_window(g);
     update_tag_window(g->tag);
     update_engine_window(g);
+    update_panels();
+    doupdate();
 }
 
 static void game_next_prev(GAME g, int n, int count)
@@ -1152,6 +1241,8 @@ static void game_next_prev(GAME g, int n, int count)
 	else
 	    gindex -= count;
     }
+
+    gp = game[gindex];
 }
 
 static void delete_game(int which)
@@ -1244,7 +1335,6 @@ static int toggle_delete_flag(int n)
 
     TOGGLE_FLAG(d->flags, CF_DELETE);
     gindex = n;
-    update_all(gp);
 
     for (i = x = 0; i < gtotal; i++) {
 	d = game[i]->data;
@@ -1365,9 +1455,6 @@ void update_status_notify(GAME g, char *fmt, ...)
 	if (status.notify) {
 	    free(status.notify);
 	    status.notify = NULL;
-
-	    if (curses_initialized)
-		update_status_window(g);
 	}
 
 	return;
@@ -1389,8 +1476,6 @@ void update_status_notify(GAME g, char *fmt, ...)
 #ifdef HAVE_VASPRINTF
     free(line);
 #endif
-    if (curses_initialized)
-	update_status_window(g);
 }
 
 int rav_next_prev(GAME g, BOARD b, int n)
@@ -1471,11 +1556,14 @@ void stop_clock()
     setitimer(ITIMER_REAL, &clock_timer, NULL);
 }
 
-void start_clock()
+void start_clock(GAME g)
 {
+    struct userdata_s *d = g->data;
+
     if (clock_timer.it_interval.tv_usec)
 	return;
 
+    memset(&d->elapsed, 0, sizeof(struct timeval));
     clock_timer.it_value.tv_sec = 0;
     clock_timer.it_value.tv_usec = 100000;
     clock_timer.it_interval.tv_sec = 0;
@@ -1488,13 +1576,14 @@ static void update_clocks()
     int i;
     struct userdata_s *d;
     struct itimerval it;
+    int update = 0;
 
     getitimer(ITIMER_REAL, &it);
 
     for (i = 0; i < gtotal; i++) {
 	d = game[i]->data;
 
-	if (d && d->mode == MODE_PLAY && TEST_FLAG(d->flags, CF_CLOCK)) {
+	if (d && d->mode == MODE_PLAY) {
 	    if (d->paused == 1 || TEST_FLAG(d->flags, CF_NEW))
 		continue;
 	    else if (d->paused == -1) {
@@ -1505,19 +1594,85 @@ static void update_clocks()
 	    }
 
 	    update_clock(game[i], it);
+
+	    if (game[i] == gp)
+		update = 1;
 	}
+    }
+
+    if (update) {
+	update_status_window(gp);
+	update_panels();
+	doupdate();
     }
 }
 
-static int parse_clock_input(struct userdata_s *d, char *str)
+#define SKIP_SPACE(str) { while (isspace(*str)) str++; }
+
+static int parse_clock_time(char **str)
+{
+    char *p = *str;
+    int n = 0, t = 0;
+
+    SKIP_SPACE(p);
+
+    if (!isdigit(*p))
+	return -1;
+
+    while (*p) {
+	if (isdigit(*p)) {
+	    t = atoi(p);
+
+	    while (isdigit(*p))
+		p++;
+
+	    continue;
+	}
+
+	switch (*p) {
+	    case 'H':
+	    case 'h':
+		n += t * (60 * 60);
+		t = 0;
+		break;
+	    case 'M':
+	    case 'm':
+		n += t * 60;
+		t = 0;
+		break;
+	    case 'S':
+	    case 's':
+		n += t;
+		t = 0;
+		break;
+	    case ' ':
+		p++;
+	    case '/':
+	    case '+':
+		goto done;
+	    default:
+		*str = p;
+		return -1;
+	}
+
+	p++;
+    }
+
+done:
+    n += t;
+    *str = p;
+    return n;
+}
+
+static int parse_clock_input(struct clock_s *clk, char *str, int *incr)
 {
     char *p = str;
     long n = 0;
-    int t = 0;
     int plus = 0;
+    int m = 0;
+    int tc = 0;
 
-    while (isspace(*p))
-	p++;
+    SKIP_SPACE(p);
 
     if (!*p)
 	return 0;
@@ -1525,110 +1680,152 @@ static int parse_clock_input(struct userdata_s *d, char *str)
     if (*p == '+') {
 	plus = 1;
 	p++;
+	SKIP_SPACE(p);
+
+	if (*p == '+')
+	    goto move_incr;
+    }
+    else
+	memset(clk, 0, sizeof(struct clock_s));
+
+again:
+    /* Sudden death. */
+    if (strncasecmp(p, "SD", 2) == 0) {
+	n = 0;
+	p += 2;
+	goto tc;
     }
 
-    if (isdigit(*p)) {
-	while (*p) {
-	    if (isdigit(*p)) {
-		t = atoi(p);
+    n = parse_clock_time(&p);
 
-		while (isdigit(*p))
-		    p++;
+    if (n == -1)
+	return 1;
 
-		continue;
-	    }
+    if (!n)
+	goto done;
 
-	    if (!t && *p != ' ')
+    /* Time control. */
+tc:
+    if (*p == '/') {
+	if (plus)
+	    return 1;
+
+	/* Sudden death without a previous time control. */
+	if (!n && !tc)
+	    return 1;
+
+	m = n;
+	p++;
+	n = parse_clock_time(&p);
+
+	if (n == -1)
+	    return 1;
+
+	if (tc >= MAX_TC) {
+	    message(ERROR, ANYKEY, "%s (%i)", CLOCK_MAX_ERROR, MAX_TC);
+	    return 1;
+	}
+
+	clk->tc[tc][0] = m;
+	clk->tc[tc++][1] = n;
+	SKIP_SPACE(p);
+
+	if (*p == '+')
+	    goto move_incr;
+
+	if (*p)
+	    goto again;
+
+	goto done;
+    }
+
+    if (plus)
+	*incr = n;
+    else
+	clk->tc[clk->tcn][1] = (n <= clk->elapsed.tv_sec) ? clk->elapsed.tv_sec + n : n;
+
+move_incr:
+    if (*p) {
+	if (*p++ == '+') {
+	    if (!isdigit(*p))
 		return 1;
 
-	    switch (*p) {
-		case 'H':
-		case 'h':
-		    n += t * (60 * 60);
-		    t = 0;
-		    break;
-		case 'M':
-		case 'm':
-		    n += t * 60;
-		    t = 0;
-		    break;
-		case 'S':
-		case 's':
-		    n += t;
-		    t = 0;
-		    break;
-		case ' ':
-		    t = 0;
-		    break;
-		default:
-		    return 1;
-	    }
+	    n = parse_clock_time(&p);
 
-	    p++;
+	    if (n == -1 || *p)
+		return 1;
+
+	    clk->incr = n;
+
+	    SKIP_SPACE(p);
+
+	    if (*p)
+		return 1;
 	}
-
-	if (t)
-	    n += t;
-
-	if (!n) {
-	    d->limit = 0;
-	    CLEAR_FLAG(d->flags, CF_CLOCK);
-	}
-	else {
-	    SET_FLAG(d->flags, CF_CLOCK);
-
-	    if (plus)
-		d->limit += n;
-	    else
-		d->limit = (n <= d->elapsed) ? d->elapsed + n : n;
-	}
-
-	return 0;
-    }
-    else if (toupper(*p++) == 'G') {
-	if (strlen(p) < 2)
+	else
 	    return 1;
-
-	if (*p++ != '/')
-	    return 1;
-
-	if (!isinteger(p))
-	    return 1;
-
-	n = strtol(p, NULL, 10);
-
-	if (n < 0)
-	    return 1;
-	else if (n == 0) {
-	    d->limit = 0;
-	    CLEAR_FLAG(d->flags, CF_CLOCK);
-	    return 0;
-	}
-
-	SET_FLAG(d->flags, CF_CLOCK);
-	d->limit = n * 60;
-	d->elapsed = 0;
-	memset(&d->wc, 0, sizeof(d->wc));
-	memset(&d->bc, 0, sizeof(d->bc));
-	return 0;
     }
 
-    return 1;
+done:
+    return 0;
+}
+
+static int parse_which_clock(struct clock_s *clk, char *str)
+{
+    struct clock_s tmp;
+    int incr = 0;
+
+    memcpy(&tmp, clk, sizeof(struct clock_s));
+
+    if (parse_clock_input(&tmp, str, &incr)) {
+	cmessage(ERROR, ANYKEY, CLOCK_PARSE_ERROR);
+	return 1;
+    }
+
+    memcpy(clk, &tmp, sizeof(struct clock_s));
+    clk->tc[clk->tcn][1] += incr;
+    return 0;
 }
 
 void do_clock_input_finalize(WIN *win)
 {
     struct userdata_s *d = gp->data;
     struct input_data_s *in = win->data;
+    char *p = in->str;
 
     if (!in->str) {
 	free(in);
 	return;
     }
 
-    if (parse_clock_input(d, in->str))
-	cmessage(ERROR, ANYKEY, "Invalid time specification");
+    SKIP_SPACE(p);
 
+    if (tolower(*p) == 'w') {
+	p++;
+
+	if (parse_which_clock(&d->wclock, p))
+	    goto done;
+    }
+    else if (tolower(*p) == 'b') {
+	p++;
+
+	if (parse_which_clock(&d->bclock, p))
+	    goto done;
+    }
+    else {
+	if (parse_which_clock(&d->wclock, p))
+	    goto done;
+
+	if (parse_which_clock(&d->bclock, p))
+	    goto done;
+    }
+
+    if (!d->wclock.tc[0][1] && !d->bclock.tc[0][1])
+	CLEAR_FLAG(d->flags, CF_CLOCK);
+    else
+	SET_FLAG(d->flags, CF_CLOCK);
+
+done:
     free(in->str);
     free(in);
 }
@@ -1697,8 +1894,6 @@ void do_play_toggle_human()
 
     if (d->engine)
 	d->engine->status = ENGINE_READY;
-
-    update_all(gp);
 }
 
 void do_play_toggle_engine()
@@ -1714,8 +1909,6 @@ void do_play_toggle_engine()
 	add_engine_command(gp, ENGINE_READY, 
 		"setboard %s\n", pgn_game_to_fen(gp, d->b));
     }
-
-    update_all(gp);
 }
 
 /*
@@ -1738,10 +1931,15 @@ void do_play_send_command()
 
 void do_play_switch_turn()
 {
+    struct userdata_s *d = gp->data;
+
     pgn_switch_side(gp);
     pgn_switch_turn(gp);
-    add_engine_command(gp, -1, 
-	    (gp->side == WHITE) ? "white\n" : "black\n");
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN))
+	add_engine_command(gp, -1, 
+		(gp->side == WHITE) ? "white\n" : "black\n");
+
     update_status_window(gp);
 }
 
@@ -1917,7 +2115,7 @@ void do_play_select()
 	pgn_find_valid_moves(gp, d->b, d->sp.scol, d->sp.srow);
 
     CLEAR_FLAG(d->flags, CF_NEW);
-    start_clock();
+    start_clock(gp);
 }
 
 /* FIXME: keys with the same function should comma deliminated. */
@@ -2051,7 +2249,6 @@ void do_play_history_mode()
 
     d->mode = MODE_HISTORY;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 }
 
 void do_play_edit_mode()
@@ -2064,7 +2261,6 @@ void do_play_edit_mode()
     pgn_board_init_fen(gp, d->b, NULL);
     config.details++;
     d->mode = MODE_EDIT;
-    update_all(gp);
 }
 
 void do_edit_insert_finalize(WIN *win)
@@ -2141,7 +2337,6 @@ void do_edit_cancel_selected()
 void do_edit_switch_turn()
 {
     pgn_switch_turn(gp);
-    update_all(gp);
 }
 
 void do_edit_toggle_castle()
@@ -2189,7 +2384,6 @@ void do_edit_exit()
     pgn_tag_sort(gp->tag);
     pgn_board_update(gp, d->b, gp->hindex);
     d->mode = MODE_PLAY;
-    update_all(gp);
 }
 
 void really_do_annotate_finalize(struct input_data_s *in, 
@@ -2213,7 +2407,6 @@ void really_do_annotate_finalize(struct input_data_s *in,
     free(in->str);
     free(in);
     SET_FLAG(d->flags, CF_MODIFIED);
-    update_all(gp);
 }
 
 void do_annotate_finalize(WIN *win)
@@ -2252,7 +2445,6 @@ void do_find_move_exp_finalize(int init, int which)
 
     gp->hindex = n;
     pgn_board_update(gp, d->b, gp->hindex);
-    update_all(gp);
 }
 
 void do_find_move_exp(WIN *win)
@@ -2282,7 +2474,6 @@ void do_move_jump_finalize(int n)
     update_status_notify(gp, NULL);
     gp->hindex = (n) ? n * 2 - 1 : n * 2;
     pgn_board_update(gp, d->b, gp->hindex);
-    update_all(gp);
 }
 
 void do_move_jump(WIN *win)
@@ -2576,7 +2767,9 @@ void history_menu_print(WIN *win)
     wattr_get(win->w, &attrs, &pair, NULL);
     wattroff(win->w, COLOR_PAIR(pair));
 #endif
-    mvwaddch(win->w, m->print_line, 1, *p++);
+    mvwaddch(win->w, m->print_line, 1,
+	    *p == 'W' ? *p | mix_cp(CP_BOARD_WHITE, CP_HISTORY_WINDOW, ATTRS(CP_BOARD_WHITE), A_FG_B_BG) : *p | mix_cp(CP_BOARD_BLACK, CP_HISTORY_WINDOW, ATTRS(CP_BOARD_BLACK), A_FG_B_BG));
+    p++;
 
     if (h->hindex == 0 && line == 0)
 	waddch(win->w, ACS_ULCORNER | CP_HISTORY_MENU_LG);
@@ -2632,7 +2825,6 @@ void do_history_jump_next()
     pgn_history_next(gp, d->b, (keycount > 0) ?
 	    config.jumpcount * keycount * movestep : 
 	    config.jumpcount * movestep);
-    update_all(gp);
 }
 
 void do_history_jump_prev()
@@ -2642,7 +2834,6 @@ void do_history_jump_prev()
     pgn_history_prev(gp, d->b, (keycount) ?
 	    config.jumpcount * keycount * movestep : 
 	    config.jumpcount * movestep);
-    update_all(gp);
 }
 
 void do_history_prev()
@@ -2651,7 +2842,6 @@ void do_history_prev()
 
     pgn_history_prev(gp, d->b,
 	    (keycount) ? keycount * movestep : movestep);
-    update_all(gp);
 }
 
 void do_history_next()
@@ -2660,14 +2850,12 @@ void do_history_next()
 
     pgn_history_next(gp, d->b, (keycount) ? 
 	    keycount * movestep : movestep);
-    update_all(gp);
 }
 
 void do_history_mode_finalize(struct userdata_s *d)
 {
     pushkey = 0;
     d->mode = MODE_PLAY;
-    update_all(gp);
 }
 
 void do_history_mode_confirm(WIN *win)
@@ -2786,7 +2974,6 @@ void do_history_rav(int which)
     struct userdata_s *d = gp->data;
 
     rav_next_prev(gp, d->b, which);
-    update_all(gp);
 }
 
 void do_history_rav_next()
@@ -2879,7 +3066,6 @@ void update_loading_window(int n)
     mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
 		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
 	    gtotal);
-    refresh_all();
 }
 
 static void init_userdata_once(GAME g, int n)
@@ -2926,7 +3112,6 @@ void do_new_game_finalize(GAME g)
 
     d->mode = MODE_PLAY;
     update_status_notify(g, NULL);
-    update_all(g);
 }
 
 void do_new_game_from_scratch(WIN *win)
@@ -2937,6 +3122,7 @@ void do_new_game_from_scratch(WIN *win)
     stop_clock();
     free_userdata();
     pgn_parse(NULL);
+    gp = game[gindex];
     add_custom_tags(&gp->tag);
     init_userdata();
     loadfile[0] = 0;
@@ -2959,7 +3145,6 @@ void do_game_delete_finalize(int n)
     delete_game((!n) ? gindex : -1);
     d = gp->data;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 }
 
 void do_game_delete_confirm(WIN *win)
@@ -3036,7 +3221,6 @@ void do_find_game_exp_finalize(int which)
 	d->mode = MODE_HISTORY;
 
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 }
 
 void do_find_game_exp(WIN *win)
@@ -3067,10 +3251,10 @@ void do_game_jump_finalize(int n)
 	return;
 
     gindex = n;
+    gp = game[gindex];
     d = gp->data;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
     update_status_notify(gp, NULL);
-    update_all(gp);
 }
 
 void do_game_jump(WIN *win)
@@ -3092,10 +3276,10 @@ void do_game_jump(WIN *win)
 
 void do_load_file(WIN *win)
 {
-    FILE *fp;
     struct input_data_s *in = win->data;
     char *tmp = in->str;
     struct userdata_s *d;
+    PGN_FILE *pgn = NULL;
 
     if (!in->str) {
 	free(in);
@@ -3105,7 +3289,7 @@ void do_load_file(WIN *win)
     if ((tmp = pathfix(tmp)) == NULL)
 	goto done;
 
-    if ((fp = pgn_open(tmp)) == NULL) {
+    if (pgn_open(tmp, "r", &pgn) != E_PGN_OK) {
 	cmessage(ERROR, ANYKEY, "%s\n%s", tmp, strerror(errno));
 	goto done;
     }
@@ -3115,13 +3299,12 @@ void do_load_file(WIN *win)
     /*
      * FIXME what is the game state after a parse error?
      */
-    if (pgn_parse(fp) == E_PGN_ERR) {
+    if (pgn_parse(pgn) == E_PGN_ERR) {
 	del_panel(loadingp);
 	delwin(loadingw);
 	loadingw = NULL;
 	loadingp = NULL;
 	init_userdata();
-	update_all(gp);
 	goto done;
     }
 
@@ -3138,9 +3321,10 @@ void do_load_file(WIN *win)
 	d->mode = MODE_HISTORY;
 
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    update_all(gp);
 
 done:
+    pgn_close(pgn);
+
     if (in->str)
 	free(in->str);
 
@@ -3161,23 +3345,11 @@ void do_game_save(WIN *win)
     if (!tmp || (tmp = pathfix(tmp)) == NULL)
 	goto done;
 
-    if (pgn_is_compressed(tmp)) {
+    if (pgn_is_compressed(tmp) == E_PGN_ERR) {
 	p = tmp + strlen(tmp) - 1;
 
 	if (*p != 'n' || *(p-1) != 'g' || *(p-2) != 'p' ||
 		*(p-3) != '.') {
-	    snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
-	    tmp = tfile;
-	}
-    }
-    else {
-	if ((p = strchr(tmp, '.')) != NULL) {
-	    if (strcmp(p, ".pgn") != 0) {
-		snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
-		tmp = tfile;
-	    }
-	}
-	else {
 	    snprintf(tfile, sizeof(tfile), "%s.pgn", tmp);
 	    tmp = tfile;
 	}
@@ -3196,7 +3368,9 @@ void do_game_save(WIN *win)
     }
     else {
 	d = game[n]->data;
-	pgn_tag_add(&game[n]->tag, "FEN", pgn_game_to_fen(game[n], d->b));
+
+	if (d->mode == MODE_EDIT)
+	    pgn_tag_add(&game[n]->tag, "FEN", pgn_game_to_fen(game[n], d->b));
     }
 
     save_pgn(tmp, n);
@@ -3272,9 +3446,6 @@ void global_game_next_prev(int which)
 	pgn_board_update(gp, d->b, gp->hindex);
     else if (d->mode == MODE_PLAY)
 	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-
-    update_status_notify(gp, NULL);
-    update_all(gp);
 }
 
 void do_global_next_game()
@@ -3363,13 +3534,11 @@ void do_global_toggle_delete()
     if (markstart >= 0 && markend >= 0) {
 	for (i = markstart; i < markend; i++) {
 	    if (toggle_delete_flag(i)) {
-		update_all(gp);
 		return;
 	    }
 	}
 
 	gindex = (delete_count < 0) ? markstart : i - 1;
-	update_all(gp);
     }
     else {
 	if (toggle_delete_flag(gindex))
@@ -3474,11 +3643,9 @@ void do_global_toggle_engine_window()
     if (panel_hidden(enginep)) {
 	update_engine_window(gp);
 	top_panel(enginep);
-	refresh_all();
     }
     else {
 	hide_panel(enginep);
-	refresh_all();
     }
 }
 
@@ -3506,7 +3673,8 @@ static int globalkeys()
 	case CTRL('L'):
 	    endwin();
 	    keypad(boardw, TRUE);
-	    refresh_all();
+	    wmove(stdscr, 0, 0);
+	    wclrtobot(stdscr);
 	    return 1;
 	case KEY_ESCAPE:
 	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
@@ -3535,10 +3703,8 @@ static int globalkeys()
 		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
-		  if (keycount) {
+		  if (keycount)
 		      d->c_row += keycount;
-		      pushkey = '\n';
-		  }
 		  else
 		      d->c_row++;
 
@@ -3552,7 +3718,6 @@ static int globalkeys()
 
 		  if (keycount) {
 		      d->c_row -= keycount;
-		      pushkey = '\n';
 		      update_status_notify(gp, NULL);
 		  }
 		  else
@@ -3566,10 +3731,8 @@ static int globalkeys()
 		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
-		  if (keycount) {
+		  if (keycount)
 		      d->c_col -= keycount;
-		      pushkey = '\n';
-		  }
 		  else
 		      d->c_col--;
 
@@ -3581,10 +3744,8 @@ static int globalkeys()
 		  if (d->mode == MODE_HISTORY)
 		      return 0;
 
-		  if (keycount) {
+		  if (keycount)
 		      d->c_col += keycount;
-		      pushkey = '\n';
-		  }
 		  else
 		      d->c_col++;
 
@@ -3614,8 +3775,8 @@ static int globalkeys()
 void game_loop()
 {  
     struct userdata_s *d;
-    int macro_match = -1;
 
+    macro_match = -1;
     gindex = gtotal - 1;
     gp = game[gindex];
     d = gp->data;
@@ -3632,7 +3793,6 @@ void game_loop()
     movestep = 2;
     flushinp();
     update_all(gp);
-    update_tag_window(gp->tag);
     wtimeout(boardw, WINDOW_TIMEOUT);
 
     while (!quit) {
@@ -3729,15 +3889,10 @@ void game_loop()
 	gp = game[gindex];
 	d = gp->data;
 
-	if (TEST_FLAG(gp->flags, GF_GAMEOVER))
-	    d->mode = MODE_HISTORY;
-
-	draw_board(gp);
-	update_all(gp);
-	wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
-
-	if (macro_match == -1)
-	    refresh_all();
+	/*
+	 * This is needed to detect terminal resizing.
+	 */
+	doupdate();
 
 	/*
 	 * Finds the top level window in the window stack so we know what
@@ -3760,6 +3915,7 @@ void game_loop()
 		    if (macros[macro_match]->n >= macros[macro_match]->total) {
 			macros[macro_match]->n = 0;
 			macro_match = -1;
+			update_all(gp);
 			continue;
 		    }
 		    else 
@@ -3778,8 +3934,9 @@ void game_loop()
 		    case CTRL('L'):
 			endwin();
 			keypad(boardw, TRUE);
-			refresh_all();
-			continue;
+			wmove(stdscr, 0, 0);
+			wclrtobot(stdscr);
+			goto refresh;
 		}
 
 		win->c = input_c;
@@ -3801,6 +3958,7 @@ void game_loop()
 
 		    win->keep = 1;
 		    window_destroy(win);
+		    update_all(gp);
 		}
 
 		continue;
@@ -3825,10 +3983,10 @@ void game_loop()
 	    if (macro_match == -1)
 		keycount = 0;
 
-	    continue;
+	    goto refresh;
 	}
 	else if (n == -1)
-	    continue;
+	    goto refresh;
 
 	switch (d->mode) {
 	    case MODE_EDIT:
@@ -3866,6 +4024,9 @@ done:
 	    update_status_notify(gp, NULL);
 
 	keycount = 0;
+
+refresh:
+	update_all(gp);
     }
 }
 
@@ -3923,6 +4084,8 @@ void cleanup_all()
     if (config.tag)
 	pgn_tag_free(config.tag);
 
+    free(config.datadir);
+
     if (curses_initialized) {
 	del_panel(boardp);
 	del_panel(historyp);
@@ -3940,6 +4103,24 @@ void cleanup_all()
 
 	endwin();
     }
+}
+
+static void signal_save_pgn(int sig)
+{
+    char *buf;
+    time_t now;
+    char *p = config.savedirectory ? config.savedirectory : config.datadir;
+
+    time(&now);
+    asprintf(&buf, "%s/signal-%i-%li.pgn", p, sig, now);
+
+    if (do_game_write(buf, "w", 0, gtotal)) {
+	cmessage(ERROR, ANYKEY, "%s: %s", p, strerror(errno));
+	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+    }
+
+    free(buf);
+    quit = 1;
 }
 
 void catch_signal(int which)
@@ -3969,8 +4150,10 @@ void catch_signal(int which)
 	    noecho();
 	    break;
 	case SIGINT:
-	case SIGTERM:
 	    quit = 1;
+	    break;
+	case SIGTERM:
+	    signal_save_pgn(which);
 	    break;
 	default:
 	    break;
@@ -3993,7 +4176,7 @@ static void set_defaults()
 {
     set_config_defaults();
     set_default_keys();
-    filetype = NO_FILE;
+    filetype = FILE_NONE;
     pgn_config_set(PGN_PROGRESS, 1024);
     pgn_config_set(PGN_PROGRESS_FUNC, loading_progress);
 }
@@ -4007,8 +4190,8 @@ int main(int argc, char *argv[])
     int ret = EXIT_SUCCESS;
     int validate_only = 0, validate_and_write = 0;
     int write_custom_tags = 0;
-    FILE *fp;
     int i = 0;
+    PGN_FILE *pgn;
 
 /* Solaris 5.9 */
 #ifndef HAVE_PROGNAME
@@ -4019,6 +4202,7 @@ int main(int argc, char *argv[])
 	err(EXIT_FAILURE, "getpwuid()");
 
     snprintf(datadir, sizeof(datadir), "%s/.cboard", config.pwd->pw_dir);
+    config.datadir = strdup(datadir);
     snprintf(buf, sizeof(buf), "%s/cc.data", datadir);
     config.ccfile = strdup(buf);
     snprintf(buf, sizeof(buf), "%s/nag.data", datadir);
@@ -4075,7 +4259,7 @@ int main(int argc, char *argv[])
 			COPYRIGHT);
 		exit(EXIT_SUCCESS);
 	    case 'p':
-		filetype = PGN_FILE;
+		filetype = FILE_PGN;
 		strncpy(loadfile, optarg, sizeof(loadfile));
 		break;
 	    case 'h':
@@ -4103,17 +4287,18 @@ int main(int argc, char *argv[])
     srandom(getpid());
 
     switch (filetype) {
-	case PGN_FILE:
-	    if ((fp = pgn_open(loadfile)) == NULL)
+	case FILE_PGN:
+	    if (pgn_open(loadfile, "r", &pgn) != E_PGN_OK)
 		err(EXIT_FAILURE, "%s", loadfile);
 
-	    ret = pgn_parse(fp);
+	    ret = pgn_parse(pgn);
+	    pgn_close(pgn);
 	    break;
-	case FEN_FILE:
+	case FILE_FEN:
 	    //ret = parse_fen_file(loadfile);
 	    break;
-	case EPD_FILE: // Not implemented.
-	case NO_FILE:
+	case FILE_EPD: // Not implemented.
+	case FILE_NONE:
 	default:
 	    // No file specified. Empty game.
 	    ret = pgn_parse(NULL);
@@ -4124,12 +4309,17 @@ int main(int argc, char *argv[])
 
     if (validate_only || validate_and_write) {
 	if (validate_and_write) {
+	    if (pgn_open("-", "r", &pgn) != E_PGN_OK)
+		err(EXIT_FAILURE, "pgn_open()");
+
 	    for (i = 0; i < gtotal; i++) {
 		if (write_custom_tags)
 		    add_custom_tags(&game[i]->tag);
 
-		pgn_write(stdout, game[i]);
+		pgn_write(pgn, game[i]);
 	    }
+
+	    pgn_close(pgn);
 	}
 
 	cleanup_all();

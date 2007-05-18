@@ -38,6 +38,7 @@
 #endif
 
 #include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "colors.h"
 #include "strings.h"
@@ -310,6 +311,7 @@ end:
     if (m->draw_exit_func)
 	(*m->draw_exit_func)(m);
 
+    update_all(gp);
     return 1;
 
 done:
@@ -337,6 +339,7 @@ done:
     }
 
     free(m);
+    update_all(gp);
     return 0;
 }
 

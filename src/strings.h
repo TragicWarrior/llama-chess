@@ -139,7 +139,10 @@
 
 /* Clock setting input window. */
 #define CLOCK_TITLE		"Set Clock"
-#define CLOCK_HELP		"Format: spec (e.g., G/5) | [+]N[hms] to add time"
+#define CLOCK_HELP		"Format: [W | B] [+]T[+I] | ++I | M/T [M/T [...] [SD/T]] [+I]\n" \
+    "T = time (hms), I = increment, M = moves per, SD = sudden death\ne.g., 30m or 4m+12s or 35/90m SD/30m"
+#define CLOCK_PARSE_ERROR	"Invalid clock specification"
+#define CLOCK_MAX_ERROR		"Maximum number of time controls reached"
 
 /* Country code menu window when editing the "Site" tag. */
 #define CC_PROMPT	"Type CTRL-t for country codes"

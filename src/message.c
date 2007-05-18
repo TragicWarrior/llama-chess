@@ -60,7 +60,7 @@ static void build_message_lines(const char *title, const char *prompt,
     char *line, **lines = NULL;
     int width = 0, height = 0;
     char buf[LINE_MAX];
-    char *tmp, *p;
+    char *p;
     int total = 0;
 
 #ifdef HAVE_VASPRINTF
@@ -111,18 +111,7 @@ static void build_message_lines(const char *title, const char *prompt,
 
     buf[n] = '\0';
     p = buf;
-
-    while ((tmp = strsep(&p, "\n")) != NULL) {
-	tmp = rtrim(tmp);
-
-	if (!*tmp)
-	    continue;
-
-	lines = Realloc(lines, (total + 2) * sizeof(char *));
-	lines[total++] = (force_trim) ? strdup(trim(tmp)) : strdup(tmp);
-    }
-
-    lines[total] = NULL;
+    lines = split_str(p, "\n", &total, &width, force_trim);
 
     if (prompt && width < strlen(prompt))
 	width = strlen(prompt);

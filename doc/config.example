@@ -41,7 +41,7 @@
 #valid_moves	on
 
 # When enabled castling availability and the en passasnt square will be shown
-# on the board. This can be toggled with the `d' key. BOOL
+# on the board. This can be toggled with the `^d' key. BOOL
 #board_details	on
 
 # If enabled and there is a parsing error when loading a file, stop processing
@@ -71,8 +71,12 @@
 
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
-# names which must be one of: black, white, red, magenta, yellow, blue, cyan
-# or green. 
+# names which must be one of: black, white, red, magenta, yellow, blue, cyan,
+# green or - for the default color. Not all parameters actually use both the
+# fore and background colors (i.e., with color_board_white, the foreground
+# color is used as the color piece while the background color is used as the
+# background for the white square), they may be mixed with other color
+# settings when needed especially when drawing the board.
 #
 # Each ..._window parameter sets the defaults for all characters in the
 # associated window.
@@ -80,18 +84,20 @@
 # The third and fourth values are attributes for the color and non-color
 # terminal. To include more than one attribute for a value, separate them with
 # a single comma. The following attributes are available: bold, blink,
-# reverse, dim, standout, underline, invisible, or none. Note that not all
-# terminals support all attributes.
+# reverse, dim, standout, underline, invisible, none or - for the default
+# attribute. Note that not all terminals support all attributes.
 #color_board_window		white	black
 #color_board_graphics		white	black
 #color_board_selected		white	yellow	none	bold,reverse
 #color_board_cursor		white	green	none	bold,reverse
-#color_board_black		white	black
+#color_board_black		cyan	black
 #color_board_white		white	red	none	reverse
 #color_board_coords		yellow	black	bold
 #color_board_count		magenta	cyan	bold	bold,reverse
 #color_board_white_moves	white	magenta	none	reverse
 #color_board_black_moves	white	blue	none	reverse
+#color_board_castling		yellow	black	bold	bold
+#color_board_enpassant		magenta black	bold	bold
 #
 #color_status_window	white	black
 #color_status_title	white	blue	none	reverse

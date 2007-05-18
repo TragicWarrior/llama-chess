@@ -310,9 +310,14 @@ static pid_t exec_chess_engine(GAME g, char **args)
 	    break;
     }
 
+    /*
+     * FIXME shouldn't block here. When theres a high load average, the engine
+     * process will fail to start. Better to handle this in game_loop() and
+     * give up after a timer expires.
+     */
     sleep(1);
 
-    if (kill(pid, 0) == -1)
+    if (send_signal_to_engine(pid, 0))
 	return -2;
 
     close(to[0]);
@@ -372,7 +377,8 @@ int start_chess_engine(GAME g)
     d->engine = Calloc(1, sizeof(struct engine_s));
     d->engine->status = ENGINE_INITIALIZING;
     update_status_window(g);
-    refresh_all();
+    update_panels();
+    doupdate();
 
     switch (exec_chess_engine(g, args)) {
 	case -1:
@@ -396,7 +402,6 @@ int start_chess_engine(GAME g)
 	free(args[i]);
 
     free(args);
-    update_status_window(g);
     return ret;
 }
 
@@ -479,6 +484,8 @@ static void parse_xboard_line(GAME g, char *str)
 
 	if (g->side == g->turn)
 	    RETURN(d);
+
+	d->engine->status = ENGINE_THINKING;
     }
 
     return;
@@ -508,6 +515,8 @@ void parse_engine_output(GAME g, char *str)
 
 	*p++ = *str++;
     }
+
+    update_all(gp);
 }
 
 void send_engine_command(GAME g)
@@ -522,10 +531,8 @@ void send_engine_command(GAME g)
     if (!q || !q[0])
 	return;
 
-    if (send_to_engine(g, q[0]->status, "%s", q[0]->line) == 0) {
-	if (g == gp)
-	    update_status_window(g);
-    }
+    if (send_to_engine(g, q[0]->status, "%s", q[0]->line))
+	return;
 
     free(q[0]->line);
     free(q[0]);

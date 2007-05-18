@@ -854,7 +854,6 @@ static void reset_game_data()
 #endif
     pgn_free_all();
     gtotal = gindex = 0;
-    pgn_isfile = 0;
 }
 
 static void skip_leading_space(FILE *fp)
@@ -1762,20 +1761,19 @@ static int read_file(FILE *fp)
 }
 
 /*
- * Parses a file whose file pointer is 'fp'. 'fp' may have been returned by
- * pgn_open(). If 'fp' is NULL then a single empty game will be allocated. If
- * there is a parsing error E_PGN_PARSE is returned, if there was a memory
- * allocation error E_PGN_ERR is returned, otherwise E_PGN_OK is returned and
- * the global 'gindex' is set to the last parsed game in the file and the
- * global 'gtotal' is set to the total number of games in the file. The file
- * will be closed when the parsing is done.
+ * Parses a PGN_FILE which was opened with pgn_open(). If 'pgn' is NULL then a
+ * single empty game will be allocated. If there is a parsing error
+ * E_PGN_PARSE is returned, if there was a memory allocation error E_PGN_ERR
+ * is returned, otherwise E_PGN_OK is returned and the global 'gindex' is set
+ * to the last parsed game in the file and the global 'gtotal' is set to the
+ * total number of games in the file. The file should be closed with
+ * pgn_close() after processing.
  */
-pgn_error_t pgn_parse(FILE *fp)
+pgn_error_t pgn_parse(PGN_FILE *pgn)
 {
     int i;
-    long offset;
 
-    if (!fp) {
+    if (!pgn) {
 	reset_game_data();
 	pgn_ret = pgn_new_game();
 	goto done;
@@ -1783,16 +1781,13 @@ pgn_error_t pgn_parse(FILE *fp)
 
     reset_game_data();
     nulltags = 1;
-    pgn_isfile = 1;
-    offset = ftell(fp);
-    fseek(fp, 0, SEEK_END);
-    pgn_fsize = ftell(fp);
-    fseek(fp, offset, SEEK_SET);
+    fseek(pgn->fp, 0, SEEK_END);
+    pgn_fsize = ftell(pgn->fp);
+    fseek(pgn->fp, 0, SEEK_SET);
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN parsing->..\n", __FILE__, __LINE__);
 #endif
-    pgn_ret = read_file(fp);
-    fclose(fp);
+    pgn_ret = read_file(pgn->fp);
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END parsing->..\n", __FILE__, __LINE__);
@@ -2035,48 +2030,181 @@ static char *compression_cmd(const char *filename, int expand)
     return NULL;
 }
 
-/*
- * Returns a file pointer associated with 'filename' or NULL on error with
- * errno set to indicate the error. If compressed file support was enabled at
- * compile time and the filetype is supported and the utility is installed
- * then the file will be decompressed.
- */
-FILE *pgn_open(const char *filename)
+static int copy_file(FILE *fp, const char *dst)
 {
-    FILE *fp = NULL;
-    FILE *tfp = NULL;
-    char buf[LINE_MAX];
-    char *p;
-    char *command = NULL;
+    FILE *ofp;
+    char line[LINE_MAX];
+    char *cmd = compression_cmd(dst, 0);
+
+    if ((ofp = popen(cmd, "w")) == NULL)
+	return 1;
+
+    fseek(fp, 0, SEEK_SET);
+
+    while ((fgets(line, sizeof(line), fp)) != NULL)
+	fprintf(ofp, "%s", line);
+
+    pclose(ofp);
+    return 0;
+}
+
+/*
+ * Closes and free's a PGN file handle.
+ */
+pgn_error_t pgn_close(PGN_FILE *pgn)
+{
+    if (!pgn)
+	return E_PGN_INVALID;
+
+    if (pgn->pipe) {
+	/*
+	 * Appending to a compressed file.
+	 */
+	if (pgn->tmpfile) {
+	    if (copy_file(pgn->fp, pgn->filename))
+		return E_PGN_ERR;
+
+	    fclose(pgn->fp);
+	    unlink(pgn->tmpfile);
+	    free(pgn->tmpfile);
+	}
+	else
+	    pclose(pgn->fp);
+    }
+    else
+	fclose(pgn->fp);
+
+    free(pgn->filename);
+    free(pgn);
+    return E_PGN_OK;
+}
+
+/*
+ * Opens a file 'filename' with the given 'mode'. 'mode' should be "r" for
+ * reading, "w" for writing (will truncate if the file exists) or "a" for
+ * appending to an existing file or creating a new one. Returns E_PGN_OK on
+ * success and sets 'result' to a file handle for use will the other file
+ * functions or E_PGN_ERR if there is an error opening the file in which case
+ * errno will be set to the error or E_PGN_INVALID if 'mode' is an invalid
+ * mode.
+ */
+pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
+{
+    FILE *fp = NULL, *tfp = NULL;
+    char buf[PATH_MAX], *p;
+    char *cmd = NULL;
+    PGN_FILE *pgn;
+    int m;
+    int append = 0;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN opening %s\n", __FILE__, __LINE__, filename);
 #endif
 
-    if (access(filename, R_OK) == -1)
-	return NULL;
+    if (!filename || !mode)
+	return E_PGN_INVALID;
 
-    if ((command = compression_cmd(filename, 1)) != NULL) {
-	if ((tfp = tmpfile()) == NULL)
-	    return NULL;
-
-	if ((fp = popen(command, "r")) == NULL)
-	    return NULL;
-
-	while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
-	    fprintf(tfp, "%s", p);
-
-	pclose(fp);
+    if (strcmp(mode, "r") == 0)
+	m = 1;
+    else if (strcmp(mode, "w") == 0)
+	m = 0;
+    else if (strcmp(mode, "a") == 0) {
+	m = 0;
+	append = 1;
     }
-
-    if (tfp)
-	fseek(tfp, 0, SEEK_SET);
     else {
-	if ((tfp = fopen(filename, "r")) == NULL)
-	    return NULL;
+	return E_PGN_INVALID;
     }
 
-    return tfp;
+    pgn = calloc(1, sizeof(PGN_FILE));
+
+    if (!pgn)
+	goto fail;
+
+    if (strcmp(filename, "-") != 0) {
+	if (m && access(filename, R_OK) == -1)
+	    goto fail;
+
+	if ((cmd = compression_cmd(filename, m)) != NULL) {
+	    pgn->pipe = 1;
+
+	    if (append && access(filename, R_OK) == 0) {
+		char tmp[21];
+		int fd;
+
+		cmd = compression_cmd(filename, 1);
+
+		if ((fp = popen(cmd, "r")) == NULL)
+		    goto fail;
+
+		if (tmpnam(tmp) == NULL)
+		    goto fail;
+
+		if ((fd = open(tmp, O_RDWR|O_EXCL|O_CREAT)) == -1)
+		    goto fail;
+
+		if ((tfp = fdopen(fd, "a+")) == NULL)
+		    goto fail;
+
+		while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+		    fprintf(tfp, "%s", p);
+
+		pclose(fp);
+		pgn->fp = tfp;
+		pgn->tmpfile = strdup(tmp);
+		goto done;
+	    }
+
+	    if ((fp = popen(cmd, m ? "r" : "w")) == NULL)
+		goto fail;
+
+	    if (m) {
+		if ((tfp = tmpfile()) == NULL)
+		    goto fail;
+
+		while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+		    fprintf(tfp, "%s", p);
+
+		pclose(fp);
+		pgn->fp = tfp;
+	    }
+	    else
+		pgn->fp = fp;
+	}
+	else {
+	    if ((fp = fopen(filename, mode)) == NULL)
+		goto fail;
+
+	    pgn->fp = fp;
+	}
+    }
+    else
+	pgn->fp = stdout;
+
+done:
+    if (*filename != '/') {
+	if (getcwd(buf, sizeof(buf)) == NULL) {
+	    if (pgn->tmpfile)
+		free(pgn->tmpfile);
+
+	    goto fail;
+	}
+
+	asprintf(&p, "%s/%s", buf, filename);
+	pgn->filename = p;
+    }
+    else
+	pgn->filename = strdup(filename);
+
+    *result = pgn;
+    return E_PGN_OK;
+
+fail:
+    if (fp)
+	fclose(fp);
+
+    free(pgn);
+    return E_PGN_ERR;
 }
 
 /* 
@@ -2221,14 +2349,20 @@ pgn_error_t pgn_config_set(pgn_config_flag f, ...)
 }
 
 /*
- * Writes a PGN formatted game 'g' to the file pointed to by 'fp'. See
- * 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
- * memory allocation or write error and E_PGN_OK on success.
+ * Writes a PGN formatted game 'g' to a file which was opened with pgn_open().
+ * See 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
+ * memory allocation or write error and E_PGN_OK on success. It is important
+ * to use pgn_close() afterwards if the file is a recognized compressed file
+ * type otherwise the created temporary file wont be copied to the destination
+ * filename.
  */
-pgn_error_t pgn_write(FILE *fp, GAME g)
+pgn_error_t pgn_write(PGN_FILE *pgn, GAME g)
 {
     int i;
     int len = 0;
+
+    if (!pgn)
+	return E_PGN_ERR;
 
     pgn_write_turn = (TEST_FLAG(g->flags, GF_BLACK_OPENING)) ? BLACK : WHITE;
     pgn_tag_sort(g->tag);
@@ -2313,7 +2447,7 @@ pgn_error_t pgn_write(FILE *fp, GAME g)
 	    }
 	}
 
-	fprintf(fp, "[%s \"%s\"]\n", g->tag[i]->name, 
+	fprintf(pgn->fp, "[%s \"%s\"]\n", g->tag[i]->name, 
 		(g->tag[i]->value && g->tag[i]->value[0]) ? 
 		pgn_tag_add_escapes(g->tag[i]->value) : "");
     }
@@ -2321,18 +2455,18 @@ pgn_error_t pgn_write(FILE *fp, GAME g)
 #ifdef DEBUG
     PGN_DUMP("%s:%d: writing move section\n", __FILE__, __LINE__);
 #endif
-    Fputc('\n', fp, &len);
+    Fputc('\n', pgn->fp, &len);
     g->hp = g->history;
     ravlevel = pgn_mpl = 0;
 
     if (pgn_history_total(g->hp) && pgn_write_turn == BLACK)
-	putstring(fp, "1...", &len);
+	putstring(pgn->fp, "1...", &len);
 
-    write_all_move_text(fp, g->hp, 1, &len);
+    write_all_move_text(pgn->fp, g->hp, 1, &len);
 
-    Fputc(' ', fp, &len);
-    putstring(fp, g->tag[6]->value, &len);
-    putstring(fp, "\n\n", &len);
+    Fputc(' ', pgn->fp, &len);
+    putstring(pgn->fp, g->tag[6]->value, &len);
+    putstring(pgn->fp, "\n\n", &len);
 
     if (!pgn_config.reduced)
 	CLEAR_FLAG(g->flags, GF_PERROR);
