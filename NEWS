@@ -1,3 +1,30 @@
+CBoard version 0.5
+--------------------
+Board details are now enabled by default.
+
+Added configuration parameter color_board_castling to change the castling
+availability colors when board details is enabled.
+
+Added configuration parameter color_board_enpassant. Visible when board
+details is enabled.
+
+The default color for a color definition can be used be specifying '-' as the
+color.
+
+A more complete clock. Time controls and move increments are now supported.
+This only works for human/human play at the moment.
+
+CBoard now uses nearly zero CPU time.
+
+When sent SIGTERM, save all games to save_directory if specified and ~/.cboard
+if not before quitting.
+
+Fixed opening and saving to compressed files. Appending to compressed files is
+now supported.
+
+A few bugfixes. See ChangeLog for details.
+
+
 CBoard version 0.4
 --------------------
 The status window is now on top of the roster tag window.

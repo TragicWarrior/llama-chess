@@ -97,6 +97,7 @@
 #color_board_white_moves	white	magenta	none	reverse
 #color_board_black_moves	white	blue	none	reverse
 #color_board_castling		yellow	black	bold	bold
+#color_board_enpassant		magenta black	bold	bold
 #
 #color_status_window	white	black
 #color_status_title	white	blue	none	reverse
