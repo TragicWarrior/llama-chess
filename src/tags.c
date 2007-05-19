@@ -324,7 +324,7 @@ static void edit_tag_value(struct menu_input_s *m)
     in->efunc = edit_tag_add_finalize;
     snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_EDIT_TAG_TITLE, name);
     set_menu_stuff(t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
-    construct_input(buf, init, lines, 0, eprompt, func, arg, key, in, type);
+    construct_input(buf, init, lines, 0, eprompt, func, arg, key, in, -1, type);
 }
 
 static void edit_tag_add_name_finalize(WIN *w)
@@ -354,7 +354,7 @@ static void edit_tag_add_name_finalize(WIN *w)
     free(in);
     snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_EDIT_TAG_TITLE, name);
     set_menu_stuff(t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
-    construct_input(buf, init, lines, 0, eprompt, func, arg, key, inv, type);
+    construct_input(buf, init, lines, 0, eprompt, func, arg, key, inv, -1, type);
 }
 
 static void edit_tag_add(struct menu_input_s *m)
@@ -363,7 +363,7 @@ static void edit_tag_add(struct menu_input_s *m)
 
     in->data = m;
     in->efunc = edit_tag_add_name_finalize;
-    construct_input(TAG_NEW_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, 
+    construct_input(TAG_NEW_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, -1,
 	    FIELD_TYPE_PGN_TAG_NAME);
 }
     
