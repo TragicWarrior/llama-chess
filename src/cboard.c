@@ -1381,6 +1381,9 @@ static int find_game_exp(char *str, int which, int count)
 
     exp = tmp;
 
+    while (*exp && isspace(*exp))
+	exp++;
+
     if (exp == NULL)
 	goto cleanup;
 
@@ -1396,13 +1399,13 @@ static int find_game_exp(char *str, int which, int count)
     for (g = gindex + incr, found = 0; ; g += incr) {
 	int t;
 
-	if (g == gindex)
-	    break;
-
 	if (g == gtotal)
 	    g = 0;
 	else if (g < 0)
 	    g = gtotal - 1;
+
+	if (g == gindex)
+	    break;
 
 	for (t = 0; game[g]->tag[t]; t++) {
 	    if (nstr) {
@@ -3211,8 +3214,10 @@ void do_find_game_exp_finalize(int which)
     int n;
 
     if ((n = find_game_exp(gameexp, (which == -1) ? 0 : 1, 
-		    (keycount) ? keycount : 1)) == -1)
+		    (keycount) ? keycount : 1)) == -1) {
+	update_status_notify(gp, "%s", NOTIFY_NO_MATCH);
 	return;
+    }
 
     gindex = n;
     d = gp->data;

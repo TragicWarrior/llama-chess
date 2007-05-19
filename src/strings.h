@@ -102,6 +102,7 @@
 #define NOTIFY_BCASTLEK		"Black castles king side"
 #define NOTIFY_WCASTLEQ		"White castles queen side"
 #define NOTIFY_WCASTLEK		"White castles king side"
+#define NOTIFY_NO_MATCH		"No matches found"
 
 /* Pawn promotion window. */
 #define PROMOTION_TITLE		"Select Pawn Promotion Piece"
