@@ -22,6 +22,8 @@ if not before quitting.
 Fixed opening and saving to compressed files. Appending to compressed files is
 now supported.
 
+Added form input history for single line input dialogs.
+
 A few bugfixes. See ChangeLog for details.
 
 
