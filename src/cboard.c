@@ -1876,7 +1876,7 @@ void do_play_set_clock()
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_clock_input_finalize;
-    construct_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL, NULL, 0, in, -1);
+    construct_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL, NULL, 0, in, INPUT_HIST_CLOCK, -1);
 }
 
 void do_play_toggle_human()
@@ -1926,7 +1926,7 @@ void do_play_send_command()
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_engine_command_finalize;
-    construct_input(ENGINE_CMD_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, -1);
+    construct_input(ENGINE_CMD_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, INPUT_HIST_ENGINE, -1);
 }
 
 void do_play_switch_turn()
@@ -2694,7 +2694,7 @@ void do_annotate_move(HISTORY *hp)
     in->data = hp;
     in->efunc = do_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1);
+	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1, -1);
 }
 
 void history_menu_view_annotation(struct menu_input_s *m)
@@ -2733,7 +2733,7 @@ void history_menu_annotate(struct menu_input_s *m)
     in->moredata = m->data;
     in->efunc = history_menu_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1);
+	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1, -1);
 }
 
 void history_menu_details(struct menu_input_s *m)
@@ -2946,8 +2946,8 @@ void do_history_find(int which)
     in->efunc = do_find_move_exp;
 
     if (!*moveexp || which == 0) {
-	construct_input(FIND_REGEXP, moveexp, 1, 0, NULL, NULL, NULL, 
-		0, in, -1);
+	construct_input(FIND_REGEXP, NULL, 1, 0, NULL, NULL, NULL, 
+		0, in, INPUT_HIST_MOVE_EXP, -1);
 	return;
     }
 
@@ -2998,7 +2998,7 @@ void do_history_jump()
 	in->efunc = do_move_jump;
 
 	construct_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, NULL, 
-		NULL, NULL, 0, in, 0);
+		NULL, NULL, 0, in, -1, 0);
 	return;
     }
 
@@ -3393,7 +3393,7 @@ void do_get_game_save_input(int n)
     in->data = p;
 
     construct_input(GAME_SAVE_TITLE, loadfile, 1, 1, BROWSER_PROMPT,
-	file_browser, NULL, '\t', in, -1);
+	file_browser, NULL, '\t', in, INPUT_HIST_FILE, -1);
 }
 
 void do_game_save_multi_confirm(WIN *win)
@@ -3473,8 +3473,9 @@ void global_find(int which)
     in->efunc = do_find_game_exp;
 
     if (!*gameexp || which == 0) {
-	construct_input(GAME_FIND_EXPRESSION_TITLE, gameexp, 1, 0, 
-		GAME_FIND_EXPRESSION_PROMPT, NULL, NULL, 0, in, -1);
+	construct_input(GAME_FIND_EXPRESSION_TITLE, NULL, 1, 0, 
+		GAME_FIND_EXPRESSION_PROMPT, NULL, NULL, 0, in, 
+		INPUT_HIST_GAME_EXP, -1);
 	return;
     }
 
@@ -3507,8 +3508,8 @@ void do_global_game_jump()
     in->efunc = do_game_jump;
 
     if (!keycount) {
-	construct_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, 
-		0);
+	construct_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in,
+		-1, 0);
 	return;
     }
 
@@ -3576,7 +3577,7 @@ void do_global_resume_game()
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_load_file;
     construct_input(GAME_LOAD_TITLE, NULL, 1, 1, BROWSER_PROMPT, file_browser,
-	    NULL, '\t', in, -1);
+	    NULL, '\t', in, INPUT_HIST_FILE, -1);
 }
 
 void do_global_save_game()

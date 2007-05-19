@@ -26,6 +26,15 @@
 #define INPUT_WIDTH		((COLS / 4) * 3)
 
 enum {
+    INPUT_HIST_ENGINE,
+    INPUT_HIST_CLOCK,
+    INPUT_HIST_FILE,
+    INPUT_HIST_MOVE_EXP,
+    INPUT_HIST_GAME_EXP,
+    INPUT_HIST_MAX
+};
+
+enum {
     FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
     FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
     FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND,
@@ -49,6 +58,7 @@ struct input_s {
     int c;
     void *data;
     int reset;
+    int hist;
 };
 
 struct input_data_s {
@@ -60,6 +70,6 @@ struct input_data_s {
 
 WIN *construct_input(const char *title, const char *init, int lines, int reset,
 	const char *extra_help, input_func *func, void *arg, int key,
-	struct input_data_s *id, int type, ...);
+	struct input_data_s *id, int history, int type, ...);
 
 #endif

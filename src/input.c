@@ -52,7 +52,9 @@
 #endif
 
 const char *inputhelp = {
-    "UP/DOWN/LEFT/RIGHT - position cursor\n" \
+    "UP/DOWN/LEFT/RIGHT - position cursor (multiline)\n" \
+    "         UP/CTRL-P - previous input history\n" \
+    "       DOWN/CTRL-N - next input history\n" \
     "       HOME/CTRL-A - move cursor to the beginning of line\n" \
     "        END/CTRL-E - move cursor to the end of line\n" \
     "          CTRL-B/W - move cursor to previous/next word\n" \
@@ -63,6 +65,38 @@ const char *inputhelp = {
     "            ESCAPE - quit without changes\n" \
     "             ENTER - quit with changes" 
 };
+
+static struct input_history_s {
+    char *str;
+    struct input_history_s *next;
+    struct input_history_s *prev;
+    struct input_history_s *head;
+} *input_history[INPUT_HIST_MAX];
+
+static void add_input_history(int which, const char *str)
+{
+    struct input_history_s *new;
+    struct input_history_s *p = NULL;
+
+    if (!str || !*str || which < 0)
+	return;
+
+    if (input_history[which])
+	for (p = input_history[which]->head; p->next; p = p->next);
+
+    new = calloc(1, sizeof(struct input_history_s));
+    new->str = strdup(str);
+    new->prev = p;
+
+    if (p) {
+	p->next = new;
+	new->head = p->head;
+    }
+    else
+	new->head = new;
+
+    input_history[which] = p ? p->next : new;
+}
 
 static bool validate_pgn_tag_name(int c, const void *arg)
 {
@@ -157,10 +191,37 @@ static int get_input(WIN *win)
 	case KEY_RIGHT:
 	    form_driver(in->f, REQ_RIGHT_CHAR);
 	    break;
+	case CTRL('P'):
 	case KEY_UP:
+	    if (in->hist >= 0 && input_history[in->hist] && in->lines == 1) {
+		set_field_buffer(in->fields[0], 0, input_history[in->hist]->str);
+		form_driver(in->f, REQ_END_LINE);
+
+		if (!input_history[in->hist]->prev)
+		    input_history[in->hist] = input_history[in->hist]->head;
+		else
+		    input_history[in->hist] = input_history[in->hist]->prev;
+
+		break;
+	    }
+
 	    form_driver(in->f, REQ_UP_CHAR);
 	    break;
+	case CTRL('N'):
 	case KEY_DOWN:
+	    if (in->hist >= 0 && input_history[in->hist] && in->lines == 1) {
+		if (!input_history[in->hist]->next) {
+		    set_field_buffer(in->fields[0], 0, NULL);
+		    form_driver(in->f, REQ_CLR_FIELD);
+		    break;
+		}
+
+		input_history[in->hist] = input_history[in->hist]->next;
+		set_field_buffer(in->fields[0], 0, input_history[in->hist]->str);
+		form_driver(in->f, REQ_END_LINE);
+		break;
+	    }
+
 	    form_driver(in->f, REQ_DOWN_CHAR);
 	    break;
 	case '\010':
@@ -208,6 +269,10 @@ done:
     }
 
     data->str = (in->buf[0]) ? strdup(in->buf) : NULL;
+
+    if (in->lines == 1)
+	add_input_history(in->hist, in->buf);
+
     win->data = data;
     free_fieldtype(in->ft);
     free(in);
@@ -241,7 +306,7 @@ done:
  */
 WIN *construct_input(const char *title, const char *init, int lines, int reset,
 	const char *extra_help, input_func *func, void *arg, int key,
-	struct input_data_s *id, int type, ...)
+	struct input_data_s *id, int history, int type, ...)
 {
     WIN *win;
     struct input_s *in;
@@ -273,6 +338,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     win = window_create(title, in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w), 
 	    get_input, in, id->efunc);
     in = win->data;
+    in->hist = history;
     in->data = id;
     in->reset = reset;
     in->fields[0] = new_field(in->lines, in->w - 2, 0, 0, 0, 0);

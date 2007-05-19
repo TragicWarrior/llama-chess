@@ -304,7 +304,7 @@ static void file_browser_expression(struct menu_input_s *m)
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_file_browser_expression_finalize;
-    construct_input(BROWSER_EXPR, config.pattern, 1, 1, NULL, NULL, NULL, 0, in, -1);
+    construct_input(BROWSER_EXPR, config.pattern, 1, 1, NULL, NULL, NULL, 0, in, -1, -1);
 }
 
 static void file_browser_abort(struct menu_input_s *m)
