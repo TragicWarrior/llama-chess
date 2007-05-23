@@ -305,8 +305,16 @@ int do_game_write(char *filename, char *mode, int start, int end)
     struct userdata_s *d;
     PGN_FILE *pgn;
 
-    if (pgn_open(filename, mode, &pgn) != E_PGN_OK)
+    i = pgn_open(filename, mode, &pgn);
+
+    if (i == E_PGN_ERR) {
+	cmessage(ERROR, ANYKEY, "%s\n%s", filename, strerror(errno));
 	return 1;
+    }
+    else if (i == E_PGN_INVALID) {
+	cmessage(ERROR, ANYKEY, "%s\n%s", filename, E_REGFILE_STR);
+	return 1;
+    }
 
     for (i = (start == -1) ? 0 : start; i < end; i++) {
 	d = game[i]->data;
@@ -346,10 +354,8 @@ void do_save_game_overwrite_confirm(WIN *win)
 	    goto done;
     }
 
-    if (do_game_write(s->filename, mode, s->start, s->end)) {
-	cmessage(ERROR, ANYKEY, "%s: %s", s->filename, strerror(errno));
+    if (do_game_write(s->filename, mode, s->start, s->end))
 	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
-    }
     else
 	update_status_notify(gp, "%s", NOTIFY_SAVED);
 
@@ -406,10 +412,8 @@ void save_pgn(char *filename, int saveindex)
 	return;
     }
 
-    if (do_game_write(filename, "a", saveindex, end)) {
-	cmessage(ERROR, ANYKEY, "%s: %s", filename, strerror(errno));
+    if (do_game_write(filename, "a", saveindex, end))
 	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
-    }
     else
 	update_status_notify(gp, "%s", NOTIFY_SAVED);
 }
@@ -3285,6 +3289,7 @@ void do_load_file(WIN *win)
     char *tmp = in->str;
     struct userdata_s *d;
     PGN_FILE *pgn = NULL;
+    int n;
 
     if (!in->str) {
 	free(in);
@@ -3294,8 +3299,14 @@ void do_load_file(WIN *win)
     if ((tmp = pathfix(tmp)) == NULL)
 	goto done;
 
-    if (pgn_open(tmp, "r", &pgn) != E_PGN_OK) {
+    n = pgn_open(tmp, "r", &pgn);
+
+    if (n == E_PGN_ERR) {
 	cmessage(ERROR, ANYKEY, "%s\n%s", tmp, strerror(errno));
+	goto done;
+    }
+    else if (n == E_PGN_INVALID) {
+	cmessage(ERROR, ANYKEY, "%s\n%s", tmp, E_REGFILE_STR);
 	goto done;
     }
 

@@ -87,6 +87,7 @@
 #define E_SELECT_TURN	"It is not your turn to move. You can switch sides " \
     "by pressing 'w' or force the engine to make the next move by " \
     "pressing 'g'."
+#define E_REGFILE_STR	"Not a regular file"
 
 /* The notification line in the status window. */
 #define NOTIFY_SAVED		"Game saved."

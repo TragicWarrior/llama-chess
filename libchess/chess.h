@@ -231,7 +231,7 @@ pgn_error_t pgn_is_compressed(const char *filename);
  * success and sets 'result' to a file handle for use will the other file
  * functions or E_PGN_ERR if there is an error opening the file in which case
  * errno will be set to the error or E_PGN_INVALID if 'mode' is an invalid
- * mode.
+ * mode or if 'filename' is not a regular file.
  */
 pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result);
 

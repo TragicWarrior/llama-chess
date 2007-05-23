@@ -2086,7 +2086,7 @@ pgn_error_t pgn_close(PGN_FILE *pgn)
  * success and sets 'result' to a file handle for use will the other file
  * functions or E_PGN_ERR if there is an error opening the file in which case
  * errno will be set to the error or E_PGN_INVALID if 'mode' is an invalid
- * mode.
+ * mode or if 'filename' is not a regular file.
  */
 pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 {
@@ -2096,6 +2096,9 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
     PGN_FILE *pgn;
     int m;
     int append = 0;
+    struct stat st;
+    int ret = E_PGN_ERR;
+
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN opening %s\n", __FILE__, __LINE__, filename);
@@ -2124,6 +2127,14 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
     if (strcmp(filename, "-") != 0) {
 	if (m && access(filename, R_OK) == -1)
 	    goto fail;
+
+	if (stat(filename, &st) == -1 && !m && errno != ENOENT)
+	    goto fail;
+
+	if (m && !S_ISREG(st.st_mode)) {
+	    ret = E_PGN_INVALID;
+	    goto fail;
+	}
 
 	if ((cmd = compression_cmd(filename, m)) != NULL) {
 	    pgn->pipe = 1;
@@ -2204,7 +2215,7 @@ fail:
 	fclose(fp);
 
     free(pgn);
-    return E_PGN_ERR;
+    return ret;
 }
 
 /* 
