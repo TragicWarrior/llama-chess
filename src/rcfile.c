@@ -537,14 +537,14 @@ static void parse_key_binding(const char *filename, int lines, char *val)
 
 static void parse_macro(const char *filename, int lines, char *val)
 {
-    char mode[64], key[8], keys[64];
+    char mode[16], key[8], keys[256] = {0};
     int n;
     int m;
     int c;
     int i = 0;
     char *p;
 
-    n = sscanf(val, "%s %s %s", mode, key, keys);
+    n = sscanf(val, "%s %s %255c", mode, key, keys);
 
     if (n != 3)
 	errx(EXIT_FAILURE, "%s(%i): too few arguments", filename, lines);

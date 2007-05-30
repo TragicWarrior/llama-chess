@@ -44,6 +44,9 @@ struct macro_s {
     int mode;
 } **macros;
 
+int *macro_depth;
+int macro_depth_n;
+
 struct key_s **history_keys;
 key_func do_history_jump_next;
 key_func do_history_jump_prev;

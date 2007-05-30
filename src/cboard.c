@@ -3789,6 +3789,69 @@ static int globalkeys()
     return 0;
 }
 
+/*
+ * A macro may contain a key that belongs to another macro so macro_match will
+ * need to be updated to the new index of the matching macro.
+ */
+static void find_macro(struct userdata_s *d)
+{
+    int i;
+
+    /*
+     * Macros can't contain macros when in a window.
+     */
+    if (wins)
+	return;
+
+again:
+    for (i = 0; macros[i]; i++) {
+	if ((macros[i]->mode == -1 || macros[i]->mode == d->mode) &&
+		input_c == macros[i]->c) {
+	    input_c = macros[i]->keys[macros[i]->n++];
+
+	    if (!macro_depth_n && macro_match > -1) {
+		macro_depth = realloc(macro_depth, (macro_depth_n + 1) * sizeof(int));
+		macro_depth[macro_depth_n++] = macro_match;
+	    }
+
+	    macro_depth = realloc(macro_depth, (macro_depth_n + 1) * sizeof(int));
+	    macro_depth[macro_depth_n++] = i;
+	    macro_match = i;
+	    goto again;
+	}
+    }
+}
+
+/*
+ * Resets the position in each macro to the first key.
+ */
+static void reset_macros()
+{
+    int i;
+    struct userdata_s *d = gp->data;
+
+again:
+    if (macro_depth_n > 0) {
+	macro_depth_n--;
+	macro_match = macro_depth[macro_depth_n];
+
+	if (macros[macro_match]->n >= macros[macro_match]->total)
+	    goto again;
+
+	input_c = macros[macro_match]->keys[macros[macro_match]->n++];
+	find_macro(d);
+	return;
+    }
+
+    for (i = 0; macros[i]; i++)
+	macros[i]->n = 0;
+
+    free(macro_depth);
+    macro_depth = NULL;
+    macro_depth_n = 0;
+    macro_match = -1;
+}
+
 void game_loop()
 {  
     struct userdata_s *d;
@@ -3929,14 +3992,12 @@ void game_loop()
 	else {
 	    if (!pushkey) {
 		if (macros && macro_match >= 0) {
-		    if (macros[macro_match]->n >= macros[macro_match]->total) {
-			macros[macro_match]->n = 0;
-			macro_match = -1;
-			update_all(gp);
-			continue;
-		    }
-		    else 
+		    if (macros[macro_match]->n >= macros[macro_match]->total)
+			reset_macros();
+		    else {
 			input_c = macros[macro_match]->keys[macros[macro_match]->n++];
+			find_macro(d);
+		    }
 		}
 		else {
 		    if ((input_c = wgetch(wp)) == ERR)
@@ -3985,16 +4046,8 @@ void game_loop()
 	if (!keycount && status.notify)
 	    update_status_notify(gp, NULL);
 
-	if (macros && macro_match < 0) {
-	    for (i = 0; macros[i]; i++) {
-		if ((macros[i]->mode == -1 || macros[i]->mode == d->mode) &&
-			input_c == macros[i]->c) {
-		    input_c = macros[i]->keys[macros[i]->n++];
-		    macro_match = i;
-		    break;
-		}
-	    }
-	}
+	if (macros && macro_match < 0)
+	    find_macro(d);
 
 	if ((n = globalkeys()) == 1) {
 	    if (macro_match == -1)

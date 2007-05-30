@@ -201,8 +201,8 @@
 
 # Macros should be defined AFTER all key bindings. The bound key "presses" a
 # series of keys in the specified game mode. The "any" game mode can be used
-# to access the global keys.
+# to access the global keys. Macros may contain other macros too.
 
-# This would edit the "White" roster tag when pressing CTRL-o.
+# This would edit the "White" roster tag when pressing CTRL-v.
 #	Mode	Key		Key sequence
-#macro 	any	"<^o>"		"<^t><^a>white<enter>"
+#macro 	any	"<^v>"		"<^t><^a>white<enter><^u>edited with a macro<enter><^x>"
