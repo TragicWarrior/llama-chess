@@ -557,6 +557,35 @@ pgn_error_t pgn_tag_find(TAG **t, const char *name)
     return E_PGN_ERR;
 }
 
+static pgn_error_t remove_tag(TAG ***array, const char *tag)
+{
+    TAG **tags = *array;
+    int n = pgn_tag_find(tags, tag);
+    int i, t;
+
+    if (n == E_PGN_ERR)
+	return E_PGN_ERR;
+
+    for (i = t = 0; tags[i]; i++) {
+	if (i == n) {
+	    free(tags[i]->name);
+	    free(tags[i]->value);
+	    free(tags[i]);
+	    continue;
+	}
+
+	tags[t++] = tags[i];
+    }
+
+    tags = realloc(*array, (t + 1) * sizeof(TAG *));
+    tags[t] = NULL;
+    *array = tags;
+#ifdef DEBUG
+    PGN_DUMP("%s:%d: removed tag: name='%s'\n", __FILE__, __LINE__, tag);
+#endif
+    return E_PGN_OK;
+}
+
 static int tag_compare(const void *a, const void *b)
 {
     TAG * const *ta = a;
@@ -596,8 +625,9 @@ int pgn_tag_total(TAG **tags)
 /*
  * Adds a tag 'name' with value 'value' to the pointer to array of TAG
  * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
- * is updated to the new 'value'. Returns E_PGN_ERR if there was a memory
- * allocation error or E_PGN_OK on success.
+ * is updated to the new 'value'. If 'value' is NULL, the tag is removed.
+ * Returns E_PGN_ERR if there was a memory allocation error or E_PGN_OK on
+ * success.
  */
 pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value)
 {
@@ -626,6 +656,10 @@ pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value)
 	    if (value) {
 		if ((tmp = strdup(value)) == NULL)
 		    return E_PGN_ERR;
+	    }
+	    else {
+		remove_tag(dst, name);
+		return E_PGN_OK;
 	    }
 
 	    free(tdata[i]->value);

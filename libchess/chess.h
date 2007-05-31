@@ -279,8 +279,9 @@ void pgn_free(GAME g);
 /*
  * Adds a tag 'name' with value 'value' to the pointer to array of TAG
  * pointers 'dst'. If a duplicate tag 'name' was found then the existing tag
- * is updated to the new 'value'. Returns E_PGN_ERR if there was a memory
- * allocation error or E_PGN_OK on success.
+ * is updated to the new 'value'. If 'value' is NULL, the tag is removed.
+ * Returns E_PGN_ERR if there was a memory allocation error or E_PGN_OK on
+ * success.
  */
 pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value);
 
