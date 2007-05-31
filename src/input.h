@@ -31,6 +31,9 @@ enum {
     INPUT_HIST_FILE,
     INPUT_HIST_MOVE_EXP,
     INPUT_HIST_GAME_EXP,
+#ifdef WITH_LIBPERL
+    INPUT_HIST_PERL,
+#endif
     INPUT_HIST_MAX
 };
 

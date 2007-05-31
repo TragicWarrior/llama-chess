@@ -48,6 +48,10 @@
 #include <regex.h>
 #endif
 
+#ifdef WITH_LIBPERL
+#include "perl.h"
+#endif
+
 #include "chess.h"
 #include "conf.h"
 #include "window.h"
@@ -1029,6 +1033,15 @@ void update_status_window(GAME g)
 	*p++ = 'C';
 	i++;
     }
+#ifdef WITH_LIBPERL
+    if (TEST_FLAG(d->flags, CF_PERL)) {
+	if (i)
+	    *p++ = '/';
+
+	*p++ = 'P';
+	i++;
+    }
+#endif
 
     *p = '\0';
     mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_FLAGS_STR, w, (tmp[0]) ? tmp : "-");
@@ -3043,6 +3056,14 @@ static void free_userdata_once(GAME g)
 	free(d->engine);
     }
 
+#ifdef WITH_LIBPERL
+    if (d->perlfen)
+	free(d->perlfen);
+
+    if (d->oldfen)
+	free(d->oldfen);
+#endif
+
     free(d);
     g->data = NULL;
 }
@@ -3789,6 +3810,84 @@ static int globalkeys()
     return 0;
 }
 
+#ifdef WITH_LIBPERL
+static void perl_error(const char *fmt, ...)
+{
+    va_list ap;
+    char *buf;
+
+    va_start(ap, fmt);
+    vasprintf(&buf, fmt, ap);
+    va_end(ap);
+
+    message(ERROR, ANYKEY, "%s", buf);
+    free(buf);
+}
+
+static void do_perl_finalize(WIN *win)
+{
+    struct input_data_s *in = win->data;
+    GAME g = in->data;
+    struct userdata_s *d = g->data;
+    char *filename;
+    char *result = NULL;
+    char *arg = NULL;
+    int n;
+
+    asprintf(&filename, "%s/perl.pl", config.datadir);
+
+    if (!in->str)
+	goto done;
+
+    if (perl_init_file(filename, perl_error))
+	goto done;
+
+    arg = strdup(pgn_game_to_fen(g, d->b));
+
+    if (perl_call_sub(trim(in->str), arg, &result))
+	goto done;
+
+    d->perlfen = strdup(pgn_game_to_fen(g, d->b));
+    d->perlflags = g->flags;
+
+    if (pgn_board_init_fen(g, d->b, result) != E_PGN_OK) {
+	message(ERROR, ANYKEY, "%s", E_FEN_PARSE);
+	pgn_board_init_fen(g, d->b, d->perlfen);
+	g->flags = d->perlflags;
+	free(d->perlfen);
+	d->perlfen = NULL;
+	goto done;
+    }
+
+    SET_FLAG(d->flags, CF_PERL);
+    n = pgn_tag_find(g->tag, "FEN");
+
+    if (n != E_PGN_ERR)
+	d->oldfen = strdup(g->tag[n]->value);
+
+    pgn_tag_add(&g->tag, "FEN", result);
+    update_status_notify(g, "%s", ANYKEY);
+    update_all(g);
+
+done:
+    free(result);
+    free(arg);
+    free(in->str);
+    free(in);
+    free(filename);
+}
+
+void do_global_perl()
+{
+    struct input_data_s *in;
+
+    in = Calloc(1, sizeof(struct input_data_s));
+    in->data = gp;
+    in->efunc = do_perl_finalize;
+    construct_input(GAME_PERL_TITLE, NULL, 1, 0, NULL, NULL, NULL, 0, in, INPUT_HIST_PERL, -1);
+}
+#endif
+
 /*
  * A macro may contain a key that belongs to another macro so macro_match will
  * need to be updated to the new index of the matching macro.
@@ -4046,6 +4145,20 @@ void game_loop()
 	if (!keycount && status.notify)
 	    update_status_notify(gp, NULL);
 
+#ifdef WITH_LIBPERL
+	if (TEST_FLAG(d->flags, CF_PERL)) {
+	    CLEAR_FLAG(d->flags, CF_PERL);
+	    pgn_board_init_fen(gp, d->b, d->perlfen);
+	    gp->flags = d->perlflags;
+	    free(d->perlfen);
+	    pgn_tag_add(&gp->tag, "FEN", d->oldfen);
+	    free(d->oldfen);
+	    d->perlfen = d->oldfen = NULL;
+	    update_all(gp);
+	    continue;
+	}
+#endif
+
 	if (macros && macro_match < 0)
 	    find_macro(d);
 
@@ -4173,6 +4286,10 @@ void cleanup_all()
 
 	endwin();
     }
+
+#ifdef WITH_LIBPERL
+    perl_cleanup();
+#endif
 }
 
 static void signal_save_pgn(int sig)

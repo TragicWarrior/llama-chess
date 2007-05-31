@@ -9,9 +9,16 @@ and edited. You can also customize the key bindings and create macros.
 Builds on Solaris, Linux, *BSD (but not NetBSD as it doesn't have libpanel
 from libcurses for some reason), Darwin and Linux.
 
-Read INSTALL for build and installation details. After installing, type
-"cboard -h" for command-line options or just "cboard". Then type F1 for
+Read INSTALL for generic build and installation details. After installing,
+type "cboard -h" for command-line options or just "cboard" then press F1 for
 help on in-game command keys.
+
+If you want PERL support you'll need to have libperl installed and pass
+--with-libperl to 'configure'. When compiled with PERL support, pressing ^O
+will "filter" the current game through a PERL subroutine defined in
+~/.cboard/perl.pl. The subroutine is passed a single argument which is a
+generated FEN tag of the current game. The subroutine should return a FEN tag
+after processing.
 
 The latest version can be found at http://bjk.sourceforge.net/cboard/. Feel
 free to send me a description of any bugs you find along with the associated

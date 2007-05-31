@@ -62,6 +62,10 @@
 #define GAME_EDIT_TEXT		"Type the piece letter to insert. Lowercase " \
     "for a black piece, uppercase for a white piece."
 
+#ifdef WITH_LIBPERL
+#define GAME_PERL_TITLE	"PERL Subroutine Filter"
+#endif
+
 /* Error strings. */
 #define E_TAG_NAMETOOLONG	"Cannot add tag. Name too long."
 #define E_REGCOMP_TITLE	"Error Compiling Regular Expression"

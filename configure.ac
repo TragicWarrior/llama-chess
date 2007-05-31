@@ -37,6 +37,32 @@ AC_CHECK_LIB(panel, new_panel, ,
 AC_CHECK_LIB(form, new_form, ,
 	     [AC_MSG_ERROR([Missing or incomplete curses installation.])])
 
+AC_ARG_WITH(libperl, AC_HELP_STRING([--with-libperl], [PERL support.]),
+    want_libperl=yes, want_libperl=no)
+
+AC_MSG_CHECKING([if PERL support is wanted])
+AC_MSG_RESULT($want_libperl)
+
+if test "$want_libperl" = "yes"; then
+    AC_CHECK_LIB(perl, perl_run, have_libperl=yes, have_libperl=no)
+
+    if test "$have_libperl" = "yes"; then
+	LIBPERL_CFLAGS=`perl -MExtUtils::Embed -e ccopts`
+
+	if test $? -ne 0; then
+	    AC_MSG_ERROR([Missing or incomplete PERL installation.])
+	fi
+
+	AC_SUBST(LIBPERL_CFLAGS)
+	LIBPERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
+	AC_SUBST(LIBPERL_LDFLAGS)
+	AC_DEFINE([WITH_LIBPERL], 1, [Define if you want PERL support.])
+    else
+	AC_MSG_ERROR([Missing or incomplete PERL installation.])
+    fi
+fi
+
+AM_CONDITIONAL([WITH_LIBPERL], [test "$have_libperl" = "yes"])
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT

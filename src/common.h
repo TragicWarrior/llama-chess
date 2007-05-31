@@ -25,6 +25,9 @@
 #define CF_CLOCK	0x08
 #define CF_MODIFIED	0x10
 #define CF_DELETE	0x20
+#ifdef WITH_LIBPERL
+#define CF_PERL		0x40
+#endif
 
 #define MAX_TC		8	/* Time controls. */
 
@@ -62,6 +65,12 @@ struct userdata_s {
     } sp;
 
     void *data; // For the history menu
+
+#ifdef WITH_LIBPERL
+    char *perlfen;
+    char *oldfen;
+    unsigned short perlflags;
+#endif
 };
 
 /* A pointer to the game in focus. */
@@ -71,7 +80,6 @@ void gameover(GAME);
 void update_cursor(GAME, int);
 void invalid_move(int n, int e, const char *m);
 void update_status_window(GAME g);
-void update_board_window(GAME g);
 void update_all(GAME g);
 
 #endif

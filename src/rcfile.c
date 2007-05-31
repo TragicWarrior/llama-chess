@@ -305,6 +305,9 @@ void set_default_keys()
     add_key_binding(&global_keys, do_global_toggle_board_details, CTRL('d'), "toggle board details", 0);
     add_key_binding(&global_keys, do_global_toggle_strict_castling, CTRL('p'), "toggle strict castling", 0);
     add_key_binding(&global_keys, do_global_toggle_engine_window, 'W', "toggle chess engine IO window", 0);
+#ifdef WITH_LIBPERL
+    add_key_binding(&global_keys, do_global_perl, CTRL('O'), "Call PERL subroutine", 0);
+#endif
     add_key_binding(&global_keys, do_global_about, KEY_F(10), "version information", 0);
     add_key_binding(&global_keys, do_global_quit, 'Q', "quit", 0);
 }

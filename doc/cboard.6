@@ -14,7 +14,7 @@
 .\" along with this program; if not, write to the Free Software
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 .
-.Dd May 03, 2007
+.Dd May 27, 2007
 .Os
 .Dt CBOARD 6
 .
@@ -330,6 +330,10 @@ Country codes. Used when editing the \&"Site\&" tag.
 .It Pa ~/.cboard/nag.data
 Appending to this file is fine for custom NAG types, but lines before 140 are
 reserved by the PGN standard.
+.It Pa ~/.cboard/perl.pl
+If compiled with PERL support, a file containing subroutines that
+.Nm CBoard 
+can filter games through.
 .El
 .
 .Sh SEE ALSO
