@@ -1,5 +1,5 @@
 EXTRA_DIST = KnownBugs ChangeLog debian osdep
-SUBDIRS = libchess src doc data test
+SUBDIRS = libchess src doc data
 
 changelog:
 	git-log --no-color > ChangeLog || exit 1
