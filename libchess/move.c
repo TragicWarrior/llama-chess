@@ -530,11 +530,10 @@ static int checkmate_test(GAME g, BOARD b)
 
     for (r = 1; VALIDRANK(r); r++) {
 	for (f = 1; VALIDFILE(f); f++) {
-	    int p, pi;
+	    int p;
 	    int sfile = f, srank = r;
 
 	    p = b[RANKTOBOARD(r)][FILETOBOARD(f)].icon;
-	    pi = pgn_piece_to_int(p);
 
 	    if (p == OPEN_SQUARE || !val_piece_side(g->turn, p))
 		continue;

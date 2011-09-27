@@ -982,6 +982,7 @@ void update_status_window(GAME g)
 	return;
 
     getmaxyx(statusw, maxy, maxx);
+    (void)maxy;
     w = maxx - 2 - 8;
     len = maxx - 2;
     buf = Malloc(len);

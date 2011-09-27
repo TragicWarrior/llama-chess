@@ -202,7 +202,7 @@ typedef struct {
 /*
  * The prototype of the PGN_PROGRESS_FUNC function pointer.
  */
-typedef void (pgn_progress)(long size, long offset);
+typedef void (*pgn_progress)(long size, long offset);
 
 /*
  * Sets config flag 'f' to the next argument. Returns E_PGN_OK on success or

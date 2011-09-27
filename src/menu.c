@@ -237,7 +237,6 @@ static int display_menu(WIN *win)
 {
     struct menu_input_s *m = win->data;
     int i, n;
-    int key = 0;
     char *p;
 
     cbreak();
@@ -250,7 +249,6 @@ static int display_menu(WIN *win)
 	    if (win->c == m->keys[i]->c) {
 		(*m->keys[i]->func)(m);
 		m->items = (*m->func)(win);
-		key = 1;
 		m->search[0] = 0;
 		goto end;
 	    }

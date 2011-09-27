@@ -59,7 +59,7 @@ static int Fgetc(FILE *fp)
     if ((c = fgetc(fp)) != EOF) {
 	if (pgn_config.progress && pgn_config.pfunc) {
 	    if (!(ftell(fp) % pgn_config.progress))
-		(*pgn_config.pfunc)(pgn_fsize, ftell(fp));
+		pgn_config.pfunc(pgn_fsize, ftell(fp));
 	}
     }
 
@@ -1107,7 +1107,6 @@ static int tag_text(GAME g, FILE *fp)
     char name[LINE_MAX], *n = name;
     char value[LINE_MAX], *v = value;
     int c, i = 0;
-    int quoted_string = 0;
     int lastchar = 0;
 
     skip_leading_space(fp);
@@ -1122,10 +1121,8 @@ static int tag_text(GAME g, FILE *fp)
 
     /* The value is until the first closing bracket. */
     while ((c = Fgetc(fp)) != EOF && c != ']') {
-	if (i++ == '\0' && c == '\"') {
-	    quoted_string = 1;
+	if (i++ == '\0' && c == '\"')
 	    continue;
-	}
 
 	if (c == '\n' || c == '\t')
 	    c = ' ';
@@ -1309,7 +1306,6 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
     char *tmp;
     char line[LINE_MAX], *s;
     int row = 8, col = 1;
-    int moven;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: FEN line is '%s'\n", __FILE__, __LINE__, str);
@@ -1418,7 +1414,6 @@ other:
     if (*tmp)
 	tmp++;
 
-    moven = atoi(tmp);
     return E_PGN_OK;
 }
 
@@ -2305,8 +2300,8 @@ pgn_error_t pgn_config_get(pgn_config_flag f, ...)
 	    va_end(ap);
 	    return E_PGN_OK;
 	case PGN_PROGRESS_FUNC:
-	    progress = va_arg(ap, pgn_progress *);
-	    progress = pgn_config.pfunc;
+	    progress = va_arg(ap, pgn_progress*);
+	    *progress = pgn_config.pfunc;
 	    va_end(ap);
 	    return E_PGN_OK;
 #ifdef DEBUG
@@ -2372,7 +2367,7 @@ pgn_error_t pgn_config_set(pgn_config_flag f, ...)
 	    pgn_config.progress = n;
 	    break;
 	case PGN_PROGRESS_FUNC:
-	    pgn_config.pfunc = va_arg(ap, pgn_progress *);
+	    pgn_config.pfunc = va_arg(ap, pgn_progress);
 	    break;
 	case PGN_STRICT_CASTLING:
 	    n = va_arg(ap, int);

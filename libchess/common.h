@@ -29,7 +29,7 @@ struct {
     int reduced;
     int fmd;
     long progress;
-    pgn_progress *pfunc;
+    pgn_progress pfunc;
     int strict_castling;
 } pgn_config;
 
