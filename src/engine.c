@@ -88,9 +88,6 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 	    TEST_FLAG(d->flags, CF_HUMAN))
 	return 1;
 
-    if (send_signal_to_engine(d->engine->pid, SIGINT))
-	return 1;
-
     va_start(ap, format);
 #ifdef HAVE_VASPRINTF
     len = vasprintf(&line, format, ap);
