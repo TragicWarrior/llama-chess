@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT(cboard, 0.5, [Ben Kibbey bjk@luxsci.net])
+AC_INIT(cboard, 0.6-dev, [Ben Kibbey bjk@luxsci.net])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
@@ -23,10 +24,13 @@ esac
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
 dnl Checks for programs.
+AC_PROG_CXX
 AC_PROG_AWK
-AC_PROG_LN_S
 AC_PROG_CC
+AC_PROG_CPP
 AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
 
 dnl Checks for library functions.
 AC_CHECK_LIB(curses, initscr, ,
@@ -112,7 +116,11 @@ AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
 		select socket strcasecmp strdup strerror strrchr strstr \
-		vasprintf strsep strchr strncasecmp strpbrk])
+		vasprintf strsep strchr strncasecmp strpbrk putenv])
+AC_FUNC_ALLOCA
+AC_FUNC_FORK
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
 
 AM_CONDITIONAL([NO_STRSEP], [test "x$ac_cv_func_strsep" = "xno"])
 

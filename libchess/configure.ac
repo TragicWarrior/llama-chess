@@ -42,7 +42,7 @@ dnl Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRFTIME
-AC_CHECK_FUNCS([bzero isascii memset strcasecmp strdup strsep])
+AC_CHECK_FUNCS([bzero isascii memset strcasecmp strdup strsep getcwd])
 
 AM_CONDITIONAL([NO_STRSEP], [test "x$ac_cv_func_strsep" = "xno"])
 
