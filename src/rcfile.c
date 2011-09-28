@@ -255,7 +255,7 @@ void set_default_keys()
     add_key_binding(&history_keys, do_history_rav_next, '+', "next variation of the previous move", 0);
     add_key_binding(&history_keys, do_history_rav_prev, '-', "previous variation of the previous move", 0);
     add_key_binding(&history_keys, do_history_menu, 'M', "move history tree", 0);
-    add_key_binding(&history_keys, do_history_help, KEY_F(1), "help", 0);
+    add_key_binding(&history_keys, do_history_help, KEY_F(1), "more help", 0);
     add_key_binding(&history_keys, do_history_help, CTRL('g'), NULL, 0);
     add_key_binding(&history_keys, do_history_toggle, 'h', "exit history mode", 0);
 
@@ -267,7 +267,7 @@ void set_default_keys()
     add_key_binding(&edit_keys, do_edit_toggle_castle, 'c', "toggle castling availability", 0);
     add_key_binding(&edit_keys, do_edit_enpassant, 'p', "toggle enpassant square", 0);
     add_key_binding(&edit_keys, do_edit_switch_turn, 'w', "toggle turn", 0);
-    add_key_binding(&edit_keys, do_edit_help, KEY_F(1), "help", 0);
+    add_key_binding(&edit_keys, do_edit_help, KEY_F(1), "more help", 0);
     add_key_binding(&history_keys, do_edit_help, CTRL('g'), NULL, 0);
     add_key_binding(&edit_keys, do_edit_exit, 'e', "exit edit mode", 0);
 
@@ -284,7 +284,7 @@ void set_default_keys()
     add_key_binding(&play_keys, do_play_toggle_pause, 'p', "toggle pausing of this game", 0);
     add_key_binding(&play_keys, do_play_history_mode, 'h', "enter history mode", 0);
     add_key_binding(&play_keys, do_play_edit_mode, 'e', "enter edit mode", 0);
-    add_key_binding(&play_keys, do_play_help, KEY_F(1), "help", 0);
+    add_key_binding(&play_keys, do_play_help, KEY_F(1), "more help", 0);
     add_key_binding(&play_keys, do_play_help, CTRL('g'), NULL, 0);
 
     add_key_binding(&global_keys, do_global_tag_edit, CTRL('t'), "edit roster tags", 0);
