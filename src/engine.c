@@ -366,12 +366,14 @@ int start_chess_engine(GAME g)
     int ret = 1;
     struct userdata_s *d = g->data;
 
-    if (d->engine)
+    if (d->engine && d->engine->status != ENGINE_OFFLINE)
 	return -1;
 
     args = parseargs(config.engine_cmd);
 
-    d->engine = Calloc(1, sizeof(struct engine_s));
+    if (!d->engine)
+	d->engine = Calloc(1, sizeof(struct engine_s));
+
     d->engine->status = ENGINE_INITIALIZING;
     update_status_window(g);
     update_panels();
@@ -390,8 +392,8 @@ int start_chess_engine(GAME g)
 	    break;
 	default:
 	    ret = 0;
-	    set_engine_defaults(g, config.einit);
 	    d->engine->status = ENGINE_READY;
+	    set_engine_defaults(g, config.einit);
 	    break;
     }
 
