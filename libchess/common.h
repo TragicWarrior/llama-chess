@@ -33,10 +33,6 @@ struct {
     int strict_castling;
 } pgn_config;
 
-int validate;
-int done_fen_tag;
-int pgn_fen_tag;
-
 #ifdef DEBUG
 int dumptofile;
 #endif

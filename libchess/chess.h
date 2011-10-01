@@ -120,6 +120,19 @@ typedef struct game_s {
     unsigned short ply;         // Move count.
     void *data;			/* User data associated with this game. Must
 				 * be freed by the user. */
+    // internal validation state
+    int validate;
+    int done_fen_tag;
+    int pgn_fen_tag;
+    int capture;
+    int castle;
+    int check;
+    int check_testing;
+    int kfile;
+    int krank;
+    int okfile;
+    int okrank;
+    int validate_find;
 } *GAME;
 
 /*

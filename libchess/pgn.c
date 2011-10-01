@@ -1712,15 +1712,15 @@ static int read_file(FILE *fp)
 	    nulltags = 1;
 	    tag_section = 0;
 
-	    if (!done_fen_tag) {
+	    if (!game[gindex]->done_fen_tag) {
 		if (pgn_tag_find(game[gindex]->tag, "FEN") != -1 && 
 			pgn_board_init_fen(game[gindex], pgn_board, NULL)) {
 		    parse_error = 1;
 		    continue;
 		}
 
-		pgn_fen_tag = pgn_tag_find(game[gindex]->tag, "FEN");
-		done_fen_tag = 1;
+		game[gindex]->pgn_fen_tag = pgn_tag_find(game[gindex]->tag, "FEN");
+		game[gindex]->done_fen_tag = 1;
 	    }
 
 	    continue;
@@ -1741,8 +1741,8 @@ static int read_file(FILE *fp)
 		    continue;
 		}
 
-		done_fen_tag = 1;
-		pgn_fen_tag = pgn_tag_find(game[gindex]->tag, "FEN");
+		game[gindex]->done_fen_tag = 1;
+		game[gindex]->pgn_fen_tag = pgn_tag_find(game[gindex]->tag, "FEN");
 		tag_section = 0;
 	    }
 
