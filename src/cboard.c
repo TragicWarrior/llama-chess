@@ -3095,6 +3095,8 @@ void update_loading_window(int n)
     mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
 		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
 	    gtotal);
+    update_panels();
+    doupdate();
 }
 
 static void init_userdata_once(GAME g, int n)
