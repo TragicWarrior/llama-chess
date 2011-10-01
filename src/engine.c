@@ -465,7 +465,7 @@ static void parse_xboard_line(GAME g, char *str)
 	    RETURN(d);
 	}
 
-	pgn_history_add(g, p);
+	pgn_history_add(g, d->b, p);
 	SET_FLAG(d->flags, CF_MODIFIED);
 	pgn_switch_turn(g);
 

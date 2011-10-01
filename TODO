@@ -27,11 +27,6 @@ order):
 ? Internationalization (gettext). This with quadruple the amount of allocated
   memory.
 
-? When a game contains alot of moves (> 100 or so) the move validator slows
-  things down quite a bit when browsing history or adding a move to the
-  history. A solution to fix this is to only update the board without
-  validating up to the last known validated move (FEN tag).
-
 - GPM mouse support.
 
 - EPD game format.

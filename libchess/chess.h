@@ -49,14 +49,14 @@ enum {
 };
 
 /* Game flags. */
-#define GF_PERROR	0x01	/* Parse error for this game. */
-#define GF_ENPASSANT	0x02	/* For En Passant validation. */
-#define GF_GAMEOVER	0x04	/* End of game. */
-#define GF_WK_CASTLE	0x08
-#define GF_WQ_CASTLE	0x010
-#define GF_BK_CASTLE	0x020
-#define GF_BQ_CASTLE	0x040
-#define GF_BLACK_OPENING	0x080
+#define GF_PERROR		0x0001	/* Parse error for this game. */
+#define GF_ENPASSANT		0x0002	/* For En Passant validation. */
+#define GF_GAMEOVER		0x0004	/* End of game. */
+#define GF_WK_CASTLE		0x0008
+#define GF_WQ_CASTLE		0x0010
+#define GF_BK_CASTLE		0x0020
+#define GF_BQ_CASTLE		0x0040
+#define GF_BLACK_OPENING	0x0080
 
 /*
  * The chess board.
@@ -87,6 +87,7 @@ typedef struct history {
     char *move;				// The SAN move text.
     char *comment;			// Annotation for this move.
     unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph.
+    char *fen;				// Of the current board.
     struct history **rav;		// Variation of the current move.
 } HISTORY;
 
@@ -355,12 +356,15 @@ int pgn_history_total(HISTORY **h);
 HISTORY *pgn_history_by_n(HISTORY **h, int n);
 
 /*
- * Appends move 'm' to game 'g' history pointer. The history pointer may be a
- * in a RAV so g->rav.hp is also updated to the new (realloc()'ed) pointer. If
- * not in a RAV then g->history will be updated. Returns E_PGN_ERR if
- * realloc() failed or E_PGN_OK on success.
+ * Appends move 'm' to game 'g' history pointer and creates a FEN tag for the
+ * current game state using board 'b'. The FEN tag makes things faster than
+ * validating the entire move history by validating only the current move to
+ * the previous moves FEN tag. The history pointer may be a in a RAV so
+ * g->rav.hp is also updated to the new (realloc()'ed) pointer. If not in a
+ * RAV then g->history will be updated. Returns E_PGN_ERR if realloc() failed
+ * or E_PGN_OK on success.
  */
-pgn_error_t pgn_history_add(GAME g, const char *m);
+pgn_error_t pgn_history_add(GAME g, BOARD b, const char *m);
 
 /*
  * Deallocates all of the history data from position 'start' in the array 'h'.

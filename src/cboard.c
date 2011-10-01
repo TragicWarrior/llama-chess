@@ -849,7 +849,7 @@ void do_validate_move(char *m)
 	}
 
 	update_time_control(gp);
-	pgn_history_add(gp, m);
+	pgn_history_add(gp, d->b, m);
 	pgn_switch_turn(gp);
     }
     else {
@@ -2589,6 +2589,7 @@ void history_draw_update(struct menu_input_s *m)
 
     g->hindex = m->selected + 1;
     update_cursor(g, m->selected);
+    endwin();
     pgn_board_update(g, d->b, m->selected + 1);
 }
 
@@ -3645,7 +3646,7 @@ void do_global_copy_game()
 
     // FIXME RAV
     for (i = 0; i < n; i++)
-	pgn_history_add(gp, game[g]->history[i]->move);
+	pgn_history_add(gp, d->b, game[g]->history[i]->move);
 
     n = pgn_tag_total(game[g]->tag);
 

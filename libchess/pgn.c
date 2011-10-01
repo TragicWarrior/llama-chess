@@ -290,17 +290,14 @@ void pgn_history_free(HISTORY **h, int start)
 	start = 0;
 
     for (i = start; h[i]; i++) {
-	if (h[i]->comment)
-	    free(h[i]->comment);
-
 	if (h[i]->rav) {
 	    pgn_history_free(h[i]->rav, 0);
 	    free(h[i]->rav);
 	}
 
-	if (h[i]->move)
-	    free(h[i]->move);
-
+	free(h[i]->comment);
+	free(h[i]->move);
+	free(h[i]->fen);
 	free(h[i]);
     }
 
@@ -320,16 +317,19 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n)
 }
 
 /*
- * Appends move 'm' to game 'g' history pointer. The history pointer may be a
- * in a RAV so g->rav.hp is also updated to the new (realloc()'ed) pointer. If
- * not in a RAV then g->history will be updated. Returns E_PGN_ERR if
- * realloc() failed or E_PGN_OK on success.
+ * Appends move 'm' to game 'g' history pointer and creates a FEN tag for the
+ * current game state using board 'b'. The FEN tag makes things faster than
+ * validating the entire move history by validating only the current move to
+ * the previous moves FEN tag. The history pointer may be a in a RAV so
+ * g->rav.hp is also updated to the new (realloc()'ed) pointer. If not in a
+ * RAV then g->history will be updated. Returns E_PGN_ERR if realloc() failed
+ * or E_PGN_OK on success.
  */
-pgn_error_t pgn_history_add(GAME g, const char *m)
+pgn_error_t pgn_history_add(GAME g, BOARD b, const char *m)
 {
     int t = pgn_history_total(g->hp);
     int o;
-    HISTORY **h = NULL;
+    HISTORY **h = NULL, *tmp;
     int ri = (g->ravlevel) ? g->rav[g->ravlevel - 1].hindex : 0;
 
 #ifdef DEBUG
@@ -360,9 +360,11 @@ pgn_error_t pgn_history_add(GAME g, const char *m)
 	return E_PGN_ERR;
     }
 
+    tmp = g->hp[t];
     t++;
     g->hp[t] = NULL;
     g->hindex = pgn_history_total(g->hp);
+    tmp->fen = strdup(pgn_game_to_fen(g, b));
     return E_PGN_OK;
 }
 
@@ -374,12 +376,10 @@ pgn_error_t pgn_history_add(GAME g, const char *m)
  */
 pgn_error_t pgn_board_update(GAME g, BOARD b, int n)
 {
-    int i = 0;
     BOARD tb;
     int ret = E_PGN_OK;
     int p_error = TEST_FLAG(g->flags, GF_PERROR);
     int black_opening = TEST_FLAG(g->flags, GF_BLACK_OPENING);
-    char *frfr;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: updating board\n", __FILE__, __LINE__);
@@ -401,19 +401,25 @@ pgn_error_t pgn_board_update(GAME g, BOARD b, int n)
 	    pgn_board_init_fen(g, tb, NULL))
 	return E_PGN_PARSE;
 
-    for (i = 0; i < n; i++) {
-	HISTORY *h;
-	char *p;
+    if (n) {
+	HISTORY *h = pgn_history_by_n(g->hp, n-1);
 
-	if ((h = pgn_history_by_n(g->hp, i)) == NULL)
-	    break;
-	
-	p = h->move;
+	if (h) {
+	    ret = pgn_board_init_fen(g, tb, h->fen);
+	    if (ret == E_PGN_OK) {
+		h = pgn_history_by_n(g->hp, n);
+		if (h) {
+		    char *p = h->move, *frfr;
 
-	if ((ret = pgn_parse_move(g, tb, &p, &frfr)) != E_PGN_OK)
-	    break;
-
-	pgn_switch_turn(g);
+		    pgn_switch_turn(g);
+		    ret = pgn_parse_move(g, tb, &p, &frfr);
+		    if (ret == E_PGN_OK) {
+			h = pgn_history_by_n(g->hp, n-1);
+			ret = pgn_board_init_fen(g, tb, h->fen);
+		    }
+		}
+	    }
+	}
     }
 
     if (ret == E_PGN_OK)
@@ -938,7 +944,7 @@ static int move_text(GAME g, FILE *fp)
     PGN_DUMP("%s\n%s", p, debug_board(pgn_board));
 #endif
 
-    pgn_history_add(g, p);
+    pgn_history_add(g, pgn_board, p);
     pgn_switch_turn(g);
     return 0;
 }
