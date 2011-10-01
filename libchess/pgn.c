@@ -364,7 +364,9 @@ pgn_error_t pgn_history_add(GAME g, BOARD b, const char *m)
     t++;
     g->hp[t] = NULL;
     g->hindex = pgn_history_total(g->hp);
+    pgn_switch_turn(g);
     tmp->fen = strdup(pgn_game_to_fen(g, b));
+    pgn_switch_turn(g);
     return E_PGN_OK;
 }
 
@@ -411,7 +413,6 @@ pgn_error_t pgn_board_update(GAME g, BOARD b, int n)
 		if (h) {
 		    char *p = h->move, *frfr;
 
-		    pgn_switch_turn(g);
 		    ret = pgn_parse_move(g, tb, &p, &frfr);
 		    if (ret == E_PGN_OK) {
 			h = pgn_history_by_n(g->hp, n-1);

@@ -2589,7 +2589,6 @@ void history_draw_update(struct menu_input_s *m)
 
     g->hindex = m->selected + 1;
     update_cursor(g, m->selected);
-    endwin();
     pgn_board_update(g, d->b, m->selected + 1);
 }
 
