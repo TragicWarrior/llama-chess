@@ -1,3 +1,23 @@
+CBoard version 0.6
+--------------------
+No longer send SIGINT to the chess engine before each command. I'm not sure
+how or when this broke things but no longer doing it fixes engine IO.
+
+A macro value can now reference other macros and may also contain spaces.
+
+Faster history parsing.
+
+Fixed multiple game crashes. libchess no longer uses global variables.
+
+Preliminary perl support. See README for details.
+
+New signing key 0xB140DCE2.
+
+New homepage. Please use http://c-board.sourceforge.net/.
+
+Other minor fixes and changes. See ChangeLog for details.
+
+
 CBoard version 0.5
 --------------------
 Board details are now enabled by default.

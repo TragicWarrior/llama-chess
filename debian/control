@@ -2,8 +2,9 @@ Source: cboard
 Section: games
 Priority: optional
 Maintainer: Ben Kibbey <bjk@luxsci.net>
-Build-Depends: debhelper (>= 4.0.0), autotools-dev, libncurses5-dev
-Standards-Version: 3.6.2
+Homepage: http://c-board.sourceforge.net/
+Build-Depends: debhelper (>= 5), autotools-dev, libncurses5-dev
+Standards-Version: 3.9.1
 
 Package: cboard
 Architecture: any

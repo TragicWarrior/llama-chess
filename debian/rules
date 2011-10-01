@@ -27,7 +27,13 @@ endif
 config.status: configure
 	dh_testdir
 	# Add here commands to configure the package.
-	CFLAGS="$(CFLAGS) -Wl,-z,defs" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info
+ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+	cp -f /usr/share/misc/config.sub config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+	cp -f /usr/share/misc/config.guess config.guess
+endif
+	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info CFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs"
 
 
 build: build-stamp
@@ -37,9 +43,9 @@ build-stamp:  config.status
 
 	# Add here commands to compile the package.
 	$(MAKE)
-	#docbook-to-man debian/cboard.sgml > cboard.1
+	#docbook-to-man debian/cboard.sgml > cboard.6
 
-	touch build-stamp
+	touch $@
 
 clean:
 	dh_testdir
@@ -48,13 +54,7 @@ clean:
 
 	# Add here commands to clean up after the build process.
 	-$(MAKE) distclean
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	cp -f /usr/share/misc/config.sub config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	cp -f /usr/share/misc/config.guess config.guess
-endif
-
+	rm -f config.sub config.guess
 
 	dh_clean 
 
@@ -65,7 +65,7 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/cboard.
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/cboard
+	$(MAKE) DESTDIR=$(CURDIR)/debian/cboard install
 
 
 # Build architecture-independent files here.
@@ -76,7 +76,7 @@ binary-indep: build install
 binary-arch: build install
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs 
+	dh_installchangelogs ChangeLog
 	dh_installdocs
 	dh_installexamples
 #	dh_install
@@ -86,6 +86,7 @@ binary-arch: build install
 #	dh_installemacsen
 #	dh_installpam
 #	dh_installmime
+#	dh_python
 #	dh_installinit
 #	dh_installcron
 #	dh_installinfo
@@ -95,7 +96,6 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 #	dh_perl
-#	dh_python
 #	dh_makeshlibs
 	dh_installdeb
 	dh_shlibdeps

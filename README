@@ -20,9 +20,17 @@ will "filter" the current game through a PERL subroutine defined in
 generated FEN tag of the current game. The subroutine should return a FEN tag
 after processing.
 
-The latest version can be found at http://bjk.sourceforge.net/cboard/. Feel
-free to send me a description of any bugs you find along with the associated
-.pgn (if any), feature requests and patches.
+The latest version can be found at http://c-board.sourceforge.net/. Feel free
+to send me a description of any bugs you find along with the associated .pgn
+(if any), feature requests and patches.
 
-Benjamin J. Kibbey       bjk/freenode/@luxsci.net
-3019 F5FC AA33 5BC7 BE9F 09D2 393E DBD2 40D5 FA7E
+There is also a public GIT repository available. Anonymous checkouts can be
+done by doing:
+
+    git clone git://repo.or.cz/cboard.git
+
+The gitweb interface can be viewed at http://repo.or.cz/w/cboard.git.
+
+Ben Kibbey <bjk@luxsci.net>
+Jabber: bjk@jabber.org
+http://cboard.sourceforge.net/
