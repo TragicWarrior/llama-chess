@@ -16,6 +16,10 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,10 +35,6 @@
 #include <errno.h>
 #include <err.h>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
@@ -43,7 +43,9 @@
 #include <stdarg.h>
 #endif
 
-#ifdef HAVE_CURSES_H
+#ifdef HAVE_NCURSES_H
+#include <ncurses.h>
+#elif defined(HAVE_CURSES_H)
 #include <curses.h>
 #endif
 

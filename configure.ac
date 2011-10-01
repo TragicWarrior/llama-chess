@@ -1,16 +1,12 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_PREREQ(2.59)
+AC_PREREQ(2.60)
 AC_INIT(cboard, 0.6-dev, [Ben Kibbey bjk@luxsci.net])
-AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([foreign])
-AC_PROG_MAKE_SET
-#AC_DISABLE_SHARED
-#AC_PROG_LIBTOOL
+AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
+AC_USE_SYSTEM_EXTENSIONS()
 AC_CONFIG_SRCDIR([src/cboard.c])
 AM_CONFIG_HEADER([config.h])
-#AC_CONFIG_SUBDIRS([libchess])
 
 case "$target_os" in
     darwin*)
@@ -20,8 +16,6 @@ case "$target_os" in
     *)
         ;;
 esac
-
-CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
 dnl Checks for programs.
 AC_PROG_CXX
@@ -35,12 +29,12 @@ AC_PROG_RANLIB
 
 dnl Checks for library functions.
 AC_CHECK_LIB(curses, initscr, ,
-	     AC_CHECK_LIB(ncurses, initscr, ,
-	     [AC_MSG_ERROR([Missing or incomplete curses installation.])]))
+            [AC_CHECK_LIB(ncurses, initscr, ,
+            [AC_MSG_ERROR([Missing or incomplete curses installation.])])])
 AC_CHECK_LIB(panel, new_panel, ,
-	     [AC_MSG_ERROR([Missing or incomplete curses installation.])])
+            [AC_MSG_ERROR([Missing or incomplete curses installation.])])
 AC_CHECK_LIB(form, new_form, ,
-	     [AC_MSG_ERROR([Missing or incomplete curses installation.])])
+            [AC_MSG_ERROR([Missing or incomplete curses installation.])])
 
 AC_ARG_WITH(libperl, AC_HELP_STRING([--with-libperl], [PERL support.]),
     want_libperl=yes, want_libperl=no)
@@ -153,7 +147,8 @@ fi
 ptmx_works=no
 
 if test "x$have_ptmx" = "xyes"; then
-    AC_RUN_IFELSE([\
+    AC_LANG([C])
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[\
 		   #include <stdio.h>
 		   #include <sys/types.h>
 		   #include <sys/stat.h>
@@ -171,7 +166,7 @@ if test "x$have_ptmx" = "xyes"; then
 
 		       exit(0);
 		   }
-		   ], [ptmx_works=yes], [ptmx_works=no])
+		   ]])], [ptmx_works=yes], [ptmx_works=no])
 
     if test "x$ptmx_works" = "xyes"; then
 	AC_MSG_RESULT([yes])
