@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.60)
-AC_INIT(cboard, 0.6, [Ben Kibbey bjk@luxsci.net])
+AC_INIT(cboard, 0.6.1, [Ben Kibbey bjk@luxsci.net])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])

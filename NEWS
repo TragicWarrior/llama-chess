@@ -1,3 +1,12 @@
+CBoard version 0.6.1
+--------------------
+This version fixes a bug when copying a game the FEN tag wasn't getting parsed
+correctly.
+
+Also fixes a threading issue in pgn_parse_move() if you'd like to use libchess
+in your own multi-threaded chess game.
+
+
 CBoard version 0.6
 --------------------
 No longer send SIGINT to the chess engine before each command. I'm not sure
