@@ -346,9 +346,10 @@ void pgn_board_init(BOARD b);
 /* 
  * Valididate move 'm' against the game state 'g' and game board 'b' and
  * update board 'b'. 'm' is ensured to be in SAN format and 'frfr' will the
- * file/rank representation of 'm'. Returns E_PGN_PARSE if there was a move
- * text parsing error, E_PGN_INVALID if the move is invalid, E_PGN_AMBIGUOUS
- * if the move is invalid with ambiguities or E_PGN_OK if successful.
+ * file/rank representation of 'm' and should be freed. Returns E_PGN_PARSE if
+ * there was a move text parsing error, E_PGN_INVALID if the move is invalid,
+ * E_PGN_AMBIGUOUS if the move is invalid with ambiguities or E_PGN_OK if
+ * successful.
  */
 pgn_error_t pgn_parse_move(GAME g, BOARD b, char **m, char **frfr);
 

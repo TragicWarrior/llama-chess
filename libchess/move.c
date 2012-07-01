@@ -1048,9 +1048,10 @@ static void black_opening(GAME g, BOARD b, int rank)
 static char *format_santofrfr(int promo, int sfile, int srank, int file, 
 	int rank)
 {
-    static char frfr[6] = {0};
+    char *frfr = malloc(6);
 
-    snprintf(frfr, sizeof(frfr), "%c%c%c%c", INTTOFILE(sfile), 
+    memset(frfr, 0, 6);
+    snprintf(frfr, 6, "%c%c%c%c", INTTOFILE(sfile), 
 	    INTTORANK(srank), INTTOFILE(file), INTTORANK(rank));
 
     if (promo)
@@ -1209,7 +1210,6 @@ capture:
 static int do_santofrfr(GAME g, BOARD b, char **san, int *promo, int *sfile, 
 	int *srank, int *file, int *rank)
 {
-    static char frfr[6];
     char *p;
     int piece;
     int i = 0;
@@ -1371,9 +1371,6 @@ again:
     }
 
     *p = 0;
-    snprintf(frfr, sizeof(frfr), "%c%c%c%c", INTTOFILE(*sfile), 
-	    INTTORANK(*srank), INTTOFILE(*file), INTTORANK(*rank));
-
     *san = m;
     return E_PGN_OK;
 }

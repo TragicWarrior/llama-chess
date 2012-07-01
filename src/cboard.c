@@ -851,6 +851,7 @@ void do_validate_move(char *m)
 	update_time_control(gp);
 	pgn_history_add(gp, d->b, m);
 	pgn_switch_turn(gp);
+	free(frfr);
     }
     else {
 	if ((n = pgn_validate_move(gp, d->b, &m, &frfr)) != E_PGN_OK) {
@@ -3658,6 +3659,7 @@ void do_global_copy_game()
 
 	pgn_history_add(gp, d->b, move);
 	free(move);
+	free(frfr);
 	pgn_switch_turn(gp);
     }
 

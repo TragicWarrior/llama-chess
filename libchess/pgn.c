@@ -410,13 +410,15 @@ pgn_error_t pgn_board_update(GAME g, BOARD b, int n)
 	    if (ret == E_PGN_OK) {
 		h = pgn_history_by_n(g->hp, n);
 		if (h) {
-		    char *p = h->move, *frfr;
+		    char *p = h->move, *frfr = NULL;
 
 		    ret = pgn_parse_move(g, tb, &p, &frfr);
 		    if (ret == E_PGN_OK) {
 			h = pgn_history_by_n(g->hp, n-1);
 			ret = pgn_board_init_fen(g, tb, h->fen);
 		    }
+
+		    free(frfr);
 		}
 	    }
 	}
@@ -916,7 +918,7 @@ static int move_text(GAME g, FILE *fp)
     char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p;
     int c;
     int count;
-    char *frfr;
+    char *frfr = NULL;
 
     g->oflags = g->flags;
 
@@ -940,6 +942,7 @@ static int move_text(GAME g, FILE *fp)
 	return 1;
     }
 
+    free(frfr);
 #ifdef DEBUG
     PGN_DUMP("%s\n%s", p, debug_board(pgn_board));
 #endif
