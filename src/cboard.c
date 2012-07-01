@@ -3647,8 +3647,19 @@ void do_global_copy_game()
     d = gp->data;
 
     // FIXME RAV
-    for (i = 0; i < n; i++)
-	pgn_history_add(gp, d->b, game[g]->history[i]->move);
+    for (i = 0; i < n; i++) {
+	char *frfr = NULL;
+	char *move = strdup(game[g]->history[i]->move);
+
+	if (pgn_parse_move(gp, d->b, &move, &frfr) != E_PGN_OK) {
+	    SET_FLAG(gp->flags, GF_PERROR);
+	    return;
+	}
+
+	pgn_history_add(gp, d->b, move);
+	free(move);
+	pgn_switch_turn(gp);
+    }
 
     n = pgn_tag_total(game[g]->tag);
 
