@@ -574,7 +574,7 @@ static int check_opponent(GAME g, BOARD b, register int file, register int rank)
     register int p, pi;
 
 #ifdef DEBUG
-    PGN_DUMP("%s:%d: BEGIN opponent check test\n");
+    PGN_DUMP("%s:%d: BEGIN opponent check test\n", __FILE__, __LINE__);
 #endif
 
     for (r = 1; VALIDRANK(r); r++) {
