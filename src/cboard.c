@@ -3644,6 +3644,7 @@ void do_global_copy_game()
 
     do_global_new_game();
     n = pgn_history_total(game[g]->history);
+    d = gp->data;
 
     // FIXME RAV
     for (i = 0; i < n; i++)
