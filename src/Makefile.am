@@ -2,7 +2,8 @@ bin_PROGRAMS = cboard
 cboard_SOURCES = cboard.c message.c message.h cboard.h misc.c engine.c \
 		 engine.h input.c input.h rcfile.c rcfile.h colors.c \
 		 colors.h strings.h window.h window.c conf.h misc.h common.h \
-		 menu.c menu.h tags.c tags.h keys.h filebrowser.c filebrowser.h
+		 menu.c menu.h tags.c tags.h keys.h filebrowser.c \
+		 filebrowser.h gettext.h
 cboard_CFLAGS = @libncursesw_CFLAGS@ @libformw_CFLAGS@ @libpanelw_CFLAGS@ \
 		@libmenuw_CFLAGS@
 cboard_LDFLAGS = @libncursesw_LIBS@ @libformw_LIBS@ @libpanelw_LIBS@ \

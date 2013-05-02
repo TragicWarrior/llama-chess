@@ -19,6 +19,11 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#ifndef _
+#include "gettext.h"
+#define _(msgid) gettext(msgid)
+#endif
+
 #define CF_ENGINE_LOOP	0x01
 #define CF_HUMAN	0x02
 #define CF_NEW		0x04

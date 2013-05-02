@@ -75,7 +75,6 @@
 #define E_HOME_ENV	"The HOME environment variable is unset."
 #define E_TAG_DATE_FMT	"The \"Date\" tag must be in YYYY.MM.DD format."
 #define E_FILEEXISTS	"File exists:"
-#define E_REMOVE_STR	"Cannot remove the Seven Tag Roster"
 #define E_DUPLICATE_TAG	"Could not add duplicate tag"
 #define E_DELETE_GAME	"Cannot delete last game."
 #define E_A2A4_PARSE	"Parse error. Probably a bug."

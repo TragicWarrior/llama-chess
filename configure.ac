@@ -5,8 +5,9 @@ AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_USE_SYSTEM_EXTENSIONS()
-AC_CONFIG_SRCDIR([src/cboard.c])
 AM_CONFIG_HEADER([config.h])
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.18.1])
 
 case "$target_os" in
     darwin*)
@@ -197,5 +198,5 @@ fi
 AM_WITH_DMALLOC
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile data/Makefile \
-		 libchess/Makefile])
+		 libchess/Makefile po/Makefile.in])
 AC_OUTPUT

@@ -368,7 +368,7 @@ static void edit_tag_add(struct menu_input_s *m)
     construct_input(TAG_NEW_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, -1,
 	    FIELD_TYPE_PGN_TAG_NAME);
 }
-    
+
 static void edit_tag_remove(struct menu_input_s *m)
 {
     TAG **data = NULL;
@@ -376,7 +376,7 @@ static void edit_tag_remove(struct menu_input_s *m)
     int i, n = pgn_tag_total(t);
 
     if (m->selected < 7) {
-	cmessage(NULL, ANYKEY, "%s", E_REMOVE_STR);
+        cmessage(NULL, ANYKEY, "%s", _ ("Cannot remove the Seven Tag Roster"));
 	return;
     }
 
