@@ -28,13 +28,14 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <panel.h>
+#include <ncursesw/panel.h>
 #include <errno.h>
 #include <ctype.h>
 #include <pwd.h>
 #include <signal.h>
 #include <time.h>
 #include <err.h>
+#include <locale.h>
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
@@ -495,6 +496,75 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 #define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_ENPASSANT : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
 #define ATTRS(cp) (cp & (A_BOLD|A_STANDOUT|A_BLINK|A_DIM|A_UNDERLINE|A_INVIS|A_REVERSE))
 
+static wchar_t *
+init_wchar_piece (const char *p)
+{
+  wchar_t *wc;
+  const char *c;
+  mbstate_t ps;
+
+  memset (&ps, 0, sizeof(mbstate_t));
+  c = p;
+  size_t len = mbsrtowcs (NULL, &c, strlen (p), &ps);
+  wc = Calloc (1, len+1 * sizeof(wchar_t));
+  c = p;
+  memset (&ps, 0, sizeof(mbstate_t));
+  len = mbsrtowcs (wc, &c, strlen (p), &ps);
+  return wc;
+}
+
+static void
+init_wchar_pieces ()
+{
+  w_pawn_wchar = init_wchar_piece ("♙");
+  w_rook_wchar = init_wchar_piece ("♖");
+  w_bishop_wchar = init_wchar_piece ("♗");
+  w_knight_wchar = init_wchar_piece ("♘");
+  w_queen_wchar = init_wchar_piece ("♕");
+  w_king_wchar = init_wchar_piece ("♔");
+  b_pawn_wchar = init_wchar_piece ("♟");
+  b_rook_wchar = init_wchar_piece ("♜");
+  b_bishop_wchar = init_wchar_piece ("♝");
+  b_knight_wchar = init_wchar_piece ("♞");
+  b_queen_wchar = init_wchar_piece ("♛");
+  b_king_wchar = init_wchar_piece ("♚");
+  empty_wchar = init_wchar_piece (" ");
+}
+
+static wchar_t *
+piece_to_wchar (unsigned char p)
+{
+  switch (p)
+    {
+    case 'P':
+      return w_pawn_wchar;
+    case 'p':
+      return b_pawn_wchar;
+    case 'R':
+      return w_rook_wchar;
+    case 'r':
+      return b_rook_wchar;
+    case 'B':
+      return w_bishop_wchar;
+    case 'b':
+      return b_bishop_wchar;
+    case 'N':
+      return w_knight_wchar;
+    case 'n':
+      return b_knight_wchar;
+    case 'Q':
+      return w_queen_wchar;
+    case 'q':
+      return b_queen_wchar;
+    case 'K':
+      return w_king_wchar;
+    case 'k':
+      return b_king_wchar;
+    }
+
+  return empty_wchar;
+}
+
 void update_board_window(GAME g)
 {
     int row, col;
@@ -514,23 +584,22 @@ void update_board_window(GAME g)
 	    int attrwhich = -1;
 	    chtype attrs = 0, old_attrs = 0;
 	    unsigned char p;
-	    int pi;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
-		    mvwaddch(boardw, row, col, 
-			    LINE_GRAPHIC((row) ? 
-				ACS_LLCORNER | CP_BOARD_GRAPHICS : 
+		    mvwaddch(boardw, row, col,
+			    LINE_GRAPHIC((row) ?
+				ACS_LLCORNER | CP_BOARD_GRAPHICS :
 				ACS_ULCORNER | CP_BOARD_GRAPHICS));
 		else if (col == maxx - 2)
 		    mvwaddch(boardw, row, col,
 			    LINE_GRAPHIC((row) ?
-				ACS_LRCORNER | CP_BOARD_GRAPHICS : 
+				ACS_LRCORNER | CP_BOARD_GRAPHICS :
 				ACS_URCORNER | CP_BOARD_GRAPHICS));
 		else if (!(col % 4))
-		    mvwaddch(boardw, row, col, 
-			    LINE_GRAPHIC((row) ? 
-				ACS_BTEE | CP_BOARD_GRAPHICS : 
+		    mvwaddch(boardw, row, col,
+			    LINE_GRAPHIC((row) ?
+				ACS_BTEE | CP_BOARD_GRAPHICS :
 				ACS_TTEE | CP_BOARD_GRAPHICS));
 		else {
 		    if (col != maxx - 1)
@@ -552,7 +621,7 @@ void update_board_window(GAME g)
 		if (!(row % 2))
 		    mvwaddch(boardw, row, col,
 			    LINE_GRAPHIC((col) ?
-				ACS_RTEE | CP_BOARD_GRAPHICS : 
+				ACS_RTEE | CP_BOARD_GRAPHICS :
 				ACS_LTEE | CP_BOARD_GRAPHICS));
 		else
 		    mvwaddch(boardw, row, col,
@@ -580,17 +649,17 @@ void update_board_window(GAME g)
 			ncols = 1;
 		    }
 
-		    if (((ncols % 2) && !(offset % 2)) || (!(ncols % 2) 
+		    if (((ncols % 2) && !(offset % 2)) || (!(ncols % 2)
 				&& (offset % 2)))
 			attrwhich = BLACK;
 		    else
 			attrwhich = WHITE;
 
 		    p = d->b[row / 2][bcol].icon;
-		    pi = pgn_piece_to_int(p);
+		    int pi = pgn_piece_to_int(p);
 
 		    if (config.details && d->b[row / 2][bcol].enpassant) {
-			p = pi = 'x'; 
+			p = pi = 'x';
 			attrs = mix_cp(CP_BOARD_ENPASSANT, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
 
@@ -598,7 +667,7 @@ void update_board_window(GAME g)
 			old_attrs = -1;
 
 			if (attrwhich == WHITE)
-			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p), 
+			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p),
 				    ATTRS(CP_BOARD_MOVES_WHITE), B_FG_A_BG);
 			else
 			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p),
@@ -607,13 +676,13 @@ void update_board_window(GAME g)
 		    else if (p != 'x')
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
-		    if (row == ROWTOMATRIX(d->c_row) && col == 
+		    if (row == ROWTOMATRIX(d->c_row) && col ==
 			    COLTOMATRIX(d->c_col)) {
-			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p), 
+			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
 			old_attrs = -1;
 		    }
-		    else if (row == ROWTOMATRIX(d->sp.srow) && 
+		    else if (row == ROWTOMATRIX(d->sp.srow) &&
 			    col == COLTOMATRIX(d->sp.scol)) {
 			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
@@ -653,11 +722,13 @@ void update_board_window(GAME g)
 printc:
 			if (config.details && castling_state(g, d->b, brow,
 				    bcol, p, 0)) {
-			    attrs = mix_cp(CP_BOARD_CASTLING, attrs, 
+			    attrs = mix_cp(CP_BOARD_CASTLING, attrs,
 				    ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
 			}
 
-			waddch(boardw, (pi != OPEN_SQUARE) ? p | attrs : ' ' | attrs);
+			wattron (boardw, attrs);
+			waddwstr (boardw, piece_to_wchar (pi != OPEN_SQUARE ? p : 0));
+			wattroff (boardw, attrs);
 			attrs = old_attrs;
 		    }
 
@@ -4397,7 +4468,10 @@ int main(int argc, char *argv[])
     int i = 0;
     PGN_FILE *pgn;
 
-/* Solaris 5.9 */
+    setlocale (LC_ALL, "");
+    init_wchar_pieces ();
+
+    /* Solaris 5.9 */
 #ifndef HAVE_PROGNAME
     __progname = argv[0];
 #endif

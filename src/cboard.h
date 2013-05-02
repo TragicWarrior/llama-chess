@@ -108,6 +108,20 @@ int curses_initialized;
 // side. Half stepping is alternating sides.
 int movestep;
 
+wchar_t *w_pawn_wchar;
+wchar_t *w_rook_wchar;
+wchar_t *w_bishop_wchar;
+wchar_t *w_knight_wchar;
+wchar_t *w_queen_wchar;
+wchar_t *w_king_wchar;
+wchar_t *b_pawn_wchar;
+wchar_t *b_rook_wchar;
+wchar_t *b_bishop_wchar;
+wchar_t *b_knight_wchar;
+wchar_t *b_queen_wchar;
+wchar_t *b_king_wchar;
+wchar_t *empty_wchar;
+
 void update_all(GAME g);
 void update_status_notify(GAME g, char *fmt, ...);
 void edit_tags(GAME g, BOARD b, int edit);

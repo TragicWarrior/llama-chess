@@ -20,7 +20,7 @@
 #define INPUT_H
 
 #ifdef HAVE_FORM_H
-#include <form.h>
+#include <ncursesw/form.h>
 #endif
 
 #define INPUT_WIDTH		((COLS / 4) * 3)
