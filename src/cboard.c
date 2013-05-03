@@ -67,7 +67,6 @@
 #include "keys.h"
 #include "rcfile.h"
 #include "filebrowser.h"
-#include "cboard.h"
 
 #ifdef DEBUG
 #include <debug.h>
@@ -76,6 +75,84 @@
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
+
+#define COPYRIGHT	"Copyright (C) 2002-2013 " PACKAGE_BUGREPORT
+#define LINE_GRAPHIC(c)	((!config.linegraphics) ? ' ' : c)
+#define ROWTOMATRIX(r)	((8 - r) * 2 + 2 - 1)
+#define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)
+#define BOARD_HEIGHT	18
+#define BOARD_WIDTH	34
+#define STATUS_HEIGHT	12
+#define STATUS_WIDTH	(COLS - BOARD_WIDTH)
+#define TAG_HEIGHT	LINES - STATUS_HEIGHT - 1
+#define TAG_WIDTH	(COLS - BOARD_WIDTH)
+#define HISTORY_HEIGHT	(LINES - BOARD_HEIGHT)
+#define HISTORY_WIDTH	(COLS - STATUS_WIDTH)
+#define MAX_VALUE_WIDTH	(COLS - 8)
+
+enum {
+    UP, DOWN, LEFT, RIGHT
+};
+
+static WINDOW *boardw;
+static PANEL *boardp;
+static WINDOW *tagw;
+static PANEL *tagp;
+static WINDOW *statusw;
+static PANEL *statusp;
+static WINDOW *historyw;
+static PANEL *historyp;
+static WINDOW *loadingw;
+static PANEL *loadingp;
+static WINDOW *enginew;
+static PANEL *enginep;
+
+static char gameexp[255];
+static char moveexp[255];
+static struct itimerval clock_timer;
+static int delete_count = 0;
+static int markstart = -1, markend = -1;
+static int keycount;
+static char loadfile[FILENAME_MAX];
+static int quit;
+static int input_c;
+
+// Loaded filename from the command line or from the file input dialog.
+static int filetype;
+enum {
+    FILE_NONE, FILE_PGN, FILE_FEN, FILE_EPD
+};
+
+static char **nags;
+static int nag_total;
+static int macro_match;
+
+// Status window.
+static struct {
+    char *notify;	// The status window notification line buffer.
+} status;
+
+static int curses_initialized;
+
+// When in history mode a full step is to the next move of the same playing
+// side. Half stepping is alternating sides.
+static int movestep;
+
+static wchar_t *w_pawn_wchar;
+static wchar_t *w_rook_wchar;
+static wchar_t *w_bishop_wchar;
+static wchar_t *w_knight_wchar;
+static wchar_t *w_queen_wchar;
+static wchar_t *w_king_wchar;
+static wchar_t *b_pawn_wchar;
+static wchar_t *b_rook_wchar;
+static wchar_t *b_bishop_wchar;
+static wchar_t *b_knight_wchar;
+static wchar_t *b_queen_wchar;
+static wchar_t *b_king_wchar;
+static wchar_t *empty_wchar;
+
+static void free_userdata_once(GAME g);
 
 void update_cursor(GAME g, int idx)
 {
@@ -123,12 +200,12 @@ static int init_nag()
     int i = 0;
 
     if ((fp = fopen(config.nagfile, "r")) == NULL) {
-	cmessage(ERROR, ANYKEY, "%s: %s", config.nagfile, strerror(errno));
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", config.nagfile, strerror(errno));
 	return 1;
     }
 
     nags = Realloc(nags, (i+2) * sizeof(char *));
-    nags[i++] = strdup(NONE);
+    nags[i++] = strdup(_("none"));
     nags[i] = NULL;
 
     while (!feof(fp)) {
@@ -179,7 +256,15 @@ void edit_nag_save(struct menu_input_s *m)
 
 void edit_nag_help(struct menu_input_s *m)
 {
-    message(NAG_EDIT_HELP, ANYKEY, "%s", naghelp);
+    message(_("NAG Menu Keys"), _("[ press any key to continue ]"), "%s",
+	    _ (
+	       "    UP/DOWN - previous/next menu item\n"
+	       "   HOME/END - first/last menu item\n"
+	       "  PGDN/PGUP - next/previous page\n"
+	       "  a-zA-Z0-9 - jump to item\n"
+	       "      SPACE - toggle selected item\n"
+	       "     CTRL-X - quit with changes"
+	       ));
 }
 
 struct menu_item_s **get_nag_items(WIN *win)
@@ -239,7 +324,7 @@ void edit_nag(void *arg)
     add_menu_key(&keys, ' ', edit_nag_toggle_item);
     add_menu_key(&keys, CTRL('x'), edit_nag_save);
     add_menu_key(&keys, KEY_F(1), edit_nag_help);
-    construct_menu(0, 0, -1, -1, NAG_EDIT_TITLE, 1, get_nag_items, keys, arg,
+    construct_menu(0, 0, -1, -1, _("Numeric Annotation Glyphs"), 1, get_nag_items, keys, arg,
 	    nag_print, NULL);
     return;
 }
@@ -251,7 +336,7 @@ static void *view_nag(void *arg)
     char line[LINE_MAX] = {0};
     int i = 0;
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", VIEW_MOVE_NAG, h->move);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Viewing NAG for"), h->move);
 
     if (!nags) {
 	if (init_nag())
@@ -271,13 +356,13 @@ static void *view_nag(void *arg)
     }
 
     line[strlen(line) - 1] = 0;
-    message(buf, ANYKEY, "%s", line);
+    message(buf, _("[ press any key to continue ]"), "%s", line);
     return NULL;
 }
 
 void view_annotation(HISTORY *h)
 {
-    char buf[MAX_SAN_MOVE_LEN + strlen(ANNOTATION_VIEW_TITLE) + 4];
+    char buf[MAX_SAN_MOVE_LEN + strlen(_("Viewing Annotation for")) + 4];
     int nag = 0, comment = 0;
 
     if (!h)
@@ -292,16 +377,16 @@ void view_annotation(HISTORY *h)
     if (!nag && !comment)
 	return;
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_VIEW_TITLE, h->move);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Viewing Annotation for"), h->move);
 
     if (comment)
-	construct_message(buf, (nag) ? ANY_OTHER_KEY : ANYKEY, 0, 1,
-		(nag) ? VIEW_NAG : NULL, 
+	construct_message(buf, (nag) ? _("Any other key to continue") : _("[ press any key to continue ]"), 0, 1,
+		(nag) ? _("Press 'n' to view NAG") : NULL, 
 		(nag) ? view_nag : NULL, (nag) ? h : NULL, NULL,
 		(nag) ? 'n' : 0, 0, "%s", h->comment);
     else
-	construct_message(buf, ANY_OTHER_KEY, 0, 1, VIEW_NAG, view_nag, h, NULL, 
-		'n', 0, "%s", NO_ANNOTATIONS);
+	construct_message(buf, _("Any other key to continue"), 0, 1, _("Press 'n' to view NAG"), view_nag, h, NULL, 
+		'n', 0, "%s", _("No comment text for this move"));
 }
 
 int do_game_write(char *filename, char *mode, int start, int end)
@@ -313,11 +398,11 @@ int do_game_write(char *filename, char *mode, int start, int end)
     i = pgn_open(filename, mode, &pgn);
 
     if (i == E_PGN_ERR) {
-	cmessage(ERROR, ANYKEY, "%s\n%s", filename, strerror(errno));
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s\n%s", filename, strerror(errno));
 	return 1;
     }
     else if (i == E_PGN_INVALID) {
-	cmessage(ERROR, ANYKEY, "%s\n%s", filename, E_REGFILE_STR);
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s\n%s", filename, _("Not a regular file"));
 	return 1;
     }
 
@@ -328,7 +413,7 @@ int do_game_write(char *filename, char *mode, int start, int end)
     }
 
     if (pgn_close(pgn) != E_PGN_OK)
-	message(ERROR, ANYKEY, "%s", strerror(errno));
+	message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s", strerror(errno));
 
     if (start == -1)
 	strncpy(loadfile, filename, sizeof(loadfile));
@@ -360,9 +445,9 @@ void do_save_game_overwrite_confirm(WIN *win)
     }
 
     if (do_game_write(s->filename, mode, s->start, s->end))
-	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+	update_status_notify(gp, "%s", _("Save game failed."));
     else
-	update_status_notify(gp, "%s", NOTIFY_SAVED);
+	update_status_notify(gp, "%s", _("Game saved."));
 
 done:
     free(s->filename);
@@ -383,13 +468,13 @@ void save_pgn(char *filename, int saveindex)
 	if (stat(config.savedirectory, &st) == -1) {
 	    if (errno == ENOENT) {
 		if (mkdir(config.savedirectory, 0755) == -1) {
-		    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+		    cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", config.savedirectory,
 			    strerror(errno));
 		    return;
 		}
 	    }
 	    else {
-		cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory,
+		cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", config.savedirectory,
 			strerror(errno));
 		return;
 	    }
@@ -398,7 +483,7 @@ void save_pgn(char *filename, int saveindex)
 	stat(config.savedirectory, &st);
 
 	if (!S_ISDIR(st.st_mode)) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", config.savedirectory, E_NOTADIR);
+	    cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", config.savedirectory, _("Not a directory."));
 	    return;
 	}
 
@@ -411,16 +496,16 @@ void save_pgn(char *filename, int saveindex)
 	s->filename = strdup(filename);
 	s->start = saveindex;
 	s->end = end;
-	construct_message(NULL, GAME_SAVE_OVERWRITE_PROMPT, 1, 1, NULL, NULL,
+	construct_message(NULL, _("'a' to append, 'o' to overwrite"), 1, 1, NULL, NULL,
 		s, do_save_game_overwrite_confirm, 0, 0, "%s \"%s\"",
-		E_FILEEXISTS, filename);
+		_("File exists:"), filename);
 	return;
     }
 
     if (do_game_write(filename, "a", saveindex, end))
-	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+	update_status_notify(gp, "%s", _("Save game failed."));
     else
-	update_status_notify(gp, "%s", NOTIFY_SAVED);
+	update_status_notify(gp, "%s", _("Game saved."));
 }
 
 static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
@@ -695,7 +780,7 @@ void update_board_window(GAME g)
 		    mvwaddch(boardw, row, col, ' ' | attrs);
 
 		    if (row == maxy - 1)
-			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
+			waddch(boardw, _("abcdefgh")[bcol] | CP_BOARD_COORDS);
 		    else {
 			if (old_attrs == -1) {
 			    old_attrs = attrs;
@@ -751,11 +836,11 @@ printc:
 void invalid_move(int n, int e, const char *m)
 {
     if (curses_initialized)
-	cmessage(ERROR, ANYKEY, "%s \"%s\" (round #%i)", (e == E_PGN_AMBIGUOUS)
-		? E_AMBIGUOUS : E_INVALID_MOVE, m, n);
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s \"%s\" (round #%i)", (e == E_PGN_AMBIGUOUS)
+		? _("Ambiguous move") : _("Invalid move"), m, n);
     else
 	warnx("%s: %s \"%s\" (round #%i)", loadfile, (e == E_PGN_AMBIGUOUS) 
-		? E_AMBIGUOUS : E_INVALID_MOVE, m, n);
+		? _("Ambiguous move") : _("Invalid move"), m, n);
 }
 
 void gameover(GAME g)
@@ -847,16 +932,16 @@ void update_history_window(GAME g)
 	total = t / 2;
 
     if (t)
-	snprintf(buf, sizeof(buf), "%u %s %u%s", n, N_OF_N_STR, total,
-		(movestep == 1) ? HISTORY_PLY_STEP : "");
+	snprintf(buf, sizeof(buf), "%u %s %u%s", n, _("of"), total,
+		(movestep == 1) ? _(" (ply)") : "");
     else
-	strncpy(buf, UNAVAILABLE, sizeof(buf));
+	strncpy(buf, _("not available"), sizeof(buf));
 
-    mvwprintw(historyw, 2, 1, "%*s %-*s", 10, HISTORY_MOVE_STR,
+    mvwprintw(historyw, 2, 1, "%*s %-*s", 10, _("Move:"),
 	    HISTORY_WIDTH - 13, buf);
 
     h = pgn_history_by_n(g->hp, g->hindex);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : _("not available"));
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
@@ -877,11 +962,11 @@ void update_history_window(GAME g)
     if (n)
 	strncat(buf, ")", sizeof(buf));
 
-    mvwprintw(historyw, 3, 1, "%s %-*s", HISTORY_MOVE_NEXT_STR,
+    mvwprintw(historyw, 3, 1, "%s %-*s", _("Next move:"),
 	    HISTORY_WIDTH - 13, buf);
 
     h = pgn_history_by_n(g->hp, g->hindex - 1);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : UNAVAILABLE);
+    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : _("not available"));
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
@@ -902,7 +987,7 @@ void update_history_window(GAME g)
     if (n)
 	strncat(buf, ")", sizeof(buf));
 
-    mvwprintw(historyw, 4, 1, "%s %-*s", HISTORY_MOVE_PREV_STR,
+    mvwprintw(historyw, 4, 1, "%s %-*s", _("Prev move:"),
 	    HISTORY_WIDTH - 13, buf);
 }
 
@@ -977,14 +1062,14 @@ static void move_to_engine(GAME g)
 
     str = Malloc(MAX_SAN_MOVE_LEN + 1);
     snprintf(str, MAX_SAN_MOVE_LEN + 1, "%c%i%c%i",
-	    x_grid_chars[d->sp.scol - 1], 
-	    d->sp.srow, x_grid_chars[d->sp.col - 1], d->sp.row);
+	    _("abcdefgh")[d->sp.scol - 1], 
+	    d->sp.srow, _("abcdefgh")[d->sp.col - 1], d->sp.row);
 
     piece = pgn_piece_to_int(d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon);
 
     if (piece == PAWN && (d->sp.row == 8 || d->sp.row == 1)) {
-	construct_message(PROMOTION_TITLE, PROMOTION_PROMPT, 1, 1, NULL, NULL,
-		str, do_promotion_piece_finalize, 0, 0, "%s", PROMOTION_TEXT);
+      construct_message(_("Select Pawn Promotion Piece"), _ ("R/N/B/Q"), 1, 1, NULL, NULL,
+		str, do_promotion_piece_finalize, 0, 0, "%s", _("R = Rook, N = Knight, B = Bishop, Q = Queen"));
 	return;
     }
 
@@ -1060,10 +1145,10 @@ void update_status_window(GAME g)
     buf = Malloc(len);
     y = 2;
 
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_FILE_STR, w,
-	    (loadfile[0]) ? str_etc(loadfile, w, 1) : UNAVAILABLE);
-    snprintf(buf, len, "%i %s %i", gindex + 1, N_OF_N_STR, gtotal);
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_GAME_STR, w, buf);
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("File:"), w,
+	    (loadfile[0]) ? str_etc(loadfile, w, 1) : _("not available"));
+    snprintf(buf, len, "%i %s %i", gindex + 1, _("of"), gtotal);
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Game:"), w, buf);
 
     *tmp = '\0';
     p = tmp;
@@ -1117,24 +1202,24 @@ void update_status_window(GAME g)
 #endif
 
     *p = '\0';
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_FLAGS_STR, w, (tmp[0]) ? tmp : "-");
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Flags:"), w, (tmp[0]) ? tmp : "-");
 
     switch (d->mode) {
 	case MODE_HISTORY:
-	    mode = MODE_HISTORY_STR;
+	    mode = _("move history");
 	    break;
 	case MODE_EDIT:
-	    mode = MODE_EDIT_STR;
+	    mode = _("edit");
 	    break;
 	case MODE_PLAY:
-	    mode = MODE_PLAY_STR;
+	    mode = _("play");
 	    break;
 	default:
-	    mode = UNKNOWN;
+	    mode = _("(empty value)");
 	    break;
     }
 
-    snprintf(buf, len - 1, "%*s %s", 7, STATUS_MODE_STR, mode);
+    snprintf(buf, len - 1, "%*s %s", 7, _("Mode:"), mode);
 
     if (d->mode == MODE_PLAY) {
 	if (TEST_FLAG(d->flags, CF_HUMAN))
@@ -1151,55 +1236,55 @@ void update_status_window(GAME g)
     if (d->engine) {
 	switch (d->engine->status) {
 	    case ENGINE_THINKING:
-		engine = ENGINE_PONDER_STR;
+		engine = _("pondering...");
 		break;
 	    case ENGINE_READY:
-		engine = ENGINE_READY_STR;
+		engine = _("ready");
 		break;
 	    case ENGINE_INITIALIZING:
-		engine = ENGINE_INITIALIZING_STR;
+		engine = _("initializing...");
 		break;
 	    case ENGINE_OFFLINE:
-		engine = ENGINE_OFFLINE_STR;
+		engine = _("offline");
 		break;
 	    default:
-		engine = UNKNOWN;
+		engine = _("(empty value)");
 		break;
 	}
     }
     else
-	engine = ENGINE_OFFLINE_STR;
+	engine = _("offline");
 
-    mvwprintw(statusw, y, 1, "%*s %-*s", 7, STATUS_ENGINE_STR, w, " ");
+    mvwprintw(statusw, y, 1, "%*s %-*s", 7, _("Engine:"), w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
     mvwaddstr(statusw, y++, 9, engine);
     wattroff(statusw, CP_STATUS_ENGINE);
 
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_TURN_STR, w,
-	    (g->turn == WHITE) ? WHITE_STR : BLACK_STR);
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Turn:"), w,
+	    (g->turn == WHITE) ? _("white") : _("black"));
 
-    strncpy(tmp, WHITE_STR, sizeof(tmp));
+    strncpy(tmp, _("white"), sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     snprintf(t, sizeof(t), "%s%s",
 	    timeval_to_char(d->wclock.elapsed, d->wclock.tc[d->wclock.tcn][1]),
 	    time_control_status(&d->wclock));
     mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
 
-    strncpy(tmp, BLACK_STR, sizeof(tmp));
+    strncpy(tmp, _("black"), sizeof(tmp));
     tmp[0] = toupper(tmp[0]);
     snprintf(t, sizeof(t), "%s%s",
 	    timeval_to_char(d->bclock.elapsed, d->bclock.tc[d->bclock.tcn][1]),
 	    time_control_status(&d->bclock));
     mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
 
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Total:"), w, 
 	    clock_to_char(d->elapsed.tv_sec));
 
     for (i = 0; i < STATUS_WIDTH; i++)
 	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
 
     if (!status.notify)
-	status.notify = strdup(GAME_HELP_PROMPT);
+	status.notify = strdup(_("Type F1 for help"));
 
     wattron(stdscr, CP_STATUS_NOTIFY);
     mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify), "%s",
@@ -1273,7 +1358,7 @@ void update_engine_window(GAME g)
 	    mvwprintw(enginew, i + 2, 1, "%s", d->engine->enginebuf[i]);
     }
 
-    window_draw_title(enginew, ENGINE_IO_TITLE, COLS, CP_MESSAGE_TITLE,
+    window_draw_title(enginew, _("Engine IO Window"), COLS, CP_MESSAGE_TITLE,
 	    CP_MESSAGE_BORDER);
 }
 
@@ -1409,7 +1494,7 @@ static int find_move_exp(GAME g, regex_t r, int which, int count)
 	else {
 	    if (ret != REG_NOMATCH) {
 		regerror(ret, &r, errbuf, sizeof(errbuf));
-		cmessage(E_REGEXEC_TITLE, ANYKEY, "%s", errbuf);
+		cmessage(_("Error Matching Regular Expression"), _("[ press any key to continue ]"), "%s", errbuf);
 		return -1;
 	    }
 	}
@@ -1434,7 +1519,7 @@ static int toggle_delete_flag(int n)
     }
 
     if (x == gtotal) {
-	cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
+	cmessage(NULL, _("[ press any key to continue ]"), "%s", _("Cannot delete last game."));
 	d = game[n]->data;
 	CLEAR_FLAG(d->flags, CF_DELETE);
 	return 1;
@@ -1463,7 +1548,7 @@ static int find_game_exp(char *str, int which, int count)
 	if ((ret = regcomp(&nexp, nstr,
 			REG_ICASE|REG_EXTENDED|REG_NOSUB)) != 0) {
 	    regerror(ret, &nexp, errbuf, sizeof(errbuf));
-	    cmessage(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	    cmessage(_("Error Compiling Regular Expression"), _("[ press any key to continue ]"), "%s", errbuf);
 	    ret = g = -1;
 	    goto cleanup;
 	}
@@ -1479,7 +1564,7 @@ static int find_game_exp(char *str, int which, int count)
 
     if ((ret = regcomp(&vexp, exp, REG_EXTENDED|REG_NOSUB)) != 0) {
 	regerror(ret, &vexp, errbuf, sizeof(errbuf));
-	cmessage(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	cmessage(_("Error Compiling Regular Expression"), _("[ press any key to continue ]"), "%s", errbuf);
 	ret = -1;
 	goto cleanup;
     }
@@ -1612,13 +1697,13 @@ static void draw_window_decor()
     move_panel(statusp, 0, 0);
     wbkgd(boardw, CP_BOARD_WINDOW);
     wbkgd(statusw, CP_STATUS_WINDOW);
-    window_draw_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
+    window_draw_title(statusw, _("Game Status"), STATUS_WIDTH,
 	    CP_STATUS_TITLE, CP_STATUS_BORDER);
     wbkgd(tagw, CP_TAG_WINDOW);
-    window_draw_title(tagw, TAG_WINDOW_TITLE, TAG_WIDTH, CP_TAG_TITLE, 
+    window_draw_title(tagw, _("Roster Tags"), TAG_WIDTH, CP_TAG_TITLE, 
 	    CP_TAG_BORDER);
     wbkgd(historyw, CP_HISTORY_WINDOW);
-    window_draw_title(historyw, HISTORY_WINDOW_TITLE, HISTORY_WIDTH,
+    window_draw_title(historyw, _("Move History"), HISTORY_WIDTH,
 	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
 }
 
@@ -1815,7 +1900,7 @@ tc:
 	    return 1;
 
 	if (tc >= MAX_TC) {
-	    message(ERROR, ANYKEY, "%s (%i)", CLOCK_MAX_ERROR, MAX_TC);
+	    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s (%i)", _("Maximum number of time controls reached"), MAX_TC);
 	    return 1;
 	}
 
@@ -1871,7 +1956,7 @@ static int parse_which_clock(struct clock_s *clk, char *str)
     memcpy(&tmp, clk, sizeof(struct clock_s));
 
     if (parse_clock_input(&tmp, str, &incr)) {
-	cmessage(ERROR, ANYKEY, CLOCK_PARSE_ERROR);
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), _("Invalid clock specification"));
 	return 1;
     }
 
@@ -1969,7 +2054,10 @@ void do_play_set_clock()
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_clock_input_finalize;
-    construct_input(CLOCK_TITLE, NULL, 1, 1, CLOCK_HELP, NULL, NULL, 0, in, INPUT_HIST_CLOCK, -1);
+    construct_input(_("Set Clock"), NULL, 1, 1,
+		    _ ("Format: [W | B] [+]T[+I] | ++I | M/T [M/T [...] [SD/T]] [+I]\n" \
+		       "T = time (hms), I = increment, M = moves per, SD = sudden death\ne.g., 30m or 4m+12s or 35/90m SD/30m"),
+		    NULL, NULL, 0, in, INPUT_HIST_CLOCK, -1);
 }
 
 void do_play_toggle_human()
@@ -2019,7 +2107,7 @@ void do_play_send_command()
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_engine_command_finalize;
-    construct_input(ENGINE_CMD_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, INPUT_HIST_ENGINE, -1);
+    construct_input(_("Engine Command"), NULL, 1, 1, NULL, NULL, NULL, 0, in, INPUT_HIST_ENGINE, -1);
 }
 
 void do_play_switch_turn()
@@ -2179,12 +2267,12 @@ void do_play_select()
 
     if (((islower(d->sp.icon) && gp->turn != BLACK)
 		|| (isupper(d->sp.icon) && gp->turn != WHITE))) {
-	message(NULL, ANYKEY, "%s", E_SELECT_TURN);
+	message(NULL, _("[ press any key to continue ]"), "%s", _("It is not your turn to move. You can switch sides "));
 	d->sp.icon = 0;
 	return;
 #if 0
 	if (pgn_history_total(gp->hp)) {
-	    message(NULL, ANYKEY, "%s", E_SELECT_TURN);
+	    message(NULL, _("[ press any key to continue ]"), "%s", _("It is not your turn to move. You can switch sides "));
 	    d->sp.icon = 0;
 	    return;
 	}
@@ -2294,22 +2382,22 @@ void do_main_help(WIN *win)
     switch (win->c) {
 	case 'p':
 	    buf = build_help(play_keys);
-	    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0, 0,
+	    construct_message(_("Play Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	case 'h':
 	    buf = build_help(history_keys);
-	    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0, 0,
+	    construct_message(_("History Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	case 'e':
 	    buf = build_help(edit_keys);
-	    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0, 0,
+	    construct_message(_("Edit Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	case 'g':
 	    buf = build_help(global_keys);
-	    construct_message(GAME_HELP_GAME_TITLE, ANYKEY, 0, 0,
+	    construct_message(_("Global Game Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
 	    break;
 	default:
@@ -2320,15 +2408,22 @@ void do_main_help(WIN *win)
 void do_more_help(WIN *win)
 {
     if (win->c == KEY_F(1) || win->c == CTRL('g'))
-	construct_message(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT, 0, 0, 
-		NULL, NULL, NULL, do_main_help, 0, 0, "%s", mainhelp);
+      construct_message(_("Command Key Index"),
+			_ ("p/h/e/g or any other key to quit"), 0, 0,
+			NULL, NULL, NULL, do_main_help, 0, 0, "%s",
+			_ (
+			   "p - play mode keys\n"
+			   "h - history mode keys\n"
+			   "e - board edit mode keys\n"
+			   "g - global game keys"
+			   ));
 }
 
 void do_play_help()
 {
     char *buf = build_help(play_keys);
 
-    construct_message(GAME_HELP_PLAY_TITLE, ANYKEY, 0, 0, NULL, NULL, buf, 
+    construct_message(_("Play Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0, NULL, NULL, buf, 
 	    do_more_help, 0, 1, "%s", buf);
 }
 
@@ -2445,8 +2540,8 @@ void do_edit_insert()
 {
     struct userdata_s *d = gp->data;
 
-    construct_message(GAME_EDIT_TITLE, GAME_EDIT_PROMPT, 0, 0, NULL, NULL,
-	    d->b, do_edit_insert_finalize, 0, 0, "%s", GAME_EDIT_TEXT);
+    construct_message(_("Insert Piece"), _("P=pawn, R=rook, N=knight, B=bishop, "), 0, 0, NULL, NULL,
+	    d->b, do_edit_insert_finalize, 0, 0, "%s", _("Type the piece letter to insert. Lowercase "));
 }
 
 void do_edit_enpassant()
@@ -2463,7 +2558,7 @@ void do_edit_help()
 {
     char *buf = build_help(edit_keys);
 
-    construct_message(GAME_HELP_EDIT_TITLE, ANYKEY, 0, 0, NULL, NULL, buf, 
+    construct_message(_("Edit Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0, NULL, NULL, buf, 
 	    do_more_help, 0, 1, "%s", buf);
 }
 
@@ -2525,7 +2620,7 @@ void do_find_move_exp_finalize(int init, int which)
 
 	if ((ret = regcomp(&r, moveexp, REG_EXTENDED|REG_NOSUB)) != 0) {
 	    regerror(ret, &r, errbuf, sizeof(errbuf));
-	    cmessage(E_REGCOMP_TITLE, ANYKEY, "%s", errbuf);
+	    cmessage(_("Error Compiling Regular Expression"), _("[ press any key to continue ]"), "%s", errbuf);
 	    return;
 	}
 
@@ -2774,7 +2869,17 @@ void history_menu_prev(struct menu_input_s *m)
 
 void history_menu_help(struct menu_input_s *m)
 {
-    message("History Menu Help", ANYKEY, "%s", history_menu_help_str);
+    message("History Menu Help", _("[ press any key to continue ]"), "%s",
+	    _ (
+	       "    UP/DOWN - previous/next menu item\n"
+	       "   HOME/END - first/last menu item\n"
+	       "  PGDN/PGUP - next/previous page\n"
+	       "  a-zA-Z0-9 - jump to item\n"
+	       "     CTRL-a - annotate the selected move\n"
+	       "      ENTER - view annotation\n"
+	       "     CTRL-d - toggle board details\n"
+	       "     ESCAPE - quit"
+	       ));
 }
 
 void do_annotate_move(HISTORY *hp)
@@ -2782,12 +2887,12 @@ void do_annotate_move(HISTORY *hp)
     char buf[COLS - 4];
     struct input_data_s *in;
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_EDIT_TITLE, hp->move);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Editing Annotation for"), hp->move);
     in = Calloc(1, sizeof(struct input_data_s));
     in->data = hp;
     in->efunc = do_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1, -1);
+	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL('T'), in, -1, -1);
 }
 
 void history_menu_view_annotation(struct menu_input_s *m)
@@ -2820,13 +2925,13 @@ void history_menu_annotate(struct menu_input_s *m)
     struct input_data_s *in;
     HISTORY *hp = g->history[m->selected]; // FIXME RAV
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", ANNOTATION_EDIT_TITLE, hp->move);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Editing Annotation for"), hp->move);
     in = Calloc(1, sizeof(struct input_data_s));
     in->data = hp;
     in->moredata = m->data;
     in->efunc = history_menu_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1, -1);
+	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL('T'), in, -1, -1);
 }
 
 void history_menu_details(struct menu_input_s *m)
@@ -2896,7 +3001,7 @@ void history_menu(GAME g)
     add_menu_key(&keys, CTRL('a'), history_menu_annotate);
     add_menu_key(&keys, CTRL('d'), history_menu_details);
     add_menu_key(&keys, '\n', history_menu_view_annotation);
-    construct_menu(LINES, TAG_WIDTH, 0, 0, HISTORY_MENU_TITLE, 1, 
+    construct_menu(LINES, TAG_WIDTH, 0, 0, _("Move History Tree"), 1, 
 	    get_history_items, keys, g, history_menu_print, history_menu_exit);
 }
 
@@ -2992,7 +3097,7 @@ void do_history_toggle()
 	if (!pushkey)
 	    construct_message(NULL, "(r)esume or abort", 0, 1, NULL, NULL, NULL, 
 		    do_history_mode_confirm, 0, 0, "%s", 
-		    GAME_RESUME_HISTORY_TEXT);
+		    _("Resuming a game from previous "));
 
 	return;
     }
@@ -3020,7 +3125,7 @@ void do_history_help()
 {
     char *buf = build_help(history_keys);
 
-    construct_message(GAME_HELP_HISTORY_TITLE, ANYKEY, 0, 0, NULL, NULL, buf, 
+    construct_message(_("History Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0, NULL, NULL, buf, 
 	    do_more_help, 0, 1, "%s", buf);
 }
 
@@ -3039,7 +3144,7 @@ void do_history_find(int which)
     in->efunc = do_find_move_exp;
 
     if (!*moveexp || which == 0) {
-	construct_input(FIND_REGEXP, NULL, 1, 0, NULL, NULL, NULL, 
+	construct_input(_("Find Move Text Expression"), NULL, 1, 0, NULL, NULL, NULL, 
 		0, in, INPUT_HIST_MOVE_EXP, -1);
 	return;
     }
@@ -3090,7 +3195,7 @@ void do_history_jump()
 	in = Calloc(1, sizeof(struct input_data_s));
 	in->efunc = do_move_jump;
 
-	construct_input(GAME_HISTORY_JUMP_TITLE, NULL, 1, 1, NULL, 
+	construct_input(_("Jump to Move Number"), NULL, 1, 1, NULL, 
 		NULL, NULL, 0, in, -1, 0);
 	return;
     }
@@ -3273,7 +3378,7 @@ void do_game_delete()
     int *p;
 
     if (gtotal < 2) {
-	cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
+	cmessage(NULL, _("[ press any key to continue ]"), "%s", _("Cannot delete last game."));
 	return;
     }
 
@@ -3287,20 +3392,20 @@ void do_game_delete()
     }
 
     if (!n)
-	tmp = GAME_DELETE_GAME_TEXT;
+	tmp = _("Delete the current game?");
     else {
 	if (n == gtotal) {
-	    cmessage(NULL, ANYKEY, "%s", E_DELETE_GAME);
+	    cmessage(NULL, _("[ press any key to continue ]"), "%s", _("Cannot delete last game."));
 	    return;
 	}
 
-	tmp = GAME_DELETE_ALL_TEXT;
+	tmp = _("Delete all games marked for deletion?");
     }
 
     if (config.deleteprompt) {
 	p = Malloc(sizeof(int));
 	*p = n;
-	construct_message(NULL, YESNO, 1, 1, NULL, NULL, p,
+	construct_message(NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, p,
 		do_game_delete_confirm, 0, 0, tmp);
 	return;
     }
@@ -3315,7 +3420,7 @@ void do_find_game_exp_finalize(int which)
 
     if ((n = find_game_exp(gameexp, (which == -1) ? 0 : 1, 
 		    (keycount) ? keycount : 1)) == -1) {
-	update_status_notify(gp, "%s", NOTIFY_NO_MATCH);
+	update_status_notify(gp, "%s", _("No matches found"));
 	return;
     }
 
@@ -3398,11 +3503,11 @@ void do_load_file(WIN *win)
     n = pgn_open(tmp, "r", &pgn);
 
     if (n == E_PGN_ERR) {
-	cmessage(ERROR, ANYKEY, "%s\n%s", tmp, strerror(errno));
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s\n%s", tmp, strerror(errno));
 	goto done;
     }
     else if (n == E_PGN_INVALID) {
-	cmessage(ERROR, ANYKEY, "%s\n%s", tmp, E_REGFILE_STR);
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s\n%s", tmp, _("Not a regular file"));
 	goto done;
     }
 
@@ -3504,7 +3609,7 @@ void do_get_game_save_input(int n)
     *p = n;
     in->data = p;
 
-    construct_input(GAME_SAVE_TITLE, loadfile, 1, 1, BROWSER_PROMPT,
+    construct_input(_("Save Game Filename"), loadfile, 1, 1, _("Type TAB for file browser"),
 	file_browser, NULL, '\t', in, INPUT_HIST_FILE, -1);
 }
 
@@ -3517,7 +3622,7 @@ void do_game_save_multi_confirm(WIN *win)
     else if (win->c == 'a')
 	i = -1;
     else {
-	update_status_notify(gp, "%s", NOTIFY_SAVE_ABORTED);
+	update_status_notify(gp, "%s", _("Save game aborted."));
 	return;
     }
 
@@ -3526,7 +3631,7 @@ void do_game_save_multi_confirm(WIN *win)
 
 void do_global_about()
 {
-    cmessage("ABOUT", ANYKEY, "%s\nUsing %s with %i colors "
+    cmessage("ABOUT", _("[ press any key to continue ]"), "%s\nUsing %s with %i colors "
 	    "and %i color pairs\n%s",
 	    PACKAGE_STRING, curses_version(), COLORS, COLOR_PAIRS,
 	    COPYRIGHT);
@@ -3585,8 +3690,8 @@ void global_find(int which)
     in->efunc = do_find_game_exp;
 
     if (!*gameexp || which == 0) {
-	construct_input(GAME_FIND_EXPRESSION_TITLE, NULL, 1, 0, 
-		GAME_FIND_EXPRESSION_PROMPT, NULL, NULL, 0, in, 
+	construct_input(_("Find Game by Tag Expression"), NULL, 1, 0, 
+		_("[name expression:]value expression"), NULL, NULL, 0, in, 
 		INPUT_HIST_GAME_EXP, -1);
 	return;
     }
@@ -3620,7 +3725,7 @@ void do_global_game_jump()
     in->efunc = do_game_jump;
 
     if (!keycount) {
-	construct_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in,
+	construct_input(_("Jump to Game Number"), NULL, 1, 1, NULL, NULL, NULL, 0, in,
 		-1, 0);
 	return;
     }
@@ -3688,15 +3793,15 @@ void do_global_resume_game()
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_load_file;
-    construct_input(GAME_LOAD_TITLE, NULL, 1, 1, BROWSER_PROMPT, file_browser,
+    construct_input(_("Load Filename"), NULL, 1, 1, _("Type TAB for file browser"), file_browser,
 	    NULL, '\t', in, INPUT_HIST_FILE, -1);
 }
 
 void do_global_save_game()
 {
     if (gtotal > 1) {
-	construct_message(NULL, GAME_SAVE_MULTI_PROMPT, 1, 1, NULL, NULL, NULL, 
-		do_game_save_multi_confirm, 0, 0, "%s", GAME_SAVE_MULTI_TEXT);
+	construct_message(NULL, _("Type 'c' or 'a' or any other key "), 1, 1, NULL, NULL, NULL, 
+		do_game_save_multi_confirm, 0, 0, "%s", _("There is more than one game "));
 	return;
     }
 
@@ -3747,8 +3852,8 @@ void do_global_copy_game()
 
 void do_global_new_all()
 {
-    construct_message(NULL, YESNO, 1, 1, NULL, NULL, NULL, 
-	    do_new_game_from_scratch, 0, 0, "%s", GAME_NEW_PROMPT);
+    construct_message(NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, NULL, 
+	    do_new_game_from_scratch, 0, 0, "%s", _("Really start a new game from scratch?"));
 }
 
 void do_global_quit()
@@ -3761,7 +3866,7 @@ void do_global_toggle_engine_window()
     if (!enginew) {
 	enginew = newwin(LINES, COLS, 0, 0);
 	enginep = new_panel(enginew);
-	window_draw_title(enginew, ENGINE_IO_TITLE, COLS, CP_MESSAGE_TITLE,
+	window_draw_title(enginew, _("Engine IO Window"), COLS, CP_MESSAGE_TITLE,
 		CP_MESSAGE_BORDER);
 	hide_panel(enginep);
     }
@@ -3908,7 +4013,7 @@ static void perl_error(const char *fmt, ...)
     vasprintf(&buf, fmt, ap);
     va_end(ap);
 
-    message(ERROR, ANYKEY, "%s", buf);
+    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s", buf);
     free(buf);
 }
 
@@ -3939,7 +4044,7 @@ static void do_perl_finalize(WIN *win)
     d->perlflags = g->flags;
 
     if (pgn_board_init_fen(g, d->b, result) != E_PGN_OK) {
-	message(ERROR, ANYKEY, "%s", E_FEN_PARSE);
+	message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s", _("FEN parse error."));
 	pgn_board_init_fen(g, d->b, d->perlfen);
 	g->flags = d->perlflags;
 	free(d->perlfen);
@@ -3954,7 +4059,7 @@ static void do_perl_finalize(WIN *win)
 	d->oldfen = strdup(g->tag[n]->value);
 
     pgn_tag_add(&g->tag, "FEN", result);
-    update_status_notify(g, "%s", ANYKEY);
+    update_status_notify(g, "%s", _("[ press any key to continue ]"));
     update_all(g);
 
 done:
@@ -3972,7 +4077,7 @@ void do_global_perl()
     in = Calloc(1, sizeof(struct input_data_s));
     in->data = gp;
     in->efunc = do_perl_finalize;
-    construct_input(GAME_PERL_TITLE, NULL, 1, 0, NULL, NULL, NULL, 0, in, INPUT_HIST_PERL, -1);
+    construct_input(_("PERL Subroutine Filter"), NULL, 1, 0, NULL, NULL, NULL, 0, in, INPUT_HIST_PERL, -1);
 }
 #endif
 
@@ -4056,7 +4161,7 @@ void game_loop()
     if (d->mode == MODE_HISTORY)
 	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
 
-    update_status_notify(gp, "%s", GAME_HELP_PROMPT);
+    update_status_notify(gp, "%s", _("Type F1 for help"));
     movestep = 2;
     flushinp();
     update_all(gp);
@@ -4129,7 +4234,7 @@ void game_loop()
 			    }
 			    else if (len == -1) {
 				if (errno != EAGAIN) {
-				    cmessage(ERROR, ANYKEY, "Engine read(): %s",
+				    cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "Engine read(): %s",
 					    strerror(errno));
 				    waitpid(d->engine->pid, &n, 0);
 				    free(d->engine);
@@ -4148,7 +4253,7 @@ void game_loop()
 	    }
 	    else {
 		if (n == -1)
-		    cmessage(ERROR, ANYKEY, "select(): %s", strerror(errno));
+		    cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "select(): %s", strerror(errno));
 		/* timeout */
 	    }
 	}
@@ -4390,8 +4495,8 @@ static void signal_save_pgn(int sig)
     asprintf(&buf, "%s/signal-%i-%li.pgn", p, sig, now);
 
     if (do_game_write(buf, "w", 0, gtotal)) {
-	cmessage(ERROR, ANYKEY, "%s: %s", p, strerror(errno));
-	update_status_notify(gp, "%s", NOTIFY_SAVE_FAILED);
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", p, strerror(errno));
+	update_status_notify(gp, "%s", _("Save game failed."));
     }
 
     free(buf);
@@ -4409,7 +4514,7 @@ void catch_signal(int which)
 		break;
 
 	    if (which == SIGPIPE)
-		cmessage(NULL, ANYKEY, "%s", E_BROKEN_PIPE);
+		cmessage(NULL, _("[ press any key to continue ]"), "%s", _("Broken pipe. Quitting."));
 
 	    cleanup_all();
 	    exit(EXIT_FAILURE);
@@ -4500,7 +4605,7 @@ int main(int argc, char *argv[])
     }
 
     if (!S_ISDIR(st.st_mode))
-	errx(EXIT_FAILURE, "%s: %s", datadir, E_NOTADIR);
+	errx(EXIT_FAILURE, "%s: %s", datadir, _("Not a directory."));
 
     set_defaults();
 
@@ -4576,7 +4681,7 @@ int main(int argc, char *argv[])
 	    //ret = parse_fen_file(loadfile);
 	    break;
 	case FILE_EPD: // Not implemented.
-	case FILE_NONE:
+        case FILE_NONE:
 	default:
 	    // No file specified. Empty game.
 	    ret = pgn_parse(NULL);
@@ -4617,7 +4722,7 @@ int main(int argc, char *argv[])
     }
 
     if (initscr() == NULL)
-	errx(EXIT_FAILURE, "%s", E_INITCURSES);
+	errx(EXIT_FAILURE, "%s", _("Could not initialize curses."));
     else
 	curses_initialized = 1;
 

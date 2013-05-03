@@ -21,6 +21,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
@@ -52,7 +53,11 @@
 #include "message.h"
 #include "menu.h"
 #include "keys.h"
-#include "tags.h"
+
+static struct country_codes {
+    char code[4];
+    char country[64];
+} *ccodes;
 
 static int init_country_codes()
 {
@@ -61,7 +66,7 @@ static int init_country_codes()
     int cindex = 0;
 
     if ((fp = fopen(config.ccfile, "r")) == NULL) {
-	cmessage(ERROR, ANYKEY, "%s: %s", config.ccfile, strerror(errno));
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", config.ccfile, strerror(errno));
 	return 1;
     }
 
@@ -116,7 +121,15 @@ static struct menu_item_s **get_cc_items(WIN *win)
 
 static void do_cc_help(struct menu_input_s *m)
 {
-    message(CC_KEY_HELP, ANYKEY, "%s", cc_help);
+    message(_("Country Code Keys"), _("[ press any key to continue ]"), "%s",
+	    _ (
+	       "    UP/DOWN - previous/next menu item\n"
+	       "   HOME/END - first/last menu item\n"
+	       "  PGDN/PGUP - next/previous page\n"
+	       "  a-zA-Z0-9 - jump to item\n"
+	       "      ENTER - select item\n"
+	       "     ESCAPE - cancel"
+	       ));
 }
 
 static void do_cc_abort(struct menu_input_s *m)
@@ -163,8 +176,8 @@ static void country_codes(void *arg)
     add_menu_key(&keys, KEY_F(1), do_cc_help);
     add_menu_key(&keys, KEY_ESCAPE, do_cc_abort);
     add_menu_key(&keys, '\n', do_cc_save);
-    construct_menu(0, 0, -1, -1, CC_TITLE, 0, get_cc_items, keys, arg, 
-	    cc_print, do_cc_finalize);
+    construct_menu(0, 0, -1, -1, _("Country Codes"), 0, get_cc_items, keys, arg,
+		   cc_print, do_cc_finalize);
     return;
 }
 
@@ -195,7 +208,7 @@ static struct menu_item_s **get_tag_items(WIN *win)
     }
 
     n = pgn_tag_total(t);
-    
+
     for (i = 0; i < n; i++) {
 	items = Realloc(items, (i+2) * sizeof(struct menu_item_s *));
 	items[i] = Malloc(sizeof(struct menu_item_s));
@@ -275,7 +288,7 @@ static void edit_tag_add_finalize(WIN *w)
     pushkey = REFRESH_MENU;
 }
 
-static void set_menu_stuff(TAG **t, char *name, char **init, int *type, 
+static void set_menu_stuff(TAG **t, char *name, char **init, int *type,
 	int *lines, input_func **func, int *key, char **eprompt, void **arg)
 {
     int n;
@@ -293,7 +306,7 @@ static void set_menu_stuff(TAG **t, char *name, char **init, int *type,
     else if (strcasecmp(name, "Site") == 0) {
 	*func = country_codes;
 	*key = CTRL('t');
-	*eprompt = CC_PROMPT;
+	*eprompt = _("Type CTRL-t for country codes");
 	*arg = t[n];
     }
     else if (strcasecmp(name, "Round") == 0) {
@@ -324,7 +337,7 @@ static void edit_tag_value(struct menu_input_s *m)
     name = strdup(t[m->selected]->name);
     in->moredata = name;
     in->efunc = edit_tag_add_finalize;
-    snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_EDIT_TAG_TITLE, name);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Editing Tag"), name);
     set_menu_stuff(t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
     construct_input(buf, init, lines, 0, eprompt, func, arg, key, in, -1, type);
 }
@@ -354,7 +367,7 @@ static void edit_tag_add_name_finalize(WIN *w)
     inv->moredata = name;
     free(in->str);
     free(in);
-    snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_EDIT_TAG_TITLE, name);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Editing Tag"), name);
     set_menu_stuff(t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
     construct_input(buf, init, lines, 0, eprompt, func, arg, key, inv, -1, type);
 }
@@ -365,7 +378,7 @@ static void edit_tag_add(struct menu_input_s *m)
 
     in->data = m;
     in->efunc = edit_tag_add_name_finalize;
-    construct_input(TAG_NEW_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, -1,
+    construct_input(_("New Tag Name"), NULL, 1, 1, NULL, NULL, NULL, 0, in, -1,
 	    FIELD_TYPE_PGN_TAG_NAME);
 }
 
@@ -376,7 +389,7 @@ static void edit_tag_remove(struct menu_input_s *m)
     int i, n = pgn_tag_total(t);
 
     if (m->selected < 7) {
-        cmessage(NULL, ANYKEY, "%s", _ ("Cannot remove the Seven Tag Roster"));
+        cmessage(NULL, _("[ press any key to continue ]"), "%s", _ ("Cannot remove the Seven Tag Roster"));
 	return;
     }
 
@@ -424,12 +437,33 @@ static void edit_tag_save(struct menu_input_s *m)
 
 static void edit_tag_help(struct menu_input_s *m)
 {
-    message(TAG_EDIT_HELP, ANYKEY, edit_help);
+    message(_("Tag Editing Keys"), _("[ press any key to continue ]"),
+	    _ (
+	       "    UP/DOWN - previous/next menu item\n"
+	       "   HOME/END - first/last menu item\n"
+	       "  PGDN/PGUP - next/previous page\n"
+	       "  a-zA-Z0-9 - jump to item\n"
+	       "      ENTER - edit select item\n"
+	       "     CTRL-a - add an entry\n"
+	       "     CTRL-f - add FEN tag from current position\n"
+	       "     CTRL-r - remove selected entry\n"
+	       "     CTRL-t - add custom tags\n"
+	       "     CTRL-x - quit with changes\n"
+	       "     ESCAPE - quit without changes"
+	       ));
 }
 
 static void view_tag_help(struct menu_input_s *m)
 {
-    message(TAG_VIEW_HELP, ANYKEY, view_help);
+  message(_("Tag Viewing Keys"), _("[ press any key to continue ]"),
+	  _ (
+	     "    UP/DOWN - previous/next menu item\n"
+	     "   HOME/END - first/last menu item\n"
+	     "  PGDN/PGUP - next/previous page\n"
+	     "  a-zA-Z0-9 - jump to item\n"
+	     "      ENTER - view selected item\n"
+	     "     ESCAPE - cancel"
+	     ));
 }
 
 static void view_tag_quit(struct menu_input_s *m)
@@ -442,8 +476,8 @@ static void view_tag_value(struct menu_input_s *m)
     struct menu_item_s *item = m->items[m->selected];
     char buf[COLS - 4];
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", TAG_VIEW_TAG_TITLE, item->name);
-    construct_message(buf, ANYKEY, 0, 1, NULL, NULL, NULL, NULL, 0, 0, item->value);
+    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Viewing Tag"), item->name);
+    construct_message(buf, _("[ press any key to continue ]"), 0, 1, NULL, NULL, NULL, NULL, 0, 0, item->value);
 }
 
 static void tag_print(WIN *win)
@@ -483,8 +517,7 @@ void edit_tags(GAME g, BOARD b, int edit)
 
     if (edit) {
 	for (i = 0; gp->tag[i]; i++)
-	    pgn_tag_add(&data, gp->tag[i]->name, 
-		    gp->tag[i]->value);
+	    pgn_tag_add(&data, gp->tag[i]->name, gp->tag[i]->value);
 
 	add_menu_key(&keys, '\n', edit_tag_value);
 	add_menu_key(&keys, CTRL('f'), edit_tag_add_fen);
@@ -502,6 +535,6 @@ void edit_tags(GAME g, BOARD b, int edit)
 	add_menu_key(&keys, KEY_F(1), view_tag_help);
     }
 
-    construct_menu(0, 0, -1, -1, (edit) ? TAG_EDIT_TITLE : TAG_VIEW_TITLE, 0, 
-	    get_tag_items, keys, data, tag_print, NULL);
+    construct_menu(0, 0, -1, -1, (edit) ? _("Editing Roster Tags") : _("Viewing Roster Tags"),
+		   0, get_tag_items, keys, data, tag_print, NULL);
 }

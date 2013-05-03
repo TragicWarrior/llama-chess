@@ -1,6 +1,5 @@
 # List of source files which contain translatable strings.
 src/cboard.c
-src/cboard.h
 src/colors.c
 src/colors.h
 src/common.h
@@ -22,8 +21,6 @@ src/perl.c
 src/perl.h
 src/rcfile.c
 src/rcfile.h
-src/strings.h
 src/tags.c
-src/tags.h
 src/window.c
 src/window.h

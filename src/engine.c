@@ -120,19 +120,19 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 			continue;
 
 		    if (kill(d->engine->pid, 0) == -1) {
-			message(ERROR, ANYKEY, "Could not write to engine. "
+			message(_("[ ERROR ]"), _("[ press any key to continue ]"), "Could not write to engine. "
 				"Process no longer exists.");
 			d->engine->status = ENGINE_OFFLINE;
 			return 1;
 		    }
 
-		    message(ERROR, ANYKEY, "Attempt #%i. write(): %s", ++try,
+		    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "Attempt #%i. write(): %s", ++try,
 			    strerror(errno));
 		    continue;
 		}
 
 		if (len != n) {
-		    message(NULL, ANYKEY, "try #%i: write() error to engine. "
+		    message(NULL, _("[ press any key to continue ]"), "try #%i: write() error to engine. "
 			    "Expected %i, got %i.", ++try, len, n);
 		    continue;
 		}
@@ -375,12 +375,12 @@ int start_chess_engine(GAME g)
     switch (exec_chess_engine(g, args)) {
 	case -1:
 	    /* Pty allocation. */
-	    message(ERROR, ANYKEY, "Could not allocate PTY");
+	    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "Could not allocate PTY");
 	    d->engine->status = ENGINE_OFFLINE;
 	    break;
 	case -2:
 	    /* Could not execute engine. */
-	    message(ERROR, ANYKEY, "%s: %s", args[0], strerror(errno));
+	    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", args[0], strerror(errno));
 	    d->engine->status = ENGINE_OFFLINE;
 	    break;
 	default:

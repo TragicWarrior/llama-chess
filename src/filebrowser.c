@@ -47,7 +47,7 @@
 #include "menu.h"
 #include "input.h"
 #include "filebrowser.h"
-#include "strings.h"
+#include "common.h"
 #include "conf.h"
 
 const char *filebrowser_help = {
@@ -119,7 +119,7 @@ new_glob:
 #else
     if (glob(pattern, x, NULL, &g) != 0) {
 #endif
-	cmessage(ERROR, ANYKEY, "glob() failed:\n%s", pattern);
+	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "glob() failed:\n%s", pattern);
 	return NULL;
     }
 
@@ -219,7 +219,17 @@ new_glob:
 
 static void file_browser_help(struct menu_input_s *m)
 {
-    message(BROWSER_HELP, ANYKEY, "%s", filebrowser_help);
+    message(_("File Browser Keys"), _("[ press any key to continue ]"), "%s",
+	    _ (
+	       "    UP/DOWN - previous/next menu item\n"
+	       "   HOME/END - first/last menu item\n"
+	       "  PGDN/PGUP - next/previous page\n"
+	       "  a-zA-Z0-9 - jump to item\n"
+	       "      ENTER - select item\n"
+	       "          ~ - change to home directory\n"
+	       "     CTRL-e - change filename expression\n"
+	       "     ESCAPE - abort"
+	       ));
 }
 
 static void file_browser_select(struct menu_input_s *m)
@@ -229,13 +239,13 @@ static void file_browser_select(struct menu_input_s *m)
     struct stat st;
 
     if (stat(files[m->selected]->path, &st) == -1) {
-	message(ERROR, ANYKEY, "%s", strerror(errno));
+	message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s", strerror(errno));
 	return;
     }
 
     if (S_ISDIR(st.st_mode)) {
 	if (access(files[m->selected]->path, R_OK) != 0) {
-	    cmessage(files[m->selected]->path, ANYKEY, "%s", strerror(errno));
+	    cmessage(files[m->selected]->path, _("[ press any key to continue ]"), "%s", strerror(errno));
 	    return;
 	}
 
@@ -304,7 +314,7 @@ static void file_browser_expression(struct menu_input_s *m)
 
     in = Calloc(1, sizeof(struct input_data_s));
     in->efunc = do_file_browser_expression_finalize;
-    construct_input(BROWSER_EXPR, config.pattern, 1, 1, NULL, NULL, NULL, 0, in, -1, -1);
+    construct_input(_("Filename Expression"), config.pattern, 1, 1, NULL, NULL, NULL, 0, in, -1, -1);
 }
 
 static void file_browser_abort(struct menu_input_s *m)
@@ -342,7 +352,7 @@ void file_browser(void *arg)
 	strncpy(path, p, sizeof(path));
 
 	if (access(path, R_OK) == -1) {
-	    cmessage(ERROR, ANYKEY, "%s: %s", path, strerror(errno));
+	    cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", path, strerror(errno));
 	    getcwd(path, sizeof(path));
 	}
     }

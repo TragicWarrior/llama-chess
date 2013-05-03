@@ -45,6 +45,7 @@
 #include "colors.h"
 #include "keys.h"
 #include "rcfile.h"
+#include "common.h"
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
@@ -73,8 +74,8 @@ static int attributes(const char *filename, int line, char *str)
 	else if (strcasecmp(tmp, "INVISIBLE") == 0)
 	    attrs |= A_INVIS;
 	else
-	    errx(EXIT_FAILURE, "%s(%i): invalid attribute \"%s\"", filename, 
-		    line, tmp);
+	  errx(EXIT_FAILURE, _("%s(%i): invalid attribute \"%s\""), filename,
+	       line, tmp);
     }
 
     return attrs;
@@ -613,7 +614,7 @@ void parse_rcfile(const char *filename)
 	    continue;
 
 	if ((n = sscanf(line, "%s %[^\n]", var, val)) != 2)
-	    errx(EXIT_FAILURE, "%s(%i): parse error %i", filename, lines,n);
+	  errx(EXIT_FAILURE, _("%s(%i): parse error %i"), filename, lines,n);
 
 	p = strdup(trim(val));
 	strncpy(val, p, sizeof(val));
@@ -624,8 +625,8 @@ void parse_rcfile(const char *filename)
 
 	if (strcmp(var, "jump_count") == 0) {
 	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
+	      errx(EXIT_FAILURE, _("%s(%i): value is not an integer"), filename,
+		   lines);
 
 	    config.jumpcount = atoi(val);
 	}
@@ -647,9 +648,8 @@ void parse_rcfile(const char *filename)
 	else if (strcmp(var, "stop_on_error") == 0)
 	    pgn_config_set(PGN_STOP_ON_ERROR, on_or_off(filename, lines, val));
 	else if (strcmp(var, "tag") == 0) {
-	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || 
-		    n > 2)
-		errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, 
+	    if ((n = sscanf(val, "%s %s ", token, value)) < 1 || n > 2)
+	      errx(EXIT_FAILURE, _ ("%s(%i): invalid value \"%s\""), filename,
 			lines, val);
 
 	    if (n == 1)
@@ -661,9 +661,9 @@ void parse_rcfile(const char *filename)
 
 	    for (n = 0; n < strlen(token); n++) {
 		if (!isalnum(token[n]) && token[n] != '_')
-		    errx(EXIT_FAILURE, 
-			    "%s(%i): token names must match 0-9A-Za-z_.",
-			    filename, lines);
+		    errx(EXIT_FAILURE,
+			 _ ("%s(%i): token names must match 0-9A-Za-z_."),
+			 filename, lines);
 	    }
 
 	    token[0] = toupper(token[0]);
@@ -687,13 +687,13 @@ void parse_rcfile(const char *filename)
 	    altengine = strdup(val);
 	else if (strcmp(var, "engine_protocol") == 0) {
 	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
+	      errx(EXIT_FAILURE, _ ("%s(%i): value is not an integer"),
+		   filename, lines);
 
 	    config.engine_protocol = atoi(val);
 
 	    if (config.engine_protocol != 1 && config.engine_protocol != 2)
-		errx(EXIT_FAILURE, "%s(%i): invalid value", filename, lines);
+	      errx(EXIT_FAILURE, _ ("%s(%i): invalid value"), filename, lines);
 	}
 	else if (strcmp(var, "color_board_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BDWINDOW]);
@@ -776,7 +776,7 @@ void parse_rcfile(const char *filename)
 	    config.keys[k] = Calloc(1, sizeof(struct config_key_s));
 	    p = val;
 	    n = 0;
-	    
+
 	    while (*p && !isspace(*p))
 		p++, n++;
 
@@ -791,9 +791,9 @@ void parse_rcfile(const char *filename)
 	    else if (strcasecmp(p, "set") == 0)
 		config.keys[k]->type = KEY_SET;
 	    else
-		errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename,
+	      errx(EXIT_FAILURE, _ ("%s(%i): invalid value \"%s\""), filename,
 			lines, p);
-	    
+
 	    p = val + n;
 	    *p = c;
 
@@ -809,8 +809,8 @@ void parse_rcfile(const char *filename)
 	    config.keys[k] = NULL;
 	}
 	else
-	    errx(EXIT_FAILURE, "%s(%i): invalid parameter \"%s\"", filename,
-		    lines, var);
+	  errx(EXIT_FAILURE, _ ("%s(%i): invalid parameter \"%s\""), filename,
+	       lines, var);
     }
 
     fclose(fp);

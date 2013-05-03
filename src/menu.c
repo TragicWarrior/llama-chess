@@ -145,7 +145,7 @@ static void fix_menu_vals(WIN *win)
     for (i = 0; m->items[i]; i++);
     m->total = i;
     snprintf(buf, sizeof(buf), "Item %i %s %i  %s", m->selected + 1,
-	    N_OF_N_STR, m->total, HELP_PROMPT);
+	    _("of"), m->total, _("Type F1 for help"));
 
 #ifdef HAVE_WRESIZE
     if (!m->cstatic) {
@@ -166,7 +166,7 @@ static void fix_menu_vals(WIN *win)
 		n = vlen + nlen;
 	    }
 	    else
-		n = (!m->name_only) ? strlen(UNKNOWN) + nlen : nlen;
+		n = (!m->name_only) ? strlen(_("(empty value)")) + nlen : nlen;
 
 	    if (win->cols < n)
 		win->cols = n;
@@ -202,7 +202,7 @@ static void fix_menu_vals(WIN *win)
     keypad(win->w, TRUE);
     wmove(win->w, 0, 0);
     wclrtobot(win->w);
-    window_draw_title(win->w, win->title, win->cols, CP_INPUT_TITLE, 
+    window_draw_title(win->w, win->title, win->cols, CP_INPUT_TITLE,
 	    CP_INPUT_BORDER);
     window_draw_prompt(win->w, win->rows - 2, win->cols, buf, CP_INPUT_PROMPT);
 }
@@ -291,7 +291,7 @@ static int display_menu(WIN *win)
 
 	    if (m->items) {
 		for (i = 0; m->items[i]; i++) {
-		    if (strncasecmp(m->search, m->items[i]->name, 
+		    if (strncasecmp(m->search, m->items[i]->name,
 				strlen(m->search)) == 0) {
 			m->selected = i;
 			break;
@@ -307,7 +307,7 @@ end:
     set_menu_vars(win->c, win->rows - 4, m->total - 1, &m->selected, &m->top);
     fix_menu_vals(win);
     draw_menu(win);
-    
+
     if (m->draw_exit_func)
 	(*m->draw_exit_func)(m);
 
@@ -343,8 +343,8 @@ done:
     return 0;
 }
 
-WIN *construct_menu(int rows, int cols, int y, int x, const char *title, 
-	int name_only, menu_items *func, struct menu_key_s **keys, void *data, 
+WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
+	int name_only, menu_items *func, struct menu_key_s **keys, void *data,
 	menu_print_func *pfunc, window_exit_func *efunc)
 {
     WIN *win;
@@ -359,7 +359,7 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
 #endif
 
     m = Calloc(1, sizeof(struct menu_input_s));
-    win = window_create(title, (rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols, 
+    win = window_create(title, (rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols,
 	    (y >= 0) ? y : 0, (x >= 0) ? x : 0, display_menu, m, efunc);
     m = win->data;
     m->ystatic = y;

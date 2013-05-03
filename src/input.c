@@ -42,29 +42,14 @@
 #include "conf.h"
 #include "colors.h"
 #include "window.h"
-#include "strings.h"
 #include "misc.h"
 #include "message.h"
 #include "input.h"
+#include "common.h"
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
-
-const char *inputhelp = {
-    "UP/DOWN/LEFT/RIGHT - position cursor (multiline)\n" \
-    "         UP/CTRL-P - previous input history\n" \
-    "       DOWN/CTRL-N - next input history\n" \
-    "       HOME/CTRL-A - move cursor to the beginning of line\n" \
-    "        END/CTRL-E - move cursor to the end of line\n" \
-    "          CTRL-B/W - move cursor to previous/next word\n" \
-    "            CTRL-X - delete word under cursor\n" \
-    "            CTRL-K - delete from cursor to end of line\n" \
-    "            CTRL-U - clear entire input field\n" \
-    "         BACKSPACE - delete previous character\n" \
-    "            ESCAPE - quit without changes\n" \
-    "             ENTER - quit with changes" 
-};
 
 static struct input_history_s {
     char *str;
@@ -136,6 +121,7 @@ static int get_input(WIN *win)
     char *tmp;
     struct input_data_s *data = in->data;
     int i;
+    char *prompt = _("Type F1 for help");
 
     curs_set(1);
     window_draw_title(win->w, win->title, in->w, CP_INPUT_TITLE,
@@ -143,15 +129,15 @@ static int get_input(WIN *win)
 
     if (in->extra) {
 	for (i = 0; in->extra[i]; i++)
-	    window_draw_prompt(win->w, in->lines + 2 + i, in->w, in->extra[i], 
+	    window_draw_prompt(win->w, in->lines + 2 + i, in->w, in->extra[i],
 		    CP_INPUT_PROMPT);
 
-	window_draw_prompt(win->w, in->lines + 2 + i, in->w, INPUT_HELP_PROMPT,
-		CP_INPUT_PROMPT);
+	window_draw_prompt(win->w, in->lines + 2 + i, in->w, prompt,
+			   CP_INPUT_PROMPT);
     }
     else
-	window_draw_prompt(win->w, in->lines + 2, in->w, INPUT_HELP_PROMPT,
-		CP_INPUT_PROMPT);
+      window_draw_prompt(win->w, in->lines + 2, in->w, prompt,
+			 CP_INPUT_PROMPT);
 
     if (in->func && in->c && win->c == in->c) {
 	(*in->func)(in);
@@ -183,7 +169,21 @@ static int get_input(WIN *win)
 	    form_driver(in->f, REQ_CLR_FIELD);
 	    break;
 	case KEY_F(1):
-	    message(INPUT_HELP_TITLE, ANYKEY, "%s", inputhelp);
+	    message(_("Line Editing Keys"), _("[ press any key to continue ]"),
+		    "%s",
+		    _ (
+		       "UP/DOWN/LEFT/RIGHT - position cursor (multiline)\n"
+		       "         UP/CTRL-P - previous input history\n"
+		       "       DOWN/CTRL-N - next input history\n"
+		       "       HOME/CTRL-A - move cursor to the beginning of line\n"
+		       "        END/CTRL-E - move cursor to the end of line\n"
+		       "          CTRL-B/W - move cursor to previous/next word\n"
+		       "            CTRL-X - delete word under cursor\n"
+		       "            CTRL-K - delete from cursor to end of line\n"
+		       "            CTRL-U - clear entire input field\n"
+		       "         BACKSPACE - delete previous character\n"
+		       "            ESCAPE - quit without changes\n"
+		       "             ENTER - quit with changes"));
 	    break;
 	case KEY_LEFT:
 	    form_driver(in->f, REQ_LEFT_CHAR);
