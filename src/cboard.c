@@ -129,7 +129,7 @@ static int macro_match;
 
 // Status window.
 static struct {
-    char *notify;	// The status window notification line buffer.
+  wchar_t *notify;	// The status window notification line buffer.
 } status;
 
 static int curses_initialized;
@@ -581,39 +581,22 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 #define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_ENPASSANT : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
 #define ATTRS(cp) (cp & (A_BOLD|A_STANDOUT|A_BLINK|A_DIM|A_UNDERLINE|A_INVIS|A_REVERSE))
 
-static wchar_t *
-init_wchar_piece (const char *p)
-{
-  wchar_t *wc;
-  const char *c;
-  mbstate_t ps;
-
-  memset (&ps, 0, sizeof(mbstate_t));
-  c = p;
-  size_t len = mbsrtowcs (NULL, &c, strlen (p), &ps);
-  wc = Calloc (1, len+1 * sizeof(wchar_t));
-  c = p;
-  memset (&ps, 0, sizeof(mbstate_t));
-  len = mbsrtowcs (wc, &c, strlen (p), &ps);
-  return wc;
-}
-
 static void
 init_wchar_pieces ()
 {
-  w_pawn_wchar = init_wchar_piece ("♙");
-  w_rook_wchar = init_wchar_piece ("♖");
-  w_bishop_wchar = init_wchar_piece ("♗");
-  w_knight_wchar = init_wchar_piece ("♘");
-  w_queen_wchar = init_wchar_piece ("♕");
-  w_king_wchar = init_wchar_piece ("♔");
-  b_pawn_wchar = init_wchar_piece ("♟");
-  b_rook_wchar = init_wchar_piece ("♜");
-  b_bishop_wchar = init_wchar_piece ("♝");
-  b_knight_wchar = init_wchar_piece ("♞");
-  b_queen_wchar = init_wchar_piece ("♛");
-  b_king_wchar = init_wchar_piece ("♚");
-  empty_wchar = init_wchar_piece (" ");
+  w_pawn_wchar = str_to_wchar ("♙");
+  w_rook_wchar = str_to_wchar ("♖");
+  w_bishop_wchar = str_to_wchar ("♗");
+  w_knight_wchar = str_to_wchar ("♘");
+  w_queen_wchar = str_to_wchar ("♕");
+  w_king_wchar = str_to_wchar ("♔");
+  b_pawn_wchar = str_to_wchar ("♟");
+  b_rook_wchar = str_to_wchar ("♜");
+  b_bishop_wchar = str_to_wchar ("♝");
+  b_knight_wchar = str_to_wchar ("♞");
+  b_queen_wchar = str_to_wchar ("♛");
+  b_king_wchar = str_to_wchar ("♚");
+  empty_wchar = str_to_wchar (" ");
 }
 
 static wchar_t *
@@ -1145,8 +1128,9 @@ void update_status_window(GAME g)
     buf = Malloc(len);
     y = 2;
 
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("File:"), w,
-	    (loadfile[0]) ? str_etc(loadfile, w, 1) : _("not available"));
+    wchar_t *loadfilew =  loadfile[0] ? str_etc (loadfile, w, 1) : str_to_wchar (_ ("not available"));
+    mvwprintw(statusw, y++, 1, "%*s %-*ls", 7, _("File:"), w, loadfilew);
+    free (loadfilew);
     snprintf(buf, len, "%i %s %i", gindex + 1, _("of"), gtotal);
     mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Game:"), w, buf);
 
@@ -1277,18 +1261,18 @@ void update_status_window(GAME g)
 	    time_control_status(&d->bclock));
     mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
 
-    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Total:"), w, 
+    mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Total:"), w,
 	    clock_to_char(d->elapsed.tv_sec));
 
     for (i = 0; i < STATUS_WIDTH; i++)
 	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
 
     if (!status.notify)
-	status.notify = strdup(_("Type F1 for help"));
+	status.notify = str_to_wchar(_("Type F1 for help"));
 
     wattron(stdscr, CP_STATUS_NOTIFY);
-    mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify), "%s",
-	    status.notify);
+    mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify),
+	      "%ls", status.notify);
     wattroff(stdscr, CP_STATUS_NOTIFY);
 }
 
@@ -1311,9 +1295,13 @@ void update_tag_window(TAG **t)
 
     w = TAG_WIDTH - namel - 4;
 
+    /* FIXME unicode tag pairs */
     for (i = 0; t[i] && i < TAG_HEIGHT - 3; i++)
-	mvwprintw(tagw, (i + 2), 1, "%*s: %-*s", namel, t[i]->name, w,
-		str_etc(t[i]->value, w, 0));
+      {
+	wchar_t *s = str_etc(t[i]->value, w, 0);
+	mvwprintw(tagw, (i + 2), 1, "%*s: %-*ls", namel, t[i]->name, w, s);
+	free (s);
+      }
 
     for (; i < TAG_HEIGHT - 3; i++)
 	mvwprintw(tagw, (i + 2), 1, "%*s", namel + w + 2, " ");
@@ -1649,7 +1637,7 @@ void update_status_notify(GAME g, char *fmt, ...)
     if (status.notify)
 	free(status.notify);
 
-    status.notify = strdup(line);
+    status.notify = str_to_wchar(line);
 
 #ifdef HAVE_VASPRINTF
     free(line);
@@ -1700,7 +1688,7 @@ static void draw_window_decor()
     window_draw_title(statusw, _("Game Status"), STATUS_WIDTH,
 	    CP_STATUS_TITLE, CP_STATUS_BORDER);
     wbkgd(tagw, CP_TAG_WINDOW);
-    window_draw_title(tagw, _("Roster Tags"), TAG_WIDTH, CP_TAG_TITLE, 
+    window_draw_title(tagw, _("Roster Tags"), TAG_WIDTH, CP_TAG_TITLE,
 	    CP_TAG_BORDER);
     wbkgd(historyw, CP_HISTORY_WINDOW);
     window_draw_title(historyw, _("Move History"), HISTORY_WIDTH,
@@ -4145,7 +4133,7 @@ again:
 }
 
 void game_loop()
-{  
+{
     struct userdata_s *d;
 
     macro_match = -1;

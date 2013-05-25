@@ -24,7 +24,7 @@
 #define KEY_ESCAPE		CTRL('[')
 #define CALCPOSY(y)		((y > LINES - 1) ? 0 : LINES / 2 - y / 2)
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
-#define CENTERX(x, str)		abs((x / 2 - strlen(str) / 2))
+#define CENTERX(x, str)		abs((x / 2 - wcslen (str) / 2))
 #define CENTER_INT(x, n)	abs((x / 2 - n / 2))
 
 typedef struct window_s WIN;
@@ -39,7 +39,7 @@ struct window_s {
     int posy;
     int posx;
     char *title;
-    /* 
+    /*
      * Function that is called when a key is pressed from game_loop(). This is
      * the only place where a key is gotten from. This is for the top window
      * (LIFO). When the function returns -1, the window is destroyed and the

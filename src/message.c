@@ -146,11 +146,11 @@ static int display_message(WIN *win)
     void *p = NULL;
 
     keypad(win->w, TRUE);
-    window_draw_title(win->w, win->title, m->w, CP_MESSAGE_TITLE, 
+    window_draw_title(win->w, win->title, m->w, CP_MESSAGE_TITLE,
 	    CP_MESSAGE_BORDER);
 
     for (i = 0; m->lines[i]; i++)
-	mvwprintw(win->w, (win->title) ? 2 + i: 1 + i, 
+	mvwprintw(win->w, (win->title) ? 2 + i: 1 + i,
 		(m->center || (!i && !m->lines[i+1])) ?
 		CENTERX(m->w, m->lines[i]) : 1, "%s", m->lines[i]);
 
@@ -171,16 +171,9 @@ static int display_message(WIN *win)
 	    free(m->lines[i]);
 
 	free(m->lines);
-	
-	if (m->prompt)
-	    free(m->prompt);
-
-	if (m->extra)
-	    free(m->extra);
-
-	if (m->arg)
-	    p = m->arg;
-
+	free(m->prompt);
+	free(m->extra);
+	p = m->arg;
 	free(m);
 	win->data = p;
 	return 0;
@@ -202,7 +195,7 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     struct message_s *m = NULL;
     WIN *win = NULL;
     int h, w;
-    
+
     va_start(ap, fmt);
     build_message_lines(title, prompt, force_trim, extra_help, &h, &w, &lines, fmt, ap);
     va_end(ap);
@@ -222,9 +215,9 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     if (extra_help)
 	m->extra = strdup(extra_help);
 
-    win = window_create(title, h, w, CALCPOSY(h), CALCPOSX(w), display_message, m, 
-	    efunc);
-    
+    win = window_create(title, h, w, CALCPOSY(h), CALCPOSX(w), display_message,
+			m, efunc);
+
     win->freedata = freedata;
     wbkgd(win->w, CP_MESSAGE_WINDOW);
     (*win->func)(win);

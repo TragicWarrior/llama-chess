@@ -39,6 +39,8 @@
 #include <dmalloc.h>
 #endif
 
+#include "misc.h"
+
 void *Malloc(size_t size)
 {
     void *ptr;
@@ -160,37 +162,38 @@ char *pathfix(const char *str)
     return buf;
 }
 
-char *str_etc(const char *str, int maxlen, int rev)
+wchar_t *str_etc(const char *str, int maxlen, int rev)
 {
     int len;
-    static char buf[LINE_MAX], *p = buf;
-    int i;
+    wchar_t *p;
+    wchar_t *buf;
 
     if (!str)
 	return NULL;
 
-    len = strlen(str);
-    strncpy(buf, str, sizeof(buf));
+    p = str_to_wchar (str);
+    len = wcslen(p);
 
     if (len > maxlen) {
-	if (rev) {
-	    p = buf;
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p++ = '.';
+        wchar_t *dot = str_to_wchar ("...");
 
-	    for (i = 0; i < maxlen + 3; i++)
-		*p++ = buf[(len - maxlen) + i + 3]; 
+        buf = Malloc (maxlen+4*sizeof(wchar_t));
+        buf[0] = 0;
+
+	if (rev) {
+	    wcsncat (buf, dot, maxlen);
+	    wcsncat (buf, p, maxlen);
 	}
 	else {
-	    p = buf + maxlen - 4;
-	    *p++ = '.';
-	    *p++ = '.';
-	    *p++ = '.';
+	    wcsncat (buf, p, maxlen);
+	    wcsncat (buf, dot, maxlen);
 	}
 
-	*p = '\0';
+	free (dot);
+	free (p);
     }
+    else
+      buf = p;
 
     return buf;
 }
@@ -229,4 +232,20 @@ char **split_str(char *str, char *delim, int *n, int *width, int force_trim)
 	*width = w + 2;
 
     return lines;
+}
+
+wchar_t *
+str_to_wchar (const char *str)
+{
+  wchar_t *wc;
+  mbstate_t ps;
+  const char *p = str;
+
+  memset (&ps, 0, sizeof(mbstate_t));
+  size_t len = mbsrtowcs (NULL, &p, 0, &ps)+1;
+  wc = Calloc (1, len * sizeof(wchar_t));
+  p = str;
+  memset (&ps, 0, sizeof(mbstate_t));
+  len = mbsrtowcs (wc, &p, len, &ps);
+  return wc;
 }

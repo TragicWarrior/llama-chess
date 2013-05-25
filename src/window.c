@@ -41,7 +41,7 @@
  * structure. The 'func' parameter is a function pointer that is called from
  * game_loop(). 'efunc' is called just before the window is destroyed.
  */
-WIN *window_create(const char *title, int h, int w, int y, int x, 
+WIN *window_create(const char *title, int h, int w, int y, int x,
 	window_func func, void *data, window_exit_func efunc)
 {
     int i = 0;
@@ -77,9 +77,7 @@ void window_destroy(WIN *win)
 	if (win && memcmp(win, wins[i], sizeof(WIN)) == 0)
 	    win = NULL;
 
-	if (wins[i]->title)
-	    free(wins[i]->title);
-
+	free(wins[i]->title);
 	if (wins[i]->p)
 	    del_panel(wins[i]->p);
 
@@ -97,9 +95,7 @@ void window_destroy(WIN *win)
 	    if (win->p)
 		del_panel(win->p);
 
-	    if (win->title)
-		free(win->title);
-
+	    free(win->title);
 	    delwin(win->w);
 	    free(win);
 	    continue;
@@ -134,21 +130,22 @@ void window_draw_title(WINDOW *win, const char *title, int width, chtype attr,
     int i;
 
     if (title) {
-	const char *p;
+	wchar_t *p;
 
 	wattron(win, attr);
 
 	for (i = 1; i < width - 1; i++)
 	    mvwaddch(win, 1, i, ' ');
 
-	if (strlen(title) > width) {
+	if (mblen (title, strlen(title)) > width) {
 	    p = str_etc(title, width - 2, 1);
 	}
 	else
-	    p = title;
+	  p = str_to_wchar (title);
 
-	mvwprintw(win, 1, CENTERX(width, p), "%s", p);
+	mvwaddwstr(win, 1, CENTERX(width, p), p);
 	wattroff(win, attr);
+	free (p);
     }
 
     wattron(win, battr);
@@ -166,6 +163,8 @@ void window_draw_prompt(WINDOW *win, int y, int width, const char *str,
     for (i = 1; i < width - 1; i++)
 	mvwaddch(win, y, i, ' ');
 
-    mvwprintw(win, y, CENTERX(width, str), "%s", str);
+    wchar_t *promptw = str_to_wchar (str);
+    mvwprintw(win, y, CENTERX(width, promptw), "%ls", promptw);
+    free (promptw);
     wattroff(win, attr);
 }
