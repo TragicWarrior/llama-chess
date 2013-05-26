@@ -9,7 +9,8 @@ cboard_CFLAGS = @libncursesw_CFLAGS@ @libformw_CFLAGS@ @libpanelw_CFLAGS@ \
 cboard_LDFLAGS = @libncursesw_LIBS@ @libformw_LIBS@ @libpanelw_LIBS@ \
 		 @libmenuw_LIBS@
 cboard_LDADD = $(top_builddir)/libchess/libchess.a
-CPPFLAGS += -DDATA_PATH=\"$(pkgdatadir)\" -I$(top_srcdir)/libchess
+CPPFLAGS += -DDATA_PATH=\"$(pkgdatadir)\" -I$(top_srcdir)/libchess \
+	    -DLOCALE_DIR=\"$(prefix)/share/locale\"
 
 if WITH_LIBPERL
 cboard_SOURCES += perl.c perl.h

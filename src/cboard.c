@@ -4562,6 +4562,8 @@ int main(int argc, char *argv[])
     PGN_FILE *pgn;
 
     setlocale (LC_ALL, "");
+    bindtextdomain ("cboard", LOCALE_DIR);
+    textdomain ("cboard");
     init_wchar_pieces ();
 
     /* Solaris 5.9 */
