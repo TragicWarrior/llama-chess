@@ -108,6 +108,13 @@ int curses_initialized;
 // side. Half stepping is alternating sides.
 int movestep;
 
+// Primer movimiento de juego cargado
+// First move loaded game
+char fm_loaded_file = FALSE;
+// Movimiento resultado de la función 'do_play_go'
+// Movement function result 'do_play_go'
+int go_move = 0;
+
 void update_all(GAME g);
 void update_status_notify(GAME g, char *fmt, ...);
 void edit_tags(GAME g, BOARD b, int edit);

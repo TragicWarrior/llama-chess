@@ -128,13 +128,16 @@ void pgn_switch_turn(GAME g)
  * Toggles g->side and switches the White and Black roster tags. Returns
  * nothing.
  */
-void pgn_switch_side(GAME g)
+void pgn_switch_side(GAME g, int t)
 {
-    char *w = g->tag[4]->value;
+    if (t) {
+      char *w = g->tag[4]->value;
 
-    g->tag[4]->value = g->tag[5]->value;
-    g->tag[5]->value = w;
-    g->side = (g->side == WHITE) ? BLACK : WHITE;
+      g->tag[4]->value = g->tag[5]->value;
+      g->tag[5]->value = w;
+    }
+
+    g->side = !g->side;
 }
 
 /*

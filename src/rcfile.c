@@ -277,10 +277,11 @@ void set_default_keys()
     add_key_binding(&play_keys, do_play_commit, '\n', "commit selected piece", 0);
     add_key_binding(&play_keys, do_play_cancel_selected, KEY_ESCAPE, "cancel selected piece", 0);
     add_key_binding(&play_keys, do_play_set_clock, 'C', "set clock", 0);
-    add_key_binding(&play_keys, do_play_switch_turn, 'w', "switch turn", 0);
+//    add_key_binding(&play_keys, do_play_switch_turn, 'w', "switch turn", 0);
     add_key_binding(&play_keys, do_play_undo, 'u', "undo previous move", 1);
     add_key_binding(&play_keys, do_play_go, 'g', "force the chess engine to make the next move", 0);
     add_key_binding(&play_keys, do_play_send_command, '|', "send a command to the chess engine", 0);
+    add_key_binding(&play_keys, do_play_toggle_eh_mode, 'w', "toggle engine/human play", 0);
     add_key_binding(&play_keys, do_play_toggle_engine, 'E', "toggle engine/engine play", 0);
     add_key_binding(&play_keys, do_play_toggle_human, 'H', "toggle human/human play", 0);
     add_key_binding(&play_keys, do_play_toggle_pause, 'p', "toggle pausing of this game", 0);

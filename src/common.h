@@ -51,6 +51,7 @@ struct userdata_s {
     char paused;
     unsigned n;
     unsigned char mode;
+    int play_mode;
     struct clock_s wclock;
     struct clock_s bclock;
     struct timeval elapsed;

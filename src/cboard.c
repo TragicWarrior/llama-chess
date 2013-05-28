@@ -1071,7 +1071,8 @@ void update_status_window(GAME g)
 	else if (TEST_FLAG(d->flags, CF_ENGINE_LOOP))
 	    strncat(buf, " (engine/engine)", len - 1);
 	else
-	    strncat(buf, " (human/engine)", len - 1);
+	    strncat(buf, (d->play_mode == PLAY_EH) ?
+	    " (engine/human)" : " (human/engine)", len - 1);
     }
 
     mvwprintw(statusw, y++, 1, "%-*s", len, buf);
@@ -1950,7 +1951,7 @@ void do_play_send_command()
     in->efunc = do_engine_command_finalize;
     construct_input(ENGINE_CMD_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in, INPUT_HIST_ENGINE, -1);
 }
-
+/*
 void do_play_switch_turn()
 {
     struct userdata_s *d = gp->data;
@@ -1964,6 +1965,24 @@ void do_play_switch_turn()
 
     update_status_window(gp);
 }
+*/
+void do_play_toggle_eh_mode()
+{
+    struct userdata_s *d = gp->data;
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN)) {
+        if (!gp->hindex){
+	    pgn_switch_side(gp, TRUE);
+	    d->play_mode = (d->play_mode) ? PLAY_HE : PLAY_EH;
+	    if (gp->side == BLACK)
+	        update_status_notify(gp, "Press 'g' to start the game");
+	}
+	else
+	    message(NULL, ANYKEY,
+		    "You may only switch sides at the start of the \n"
+		    "game. Press ^K or ^N to begin a new game.");
+    }
+}
 
 void do_play_undo()
 {
@@ -1973,16 +1992,24 @@ void do_play_undo()
 	return;
 
     if (keycount) {
-	if (gp->hindex - keycount < 0)
+        if (gp->hindex - keycount < 0)
 	    gp->hindex = 0;
-	else
-	    gp->hindex -= keycount * 2;
+	else {
+	    if (go_move)
+	        gp->hindex -= (keycount * 2) -1;
+	    else
+	        gp->hindex -= keycount * 2;
+	}
     }
     else {
-	if (gp->hindex - 2 < 0)
+        if (gp->hindex - 2 < 0)
 	    gp->hindex = 0;
-	else
-	    gp->hindex -= 2;
+	else {
+	    if (go_move)
+	        gp->hindex -= 1;
+	    else
+	        gp->hindex -= 2;
+	}
     }
 
     pgn_history_free(gp->hp, gp->hindex);
@@ -1996,6 +2023,11 @@ void do_play_undo()
     }
 
     update_history_window(gp);
+
+    if (go_move) {
+        pgn_switch_side(gp, FALSE);
+	go_move--;
+    }
 }
 
 void do_play_toggle_pause()
@@ -2018,7 +2050,19 @@ void do_play_go()
     if (TEST_FLAG(d->flags, CF_HUMAN))
 	return;
 
+    if (fm_loaded_file && gp->side != gp->turn) {
+        pgn_switch_side(gp, FALSE);
+	add_engine_command(gp, ENGINE_THINKING, "black\n");
+    }
+
     add_engine_command(gp, ENGINE_THINKING, "go\n");
+
+    // Completa la función para que permita seguir jugando al usarla.
+    // Complete the function to allow continue playing when using.
+    if (gp->side == gp->turn)
+        pgn_switch_side(gp, FALSE);
+
+    go_move++;
 }
 
 void do_play_config_command()
@@ -2084,6 +2128,17 @@ void do_play_commit()
     d->sp.row = d->c_row;
     d->sp.col = d->c_col;
     move_to_engine(gp);
+
+    // Completa la función para que permita seguir jugando cuando se carga un
+    // archivo pgn (con juego no terminado) que inicie con turno del lado
+    // negro.
+    // Complete the function to allow continue playing when loading a file
+    // pgn (with unfinished game) you start to turn black side.
+    if (gp->side != gp->turn)
+        pgn_switch_side(gp, FALSE);
+
+    go_move = 0;
+    fm_loaded_file = FALSE;
 }
 
 void do_play_select()
@@ -2930,6 +2985,11 @@ void do_history_toggle()
 	    return;
     }
 
+    if (gp->side != gp->turn)
+        d->play_mode = PLAY_EH;
+    else
+        d->play_mode = PLAY_HE;
+
     do_history_mode_finalize(d);
 }
 
@@ -3362,6 +3422,8 @@ void do_load_file(WIN *win)
 	d->mode = MODE_HISTORY;
 
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
+
+    fm_loaded_file = TRUE;
 
 done:
     pgn_close(pgn);
@@ -3979,8 +4041,10 @@ void game_loop()
 
     if (pgn_history_total(gp->hp))
 	d->mode = MODE_HISTORY;
-    else
-	d->mode = MODE_PLAY;
+    else {
+         d->mode = MODE_PLAY;
+	 d->play_mode = PLAY_HE;
+    }
 
     if (d->mode == MODE_HISTORY)
 	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
@@ -4524,6 +4588,8 @@ int main(int argc, char *argv[])
 	    }
 
 	    pgn_close(pgn);
+
+	    fm_loaded_file = TRUE;
 	}
 
 	cleanup_all();
