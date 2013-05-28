@@ -30,6 +30,10 @@ enum {
     PLAY_HE, PLAY_EH
 };
 
+enum {
+    CURSOR_POSITION, SP_POSITION, SPS_POSITION
+};
+
 typedef void (key_func)(void);
 
 struct key_s {
@@ -57,6 +61,7 @@ key_func do_history_jump_prev;
 key_func do_history_next;
 key_func do_history_prev;
 key_func do_history_half_move_toggle;
+key_func do_history_rotate_board;
 key_func do_history_jump;
 key_func do_history_find_new;
 key_func do_history_find_next;

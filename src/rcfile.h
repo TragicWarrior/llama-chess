@@ -45,6 +45,7 @@ static const struct custom_key_s {
     { MODE_HISTORY, "next", do_history_next, 1},
     { MODE_HISTORY, "prev", do_history_prev, 1},
     { MODE_HISTORY, "half_move_toggle", do_history_half_move_toggle, 0},
+    { MODE_HISTORY, "rotate_board", do_history_rotate_board, 1},
     { MODE_HISTORY, "jump", do_history_jump, 1},
     { MODE_HISTORY, "find_next", do_history_find_next, 1},
     { MODE_HISTORY, "find_new", do_history_find_new, 0},

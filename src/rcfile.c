@@ -249,6 +249,7 @@ void set_default_keys()
     add_key_binding(&history_keys, do_history_next, KEY_RIGHT, "next move", 1);
     add_key_binding(&history_keys, do_history_prev, KEY_LEFT, "previous move", 1);
     add_key_binding(&history_keys, do_history_half_move_toggle, ' ', "toggle half move (ply) stepping", 0);
+    add_key_binding(&history_keys, do_history_rotate_board, 'r', "rotate board", 0);
     add_key_binding(&history_keys, do_history_jump, 'j', "jump to move number", 1);
     add_key_binding(&history_keys, do_history_find_new, '/', "new move text expression", 0);
     add_key_binding(&history_keys, do_history_find_next, ']', "find next move text expression", 1);

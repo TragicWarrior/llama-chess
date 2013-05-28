@@ -114,6 +114,9 @@ char fm_loaded_file = FALSE;
 // Movimiento resultado de la función 'do_play_go'
 // Movement function result 'do_play_go'
 int go_move = 0;
+// Controla rotación de tablero
+// Rotation control board
+int rotate = FALSE;
 
 void update_all(GAME g);
 void update_status_notify(GAME g, char *fmt, ...);
