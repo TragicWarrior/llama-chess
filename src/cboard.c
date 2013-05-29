@@ -540,6 +540,7 @@ void update_board_window(GAME g)
 {
     int row, col;
     int bcol = 0, brow = 0;
+    int l = config.coordsyleft;
     int maxy = BOARD_HEIGHT, maxx = BOARD_WIDTH;
     int ncols = 0, offset = 1;
     unsigned coords_y = 8;
@@ -568,23 +569,23 @@ void update_board_window(GAME g)
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
-		    mvwaddch(boardw, row, col, 
+		    mvwaddch(boardw, row, col + l, 
 			    LINE_GRAPHIC((row) ? 
 				ACS_LLCORNER | CP_BOARD_GRAPHICS : 
 				ACS_ULCORNER | CP_BOARD_GRAPHICS));
 		else if (col == maxx - 2)
-		    mvwaddch(boardw, row, col,
+		    mvwaddch(boardw, row, col + l,
 			    LINE_GRAPHIC((row) ?
 				ACS_LRCORNER | CP_BOARD_GRAPHICS : 
 				ACS_URCORNER | CP_BOARD_GRAPHICS));
 		else if (!(col % 4))
-		    mvwaddch(boardw, row, col, 
+		    mvwaddch(boardw, row, col + l, 
 			    LINE_GRAPHIC((row) ? 
 				ACS_BTEE | CP_BOARD_GRAPHICS : 
 				ACS_TTEE | CP_BOARD_GRAPHICS));
 		else {
 		    if (col != maxx - 1)
-			mvwaddch(boardw, row, col,
+			mvwaddch(boardw, row, col + l,
 				LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
 		}
 
@@ -594,7 +595,7 @@ void update_board_window(GAME g)
 	    if ((row % 2) && col == maxx - 1 &&
 		(coords_y > 0 && coords_y < 9)) {
 		wattron(boardw, CP_BOARD_COORDS);
-		mvwprintw(boardw, row, col,
+		mvwprintw(boardw, row, (l) ? 0 : col, 
 			  "%d", (rotate) ? coords_y++ : coords_y--);
 		wattroff(boardw, CP_BOARD_COORDS);
 		continue;
@@ -602,25 +603,25 @@ void update_board_window(GAME g)
 
 	    if ((col == 0 || col == maxx - 2) && row != maxy - 1) {
 		if (!(row % 2))
-		    mvwaddch(boardw, row, col,
+		    mvwaddch(boardw, row, col + l,
 			    LINE_GRAPHIC((col) ?
 				ACS_RTEE | CP_BOARD_GRAPHICS : 
 				ACS_LTEE | CP_BOARD_GRAPHICS));
 		else
-		    mvwaddch(boardw, row, col,
+		    mvwaddch(boardw, row, col + l,
 			    LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
 
 		continue;
 	    }
 
 	    if ((row % 2) && !(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col,
+		mvwaddch(boardw, row, col + l,
 			LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
 		continue;
 	    }
 
 	    if (!(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col,
+		mvwaddch(boardw, row, col + l,
 			LINE_GRAPHIC(ACS_PLUS | CP_BOARD_GRAPHICS));
 		continue;
 	    }
@@ -675,7 +676,7 @@ void update_board_window(GAME g)
 		    if (row == maxy - 1)
 			attrs = 0;
 
-		    mvwaddch(boardw, row, col, ' ' | attrs);
+		    mvwaddch(boardw, row, col + l, ' ' | attrs);
 
 		    if (row == maxy - 1)
 			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
@@ -724,7 +725,7 @@ printc:
 	    }
 	    else {
 		if (col != maxx - 1)
-		    mvwaddch(boardw, row, col,
+		    mvwaddch(boardw, row, col + l,
 			    LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
 	    }
 	}

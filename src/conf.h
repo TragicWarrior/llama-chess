@@ -83,6 +83,7 @@ struct {
 			 */
     struct config_key_s **keys; // Custom commands to send to the engine.
     int details;	// Board details.
+    char coordsyleft;
 } config;
 
 #endif
