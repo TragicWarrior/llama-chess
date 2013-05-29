@@ -26,6 +26,14 @@ enum {
     MODE_HISTORY, MODE_PLAY, MODE_EDIT
 };
 
+enum {
+    PLAY_HE, PLAY_EH
+};
+
+enum {
+    CURSOR_POSITION, SP_POSITION, SPS_POSITION
+};
+
 typedef void (key_func)(void);
 
 struct key_s {
@@ -53,6 +61,7 @@ key_func do_history_jump_prev;
 key_func do_history_next;
 key_func do_history_prev;
 key_func do_history_half_move_toggle;
+key_func do_history_rotate_board;
 key_func do_history_jump;
 key_func do_history_find_new;
 key_func do_history_find_next;
@@ -81,10 +90,11 @@ key_func do_play_select;
 key_func do_play_commit;
 key_func do_play_cancel_selected;
 key_func do_play_set_clock;
-key_func do_play_switch_turn;
+//key_func do_play_switch_turn;
 key_func do_play_undo;
 key_func do_play_go;
 key_func do_play_send_command;
+key_func do_play_toggle_eh_mode;
 key_func do_play_toggle_engine;
 key_func do_play_toggle_human;
 key_func do_play_help;

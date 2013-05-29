@@ -250,6 +250,7 @@ void set_default_keys()
     add_key_binding(&history_keys, do_history_next, KEY_RIGHT, "next move", 1);
     add_key_binding(&history_keys, do_history_prev, KEY_LEFT, "previous move", 1);
     add_key_binding(&history_keys, do_history_half_move_toggle, ' ', "toggle half move (ply) stepping", 0);
+    add_key_binding(&history_keys, do_history_rotate_board, 'r', "rotate board", 0);
     add_key_binding(&history_keys, do_history_jump, 'j', "jump to move number", 1);
     add_key_binding(&history_keys, do_history_find_new, '/', "new move text expression", 0);
     add_key_binding(&history_keys, do_history_find_next, ']', "find next move text expression", 1);
@@ -278,10 +279,11 @@ void set_default_keys()
     add_key_binding(&play_keys, do_play_commit, '\n', "commit selected piece", 0);
     add_key_binding(&play_keys, do_play_cancel_selected, KEY_ESCAPE, "cancel selected piece", 0);
     add_key_binding(&play_keys, do_play_set_clock, 'C', "set clock", 0);
-    add_key_binding(&play_keys, do_play_switch_turn, 'w', "switch turn", 0);
+//    add_key_binding(&play_keys, do_play_switch_turn, 'w', "switch turn", 0);
     add_key_binding(&play_keys, do_play_undo, 'u', "undo previous move", 1);
     add_key_binding(&play_keys, do_play_go, 'g', "force the chess engine to make the next move", 0);
     add_key_binding(&play_keys, do_play_send_command, '|', "send a command to the chess engine", 0);
+    add_key_binding(&play_keys, do_play_toggle_eh_mode, 'w', "toggle engine/human play", 0);
     add_key_binding(&play_keys, do_play_toggle_engine, 'E', "toggle engine/engine play", 0);
     add_key_binding(&play_keys, do_play_toggle_human, 'H', "toggle human/human play", 0);
     add_key_binding(&play_keys, do_play_toggle_pause, 'p', "toggle pausing of this game", 0);

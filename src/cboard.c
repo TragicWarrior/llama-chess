@@ -127,6 +127,16 @@ static char **nags;
 static int nag_total;
 static int macro_match;
 
+// Primer movimiento de juego cargado
+// First move loaded game
+static char fm_loaded_file = FALSE;
+// Movimiento resultado de la función 'do_play_go'
+// Movement function result 'do_play_go'
+static int go_move = 0;
+// Controla rotación de tablero
+// Rotation control board
+static int rotate = FALSE;
+
 // Status window.
 static struct {
   wchar_t *notify;	// The status window notification line buffer.
@@ -153,6 +163,44 @@ static wchar_t *b_king_wchar;
 static wchar_t *empty_wchar;
 
 static void free_userdata_once(GAME g);
+
+// Posición por rotación de tablero.
+// Rotation board position.
+static void rotate_position(int p)
+{
+    struct userdata_s *d = gp->data;
+    char fr, fc;
+    char fr2 = 8, fc2 = 8;
+
+    for (fr = 1; fr < 9; fr++)  {
+	if (fr2 < 1)
+	    fr2 = 8;
+	for (fc = 1; fc < 9; fc++){
+	    if (fc2 < 1)
+		fc2 = 8;
+	    if (p == CURSOR_POSITION &&
+		d->c_row == fr && d->c_col == fc) {
+		d->c_row = fr2;
+		d->c_col = fc2;
+		return;
+	    }
+	    else if (p == SP_POSITION &&
+		     d->sp.row == fr && d->sp.col == fc) {
+		d->sp.row = fr2;
+		d->sp.col = fc2;
+		return;
+	    }
+	    else if (p == SPS_POSITION &&
+		     d->sp.srow == fr && d->sp.scol == fc) {
+		d->sp.srow = fr2;
+		d->sp.scol = fc2;
+		return;
+	    }
+	    fc2--;
+	}
+	fr2--;
+    }
+}
 
 void update_cursor(GAME g, int idx)
 {
@@ -191,6 +239,9 @@ void update_cursor(GAME g, int idx)
 
     d->c_row = RANKTOINT(*p--);
     d->c_col = FILETOINT(*p);
+
+    if (d->mode == MODE_HISTORY && rotate)
+	rotate_position(CURSOR_POSITION);
 }
 
 static int init_nag()
@@ -645,8 +696,17 @@ void update_board_window(GAME g)
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
 	update_cursor(g, g->hindex);
 
+    if (rotate) {
+	brow = 7;
+	coords_y = 1;
+    }
+
     for (row = 0; row < maxy; row++) {
-	bcol = 0;
+
+	if (rotate)
+	    bcol = 7;
+	else
+	    bcol = 0;
 
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
@@ -678,9 +738,11 @@ void update_board_window(GAME g)
 		continue;
 	    }
 
-	    if ((row % 2) && col == maxx - 1 && coords_y) {
+	    if ((row % 2) && col == maxx - 1 &&
+		(coords_y > 0 && coords_y < 9)) {
 		wattron(boardw, CP_BOARD_COORDS);
-		mvwprintw(boardw, row, col, "%d", coords_y--);
+		mvwprintw(boardw, row, col,
+			  "%d", (rotate) ? coords_y++ : coords_y--);
 		wattroff(boardw, CP_BOARD_COORDS);
 		continue;
 	    }
@@ -723,10 +785,10 @@ void update_board_window(GAME g)
 		    else
 			attrwhich = WHITE;
 
-		    p = d->b[row / 2][bcol].icon;
+		    p = d->b[brow][bcol].icon;
 		    int pi = pgn_piece_to_int(p);
 
-		    if (config.details && d->b[row / 2][bcol].enpassant) {
+		    if (config.details && d->b[brow][bcol].enpassant) {
 			p = pi = 'x';
 			attrs = mix_cp(CP_BOARD_ENPASSANT, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
@@ -802,7 +864,11 @@ printc:
 
 		    waddch(boardw, ' ' | attrs);
 		    col += 2;
-		    bcol++;
+
+		    if (rotate)
+			bcol--;
+		    else
+			bcol++;
 		}
 	    }
 	    else {
@@ -812,7 +878,12 @@ printc:
 	    }
 	}
 
-	brow = row / 2;
+	if (row % 2) {
+	    if (rotate)
+		brow--;
+	    else
+		brow++;
+	}
     }
 }
 
@@ -1211,7 +1282,8 @@ void update_status_window(GAME g)
 	else if (TEST_FLAG(d->flags, CF_ENGINE_LOOP))
 	    strncat(buf, " (engine/engine)", len - 1);
 	else
-	    strncat(buf, " (human/engine)", len - 1);
+	    strncat(buf, (d->play_mode == PLAY_EH) ?
+	    " (engine/human)" : " (human/engine)", len - 1);
     }
 
     mvwprintw(statusw, y++, 1, "%-*s", len, buf);
@@ -2097,7 +2169,7 @@ void do_play_send_command()
     in->efunc = do_engine_command_finalize;
     construct_input(_("Engine Command"), NULL, 1, 1, NULL, NULL, NULL, 0, in, INPUT_HIST_ENGINE, -1);
 }
-
+/*
 void do_play_switch_turn()
 {
     struct userdata_s *d = gp->data;
@@ -2111,6 +2183,26 @@ void do_play_switch_turn()
 
     update_status_window(gp);
 }
+*/
+void do_play_toggle_eh_mode()
+{
+    struct userdata_s *d = gp->data;
+
+    if (!TEST_FLAG(d->flags, CF_HUMAN)) {
+        if (!gp->hindex){
+	    pgn_switch_side(gp, TRUE);
+	    d->play_mode = (d->play_mode) ? PLAY_HE : PLAY_EH;
+	    if (gp->side == BLACK)
+	        update_status_notify(gp, _("Press 'g' to start the game"));
+
+	    rotate = (rotate) ? FALSE : TRUE;
+	}
+	else
+	    message(NULL, _("[ press any key to continue ]"),
+		    _("You may only switch sides at the start of the \n"
+		      "game. Press ^K or ^N to begin a new game."));
+    }
+}
 
 void do_play_undo()
 {
@@ -2120,16 +2212,24 @@ void do_play_undo()
 	return;
 
     if (keycount) {
-	if (gp->hindex - keycount < 0)
+        if (gp->hindex - keycount < 0)
 	    gp->hindex = 0;
-	else
-	    gp->hindex -= keycount * 2;
+	else {
+	    if (go_move)
+	        gp->hindex -= (keycount * 2) -1;
+	    else
+	        gp->hindex -= keycount * 2;
+	}
     }
     else {
-	if (gp->hindex - 2 < 0)
+        if (gp->hindex - 2 < 0)
 	    gp->hindex = 0;
-	else
-	    gp->hindex -= 2;
+	else {
+	    if (go_move)
+	        gp->hindex -= 1;
+	    else
+	        gp->hindex -= 2;
+	}
     }
 
     pgn_history_free(gp->hp, gp->hindex);
@@ -2143,6 +2243,11 @@ void do_play_undo()
     }
 
     update_history_window(gp);
+
+    if (go_move) {
+        pgn_switch_side(gp, FALSE);
+	go_move--;
+    }
 }
 
 void do_play_toggle_pause()
@@ -2165,7 +2270,19 @@ void do_play_go()
     if (TEST_FLAG(d->flags, CF_HUMAN))
 	return;
 
+    if (fm_loaded_file && gp->side != gp->turn) {
+        pgn_switch_side(gp, FALSE);
+	add_engine_command(gp, ENGINE_THINKING, "black\n");
+    }
+
     add_engine_command(gp, ENGINE_THINKING, "go\n");
+
+    // Completa la función para que permita seguir jugando al usarla.
+    // Complete the function to allow continue playing when using.
+    if (gp->side == gp->turn)
+        pgn_switch_side(gp, FALSE);
+
+    go_move++;
 }
 
 void do_play_config_command()
@@ -2230,7 +2347,27 @@ void do_play_commit()
 
     d->sp.row = d->c_row;
     d->sp.col = d->c_col;
+
+    if (rotate) {
+        rotate_position(SP_POSITION);
+	rotate_position(SPS_POSITION);
+    }
+
     move_to_engine(gp);
+
+    // Completa la función para que permita seguir jugando cuando se carga un
+    // archivo pgn (con juego no terminado) que inicie con turno del lado
+    // negro.
+    // Complete the function to allow continue playing when loading a file
+    // pgn (with unfinished game) you start to turn black side.
+    if (gp->side != gp->turn)
+        pgn_switch_side(gp, FALSE);
+
+    if (rotate && d->sp.icon)
+        rotate_position(SPS_POSITION);
+
+    go_move = 0;
+    fm_loaded_file = FALSE;
 }
 
 void do_play_select()
@@ -2245,6 +2382,9 @@ void do_play_select()
 
     if (d->sp.icon || (d->engine && d->engine->status == ENGINE_THINKING))
 	return;
+
+    if (rotate)
+        rotate_position(CURSOR_POSITION);
 
     d->sp.icon = d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon;
 
@@ -2282,6 +2422,11 @@ void do_play_select()
 
     if (config.validmoves)
 	pgn_find_valid_moves(gp, d->b, d->sp.scol, d->sp.srow);
+
+    if (rotate) {
+        rotate_position(CURSOR_POSITION);
+	rotate_position(SPS_POSITION);
+    }
 
     CLEAR_FLAG(d->flags, CF_NEW);
     start_clock(gp);
@@ -2425,6 +2570,7 @@ void do_play_history_mode()
 
     d->mode = MODE_HISTORY;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
+    rotate = FALSE;
 }
 
 void do_play_edit_mode()
@@ -3004,6 +3150,11 @@ void do_history_half_move_toggle()
     update_history_window(gp);
 }
 
+void do_history_rotate_board()
+{
+    rotate = (rotate) ? FALSE : TRUE;
+}
+
 void do_history_jump_next()
 {
     struct userdata_s *d = gp->data;
@@ -3092,6 +3243,15 @@ void do_history_toggle()
     else {
 	if (TEST_FLAG(gp->flags, GF_GAMEOVER))
 	    return;
+    }
+
+    if (gp->side != gp->turn) {
+        d->play_mode = PLAY_EH;
+	rotate = TRUE;
+    }
+    else {
+        d->play_mode = PLAY_HE;
+	rotate = FALSE;
     }
 
     do_history_mode_finalize(d);
@@ -3323,6 +3483,7 @@ void do_new_game_from_scratch(WIN *win)
     init_userdata();
     loadfile[0] = 0;
     do_new_game_finalize(gp);
+    rotate = FALSE;
 }
 
 void do_new_game()
@@ -3332,6 +3493,7 @@ void do_new_game()
     add_custom_tags(&gp->tag);
     init_userdata_once(gp, gindex);
     do_new_game_finalize(gp);
+    rotate = FALSE;
 }
 
 void do_game_delete_finalize(int n)
@@ -3526,6 +3688,8 @@ void do_load_file(WIN *win)
 	d->mode = MODE_HISTORY;
 
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
+
+    fm_loaded_file = TRUE;
 
 done:
     pgn_close(pgn);
@@ -4143,8 +4307,10 @@ void game_loop()
 
     if (pgn_history_total(gp->hp))
 	d->mode = MODE_HISTORY;
-    else
-	d->mode = MODE_PLAY;
+    else {
+         d->mode = MODE_PLAY;
+	 d->play_mode = PLAY_HE;
+    }
 
     if (d->mode == MODE_HISTORY)
 	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
@@ -4693,6 +4859,8 @@ int main(int argc, char *argv[])
 	    }
 
 	    pgn_close(pgn);
+
+	    fm_loaded_file = TRUE;
 	}
 
 	cleanup_all();

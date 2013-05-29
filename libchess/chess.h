@@ -428,7 +428,7 @@ void pgn_switch_turn(GAME);
  * Toggles g->side and switches the White and Black roster tags. Returns
  * nothing.
  */
-void pgn_switch_side(GAME g);
+void pgn_switch_side(GAME g, int t);
 
 /*
  * Clears the enpassant flag for all positions on board 'b'. Returns nothing.
