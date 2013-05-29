@@ -333,6 +333,7 @@ void set_config_defaults()
     config.fmpolyglot = FALSE;
     config.boardleft = TRUE;
     config.exitdialogbox = TRUE;
+    config.enginecmdblacktag = TRUE;
 
     set_default_colors();
 
@@ -695,6 +696,8 @@ void parse_rcfile(const char *filename)
 	    config.boardleft = on_or_off(filename, lines, val);
 	else if (strcmp(var, "exit_dialog_box") == 0 )
 	    config.exitdialogbox = on_or_off(filename, lines, val);
+	else if (strcmp(var, "engine_cmd_blacktag") == 0 )
+	    config.enginecmdblacktag = on_or_off(filename, lines, val);
 	else if (strcmp(var, "strict_castling") == 0)
 	    pgn_config_set(PGN_STRICT_CASTLING, on_or_off(filename, lines, val));
 	else if (strcmp(var, "engine_cmd") == 0)
@@ -834,4 +837,7 @@ void parse_rcfile(const char *filename)
 	config.engine_cmd = NULL;
 	config.engine_cmd = altengine;
     }
+
+    if (config.enginecmdblacktag)
+	pgn_tag_add(&config.tag, "Black", config.engine_cmd);
 }

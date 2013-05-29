@@ -87,6 +87,7 @@ struct {
     char fmpolyglot;	// first move with polyglot
     char boardleft;
     char exitdialogbox;
+    char enginecmdblacktag;
 } config;
 
 #endif
