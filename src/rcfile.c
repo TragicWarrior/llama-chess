@@ -331,6 +331,7 @@ void set_config_defaults()
     config.details = 1;
     config.coordsyleft = TRUE;
     config.fmpolyglot = FALSE;
+    config.boardleft = TRUE;
 
     set_default_colors();
 
@@ -689,6 +690,8 @@ void parse_rcfile(const char *filename)
 		config.coordsyleft = on_or_off(filename, lines, val);
 	else if (strcmp(var, "fm_polyglot") == 0 )
 		config.fmpolyglot = on_or_off(filename, lines, val);
+	else if (strcmp(var, "board_left") == 0 )
+		config.boardleft = on_or_off(filename, lines, val);
 	else if (strcmp(var, "strict_castling") == 0)
 	    pgn_config_set(PGN_STRICT_CASTLING, on_or_off(filename, lines, val));
 	else if (strcmp(var, "engine_cmd") == 0)

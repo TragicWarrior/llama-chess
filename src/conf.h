@@ -85,6 +85,7 @@ struct {
     int details;	// Board details.
     char coordsyleft;
     char fmpolyglot;	// first move with polyglot
+    char boardleft;
 } config;
 
 #endif

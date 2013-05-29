@@ -1187,15 +1187,19 @@ void update_status_window(GAME g)
     mvwprintw(statusw, y++, 1, "%*s %-*s", 7, STATUS_CLOCK_STR, w, 
 	    clock_to_char(d->elapsed.tv_sec));
 
-    for (i = 0; i < STATUS_WIDTH; i++)
-	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
+//	for (i = 0; i < STATUS_WIDTH; i++)
+//	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
 
     if (!status.notify)
 	status.notify = strdup(GAME_HELP_PROMPT);
 
     wattron(stdscr, CP_STATUS_NOTIFY);
-    mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify), "%s",
-	    status.notify);
+    for (i = (config.boardleft) ? BOARD_WIDTH : 0;
+	 i < ((config.boardleft) ? COLS : STATUS_WIDTH); i++)
+	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
+    mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify)
+	      + ((config.boardleft) ? BOARD_WIDTH : 0),
+	      "%s", status.notify);
     wattroff(stdscr, CP_STATUS_NOTIFY);
 }
 
@@ -1599,9 +1603,15 @@ int rav_next_prev(GAME g, BOARD b, int n)
 
 static void draw_window_decor()
 {
-    move_panel(historyp, LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
-    move_panel(boardp, 0, COLS - BOARD_WIDTH);
-    move_panel(statusp, 0, 0);
+    move_panel(boardp, 0,
+	       (config.boardleft) ? 0 : COLS - BOARD_WIDTH);
+    move_panel(historyp, LINES - HISTORY_HEIGHT,
+	       (config.boardleft) ? 0 : COLS - HISTORY_WIDTH);
+    move_panel(statusp, 0,
+	       (config.boardleft) ? BOARD_WIDTH : 0);
+    move_panel(tagp, STATUS_HEIGHT + 1,
+	       (config.boardleft) ? HISTORY_WIDTH : 0);
+
     wbkgd(boardw, CP_BOARD_WINDOW);
     wbkgd(statusw, CP_STATUS_WINDOW);
     window_draw_title(statusw, STATUS_WINDOW_TITLE, STATUS_WIDTH,
