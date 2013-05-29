@@ -3853,9 +3853,21 @@ void do_global_new_all()
 	    do_new_game_from_scratch, 0, 0, "%s", GAME_NEW_PROMPT);
 }
 
+void do_quit(WIN *win)
+{
+    if (tolower(win->c) != 'y')
+	return;
+
+    quit = 1;
+}
+
 void do_global_quit()
 {
-    quit = 1;
+    if (config.exitdialogbox)
+	construct_message(NULL, "[ Yes or No ]", 1, 1, NULL, NULL, NULL,
+			  do_quit, 0, 0, "Want to Quit?");
+    else
+	quit = 1;
 }
 
 void do_global_toggle_engine_window()

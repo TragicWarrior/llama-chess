@@ -86,6 +86,7 @@ struct {
     char coordsyleft;
     char fmpolyglot;	// first move with polyglot
     char boardleft;
+    char exitdialogbox;
 } config;
 
 #endif
