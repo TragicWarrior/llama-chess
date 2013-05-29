@@ -78,7 +78,7 @@
 
 // Posición por rotación de tablero.
 // Rotation board position.
-void rotate_position(int p)
+static void rotate_position(int p)
 {
     struct userdata_s *d = gp->data;
     char fr, fc;
@@ -2209,6 +2209,14 @@ void do_play_commit()
 
     if (rotate && d->sp.icon)
         rotate_position(SPS_POSITION);
+
+    // Envia comando 'go' a Polyglot en el primer movimiento  debido a que
+    // polyglot no envia el movimiento y cboard se queda esperando.
+    // Send command 'go' to the first movement Polyglot  because cboard
+    // waits to send polyglot movement and this does not make.
+    if (config.fmpolyglot &&
+	((gp->side == WHITE && !gp->hindex) || fm_loaded_file))
+	add_engine_command(gp, ENGINE_THINKING, "go\n");
 
     go_move = 0;
     fm_loaded_file = FALSE;

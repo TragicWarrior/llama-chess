@@ -84,6 +84,7 @@ struct {
     struct config_key_s **keys; // Custom commands to send to the engine.
     int details;	// Board details.
     char coordsyleft;
+    char fmpolyglot;	// first move with polyglot
 } config;
 
 #endif
