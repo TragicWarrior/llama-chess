@@ -688,6 +688,7 @@ void update_board_window(GAME g)
 {
     int row, col;
     int bcol = 0, brow = 0;
+    int l = config.coordsyleft;
     int maxy = BOARD_HEIGHT, maxx = BOARD_WIDTH;
     int ncols = 0, offset = 1;
     unsigned coords_y = 8;
@@ -715,23 +716,23 @@ void update_board_window(GAME g)
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
-		    mvwaddch(boardw, row, col,
-			    LINE_GRAPHIC((row) ?
-				ACS_LLCORNER | CP_BOARD_GRAPHICS :
-				ACS_ULCORNER | CP_BOARD_GRAPHICS));
+		    mvwaddch(boardw, row, col + l,
+			     LINE_GRAPHIC((row)
+					  ? ACS_LLCORNER | CP_BOARD_GRAPHICS
+					  : ACS_ULCORNER | CP_BOARD_GRAPHICS));
 		else if (col == maxx - 2)
-		    mvwaddch(boardw, row, col,
-			    LINE_GRAPHIC((row) ?
-				ACS_LRCORNER | CP_BOARD_GRAPHICS :
-				ACS_URCORNER | CP_BOARD_GRAPHICS));
+		    mvwaddch(boardw, row, col + l,
+			     LINE_GRAPHIC((row)
+					  ? ACS_LRCORNER | CP_BOARD_GRAPHICS
+					  : ACS_URCORNER | CP_BOARD_GRAPHICS));
 		else if (!(col % 4))
-		    mvwaddch(boardw, row, col,
-			    LINE_GRAPHIC((row) ?
-				ACS_BTEE | CP_BOARD_GRAPHICS :
-				ACS_TTEE | CP_BOARD_GRAPHICS));
+		    mvwaddch(boardw, row, col + l,
+			     LINE_GRAPHIC((row)
+					  ? ACS_BTEE | CP_BOARD_GRAPHICS
+					  : ACS_TTEE | CP_BOARD_GRAPHICS));
 		else {
 		    if (col != maxx - 1)
-			mvwaddch(boardw, row, col,
+			mvwaddch(boardw, row, col + l,
 				LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
 		}
 
@@ -741,7 +742,7 @@ void update_board_window(GAME g)
 	    if ((row % 2) && col == maxx - 1 &&
 		(coords_y > 0 && coords_y < 9)) {
 		wattron(boardw, CP_BOARD_COORDS);
-		mvwprintw(boardw, row, col,
+		mvwprintw(boardw, row, (l) ? 0 : col, 
 			  "%d", (rotate) ? coords_y++ : coords_y--);
 		wattroff(boardw, CP_BOARD_COORDS);
 		continue;
@@ -749,25 +750,25 @@ void update_board_window(GAME g)
 
 	    if ((col == 0 || col == maxx - 2) && row != maxy - 1) {
 		if (!(row % 2))
-		    mvwaddch(boardw, row, col,
+		    mvwaddch(boardw, row, col + l,
 			    LINE_GRAPHIC((col) ?
 				ACS_RTEE | CP_BOARD_GRAPHICS :
 				ACS_LTEE | CP_BOARD_GRAPHICS));
 		else
-		    mvwaddch(boardw, row, col,
+		    mvwaddch(boardw, row, col + l,
 			    LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
 
 		continue;
 	    }
 
 	    if ((row % 2) && !(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col,
+		mvwaddch(boardw, row, col + l,
 			LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
 		continue;
 	    }
 
 	    if (!(col % 4) && row != maxy - 1) {
-		mvwaddch(boardw, row, col,
+		mvwaddch(boardw, row, col + l,
 			LINE_GRAPHIC(ACS_PLUS | CP_BOARD_GRAPHICS));
 		continue;
 	    }
@@ -822,10 +823,10 @@ void update_board_window(GAME g)
 		    if (row == maxy - 1)
 			attrs = 0;
 
-		    mvwaddch(boardw, row, col, ' ' | attrs);
+		    mvwaddch(boardw, row, col + l, ' ' | attrs);
 
 		    if (row == maxy - 1)
-			waddch(boardw, _("abcdefgh")[bcol] | CP_BOARD_COORDS);
+			waddch(boardw, "abcdefgh"[bcol] | CP_BOARD_COORDS);
 		    else {
 			if (old_attrs == -1) {
 			    old_attrs = attrs;
@@ -873,7 +874,7 @@ printc:
 	    }
 	    else {
 		if (col != maxx - 1)
-		    mvwaddch(boardw, row, col,
+		    mvwaddch(boardw, row, col + l,
 			    LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
 	    }
 	}
@@ -1336,14 +1337,18 @@ void update_status_window(GAME g)
     mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Total:"), w,
 	    clock_to_char(d->elapsed.tv_sec));
 
-    for (i = 0; i < STATUS_WIDTH; i++)
-	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
+//	for (i = 0; i < STATUS_WIDTH; i++)
+//	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
 
     if (!status.notify)
 	status.notify = str_to_wchar(_("Type F1 for help"));
 
     wattron(stdscr, CP_STATUS_NOTIFY);
-    mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify),
+    for (i = (config.boardleft) ? BOARD_WIDTH : 0;
+	 i < ((config.boardleft) ? COLS : STATUS_WIDTH); i++)
+	mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
+    mvwprintw(stdscr, STATUS_HEIGHT, CENTERX(STATUS_WIDTH, status.notify)
+	      + ((config.boardleft) ? BOARD_WIDTH : 0),
 	      "%ls", status.notify);
     wattroff(stdscr, CP_STATUS_NOTIFY);
 }
@@ -1752,9 +1757,15 @@ int rav_next_prev(GAME g, BOARD b, int n)
 
 static void draw_window_decor()
 {
-    move_panel(historyp, LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
-    move_panel(boardp, 0, COLS - BOARD_WIDTH);
-    move_panel(statusp, 0, 0);
+    move_panel(boardp, 0,
+	       (config.boardleft) ? 0 : COLS - BOARD_WIDTH);
+    move_panel(historyp, LINES - HISTORY_HEIGHT,
+	       (config.boardleft) ? 0 : COLS - HISTORY_WIDTH);
+    move_panel(statusp, 0,
+	       (config.boardleft) ? BOARD_WIDTH : 0);
+    move_panel(tagp, STATUS_HEIGHT + 1,
+	       (config.boardleft) ? HISTORY_WIDTH : 0);
+
     wbkgd(boardw, CP_BOARD_WINDOW);
     wbkgd(statusw, CP_STATUS_WINDOW);
     window_draw_title(statusw, _("Game Status"), STATUS_WIDTH,
@@ -2365,6 +2376,14 @@ void do_play_commit()
 
     if (rotate && d->sp.icon)
         rotate_position(SPS_POSITION);
+
+    // Envia comando 'go' a Polyglot en el primer movimiento  debido a que
+    // polyglot no envia el movimiento y cboard se queda esperando.
+    // Send command 'go' to the first movement Polyglot  because cboard
+    // waits to send polyglot movement and this does not make.
+    if (config.fmpolyglot &&
+	((gp->side == WHITE && !gp->hindex) || fm_loaded_file))
+	add_engine_command(gp, ENGINE_THINKING, "go\n");
 
     go_move = 0;
     fm_loaded_file = FALSE;
@@ -4008,9 +4027,21 @@ void do_global_new_all()
 	    do_new_game_from_scratch, 0, 0, "%s", _("Really start a new game from scratch?"));
 }
 
+void do_quit(WIN *win)
+{
+    if (tolower(win->c) != 'y')
+	return;
+
+    quit = 1;
+}
+
 void do_global_quit()
 {
-    quit = 1;
+    if (config.exitdialogbox)
+	construct_message(NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, NULL,
+			  do_quit, 0, 0, _("Want to Quit?"));
+    else
+	quit = 1;
 }
 
 void do_global_toggle_engine_window()
