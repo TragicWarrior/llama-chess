@@ -3154,8 +3154,9 @@ void history_menu(GAME g)
     add_menu_key(&keys, CTRL('a'), history_menu_annotate);
     add_menu_key(&keys, CTRL('d'), history_menu_details);
     add_menu_key(&keys, '\n', history_menu_view_annotation);
-    construct_menu(LINES, TAG_WIDTH, 0, 0, _("Move History Tree"), 1, 
-	    get_history_items, keys, g, history_menu_print, history_menu_exit);
+    construct_menu(LINES, TAG_WIDTH, 0, config.boardleft ? BOARD_WIDTH : 0,
+		   _("Move History Tree"), 1, get_history_items, keys, g,
+		   history_menu_print, history_menu_exit);
 }
 
 void do_history_menu()
