@@ -28,13 +28,10 @@ AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
 dnl Checks for library functions.
-AC_CHECK_LIB(curses, initscr, ,
-            [AC_CHECK_LIB(ncurses, initscr, ,
-            [AC_MSG_ERROR([Missing or incomplete curses installation.])])])
-AC_CHECK_LIB(panel, new_panel, ,
-            [AC_MSG_ERROR([Missing or incomplete curses installation.])])
-AC_CHECK_LIB(form, new_form, ,
-            [AC_MSG_ERROR([Missing or incomplete curses installation.])])
+AX_WITH_CURSES
+AX_WITH_CURSES_PANEL
+AX_WITH_CURSES_MENU
+AX_WITH_CURSES_FORM
 
 AC_ARG_WITH(libperl, AC_HELP_STRING([--with-libperl], [PERL support.]),
     want_libperl=yes, want_libperl=no)

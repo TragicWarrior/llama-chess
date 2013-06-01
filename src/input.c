@@ -30,15 +30,7 @@
 #include <stdarg.h>
 #endif
 
-#ifdef HAVE_FORM_H
-#include <form.h>
-#endif
-
-#ifdef HAVE_PANEL_H
-#include <panel.h>
-#endif
-
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "colors.h"
 #include "window.h"

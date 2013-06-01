@@ -24,11 +24,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <panel.h>
 #include <errno.h>
 #include <ctype.h>
 #include <pwd.h>
@@ -52,7 +50,7 @@
 #include "perl.h"
 #endif
 
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "window.h"
 #include "message.h"
@@ -61,7 +59,6 @@
 #include "misc.h"
 #include "engine.h"
 #include "strings.h"
-#include "common.h"
 #include "menu.h"
 #include "keys.h"
 #include "rcfile.h"

@@ -22,13 +22,7 @@
 
 #include <stdio.h>
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#endif
-
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "colors.h"
 

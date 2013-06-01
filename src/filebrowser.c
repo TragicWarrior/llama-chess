@@ -25,7 +25,6 @@
 #include <unistd.h>
 #include <err.h>
 #include <errno.h>
-#include <panel.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -41,7 +40,7 @@
 #endif
 
 #include "misc.h"
-#include "chess.h"
+#include "common.h"
 #include "window.h"
 #include "message.h"
 #include "menu.h"
