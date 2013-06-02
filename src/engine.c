@@ -265,7 +265,7 @@ static pid_t exec_chess_engine(GAME g, char **args)
 #ifndef UNIX98
     if ((to[0] = open(pty, O_RDWR, 0)) == -1)
 #else
-    if ((to[0] = open(ptsname(to[1]), O_RDWR, 0)) == -1)
+    if ((to[0] = open(ptsname(to[1]), O_RDWR | O_NOCTTY, 0)) == -1)
 #endif
 	return -1;
 
