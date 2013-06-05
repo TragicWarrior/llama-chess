@@ -323,6 +323,7 @@ void set_config_defaults()
     config.deleteprompt = 1;
     config.validmoves = 1;
     config.details = 1;
+    config.showattacks = 1;
     config.coordsyleft = TRUE;
     config.fmpolyglot = FALSE;
     config.boardleft = TRUE;
@@ -682,6 +683,8 @@ void parse_rcfile(const char *filename)
 	    config.validmoves = on_or_off(filename, lines, val);
 	else if (strcmp(var, "board_details") == 0)
 	    config.details = on_or_off(filename, lines, val);
+	else if (strcmp(var, "show_attacks") == 0)
+	    config.showattacks = on_or_off(filename, lines, val);
 	else if (strcmp(var, "coords_y_left") == 0 )
 	    config.coordsyleft = on_or_off(filename, lines, val);
 	else if (strcmp(var, "fm_polyglot") == 0 )
@@ -730,6 +733,8 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_BCASTLING]);
 	else if (strcmp(var, "color_board_enpassant") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BENPASSANT]);
+	else if (strcmp(var, "color_board_attack") == 0)
+	  parse_color(filename, lines, val, &config.color[CONF_BATTACK]);
 	else if (strcmp(var, "color_status_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_SWINDOW]);
 	else if (strcmp(var, "color_status_title") == 0)

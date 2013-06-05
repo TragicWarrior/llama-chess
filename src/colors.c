@@ -172,6 +172,8 @@ void init_color_pairs()
 	    config.color[CONF_BCASTLING].bg);
     init_pair(next_cp++, config.color[CONF_BENPASSANT].fg, 
 	    config.color[CONF_BENPASSANT].bg);
+    init_pair(next_cp++, config.color[CONF_BATTACK].fg, 
+	      config.color[CONF_BATTACK].bg);
 }
 
 void set_default_colors()
@@ -268,4 +270,8 @@ void set_default_colors()
     config.color[CONF_BENPASSANT].bg = COLOR_BLACK;
     config.color[CONF_BENPASSANT].attrs = A_BOLD;
     config.color[CONF_BENPASSANT].nattrs = A_BOLD;
+    config.color[CONF_BATTACK].fg = COLOR_BLUE;
+    config.color[CONF_BATTACK].bg = COLOR_BLACK;
+    config.color[CONF_BATTACK].attrs = A_BOLD;
+    config.color[CONF_BATTACK].nattrs = A_REVERSE;
 }

@@ -533,6 +533,76 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 #define IS_ENPASSANT(c)	(c == 'x') ? CP_BOARD_ENPASSANT : isupper(c) ? CP_BOARD_WHITE : CP_BOARD_BLACK
 #define ATTRS(cp) (cp & (A_BOLD|A_STANDOUT|A_BLINK|A_DIM|A_UNDERLINE|A_INVIS|A_REVERSE))
 
+static int piece_can_attack (GAME g, int rank, int file)
+{
+    struct userdata_s *d = g->data;
+    char *m, *frfr = NULL;
+    pgn_error_t e;
+    int row, col, p;
+    int v = d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].valid;
+    int pi = pgn_piece_to_int (d->b[RANKTOBOARD (rank)][FILETOBOARD (file)].icon);
+    int cpi = d->sp.icon
+      ? pgn_piece_to_int (d->b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon)
+      : pgn_piece_to_int (d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].icon);
+
+    if (pi == OPEN_SQUARE || cpi == OPEN_SQUARE || !VALIDFILE (file)
+	|| !VALIDRANK (rank))
+        return 0;
+
+    if (d->sp.icon) {
+	col = v ? d->c_col : d->sp.scol;
+	row = v ? d->c_row : d->sp.srow;
+    }
+    else {
+	col = d->c_col;
+	row = d->c_row;
+    }
+
+    m = malloc(MAX_SAN_MOVE_LEN+1);
+    m[0] = INTTOFILE (file);
+    m[1] = INTTORANK (rank);
+    m[2] = INTTOFILE (col);
+    m[3] = INTTORANK (row);
+    m[4] = 0;
+
+    if (d->sp.icon && v) {
+        BOARD b;
+
+	memcpy (b, d->b, sizeof(BOARD));
+	p = b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon;
+	b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon =
+	  pgn_int_to_piece (WHITE, OPEN_SQUARE);
+	b[RANKTOBOARD (row)][FILETOBOARD (col)].icon = p;
+	pgn_switch_turn(g);
+	e = pgn_validate_move (g, b, &m, &frfr);
+	pgn_switch_turn (g);
+	free (m);
+	free (frfr);
+	return e == E_PGN_OK ? 1 : 0;
+    }
+
+    pgn_switch_turn(g);
+    e = pgn_validate_move (g, d->b, &m, &frfr);
+    pgn_switch_turn (g);
+
+    if (!strcmp (m, "O-O") || !strcmp (m, "O-O-O"))
+        e = E_PGN_INVALID;
+
+    if (e == E_PGN_OK) {
+        int sf = FILETOINT (frfr[0]), sr = RANKTOINT (frfr[1]);
+	int df = FILETOINT (frfr[2]);
+
+	pi = d->b[RANKTOBOARD (sr)][FILETOBOARD (sf)].icon;
+	pi = pgn_piece_to_int (pi);
+	if (pi == PAWN && sf == df)
+	    e = E_PGN_INVALID;
+    }
+
+    free (m);
+    free (frfr);
+    return e == E_PGN_OK ? 1 : 0;
+}
+
 void update_board_window(GAME g)
 {
     int row, col;
@@ -547,22 +617,26 @@ void update_board_window(GAME g)
 	update_cursor(g, g->hindex);
 
     if (rotate) {
-	brow = 7;
+	brow = 1;
 	coords_y = 1;
     }
+    else
+        brow = 8;
 
     for (row = 0; row < maxy; row++) {
 
 	if (rotate)
-	    bcol = 7;
+	    bcol = 8;
 	else
-	    bcol = 0;
+	    bcol = 1;
 
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
 	    chtype attrs = 0, old_attrs = 0;
 	    unsigned char p;
 	    int pi;
+	    int can_attack = 0;
+	    int valid = 0;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -636,16 +710,24 @@ void update_board_window(GAME g)
 		    else
 			attrwhich = WHITE;
 
-		    p = d->b[brow][bcol].icon;
+		    p = d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].icon;
 		    pi = pgn_piece_to_int(p);
 
-		    if (config.details && d->b[brow][bcol].enpassant) {
+		    if (config.details && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].enpassant) {
 			p = pi = 'x'; 
 			attrs = mix_cp(CP_BOARD_ENPASSANT, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
 
-		    if (config.validmoves && d->b[brow][bcol].valid) {
+		    if (config.showattacks && config.details
+			&& piece_can_attack (g, brow, bcol)) {
+			attrs = CP_BOARD_ATTACK;
+			old_attrs = attrs;
+			can_attack = 1;
+		    }
+
+		    if (config.validmoves && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].valid) {
 			old_attrs = -1;
+			valid = 1;
 
 			if (attrwhich == WHITE)
 			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p), 
@@ -654,7 +736,7 @@ void update_board_window(GAME g)
 			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p),
 				    ATTRS(CP_BOARD_MOVES_BLACK), B_FG_A_BG);
 		    }
-		    else if (p != 'x')
+		    else if (p != 'x' && !can_attack)
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
 		    if (row == ROWTOMATRIX(d->c_row) && col == 
@@ -673,10 +755,18 @@ void update_board_window(GAME g)
 		    if (row == maxy - 1)
 			attrs = 0;
 
+		    if (can_attack) {
+			attrs = mix_cp(CP_BOARD_ATTACK,
+				       valid ?
+				       (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE : CP_BOARD_MOVES_BLACK :
+				       (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK,
+				       ATTRS (CP_BOARD_ATTACK), A_FG_B_BG);
+		    }
+
 		    mvwaddch(boardw, row, col + l, ' ' | attrs);
 
 		    if (row == maxy - 1)
-			waddch(boardw, x_grid_chars[bcol] | CP_BOARD_COORDS);
+		        waddch(boardw, x_grid_chars[abs (bcol-1)] | CP_BOARD_COORDS);
 		    else {
 			if (old_attrs == -1) {
 			    old_attrs = attrs;
@@ -685,7 +775,7 @@ void update_board_window(GAME g)
 
 			old_attrs = attrs;
 
-			if (pi != OPEN_SQUARE && p != 'x') {
+			if (pi != OPEN_SQUARE && p != 'x' && !can_attack) {
 			    if (attrwhich == WHITE) {
 				if (isupper(p))
 				    attrs = CP_BOARD_W_W;
@@ -701,9 +791,10 @@ void update_board_window(GAME g)
 			}
 
 printc:
-			if (config.details && castling_state(g, d->b, brow,
-				    bcol, p, 0)) {
-			    attrs = mix_cp(CP_BOARD_CASTLING, attrs, 
+			if (config.details && !can_attack
+			    && castling_state(g, d->b, RANKTOBOARD (brow),
+					      FILETOBOARD (bcol), p, 0)) {
+			    attrs = mix_cp(CP_BOARD_CASTLING, attrs,
 				    ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
 			}
 
@@ -729,9 +820,9 @@ printc:
 
 	if (row % 2) {
 	    if (rotate)
-		brow--;
-	    else
 		brow++;
+	    else
+		brow--;
 	}
     }
 }
