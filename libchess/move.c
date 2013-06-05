@@ -1457,6 +1457,7 @@ pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
 pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **dst)
 {
     int ret;
+    int side = g->side, turn = g->turn;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN validate only\n", __FILE__, __LINE__);
@@ -1467,6 +1468,8 @@ pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **dst)
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END validate only\n", __FILE__, __LINE__);
 #endif
+    g->side = side;
+    g->turn = turn;
     return ret;
 }
 
