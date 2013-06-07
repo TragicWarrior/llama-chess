@@ -2513,7 +2513,6 @@ void do_play_history_mode()
 
     d->mode = MODE_HISTORY;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    rotate = FALSE;
 }
 
 void do_play_edit_mode()
@@ -3181,7 +3180,6 @@ void do_history_toggle()
 
     if (gp->side != gp->turn) {
         d->play_mode = PLAY_EH;
-	rotate = TRUE;
     }
     else {
         d->play_mode = PLAY_HE;
