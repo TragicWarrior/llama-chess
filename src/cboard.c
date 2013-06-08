@@ -3904,8 +3904,15 @@ void do_global_copy_game()
     struct userdata_s *d;
 
     do_global_new_game();
-    n = pgn_history_total(game[g]->history);
     d = gp->data;
+    n = pgn_tag_total(game[g]->tag);
+
+    for (i = 0; i < n; i++)
+	pgn_tag_add(&gp->tag, game[g]->tag[i]->name,
+		game[g]->tag[i]->value);
+
+    pgn_board_init_fen (gp, d->b, NULL);
+    n = pgn_history_total(game[g]->history);
 
     // FIXME RAV
     for (i = 0; i < n; i++) {
@@ -3923,15 +3930,7 @@ void do_global_copy_game()
 	pgn_switch_turn(gp);
     }
 
-    n = pgn_tag_total(game[g]->tag);
-
-    for (i = 0; i < n; i++)
-	pgn_tag_add(&gp->tag, game[g]->tag[i]->name,
-		game[g]->tag[i]->value);
-
-    d = gp->data;
-    pgn_board_update(gp, d->b, 
-	    pgn_history_total(gp->hp));
+    pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
 }
 
 void do_global_new_all()
