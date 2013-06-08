@@ -1400,7 +1400,7 @@ pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
 	    (g->turn == WHITE) ? "white" : "black");
 #endif
 
-    g->check_testing = 0;
+    g->check_testing = g->castle = 0;
     srank = rank = file = sfile = promo = 0;
     find_king_squares(g, b, &g->kfile, &g->krank, &g->okfile, &g->okrank);
 
