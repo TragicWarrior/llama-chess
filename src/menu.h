@@ -19,6 +19,8 @@
 #ifndef MENU_H
 #define MENU_H
 
+#include "window.h"
+
 #define MAX_MENU_HEIGHT (LINES - 4)
 #define MAX_MENU_WIDTH  (COLS - 4)
 #define REFRESH_MENU	-2
