@@ -281,7 +281,7 @@ static void set_menu_stuff(TAG **t, char *name, char **init, int *type,
     }
     else if (strcasecmp(name, "Site") == 0) {
 	*func = country_codes;
-	*key = CTRL('t');
+	*key = CTRL_KEY('t');
 	*eprompt = CC_PROMPT;
 	*arg = t[n];
     }
@@ -476,11 +476,11 @@ void edit_tags(GAME g, BOARD b, int edit)
 		    gp->tag[i]->value);
 
 	add_menu_key(&keys, '\n', edit_tag_value);
-	add_menu_key(&keys, CTRL('f'), edit_tag_add_fen);
-	add_menu_key(&keys, CTRL('a'), edit_tag_add);
-	add_menu_key(&keys, CTRL('r'), edit_tag_remove);
-	add_menu_key(&keys, CTRL('t'), edit_tag_add_custom);
-	add_menu_key(&keys, CTRL('x'), edit_tag_save);
+	add_menu_key(&keys, CTRL_KEY('f'), edit_tag_add_fen);
+	add_menu_key(&keys, CTRL_KEY('a'), edit_tag_add);
+	add_menu_key(&keys, CTRL_KEY('r'), edit_tag_remove);
+	add_menu_key(&keys, CTRL_KEY('t'), edit_tag_add_custom);
+	add_menu_key(&keys, CTRL_KEY('x'), edit_tag_save);
 	add_menu_key(&keys, KEY_ESCAPE, edit_tag_abort);
 	add_menu_key(&keys, KEY_F(1), edit_tag_help);
     }

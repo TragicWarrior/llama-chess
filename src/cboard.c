@@ -274,7 +274,7 @@ void edit_nag(void *arg)
     }
 
     add_menu_key(&keys, ' ', edit_nag_toggle_item);
-    add_menu_key(&keys, CTRL('x'), edit_nag_save);
+    add_menu_key(&keys, CTRL_KEY('x'), edit_nag_save);
     add_menu_key(&keys, KEY_F(1), edit_nag_help);
     construct_menu(0, 0, -1, -1, NAG_EDIT_TITLE, 1, get_nag_items, keys, arg,
 	    nag_print, NULL);
@@ -2490,7 +2490,7 @@ void do_main_help(WIN *win)
 
 void do_more_help(WIN *win)
 {
-    if (win->c == KEY_F(1) || win->c == CTRL('g'))
+    if (win->c == KEY_F(1) || win->c == CTRL_KEY('g'))
 	construct_message(GAME_HELP_INDEX_TITLE, GAME_HELP_INDEX_PROMPT, 0, 0, 
 		NULL, NULL, NULL, do_main_help, 0, 0, "%s", mainhelp);
 }
@@ -2958,7 +2958,7 @@ void do_annotate_move(HISTORY *hp)
     in->data = hp;
     in->efunc = do_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1, -1);
+	    NAG_PROMPT, edit_nag, NULL, CTRL_KEY('T'), in, -1, -1);
 }
 
 void history_menu_view_annotation(struct menu_input_s *m)
@@ -2997,7 +2997,7 @@ void history_menu_annotate(struct menu_input_s *m)
     in->moredata = m->data;
     in->efunc = history_menu_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    NAG_PROMPT, edit_nag, NULL, CTRL('T'), in, -1, -1);
+	    NAG_PROMPT, edit_nag, NULL, CTRL_KEY('T'), in, -1, -1);
 }
 
 void history_menu_details(struct menu_input_s *m)
@@ -3064,8 +3064,8 @@ void history_menu(GAME g)
     add_menu_key(&keys, KEY_UP, history_menu_prev);
     add_menu_key(&keys, KEY_DOWN, history_menu_next);
     add_menu_key(&keys, KEY_F(1), history_menu_help);
-    add_menu_key(&keys, CTRL('a'), history_menu_annotate);
-    add_menu_key(&keys, CTRL('d'), history_menu_details);
+    add_menu_key(&keys, CTRL_KEY('a'), history_menu_annotate);
+    add_menu_key(&keys, CTRL_KEY('d'), history_menu_details);
     add_menu_key(&keys, '\n', history_menu_view_annotation);
     construct_menu(LINES, TAG_WIDTH, 0,  config.boardleft ? BOARD_WIDTH : 0,
 		   HISTORY_MENU_TITLE, 1, get_history_items, keys, g,
@@ -3997,7 +3997,7 @@ static int globalkeys()
      * these.
      */
     switch (input_c) {
-	case CTRL('L'):
+	case CTRL_KEY('L'):
 	    endwin();
 	    keypad(boardw, TRUE);
 	    wmove(stdscr, 0, 0);
@@ -4399,7 +4399,7 @@ void game_loop()
 
 	    if (win) {
 		switch (input_c) {
-		    case CTRL('L'):
+		    case CTRL_KEY('L'):
 			endwin();
 			keypad(boardw, TRUE);
 			wmove(stdscr, 0, 0);

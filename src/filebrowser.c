@@ -354,7 +354,7 @@ void file_browser(void *arg)
     add_menu_key(&keys, '\n', file_browser_select);
     add_menu_key(&keys, KEY_F(1), file_browser_help);
     add_menu_key(&keys, '~', file_browser_home);
-    add_menu_key(&keys, CTRL('e'), file_browser_expression);
+    add_menu_key(&keys, CTRL_KEY('e'), file_browser_expression);
     add_menu_key(&keys, KEY_ESCAPE, file_browser_abort);
     construct_menu(LINES - 4, 0, -1, -1, NULL, 0, get_file_items, keys, in,
 	    file_browser_print, file_browser_finalize);

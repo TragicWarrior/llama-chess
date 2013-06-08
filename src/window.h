@@ -20,8 +20,8 @@
 #define WINDOW_H
 
 #define WINDOW_TIMEOUT		70
-#define CTRL(x)			((x) & 0x1f)
-#define KEY_ESCAPE		CTRL('[')
+#define CTRL_KEY(x)		((x) & 0x1f)
+#define KEY_ESCAPE		CTRL_KEY('[')
 #define CALCPOSY(y)		((y > LINES - 1) ? 0 : LINES / 2 - y / 2)
 #define CALCPOSX(x)		(COLS / 2 - x / 2)
 #define CENTERX(x, str)		abs((x / 2 - strlen(str) / 2))

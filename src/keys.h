@@ -19,8 +19,8 @@
 #ifndef KEYS_H
 #define KEYS_H
 
-#define CTRL(x)		((x) & 0x1f)
-#define KEY_ESCAPE	CTRL('[')
+#define CTRL_KEY(x)		((x) & 0x1f)
+#define KEY_ESCAPE	CTRL_KEY('[')
 
 enum {
     MODE_HISTORY, MODE_PLAY, MODE_EDIT
