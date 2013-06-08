@@ -985,33 +985,30 @@ void update_history_window(GAME g)
 	    HISTORY_WIDTH - 13, buf);
 }
 
-void do_validate_move(char *m)
+void do_validate_move(char *move)
 {
     struct userdata_s *d = gp->data;
     int n;
     char *frfr = NULL;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	if ((n = pgn_parse_move(gp, d->b, &m, &frfr)) != E_PGN_OK) {
-	    invalid_move(d->n + 1, n, m);
-	    free(m);
+	if ((n = pgn_parse_move(gp, d->b, &move, &frfr)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, move);
 	    return;
 	}
 
 	update_time_control(gp);
-	pgn_history_add(gp, d->b, m);
+	pgn_history_add(gp, d->b, move);
 	pgn_switch_turn(gp);
-	free(frfr);
     }
     else {
-	if ((n = pgn_validate_move(gp, d->b, &m, &frfr)) != E_PGN_OK) {
-	    invalid_move(d->n + 1, n, m);
-	    free(m);
+	if ((n = pgn_validate_move(gp, d->b, &move, &frfr)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, move);
 	    return;
 	}
 
 	add_engine_command(gp, ENGINE_THINKING, "%s\n", 
-		(config.engine_protocol == 1) ? frfr : m);
+		(config.engine_protocol == 1) ? frfr : move);
     }
 
     d->sp.srow = d->sp.scol = d->sp.icon = 0;
@@ -1024,8 +1021,8 @@ void do_validate_move(char *m)
     else
 	SET_FLAG(d->flags, CF_MODIFIED);
 
+    free (frfr);
     d->paused = 0;
-    free(m);
     update_history_window(gp);
     update_board_window(gp);
     return;
@@ -1042,6 +1039,8 @@ void do_promotion_piece_finalize(WIN *win)
     *p++ = toupper(win->c);
     *p = '\0';
     do_validate_move(str);
+    free (win->data);
+    win->data = NULL;
 }
 
 static void move_to_engine(GAME g)
@@ -1068,6 +1067,7 @@ static void move_to_engine(GAME g)
     }
 
     do_validate_move(str);
+    free (str);
 }
 
 static char *clock_to_char(long n)
@@ -3800,15 +3800,14 @@ void do_global_find_prev()
 
 void do_global_game_jump()
 {
-    struct input_data_s *in;
-
     if (gtotal < 2)
 	return;
 
-    in = Calloc(1, sizeof(struct input_data_s));
-    in->efunc = do_game_jump;
-
     if (!keycount) {
+        struct input_data_s *in;
+
+	in = Calloc(1, sizeof(struct input_data_s));
+	in->efunc = do_game_jump;
 	construct_input(GAME_JUMP_TITLE, NULL, 1, 1, NULL, NULL, NULL, 0, in,
 		-1, 0);
 	return;
@@ -3917,15 +3916,15 @@ void do_global_copy_game()
     // FIXME RAV
     for (i = 0; i < n; i++) {
 	char *frfr = NULL;
-	char *move = strdup(game[g]->history[i]->move);
+	char move[MAX_SAN_MOVE_LEN+1] = {0}, *m = move;
 
-	if (pgn_parse_move(gp, d->b, &move, &frfr) != E_PGN_OK) {
+	strcpy (move, game[g]->history[i]->move);
+	if (pgn_parse_move(gp, d->b, &m, &frfr) != E_PGN_OK) {
 	    SET_FLAG(gp->flags, GF_PERROR);
 	    return;
 	}
 
 	pgn_history_add(gp, d->b, move);
-	free(move);
 	free(frfr);
 	pgn_switch_turn(gp);
     }
