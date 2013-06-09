@@ -1,5 +1,6 @@
 EXTRA_DIST = KnownBugs ChangeLog debian osdep
 SUBDIRS = libchess src doc data po
+ACLOCAL_AMFLAGS = -I m4
 
 changelog:
 	git log --no-color > ChangeLog || exit 1
@@ -11,4 +12,4 @@ version: changelog
 	$(MAKE) $(AM_MAKEFLAGS) distcheck
 	$(MAKE) $(AM_MAKEFLAGS) deb
 
-ACLOCAL_AMFLAGS = -I m4
+distcheck-hook:	changelog

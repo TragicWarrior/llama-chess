@@ -29,21 +29,11 @@
 #include <stdarg.h>
 #endif
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#endif
-
-#ifdef HAVE_PANEL_H
-#include <panel.h>
-#endif
-
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
 
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "colors.h"
 #include "misc.h"

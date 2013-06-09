@@ -23,16 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#endif
-
-#ifdef HAVE_PANEL_H
-#include <panel.h>
-#endif
-
+#include "common.h"
 #include "misc.h"
 #include "window.h"
 

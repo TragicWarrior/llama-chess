@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <err.h>
+#include <time.h>
 
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
@@ -41,7 +42,6 @@
 
 #include "chess.h"
 #include "common.h"
-#include "pgn.h"
 
 #ifdef DEBUG
 #include "debug.h"
@@ -49,6 +49,22 @@
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
+#endif
+
+static BOARD pgn_board;
+static int nulltags;
+static int tag_section;
+static int pgn_ret;
+static int pgn_write_turn;
+static int pgn_mpl;
+static int pgn_lastc;
+static int ravlevel;
+static long pgn_fsize;
+static int pgn_rav;
+static RAV *pgn_rav_p;
+
+#ifdef __linux__
+extern char *strptime(const char *, const char *, struct tm *);
 #endif
 
 static int Fgetc(FILE *fp)
@@ -91,11 +107,9 @@ static char *trim(char *str)
     return str;
 }
 
-static char *itoa(long n)
+static char *itoa(long n, char *buf)
 {
-    static char buf[16];
-
-    snprintf(buf, sizeof(buf), "%li", n);
+    sprintf(buf, "%li", n);
     return buf;
 }
 
@@ -146,9 +160,10 @@ void pgn_switch_side(GAME g, int t)
  */
 char *pgn_game_to_fen(GAME g, BOARD b)
 {
+    char tmp[16];
     int row, col;
     int i;
-    static char buf[MAX_PGN_LINE_LEN], *p;
+    char buf[MAX_PGN_LINE_LEN] = {0}, *p;
     int oldturn = g->turn;
     char enpassant[3] = {0}, *e;
     int castle = 0;
@@ -246,17 +261,17 @@ char *pgn_game_to_fen(GAME g, BOARD b)
 
     // Halfmove clock.
     *p = 0;
-    strcat(p, itoa(g->ply));
+    strcat(p, itoa(g->ply, tmp));
     p = buf + strlen(buf);
     *p++ = ' ';
 
     // Fullmove number.
     i = (g->hindex + 1) / 2;
     *p = 0;
-    strcat(p, itoa((g->hindex / 2) + (g->hindex % 2)));
+    strcat(p, itoa((g->hindex / 2) + (g->hindex % 2), tmp));
 
     g->turn = oldturn;
-    return buf;
+    return buf[0] ? strdup (buf) : NULL;
 }
 
 /*
@@ -367,7 +382,7 @@ pgn_error_t pgn_history_add(GAME g, BOARD b, const char *m)
     g->hp[t] = NULL;
     g->hindex = pgn_history_total(g->hp);
     pgn_switch_turn(g);
-    tmp->fen = strdup(pgn_game_to_fen(g, b));
+    tmp->fen = pgn_game_to_fen(g, b);
     pgn_switch_turn(g);
     return E_PGN_OK;
 }
@@ -719,7 +734,7 @@ static char *remove_tag_escapes(const char *str)
 {
     int i, n;
     int len = strlen(str);
-    static char buf[MAX_PGN_LINE_LEN] = {0};
+    char buf[MAX_PGN_LINE_LEN] = {0};
 
     for (i = n = 0; i < len; i++, n++) {
 	switch (str[i]) {
@@ -733,7 +748,7 @@ static char *remove_tag_escapes(const char *str)
     }
 
     buf[n] = '\0';
-    return buf;
+    return buf[0] ? strdup (buf) : NULL;
 }
 
 /*
@@ -1120,6 +1135,7 @@ static int tag_text(GAME g, FILE *fp)
     char value[LINE_MAX], *v = value;
     int c, i = 0;
     int lastchar = 0;
+    char *tmp;
 
     skip_leading_space(fp);
 
@@ -1162,7 +1178,9 @@ static int tag_text(GAME g, FILE *fp)
 	value[1] = '\0';
     }
 
-    strncpy(value, remove_tag_escapes(value), sizeof(value));
+    tmp = remove_tag_escapes (value);
+    strncpy(value, tmp, sizeof(value));
+    free (tmp);
 
     /*
      * See eog_text() for an explanation.
@@ -1242,7 +1260,7 @@ static int rav_text(GAME g, FILE *fp, int which, BOARD o)
 
 	g->rav = pgn_rav_p = r;
 	
-	if ((g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(g, pgn_board))) 
+	if ((g->rav[g->ravlevel].fen = pgn_game_to_fen(g, pgn_board)) 
 		== NULL) {
 	    warn("strdup()");
 	    return 1;
@@ -1855,7 +1873,7 @@ static char *pgn_tag_add_escapes(const char *str)
 {
     int i, n;
     int len = strlen(str);
-    static char buf[MAX_PGN_LINE_LEN] = {0};
+    char buf[MAX_PGN_LINE_LEN] = {0};
 
     for (i = n = 0; i < len; i++, n++) {
 	switch (str[i]) {
@@ -1871,7 +1889,7 @@ static char *pgn_tag_add_escapes(const char *str)
     }
 
     buf[n] = '\0';
-    return buf;
+    return buf[0] ? strdup (buf) : NULL;
 }
 
 static void Fputc(int c, FILE *fp, int *len)
@@ -1923,6 +1941,7 @@ static void putstring(FILE *fp, char *str, int *len)
 static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
 {
     int i;
+    char tmp[16];
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: writing comments and nag\n", __FILE__, __LINE__);
@@ -1932,7 +1951,7 @@ static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
 	if (h->nag[i]) {
 	    Fputc(' ', fp, len);
 	    Fputc('$', fp, len);
-	    putstring(fp, itoa(h->nag[i]), len);
+	    putstring(fp, itoa(h->nag[i], tmp), len);
 	}
     }
 
@@ -1957,6 +1976,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 {
     int i;
     HISTORY **hp = NULL;
+    char tmp[16];
 
     for (i = 0; h[i]; i++) {
 	if (pgn_write_turn == WHITE) {
@@ -1968,10 +1988,10 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 	    if (m > 1 && i > 0)
 		Fputc(' ', fp, len);
 
-	    if (strlen(itoa(m)) + 1 + *len > 80)
+	    if (strlen(itoa(m, tmp)) + 1 + *len > 80)
 		Fputc('\n', fp, len);
 
-	    putstring(fp, itoa(m), len);
+	    putstring(fp, itoa(m, tmp), len);
 	    Fputc('.', fp, len);
 	    pgn_mpl++;
 	}
@@ -1990,7 +2010,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 	     * the call to write_all_move_text() below.
 	     */
 	    if (pgn_write_turn == BLACK) {
-		putstring(fp, itoa(m), len);
+	      putstring(fp, itoa(m, tmp), len);
 		putstring(fp, "...", len);
 	    }
 
@@ -2008,7 +2028,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 		Fputc(' ', fp, len);
 
 	    if (pgn_write_turn == WHITE && h[i + 1]) {
-		putstring(fp, itoa(m), len);
+	        putstring(fp, itoa(m, tmp), len);
 		putstring(fp, "...", len);
 	    }
 	}
@@ -2022,7 +2042,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 
 static char *compression_cmd(const char *filename, int expand)
 {
-    static char command[FILENAME_MAX];
+    char command[PATH_MAX];
     int len = strlen(filename);
 
     if (filename[len - 4] == '.' && filename[len - 3] == 'z' &&
@@ -2035,7 +2055,7 @@ static char *compression_cmd(const char *filename, int expand)
 	    snprintf(command, sizeof(command), "zip -9 >%s 2>/dev/null", 
 		    filename);
 
-	return command;
+	return strdup (command);
     }
     else if (filename[len - 3] == '.' && filename[len - 2] == 'g' &&
 	    filename[len - 1] == 'z' && filename[len] == '\0') {
@@ -2044,7 +2064,7 @@ static char *compression_cmd(const char *filename, int expand)
 	else
 	    snprintf(command, sizeof(command), "gzip -c 1>%s", filename);
 
-	return command;
+	return strdup (command);
     }
     else if (filename[len - 2] == '.' && filename[len - 1] == 'Z' &&
 	    filename[len] == '\0') {
@@ -2053,7 +2073,7 @@ static char *compression_cmd(const char *filename, int expand)
 	else
 	    snprintf(command, sizeof(command), "compress -c 1>%s", filename);
 
-	return command;
+	return strdup (command);
     }
     else if ((filename[len - 4] == '.' && filename[len - 3] == 'b' &&
 	    filename[len - 2] == 'z' && filename[len - 1] == '2' &&
@@ -2065,7 +2085,7 @@ static char *compression_cmd(const char *filename, int expand)
 	else
 	    snprintf(command, sizeof(command), "bzip2 -zc 1>%s", filename);
 
-	return command;
+	return strdup (command);
     }
 
     return NULL;
@@ -2077,9 +2097,12 @@ static int copy_file(FILE *fp, const char *dst)
     char line[LINE_MAX];
     char *cmd = compression_cmd(dst, 0);
 
-    if ((ofp = popen(cmd, "w")) == NULL)
+    if ((ofp = popen(cmd, "w")) == NULL) {
+	free (cmd);
 	return 1;
+    }
 
+    free (cmd);
     fseek(fp, 0, SEEK_SET);
 
     while ((fgets(line, sizeof(line), fp)) != NULL)
@@ -2184,6 +2207,7 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		char tmp[21];
 		int fd;
 
+		free (cmd);
 		cmd = compression_cmd(filename, 1);
 
 		if ((fp = popen(cmd, "r")) == NULL)
@@ -2248,6 +2272,7 @@ done:
     else
 	pgn->filename = strdup(filename);
 
+    free (cmd);
     *result = pgn;
     return E_PGN_OK;
 
@@ -2255,6 +2280,7 @@ fail:
     if (fp)
 	fclose(fp);
 
+    free (cmd);
     free(pgn);
     return ret;
 }
@@ -2265,10 +2291,11 @@ fail:
  */
 pgn_error_t pgn_is_compressed(const char *filename)
 {
-    if (compression_cmd(filename, 0))
-	return E_PGN_OK;
+    char *s = compression_cmd(filename, 0);
+    pgn_error_t e = s ? E_PGN_OK : E_PGN_ERR;
 
-    return E_PGN_ERR;
+    free (s);
+    return e;
 }
 
 /*
@@ -2427,6 +2454,7 @@ pgn_error_t pgn_write(PGN_FILE *pgn, GAME g)
 	struct tm tp;
 	char tbuf[11] = {0};
 	char *tmp;
+	char *escaped;
 
 	if (pgn_config.reduced && i == 7)
 	    break;
@@ -2499,9 +2527,10 @@ pgn_error_t pgn_write(PGN_FILE *pgn, GAME g)
 	    }
 	}
 
-	fprintf(pgn->fp, "[%s \"%s\"]\n", g->tag[i]->name, 
-		(g->tag[i]->value && g->tag[i]->value[0]) ? 
-		pgn_tag_add_escapes(g->tag[i]->value) : "");
+	escaped = pgn_tag_add_escapes(g->tag[i]->value);
+	fprintf(pgn->fp, "[%s \"%s\"]\n", g->tag[i]->name,
+		(g->tag[i]->value && g->tag[i]->value[0]) ? escaped : "");
+	free (escaped);
     }
 
 #ifdef DEBUG

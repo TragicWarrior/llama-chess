@@ -180,6 +180,10 @@ enum {
 	COLOR_PAIR(39) | config.color[CONF_BENPASSANT].attrs : \
 	config.color[CONF_BENPASSANT].nattrs)
 
+#define CP_BOARD_ATTACK	((COLORS) ? \
+	COLOR_PAIR(40) | config.color[CONF_BATTACK].attrs : \
+	config.color[CONF_BATTACK].nattrs)
+
 void init_color_pairs();
 void set_default_colors();
 chtype mix_cp(chtype a, chtype b, attr_t, int which);

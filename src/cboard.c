@@ -24,11 +24,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <ncursesw/panel.h>
 #include <errno.h>
 #include <ctype.h>
 #include <pwd.h>
@@ -53,7 +51,7 @@
 #include "perl.h"
 #endif
 
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "window.h"
 #include "message.h"
@@ -62,7 +60,6 @@
 #include "misc.h"
 #include "engine.h"
 #include "strings.h"
-#include "common.h"
 #include "menu.h"
 #include "keys.h"
 #include "rcfile.h"
@@ -373,7 +370,7 @@ void edit_nag(void *arg)
     }
 
     add_menu_key(&keys, ' ', edit_nag_toggle_item);
-    add_menu_key(&keys, CTRL('x'), edit_nag_save);
+    add_menu_key(&keys, CTRL_KEY('x'), edit_nag_save);
     add_menu_key(&keys, KEY_F(1), edit_nag_help);
     construct_menu(0, 0, -1, -1, _("Numeric Annotation Glyphs"), 1, get_nag_items, keys, arg,
 	    nag_print, NULL);
@@ -684,6 +681,76 @@ piece_to_wchar (unsigned char p)
   return empty_wchar;
 }
 
+static int piece_can_attack (GAME g, int rank, int file)
+{
+    struct userdata_s *d = g->data;
+    char *m, *frfr = NULL;
+    pgn_error_t e;
+    int row, col, p;
+    int v = d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].valid;
+    int pi = pgn_piece_to_int (d->b[RANKTOBOARD (rank)][FILETOBOARD (file)].icon);
+    int cpi = d->sp.icon
+      ? pgn_piece_to_int (d->b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon)
+      : pgn_piece_to_int (d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].icon);
+
+    if (pi == OPEN_SQUARE || cpi == OPEN_SQUARE || !VALIDFILE (file)
+	|| !VALIDRANK (rank))
+        return 0;
+
+    if (d->sp.icon) {
+	col = v ? d->c_col : d->sp.scol;
+	row = v ? d->c_row : d->sp.srow;
+    }
+    else {
+	col = d->c_col;
+	row = d->c_row;
+    }
+
+    m = malloc(MAX_SAN_MOVE_LEN+1);
+    m[0] = INTTOFILE (file);
+    m[1] = INTTORANK (rank);
+    m[2] = INTTOFILE (col);
+    m[3] = INTTORANK (row);
+    m[4] = 0;
+
+    if (d->sp.icon && v) {
+        BOARD b;
+
+	memcpy (b, d->b, sizeof(BOARD));
+	p = b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon;
+	b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon =
+	  pgn_int_to_piece (WHITE, OPEN_SQUARE);
+	b[RANKTOBOARD (row)][FILETOBOARD (col)].icon = p;
+	pgn_switch_turn(g);
+	e = pgn_validate_move (g, b, &m, &frfr);
+	pgn_switch_turn (g);
+	free (m);
+	free (frfr);
+	return e == E_PGN_OK ? 1 : 0;
+    }
+
+    pgn_switch_turn(g);
+    e = pgn_validate_move (g, d->b, &m, &frfr);
+    pgn_switch_turn (g);
+
+    if (!strcmp (m, "O-O") || !strcmp (m, "O-O-O"))
+        e = E_PGN_INVALID;
+
+    if (e == E_PGN_OK) {
+        int sf = FILETOINT (frfr[0]), sr = RANKTOINT (frfr[1]);
+	int df = FILETOINT (frfr[2]);
+
+	pi = d->b[RANKTOBOARD (sr)][FILETOBOARD (sf)].icon;
+	pi = pgn_piece_to_int (pi);
+	if (pi == PAWN && sf == df)
+	    e = E_PGN_INVALID;
+    }
+
+    free (m);
+    free (frfr);
+    return e == E_PGN_OK ? 1 : 0;
+}
+
 void update_board_window(GAME g)
 {
     int row, col;
@@ -698,21 +765,25 @@ void update_board_window(GAME g)
 	update_cursor(g, g->hindex);
 
     if (rotate) {
-	brow = 7;
+	brow = 1;
 	coords_y = 1;
     }
+    else
+        brow = 8;
 
     for (row = 0; row < maxy; row++) {
 
 	if (rotate)
-	    bcol = 7;
+	    bcol = 8;
 	else
-	    bcol = 0;
+	    bcol = 1;
 
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
 	    chtype attrs = 0, old_attrs = 0;
 	    unsigned char p;
+	    int can_attack = 0;
+	    int valid = 0;
 
 	    if (row == 0 || row == maxy - 2) {
 		if (col == 0)
@@ -786,16 +857,24 @@ void update_board_window(GAME g)
 		    else
 			attrwhich = WHITE;
 
-		    p = d->b[brow][bcol].icon;
+		    p = d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].icon;
 		    int pi = pgn_piece_to_int(p);
 
-		    if (config.details && d->b[brow][bcol].enpassant) {
-			p = pi = 'x';
+		    if (config.details && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].enpassant) {
+			p = pi = 'x'; 
 			attrs = mix_cp(CP_BOARD_ENPASSANT, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
 
-		    if (config.validmoves && d->b[brow][bcol].valid) {
+		    if (config.showattacks && config.details
+			&& piece_can_attack (g, brow, bcol)) {
+			attrs = CP_BOARD_ATTACK;
+			old_attrs = attrs;
+			can_attack = 1;
+		    }
+
+		    if (config.validmoves && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].valid) {
 			old_attrs = -1;
+			valid = 1;
 
 			if (attrwhich == WHITE)
 			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p),
@@ -804,7 +883,7 @@ void update_board_window(GAME g)
 			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p),
 				    ATTRS(CP_BOARD_MOVES_BLACK), B_FG_A_BG);
 		    }
-		    else if (p != 'x')
+		    else if (p != 'x' && !can_attack)
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
 		    if (row == ROWTOMATRIX(d->c_row) && col ==
@@ -823,6 +902,14 @@ void update_board_window(GAME g)
 		    if (row == maxy - 1)
 			attrs = 0;
 
+		    if (can_attack) {
+			attrs = mix_cp(CP_BOARD_ATTACK,
+				       valid ?
+				       (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE : CP_BOARD_MOVES_BLACK :
+				       (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK,
+				       ATTRS (CP_BOARD_ATTACK), A_FG_B_BG);
+		    }
+
 		    mvwaddch(boardw, row, col + l, ' ' | attrs);
 
 		    if (row == maxy - 1)
@@ -835,7 +922,7 @@ void update_board_window(GAME g)
 
 			old_attrs = attrs;
 
-			if (pi != OPEN_SQUARE && p != 'x') {
+			if (pi != OPEN_SQUARE && p != 'x' && !can_attack) {
 			    if (attrwhich == WHITE) {
 				if (isupper(p))
 				    attrs = CP_BOARD_W_W;
@@ -851,8 +938,9 @@ void update_board_window(GAME g)
 			}
 
 printc:
-			if (config.details && castling_state(g, d->b, brow,
-				    bcol, p, 0)) {
+			if (config.details && !can_attack
+			    && castling_state(g, d->b, RANKTOBOARD (brow),
+					      FILETOBOARD (bcol), p, 0)) {
 			    attrs = mix_cp(CP_BOARD_CASTLING, attrs,
 				    ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
 			}
@@ -881,9 +969,9 @@ printc:
 
 	if (row % 2) {
 	    if (rotate)
-		brow--;
-	    else
 		brow++;
+	    else
+		brow--;
 	}
     }
 }
@@ -1046,33 +1134,30 @@ void update_history_window(GAME g)
 	    HISTORY_WIDTH - 13, buf);
 }
 
-void do_validate_move(char *m)
+void do_validate_move(char *move)
 {
     struct userdata_s *d = gp->data;
     int n;
     char *frfr = NULL;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	if ((n = pgn_parse_move(gp, d->b, &m, &frfr)) != E_PGN_OK) {
-	    invalid_move(d->n + 1, n, m);
-	    free(m);
+	if ((n = pgn_parse_move(gp, d->b, &move, &frfr)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, move);
 	    return;
 	}
 
 	update_time_control(gp);
-	pgn_history_add(gp, d->b, m);
+	pgn_history_add(gp, d->b, move);
 	pgn_switch_turn(gp);
-	free(frfr);
     }
     else {
-	if ((n = pgn_validate_move(gp, d->b, &m, &frfr)) != E_PGN_OK) {
-	    invalid_move(d->n + 1, n, m);
-	    free(m);
+	if ((n = pgn_validate_move(gp, d->b, &move, &frfr)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, move);
 	    return;
 	}
 
 	add_engine_command(gp, ENGINE_THINKING, "%s\n", 
-		(config.engine_protocol == 1) ? frfr : m);
+		(config.engine_protocol == 1) ? frfr : move);
     }
 
     d->sp.srow = d->sp.scol = d->sp.icon = 0;
@@ -1085,8 +1170,8 @@ void do_validate_move(char *m)
     else
 	SET_FLAG(d->flags, CF_MODIFIED);
 
+    free (frfr);
     d->paused = 0;
-    free(m);
     update_history_window(gp);
     update_board_window(gp);
     return;
@@ -1103,6 +1188,8 @@ void do_promotion_piece_finalize(WIN *win)
     *p++ = toupper(win->c);
     *p = '\0';
     do_validate_move(str);
+    free (win->data);
+    win->data = NULL;
 }
 
 static void move_to_engine(GAME g)
@@ -1129,6 +1216,7 @@ static void move_to_engine(GAME g)
     }
 
     do_validate_move(str);
+    free (str);
 }
 
 static char *clock_to_char(long n)
@@ -1733,7 +1821,7 @@ int rav_next_prev(GAME g, BOARD b, int n)
 	g->rav = Realloc(g->rav, (g->ravlevel + 1) * sizeof(RAV));
 	g->rav[g->ravlevel].hp = g->hp;
 	g->rav[g->ravlevel].flags = g->flags;
-	g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(g, b));
+	g->rav[g->ravlevel].fen = pgn_game_to_fen(g, b);
 	g->rav[g->ravlevel].hindex = g->hindex;
 	g->hp = (!g->ravlevel) ? (g->hindex) ? g->hp[g->hindex - 1]->rav : g->hp[g->hindex]->rav : g->hp[g->hindex]->rav;
 	g->hindex = 0;
@@ -2156,10 +2244,12 @@ void do_play_toggle_engine()
     CLEAR_FLAG(d->flags, CF_HUMAN);
 
     if (d->engine && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
+        char *fen = pgn_game_to_fen (gp, d->b);
+
 	pgn_board_update(gp, d->b,
 		pgn_history_total(gp->hp));
-	add_engine_command(gp, ENGINE_READY, 
-		"setboard %s\n", pgn_game_to_fen(gp, d->b));
+	add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+	free (fen);
     }
 }
 
@@ -2248,8 +2338,10 @@ void do_play_undo()
     pgn_board_update(gp, d->b, gp->hindex);
 
     if (d->engine && d->engine->status == ENGINE_READY) {
-	add_engine_command(gp, ENGINE_READY, "setboard %s\n",
-		pgn_game_to_fen(gp, d->b));
+        char *fen = pgn_game_to_fen(gp, d->b);
+
+        add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+	free (fen);
 	d->engine->status = ENGINE_READY;
     }
 
@@ -2559,7 +2651,7 @@ void do_main_help(WIN *win)
 
 void do_more_help(WIN *win)
 {
-    if (win->c == KEY_F(1) || win->c == CTRL('g'))
+    if (win->c == KEY_F(1) || win->c == CTRL_KEY('g'))
       construct_message(_("Command Key Index"),
 			_ ("p/h/e/g or any other key to quit"), 0, 0,
 			NULL, NULL, NULL, do_main_help, 0, 0, "%s",
@@ -2589,7 +2681,6 @@ void do_play_history_mode()
 
     d->mode = MODE_HISTORY;
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
-    rotate = FALSE;
 }
 
 void do_play_edit_mode()
@@ -2718,9 +2809,11 @@ void do_edit_help()
 void do_edit_exit()
 {
     struct userdata_s *d = gp->data;
+    char *fen = pgn_game_to_fen(gp, d->b);
 
     config.details--;
-    pgn_tag_add(&gp->tag, "FEN", pgn_game_to_fen(gp, d->b));
+    pgn_tag_add(&gp->tag, "FEN", fen);
+    free (fen);
     pgn_tag_add(&gp->tag, "SetUp", "1");
     pgn_tag_sort(gp->tag);
     pgn_board_update(gp, d->b, gp->hindex);
@@ -3045,7 +3138,7 @@ void do_annotate_move(HISTORY *hp)
     in->data = hp;
     in->efunc = do_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL('T'), in, -1, -1);
+	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL_KEY('T'), in, -1, -1);
 }
 
 void history_menu_view_annotation(struct menu_input_s *m)
@@ -3084,7 +3177,7 @@ void history_menu_annotate(struct menu_input_s *m)
     in->moredata = m->data;
     in->efunc = history_menu_annotate_finalize;
     construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
-	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL('T'), in, -1, -1);
+	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL_KEY('T'), in, -1, -1);
 }
 
 void history_menu_details(struct menu_input_s *m)
@@ -3151,8 +3244,8 @@ void history_menu(GAME g)
     add_menu_key(&keys, KEY_UP, history_menu_prev);
     add_menu_key(&keys, KEY_DOWN, history_menu_next);
     add_menu_key(&keys, KEY_F(1), history_menu_help);
-    add_menu_key(&keys, CTRL('a'), history_menu_annotate);
-    add_menu_key(&keys, CTRL('d'), history_menu_details);
+    add_menu_key(&keys, CTRL_KEY('a'), history_menu_annotate);
+    add_menu_key(&keys, CTRL_KEY('d'), history_menu_details);
     add_menu_key(&keys, '\n', history_menu_view_annotation);
     construct_menu(LINES, TAG_WIDTH, 0, config.boardleft ? BOARD_WIDTH : 0,
 		   _("Move History Tree"), 1, get_history_items, keys, g,
@@ -3240,9 +3333,12 @@ void do_history_mode_confirm(WIN *win)
 	    return;
     }
 
-    if (!TEST_FLAG(d->flags, CF_HUMAN))
-	add_engine_command(gp, ENGINE_READY,
-		"setboard %s\n", pgn_game_to_fen(gp, d->b));
+    if (!TEST_FLAG(d->flags, CF_HUMAN)) {
+        char *fen =  pgn_game_to_fen(gp, d->b);
+
+	add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+	free (fen);
+    }
 
     do_history_mode_finalize(d);
 }
@@ -3267,7 +3363,6 @@ void do_history_toggle()
 
     if (gp->side != gp->turn) {
         d->play_mode = PLAY_EH;
-	rotate = TRUE;
     }
     else {
         d->play_mode = PLAY_HE;
@@ -3751,15 +3846,23 @@ void do_game_save(WIN *win)
 	for (i = 0; i < gtotal; i++) {
 	    d = game[i]->data;
 
-	    if (d->mode == MODE_EDIT)
-		pgn_tag_add(&game[i]->tag, "FEN", pgn_game_to_fen(game[i], d->b));
+	    if (d->mode == MODE_EDIT) {
+	        char *fen = pgn_game_to_fen(game[i], d->b);
+
+		pgn_tag_add(&game[i]->tag, "FEN", fen);
+		free (fen);
+	    }
 	}
     }
     else {
 	d = game[n]->data;
 
-	if (d->mode == MODE_EDIT)
-	    pgn_tag_add(&game[n]->tag, "FEN", pgn_game_to_fen(game[n], d->b));
+	if (d->mode == MODE_EDIT) {
+	    char *fen = pgn_game_to_fen(game[n], d->b);
+
+	    pgn_tag_add(&game[n]->tag, "FEN", fen);
+	    free (fen);
+	}
     }
 
     save_pgn(tmp, n);
@@ -3888,15 +3991,14 @@ void do_global_find_prev()
 
 void do_global_game_jump()
 {
-    struct input_data_s *in;
-
     if (gtotal < 2)
 	return;
 
-    in = Calloc(1, sizeof(struct input_data_s));
-    in->efunc = do_game_jump;
-
     if (!keycount) {
+        struct input_data_s *in;
+
+	in = Calloc(1, sizeof(struct input_data_s));
+	in->efunc = do_game_jump;
 	construct_input(_("Jump to Game Number"), NULL, 1, 1, NULL, NULL, NULL, 0, in,
 		-1, 0);
 	return;
@@ -3992,34 +4094,33 @@ void do_global_copy_game()
     struct userdata_s *d;
 
     do_global_new_game();
-    n = pgn_history_total(game[g]->history);
     d = gp->data;
-
-    // FIXME RAV
-    for (i = 0; i < n; i++) {
-	char *frfr = NULL;
-	char *move = strdup(game[g]->history[i]->move);
-
-	if (pgn_parse_move(gp, d->b, &move, &frfr) != E_PGN_OK) {
-	    SET_FLAG(gp->flags, GF_PERROR);
-	    return;
-	}
-
-	pgn_history_add(gp, d->b, move);
-	free(move);
-	free(frfr);
-	pgn_switch_turn(gp);
-    }
-
     n = pgn_tag_total(game[g]->tag);
 
     for (i = 0; i < n; i++)
 	pgn_tag_add(&gp->tag, game[g]->tag[i]->name,
 		game[g]->tag[i]->value);
 
-    d = gp->data;
-    pgn_board_update(gp, d->b, 
-	    pgn_history_total(gp->hp));
+    pgn_board_init_fen (gp, d->b, NULL);
+    n = pgn_history_total(game[g]->history);
+
+    // FIXME RAV
+    for (i = 0; i < n; i++) {
+	char *frfr = NULL;
+	char move[MAX_SAN_MOVE_LEN+1] = {0}, *m = move;
+
+	strcpy (move, game[g]->history[i]->move);
+	if (pgn_parse_move(gp, d->b, &m, &frfr) != E_PGN_OK) {
+	    SET_FLAG(gp->flags, GF_PERROR);
+	    return;
+	}
+
+	pgn_history_add(gp, d->b, move);
+	free(frfr);
+	pgn_switch_turn(gp);
+    }
+
+    pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
 }
 
 void do_global_new_all()
@@ -4085,7 +4186,7 @@ static int globalkeys()
      * these.
      */
     switch (input_c) {
-	case CTRL('L'):
+	case CTRL_KEY('L'):
 	    endwin();
 	    keypad(boardw, TRUE);
 	    wmove(stdscr, 0, 0);
@@ -4219,12 +4320,12 @@ static void do_perl_finalize(WIN *win)
     if (perl_init_file(filename, perl_error))
 	goto done;
 
-    arg = strdup(pgn_game_to_fen(g, d->b));
+    arg = pgn_game_to_fen(g, d->b);
 
     if (perl_call_sub(trim(in->str), arg, &result))
 	goto done;
 
-    d->perlfen = strdup(pgn_game_to_fen(g, d->b));
+    d->perlfen = pgn_game_to_fen(g, d->b);
     d->perlflags = g->flags;
 
     if (pgn_board_init_fen(g, d->b, result) != E_PGN_OK) {
@@ -4487,7 +4588,7 @@ void game_loop()
 
 	    if (win) {
 		switch (input_c) {
-		    case CTRL('L'):
+		    case CTRL_KEY('L'):
 			endwin();
 			keypad(boardw, TRUE);
 			wmove(stdscr, 0, 0);

@@ -37,7 +37,7 @@ enum {
     CONF_MWINDOW, CONF_MTITLE, CONF_MBORDER, CONF_MPROMPT,
     CONF_IWINDOW, CONF_ITITLE, CONF_IBORDER, CONF_IPROMPT, CONF_MENU, 
     CONF_MENUS, CONF_MENUH, CONF_HISTORY_MENU_LG, CONF_BCASTLING,
-    CONF_BENPASSANT, CONF_MAX_COLORS
+    CONF_BENPASSANT, CONF_BATTACK, CONF_MAX_COLORS
 };
 
 struct color_s {
@@ -83,6 +83,7 @@ struct {
 			 */
     struct config_key_s **keys; // Custom commands to send to the engine.
     int details;	// Board details.
+    int showattacks;    // When board details is enabled.
     char coordsyleft;
     char fmpolyglot;	// first move with polyglot
     char boardleft;

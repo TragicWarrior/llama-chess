@@ -19,10 +19,60 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#if defined(HAVE_NCURSESW_CURSES_H)
+#include <ncursesw/curses.h>
+#elif defined(HAVE_NCURSESW_H)
+#include <ncursesw.h>
+#elif defined(HAVE_NCURSES_CURSES_H)
+#include <ncurses/curses.h>
+#elif defined(HAVE_NCURSES_H)
+#include <ncurses.h>
+#elif defined(HAVE_CURSES_H)
+#include <curses.h>
+#else
+#error "SysV or X/Open-compatible Curses header file required"
+#endif
+
+#if defined(HAVE_NCURSESW_PANEL_H)
+#include <ncursesw/panel.h>
+#elif defined(HAVE_NCURSES_PANEL_H)
+#include <ncurses/panel.h>
+#elif defined(HAVE_PANEL_H)
+#include <panel.h>
+#else
+#error "SysV-compatible Curses Panel header file required"
+#endif
+
+#if defined(HAVE_NCURSESW_MENU_H)
+#include <ncursesw/menu.h>
+#elif defined(HAVE_NCURSES_MENU_H)
+#include <ncurses/menu.h>
+#elif defined(HAVE_MENU_H)
+#include <menu.h>
+#else
+#error "SysV-compatible Curses Menu header file required"
+#endif
+
+#if defined(HAVE_NCURSESW_FORM_H)
+#include <ncursesw/form.h>
+#elif defined(HAVE_NCURSES_FORM_H)
+#include <ncurses/form.h>
+#elif defined(HAVE_FORM_H)
+#include <form.h>
+#else
+#error "SysV-compatible Curses Form header file required"
+#endif
+
 #ifndef _
 #include "gettext.h"
 #define _(msgid) gettext(msgid)
 #endif
+
+#include "chess.h"
 
 #define CF_ENGINE_LOOP	0x01
 #define CF_HUMAN	0x02
@@ -34,6 +84,7 @@
 #define CF_PERL		0x40
 #endif
 
+#include <sys/time.h>
 #define MAX_TC		8	/* Time controls. */
 
 struct clock_s {

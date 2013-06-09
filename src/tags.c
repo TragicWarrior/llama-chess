@@ -28,21 +28,10 @@
 #include <limits.h>
 #include <errno.h>
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#endif
-
-#ifdef HAVE_PANEL_H
-#include <panel.h>
-#endif
-
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
-#include "chess.h"
 #include "common.h"
 #include "conf.h"
 #include "colors.h"
@@ -228,8 +217,10 @@ static void edit_tag_add_fen(struct menu_input_s *m)
 {
     TAG **t = m->data;
     struct userdata_s *d = gp->data;
+    char *fen = pgn_game_to_fen(gp, d->b);
 
-    pgn_tag_add(&t, "FEN", pgn_game_to_fen(gp, d->b));
+    pgn_tag_add(&t, "FEN", fen);
+    free (fen);
     m->data = t;
 }
 
@@ -305,7 +296,7 @@ static void set_menu_stuff(TAG **t, char *name, char **init, int *type,
     }
     else if (strcasecmp(name, "Site") == 0) {
 	*func = country_codes;
-	*key = CTRL('t');
+	*key = CTRL_KEY('t');
 	*eprompt = _("Type CTRL-t for country codes");
 	*arg = t[n];
     }
@@ -520,11 +511,11 @@ void edit_tags(GAME g, BOARD b, int edit)
 	    pgn_tag_add(&data, gp->tag[i]->name, gp->tag[i]->value);
 
 	add_menu_key(&keys, '\n', edit_tag_value);
-	add_menu_key(&keys, CTRL('f'), edit_tag_add_fen);
-	add_menu_key(&keys, CTRL('a'), edit_tag_add);
-	add_menu_key(&keys, CTRL('r'), edit_tag_remove);
-	add_menu_key(&keys, CTRL('t'), edit_tag_add_custom);
-	add_menu_key(&keys, CTRL('x'), edit_tag_save);
+	add_menu_key(&keys, CTRL_KEY('f'), edit_tag_add_fen);
+	add_menu_key(&keys, CTRL_KEY('a'), edit_tag_add);
+	add_menu_key(&keys, CTRL_KEY('r'), edit_tag_remove);
+	add_menu_key(&keys, CTRL_KEY('t'), edit_tag_add_custom);
+	add_menu_key(&keys, CTRL_KEY('x'), edit_tag_save);
 	add_menu_key(&keys, KEY_ESCAPE, edit_tag_abort);
 	add_menu_key(&keys, KEY_F(1), edit_tag_help);
     }

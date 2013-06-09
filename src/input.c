@@ -30,15 +30,7 @@
 #include <stdarg.h>
 #endif
 
-#ifdef HAVE_FORM_H
-#include <form.h>
-#endif
-
-#ifdef HAVE_PANEL_H
-#include <panel.h>
-#endif
-
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "colors.h"
 #include "window.h"
@@ -145,27 +137,27 @@ static int get_input(WIN *win)
     }
 
     switch (win->c) {
-	case CTRL('X'):
+	case CTRL_KEY('X'):
 	    form_driver(in->f, REQ_DEL_WORD);
 	    break;
-	case CTRL('B'):
+	case CTRL_KEY('B'):
 	    form_driver(in->f, REQ_PREV_WORD);
 	    break;
-	case CTRL('W'):
+	case CTRL_KEY('W'):
 	    form_driver(in->f, REQ_NEXT_WORD);
 	    break;
 	case KEY_HOME:
-	case CTRL('A'):
+	case CTRL_KEY('A'):
 	    form_driver(in->f, REQ_BEG_LINE);
 	    break;
 	case KEY_END:
-	case CTRL('E'):
+	case CTRL_KEY('E'):
 	    form_driver(in->f, REQ_END_LINE);
 	    break;
-	case CTRL('K'):
+	case CTRL_KEY('K'):
 	    form_driver(in->f, REQ_CLR_EOL);
 	    break;
-	case CTRL('U'):
+	case CTRL_KEY('U'):
 	    form_driver(in->f, REQ_CLR_FIELD);
 	    break;
 	case KEY_F(1):
@@ -191,7 +183,7 @@ static int get_input(WIN *win)
 	case KEY_RIGHT:
 	    form_driver(in->f, REQ_RIGHT_CHAR);
 	    break;
-	case CTRL('P'):
+	case CTRL_KEY('P'):
 	case KEY_UP:
 	    if (in->hist >= 0 && input_history[in->hist] && in->lines == 1) {
 		set_field_buffer(in->fields[0], 0, input_history[in->hist]->str);
@@ -207,7 +199,7 @@ static int get_input(WIN *win)
 
 	    form_driver(in->f, REQ_UP_CHAR);
 	    break;
-	case CTRL('N'):
+	case CTRL_KEY('N'):
 	case KEY_DOWN:
 	    if (in->hist >= 0 && input_history[in->hist] && in->lines == 1) {
 		if (!input_history[in->hist]->next) {

@@ -29,11 +29,11 @@ AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
 dnl Checks for library functions.
-PKG_PROG_PKG_CONFIG()
-PKG_CHECK_MODULES([libncursesw], [ncursesw])
-PKG_CHECK_MODULES([libformw], [formw])
-PKG_CHECK_MODULES([libpanelw], [panelw])
-PKG_CHECK_MODULES([libmenuw], [menuw])
+AX_WITH_CURSES
+AX_WITH_CURSES_PANEL
+AX_WITH_CURSES_MENU
+AX_WITH_CURSES_FORM
+
 AC_ARG_WITH(libperl, AC_HELP_STRING([--with-libperl], [PERL support.]),
     want_libperl=yes, want_libperl=no)
 

@@ -25,21 +25,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#endif
-
-#ifdef HAVE_PANEL_H
-#include <panel.h>
-#endif
-
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
-#include "chess.h"
 #include "common.h"
 #include "conf.h"
 #include "colors.h"
@@ -344,8 +333,9 @@ done:
 }
 
 WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
-	int name_only, menu_items *func, struct menu_key_s **keys, void *data,
-	menu_print_func *pfunc, window_exit_func *efunc)
+		    int name_only, menu_items_fn *func,
+		    struct menu_key_s **keys, void *data,
+		    menu_print_func *pfunc, window_exit_func *efunc)
 {
     WIN *win;
     struct menu_input_s *m;

@@ -43,27 +43,16 @@
 #include <stdarg.h>
 #endif
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#endif
-
-#ifdef HAVE_PANEL_H
-#include <panel.h>
-#endif
-
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
 
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "misc.h"
 #include "strings.h"
 #include "window.h"
 #include "message.h"
-#include "common.h"
 #include "engine.h"
 
 #ifdef WITH_DMALLOC
@@ -232,14 +221,16 @@ static char **parseargs(char *str)
 int init_chess_engine(GAME g)
 {
     struct userdata_s *d = g->data;
+    char *tmp;
 
     if (start_chess_engine(g) > 0) {
 	d->sp.icon = 0;
 	return 1;
     }
 
-    add_engine_command(g, ENGINE_READY, "setboard %s\n",
-	    pgn_game_to_fen(g, d->b));
+    tmp = pgn_game_to_fen(g, d->b);
+    add_engine_command(g, ENGINE_READY, "setboard %s\n", tmp);
+    free (tmp);
     return 0;
 }
 
@@ -276,7 +267,7 @@ static pid_t exec_chess_engine(GAME g, char **args)
 #ifndef UNIX98
     if ((to[0] = open(pty, O_RDWR, 0)) == -1)
 #else
-    if ((to[0] = open(ptsname(to[1]), O_RDWR, 0)) == -1)
+    if ((to[0] = open(ptsname(to[1]), O_RDWR | O_NOCTTY, 0)) == -1)
 #endif
 	return -1;
 

@@ -19,6 +19,8 @@
 #ifndef MENU_H
 #define MENU_H
 
+#include "window.h"
+
 #define MAX_MENU_HEIGHT (LINES - 4)
 #define MAX_MENU_WIDTH  (COLS - 4)
 #define REFRESH_MENU	-2
@@ -39,7 +41,7 @@ struct menu_key_s {
 };
 
 typedef void (menu_print_func)(WIN *);
-typedef struct menu_item_s **(menu_items)(WIN *);
+typedef struct menu_item_s **(menu_items_fn)(WIN *);
 
 struct menu_input_s {
     int update;
@@ -47,7 +49,7 @@ struct menu_input_s {
     int nofree;
     int top;
     int total;
-    menu_items *func;
+    menu_items_fn *func;
     menu_key *draw_exit_func;
     menu_print_func *print_func;
     int print_line;
@@ -64,8 +66,9 @@ struct menu_input_s {
 };
 
 void add_menu_key(struct menu_key_s ***dst, int c, menu_key func);
-WIN *construct_menu(int rows, int cols, int y, int x, const char *title, 
-	int name_only, menu_items *func, struct menu_key_s **keys, void *data, 
-	menu_print_func *pfunc, window_exit_func *efunc);
+WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
+		    int name_only, menu_items_fn *func,
+		    struct menu_key_s **keys, void *data,
+		    menu_print_func *pfunc, window_exit_func *efunc);
 
 #endif

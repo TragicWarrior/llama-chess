@@ -44,6 +44,10 @@
 # on the board. This can be toggled with the `^d' key. BOOL
 #board_details	on
 
+# When board_details is enabled, change an attacking piece to
+# color_board_attack.
+#show_attacks on
+
 # If enabled and there is a parsing error when loading a file, stop processing
 # immediately. Normally a game or round will be flagged as having an error and
 # other games will be loaded. BOOL
@@ -98,6 +102,7 @@
 #color_board_black_moves	white	blue	none	reverse
 #color_board_castling		yellow	black	bold	bold
 #color_board_enpassant		magenta black	bold	bold
+#color_board_attack             blue    black   bold    reverse
 #
 #color_status_window	white	black
 #color_status_title	white	blue	none	reverse

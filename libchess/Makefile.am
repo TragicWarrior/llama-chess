@@ -1,6 +1,6 @@
 EXTRA_DIST = debug.c debug.h
 noinst_LIBRARIES = libchess.a
-libchess_a_SOURCES = common.h pgn.c pgn.h chess.h move.c
+libchess_a_SOURCES = common.h pgn.c chess.h move.c
 #libchess_a_LDFLAGS = -avoid-version
 
 if WITH_DEBUG

@@ -29,17 +29,11 @@
 #include <errno.h>
 #include <err.h>
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#endif
-
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
-#include "chess.h"
+#include "common.h"
 #include "conf.h"
 #include "misc.h"
 #include "colors.h"
@@ -255,12 +249,12 @@ void set_default_keys()
     add_key_binding(&history_keys, do_history_find_new, '/', "new move text expression", 0);
     add_key_binding(&history_keys, do_history_find_next, ']', "find next move text expression", 1);
     add_key_binding(&history_keys, do_history_find_prev, '[', "find previous move text expression", 1);
-    add_key_binding(&history_keys, do_history_annotate, CTRL('a'), "annotate the previous move", 0);
+    add_key_binding(&history_keys, do_history_annotate, CTRL_KEY('a'), "annotate the previous move", 0);
     add_key_binding(&history_keys, do_history_rav_next, '+', "next variation of the previous move", 0);
     add_key_binding(&history_keys, do_history_rav_prev, '-', "previous variation of the previous move", 0);
     add_key_binding(&history_keys, do_history_menu, 'M', "move history tree", 0);
     add_key_binding(&history_keys, do_history_help, KEY_F(1), "more help", 0);
-    add_key_binding(&history_keys, do_history_help, CTRL('g'), NULL, 0);
+    add_key_binding(&history_keys, do_history_help, CTRL_KEY('g'), NULL, 0);
     add_key_binding(&history_keys, do_history_toggle, 'h', "exit history mode", 0);
 
     add_key_binding(&edit_keys, do_edit_select, ' ', "select piece for movement", 0);
@@ -272,7 +266,7 @@ void set_default_keys()
     add_key_binding(&edit_keys, do_edit_enpassant, 'p', "toggle enpassant square", 0);
     add_key_binding(&edit_keys, do_edit_switch_turn, 'w', "toggle turn", 0);
     add_key_binding(&edit_keys, do_edit_help, KEY_F(1), "more help", 0);
-    add_key_binding(&history_keys, do_edit_help, CTRL('g'), NULL, 0);
+    add_key_binding(&history_keys, do_edit_help, CTRL_KEY('g'), NULL, 0);
     add_key_binding(&edit_keys, do_edit_exit, 'e', "exit edit mode", 0);
 
     add_key_binding(&play_keys, do_play_select, ' ', "select piece for movement", 0);
@@ -290,28 +284,28 @@ void set_default_keys()
     add_key_binding(&play_keys, do_play_history_mode, 'h', "enter history mode", 0);
     add_key_binding(&play_keys, do_play_edit_mode, 'e', "enter edit mode", 0);
     add_key_binding(&play_keys, do_play_help, KEY_F(1), "more help", 0);
-    add_key_binding(&play_keys, do_play_help, CTRL('g'), NULL, 0);
+    add_key_binding(&play_keys, do_play_help, CTRL_KEY('g'), NULL, 0);
 
-    add_key_binding(&global_keys, do_global_tag_edit, CTRL('t'), "edit roster tags", 0);
+    add_key_binding(&global_keys, do_global_tag_edit, CTRL_KEY('t'), "edit roster tags", 0);
     add_key_binding(&global_keys, do_global_tag_view, 't', "view roster tags", 0);
     add_key_binding(&global_keys, do_global_find_new, '?', "new find game expression", 0);
     add_key_binding(&global_keys, do_global_find_next, '}', "find next game", 1);
     add_key_binding(&global_keys, do_global_find_prev, '{', "find previous game", 1);
-    add_key_binding(&global_keys, do_global_new_game, CTRL('n'), "new game or round", 0);
-    add_key_binding(&global_keys, do_global_new_all, CTRL('k'), "new game from scratch", 0);
-    add_key_binding(&global_keys, do_global_copy_game, CTRL('i'), "copy current game", 0);
+    add_key_binding(&global_keys, do_global_new_game, CTRL_KEY('n'), "new game or round", 0);
+    add_key_binding(&global_keys, do_global_new_all, CTRL_KEY('k'), "new game from scratch", 0);
+    add_key_binding(&global_keys, do_global_copy_game, CTRL_KEY('i'), "copy current game", 0);
     add_key_binding(&global_keys, do_global_next_game, '>', "next game", 1);
     add_key_binding(&global_keys, do_global_prev_game, '<', "previous game", 1);
     add_key_binding(&global_keys, do_global_game_jump, 'J', "jump to game", 1);
     add_key_binding(&global_keys, do_global_toggle_delete, 'X', "toggle delete flag", 1);
-    add_key_binding(&global_keys, do_global_delete_game, CTRL('X'), "delete the current or flagged games", 0);
-    add_key_binding(&global_keys, do_global_resume_game, CTRL('r'), "load a PGN file", 0);
+    add_key_binding(&global_keys, do_global_delete_game, CTRL_KEY('X'), "delete the current or flagged games", 0);
+    add_key_binding(&global_keys, do_global_resume_game, CTRL_KEY('r'), "load a PGN file", 0);
     add_key_binding(&global_keys, do_global_save_game, 's', "save game", 0);
-    add_key_binding(&global_keys, do_global_toggle_board_details, CTRL('d'), "toggle board details", 0);
-    add_key_binding(&global_keys, do_global_toggle_strict_castling, CTRL('p'), "toggle strict castling", 0);
+    add_key_binding(&global_keys, do_global_toggle_board_details, CTRL_KEY('d'), "toggle board details", 0);
+    add_key_binding(&global_keys, do_global_toggle_strict_castling, CTRL_KEY('p'), "toggle strict castling", 0);
     add_key_binding(&global_keys, do_global_toggle_engine_window, 'W', "toggle chess engine IO window", 0);
 #ifdef WITH_LIBPERL
-    add_key_binding(&global_keys, do_global_perl, CTRL('O'), "Call PERL subroutine", 0);
+    add_key_binding(&global_keys, do_global_perl, CTRL_KEY('O'), "Call PERL subroutine", 0);
 #endif
     add_key_binding(&global_keys, do_global_about, KEY_F(10), "version information", 0);
     add_key_binding(&global_keys, do_global_quit, 'Q', "quit", 0);
@@ -330,6 +324,7 @@ void set_config_defaults()
     config.deleteprompt = 1;
     config.validmoves = 1;
     config.details = 1;
+    config.showattacks = 1;
     config.coordsyleft = TRUE;
     config.fmpolyglot = FALSE;
     config.boardleft = TRUE;
@@ -458,7 +453,7 @@ static int parse_key(const char *filename, int lines, char **key)
 	}
 	else if (*p == '^') {
 	    p++;
-	    c = CTRL(*p++);
+	    c = CTRL_KEY(*p++);
 	}
 	else if (*p == 'F' || *p == 'f') {
 	    c = KEY_F(atoi(++p));
@@ -688,6 +683,8 @@ void parse_rcfile(const char *filename)
 	    config.validmoves = on_or_off(filename, lines, val);
 	else if (strcmp(var, "board_details") == 0)
 	    config.details = on_or_off(filename, lines, val);
+	else if (strcmp(var, "show_attacks") == 0)
+	    config.showattacks = on_or_off(filename, lines, val);
 	else if (strcmp(var, "coords_y_left") == 0 )
 	    config.coordsyleft = on_or_off(filename, lines, val);
 	else if (strcmp(var, "fm_polyglot") == 0 )
@@ -736,6 +733,8 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_BCASTLING]);
 	else if (strcmp(var, "color_board_enpassant") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_BENPASSANT]);
+	else if (strcmp(var, "color_board_attack") == 0)
+	  parse_color(filename, lines, val, &config.color[CONF_BATTACK]);
 	else if (strcmp(var, "color_status_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_SWINDOW]);
 	else if (strcmp(var, "color_status_title") == 0)
