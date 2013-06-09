@@ -39,6 +39,7 @@
 #include <dmalloc.h>
 #endif
 
+#include "common.h"
 #include "misc.h"
 
 void *Malloc(size_t size)
@@ -164,36 +165,33 @@ char *pathfix(const char *str)
 
 wchar_t *str_etc(const char *str, int maxlen, int rev)
 {
-    int len;
     wchar_t *p;
-    wchar_t *buf;
+    wchar_t *buf = NULL;
 
     if (!str)
 	return NULL;
 
     p = str_to_wchar (str);
-    len = wcslen(p);
 
-    if (len > maxlen) {
-        wchar_t *dot = str_to_wchar ("...");
-
-        buf = Malloc (maxlen+4*sizeof(wchar_t));
-        buf[0] = 0;
+    if (wcslen (p) > maxlen) {
+        wchar_t *dot = str_to_wchar (_("..."));
 
 	if (rev) {
-	    wcsncat (buf, dot, maxlen);
-	    wcsncat (buf, p, maxlen);
+	    buf = str_to_wchar_len (_("..."), maxlen);
+	    buf[wcslen (dot)] = 0;
+	    wcsncat (buf, p, maxlen-wcslen (dot));
 	}
 	else {
-	    wcsncat (buf, p, maxlen);
-	    wcsncat (buf, dot, maxlen);
+	    buf = str_to_wchar_len (str, maxlen);
+	    buf[wcslen (buf)-wcslen (dot)]=0;
+	    wcscat (buf, dot);
 	}
 
 	free (dot);
 	free (p);
     }
     else
-      buf = p;
+        buf = p;
 
     return buf;
 }
@@ -234,18 +232,27 @@ char **split_str(char *str, char *delim, int *n, int *width, int force_trim)
     return lines;
 }
 
-wchar_t *
-str_to_wchar (const char *str)
+// 'max' will always allocate that amount when not 0.
+wchar_t *str_to_wchar_len (const char *str, int max)
 {
-  wchar_t *wc;
-  mbstate_t ps;
-  const char *p = str;
+    wchar_t *wc;
+    mbstate_t ps;
+    const char *p = str;
+    size_t len = max;
 
-  memset (&ps, 0, sizeof(mbstate_t));
-  size_t len = mbsrtowcs (NULL, &p, 0, &ps)+1;
-  wc = Calloc (1, len * sizeof(wchar_t));
-  p = str;
-  memset (&ps, 0, sizeof(mbstate_t));
-  len = mbsrtowcs (wc, &p, len, &ps);
-  return wc;
+    memset (&ps, 0, sizeof(mbstate_t));
+    if (!len)
+        len = mbsrtowcs (NULL, &p, 0, &ps);
+
+    wc = Calloc (1, len * sizeof(wchar_t) + 1);
+    p = str;
+    memset (&ps, 0, sizeof(mbstate_t));
+    len = mbsrtowcs (wc, &p, len, &ps);
+    wc[len] = 0;
+    return wc;
+}
+
+wchar_t *str_to_wchar (const char *str)
+{
+    return str_to_wchar_len (str, 0);
 }

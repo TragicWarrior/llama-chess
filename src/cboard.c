@@ -1444,29 +1444,27 @@ void update_status_window(GAME g)
 void update_tag_window(TAG **t)
 {
     int i, l, w;
-    int namel = 0, valuel = 0;
+    int namel = 0;
 
     for (i = 0; t[i]; i++) {
-	l = strlen(t[i]->name);
+        wchar_t *namewc = str_to_wchar (t[i]->name);
 
+	l = wcslen(namewc);
+	free (namewc);
 	if (l > namel)
 	    namel = l;
-
-	l = strlen(t[i]->value);
-
-	if (l > valuel)
-	    valuel = l;
     }
 
     w = TAG_WIDTH - namel - 4;
 
-    /* FIXME unicode tag pairs */
-    for (i = 0; t[i] && i < TAG_HEIGHT - 3; i++)
-      {
-	wchar_t *s = str_etc(t[i]->value, w, 0);
-	mvwprintw(tagw, (i + 2), 1, "%*s: %-*ls", namel, t[i]->name, w, s);
-	free (s);
-      }
+    for (i = 0; t[i] && i < TAG_HEIGHT - 3; i++) {
+	wchar_t *namewc = str_to_wchar(t[i]->name);
+	wchar_t *valuewc = str_etc(t[i]->value, w, 0);
+
+	mvwprintw(tagw, (i + 2), 1, "%*ls: %-*ls", namel, namewc, w, valuewc);
+	free (namewc);
+	free (valuewc);
+    }
 
     for (; i < TAG_HEIGHT - 3; i++)
 	mvwprintw(tagw, (i + 2), 1, "%*s", namel + w + 2, " ");
