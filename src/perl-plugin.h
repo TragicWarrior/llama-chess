@@ -16,8 +16,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#ifndef PERL_H
-#define PERL_H
+#ifndef PERL_PLUGIN_H
+#define PERL_PLUGIN_H
 
 typedef void (perl_error_func)(const char *fmt, ...);
 

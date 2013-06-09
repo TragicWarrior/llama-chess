@@ -48,7 +48,7 @@
 #endif
 
 #ifdef WITH_LIBPERL
-#include "perl.h"
+#include "perl-plugin.h"
 #endif
 
 #include "common.h"
