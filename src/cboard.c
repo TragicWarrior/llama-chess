@@ -913,7 +913,7 @@ void update_board_window(GAME g)
 		    mvwaddch(boardw, row, col + l, ' ' | attrs);
 
 		    if (row == maxy - 1)
-			waddch(boardw, "abcdefgh"[bcol] | CP_BOARD_COORDS);
+			waddch(boardw, "abcdefgh"[bcol-1] | CP_BOARD_COORDS);
 		    else {
 			if (old_attrs == -1) {
 			    old_attrs = attrs;
