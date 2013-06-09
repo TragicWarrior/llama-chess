@@ -11,3 +11,5 @@ deb: changelog
 version: changelog
 	$(MAKE) $(AM_MAKEFLAGS) distcheck
 	$(MAKE) $(AM_MAKEFLAGS) deb
+
+distcheck-hook:	changelog
