@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <err.h>
+#include <time.h>
 
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
@@ -41,7 +42,6 @@
 
 #include "chess.h"
 #include "common.h"
-#include "pgn.h"
 
 #ifdef DEBUG
 #include "debug.h"
@@ -49,6 +49,22 @@
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
+#endif
+
+static BOARD pgn_board;
+static int nulltags;
+static int tag_section;
+static int pgn_ret;
+static int pgn_write_turn;
+static int pgn_mpl;
+static int pgn_lastc;
+static int ravlevel;
+static long pgn_fsize;
+static int pgn_rav;
+static RAV *pgn_rav_p;
+
+#ifdef __linux__
+extern char *strptime(const char *, const char *, struct tm *);
 #endif
 
 static int Fgetc(FILE *fp)
