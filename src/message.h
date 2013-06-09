@@ -34,7 +34,7 @@ struct message_s {
     char *title;
     char *prompt;
     char *extra;
-    char **lines;
+    wchar_t **lines;
     int center;
     int c;
     message_func *func;

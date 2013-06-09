@@ -231,7 +231,7 @@ static void edit_tag_abort(struct menu_input_s *m)
     pgn_tag_free(t);
     m->data = NULL;
     pushkey = -1;
-    update_status_notify(gp, "Tag edit aborted.");
+    update_status_notify(gp, _("Tag edit aborted."));
 }
 
 static void edit_tag_add_finalize(WIN *w)
@@ -323,12 +323,15 @@ static void edit_tag_value(struct menu_input_s *m)
     char *eprompt = NULL;
     void *arg = NULL;
     int lines = MAX_PGN_LINE_LEN / INPUT_WIDTH;
+    wchar_t *wc;
 
     in->data = m;
     name = strdup(t[m->selected]->name);
     in->moredata = name;
     in->efunc = edit_tag_add_finalize;
-    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Editing Tag"), name);
+    wc = str_to_wchar (name);
+    snprintf(buf, sizeof(buf), "%s \"%ls\"", _("Editing Tag"), wc);
+    free (wc);
     set_menu_stuff(t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
     construct_input(buf, init, lines, 0, eprompt, func, arg, key, in, -1, type);
 }
@@ -347,6 +350,7 @@ static void edit_tag_add_name_finalize(WIN *w)
     char *eprompt = NULL;
     int lines = MAX_PGN_LINE_LEN / INPUT_WIDTH;
     void *arg = NULL;
+    wchar_t *wc;
 
     if (!in->str)
 	return;
@@ -358,7 +362,9 @@ static void edit_tag_add_name_finalize(WIN *w)
     inv->moredata = name;
     free(in->str);
     free(in);
-    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Editing Tag"), name);
+    wc = str_to_wchar (name);
+    snprintf(buf, sizeof(buf), "%s \"%ls\"", _("Editing Tag"), wc);
+    free (wc);
     set_menu_stuff(t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
     construct_input(buf, init, lines, 0, eprompt, func, arg, key, inv, -1, type);
 }
@@ -466,31 +472,40 @@ static void view_tag_value(struct menu_input_s *m)
 {
     struct menu_item_s *item = m->items[m->selected];
     char buf[COLS - 4];
+    wchar_t *wc = str_to_wchar (item->name);
 
-    snprintf(buf, sizeof(buf), "%s \"%s\"", _("Viewing Tag"), item->name);
-    construct_message(buf, _("[ press any key to continue ]"), 0, 1, NULL, NULL, NULL, NULL, 0, 0, item->value);
+    snprintf(buf, sizeof(buf), "%s \"%ls\"", _("Viewing Tag"), wc);
+    free (wc);
+    construct_message(buf, _("[ press any key to continue ]"), 0, 1, NULL,
+		      NULL, NULL, NULL, 0, 0, item->value);
 }
 
 static void tag_print(WIN *win)
 {
     int i, len = 0, n;
     struct menu_input_s *m = win->data;
+    wchar_t *wc;
 
     for (i = 0; m->items[i]; i++) {
-	n = strlen(m->items[i]->name);
-
+        wc = str_to_wchar (m->items[i]->name);
+	n = wcslen (wc);
+	free (wc);
 	if (len < n)
 	    len = n;
     }
 
-    mvwprintw(win->w, m->print_line, 1, "%s", m->item->name);
+    wc = str_to_wchar (m->item->name);
+    mvwprintw(win->w, m->print_line, 1, "%ls", wc);
+    free (wc);
 
     for (n = strlen(m->item->name) + 1; n <= len; n++)
 	mvwprintw(win->w, m->print_line, n, "%c", '.');
 
     mvwprintw(win->w, m->print_line, n, ": ");
     i = win->cols - n - 2;
-    mvwprintw(win->w, m->print_line, n + 2, "%-*s", i - 1, str_etc(m->item->value, i, 0));
+    wc = str_etc (m->item->value, i, 0);
+    mvwprintw(win->w, m->print_line, n + 2, "%-*ls", i - 1, wc);
+    free (wc);
 
     if (m->update) {
 	wmove(stdscr, 0, 0);
@@ -526,6 +541,7 @@ void edit_tags(GAME g, BOARD b, int edit)
 	add_menu_key(&keys, KEY_F(1), view_tag_help);
     }
 
-    construct_menu(0, 0, -1, -1, (edit) ? _("Editing Roster Tags") : _("Viewing Roster Tags"),
+    construct_menu(0, 0, -1, -1,
+		   (edit) ? _("Editing Roster Tags") : _("Viewing Roster Tags"),
 		   0, get_tag_items, keys, data, tag_print, NULL);
 }

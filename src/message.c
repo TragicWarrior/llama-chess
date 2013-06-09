@@ -45,15 +45,17 @@
 #endif
 
 static void build_message_lines(const char *title, const char *prompt,
-	int force_trim, const char *extra, int *h, int *w, char ***str,
+	int force_trim, const char *extra, int *h, int *w, wchar_t ***str,
 	const char *fmt, va_list ap)
 {
     int i, n, pos;
-    char *line, **lines = NULL;
-    int width = 0, height = 0;
+    char *line;
+    wchar_t **lines = NULL;
+    int width = 0, height = 0, len;
     char buf[LINE_MAX];
     char *p;
     int total = 0;
+    wchar_t *wc;
 
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, fmt, ap);
@@ -100,19 +102,30 @@ static void build_message_lines(const char *title, const char *prompt,
     }
 
     free(line);
-
     buf[n] = '\0';
     p = buf;
     lines = split_str(p, "\n", &total, &width, force_trim);
 
-    if (prompt && width < strlen(prompt))
-	width = strlen(prompt);
+    if (prompt) {
+        wc = str_to_wchar (prompt);
+	len = wcslen (wc);
+	width = len > width ? len : width;
+	free (wc);
+    }
 
-    if (extra && width < strlen(extra))
-	width = strlen(extra);
+    if (extra) {
+        wc = str_to_wchar (extra);
+	len = wcslen (wc);
+	width = len > width ? len : width;
+	free (wc);
+    }
 
-    if (title && width < strlen(title))
-	width = strlen(title);
+    if (title) {
+        wc = str_to_wchar (title);
+	len = wcslen (wc);
+	width = len > width ? len : width;
+	free (wc);
+    }
 
     height = total;
 
@@ -180,7 +193,7 @@ WIN *construct_message(const char *title, const char *prompt, int center,
 	int force_trim, const char *extra_help, message_func *func, void *arg,
 	window_exit_func *efunc, int ckey, int freedata, const char *fmt, ...)
 {
-    char **lines = NULL;
+    wchar_t **lines = NULL;
     va_list ap;
     struct message_s *m = NULL;
     WIN *win = NULL;
