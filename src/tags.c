@@ -204,8 +204,10 @@ static void edit_tag_add_fen(struct menu_input_s *m)
 {
     TAG **t = m->data;
     struct userdata_s *d = gp->data;
+    char *fen = pgn_game_to_fen(gp, d->b);
 
-    pgn_tag_add(&t, "FEN", pgn_game_to_fen(gp, d->b));
+    pgn_tag_add(&t, "FEN", fen);
+    free (fen);
     m->data = t;
 }
 

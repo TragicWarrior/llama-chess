@@ -1667,7 +1667,7 @@ int rav_next_prev(GAME g, BOARD b, int n)
 	g->rav = Realloc(g->rav, (g->ravlevel + 1) * sizeof(RAV));
 	g->rav[g->ravlevel].hp = g->hp;
 	g->rav[g->ravlevel].flags = g->flags;
-	g->rav[g->ravlevel].fen = strdup(pgn_game_to_fen(g, b));
+	g->rav[g->ravlevel].fen = pgn_game_to_fen(g, b);
 	g->rav[g->ravlevel].hindex = g->hindex;
 	g->hp = (!g->ravlevel) ? (g->hindex) ? g->hp[g->hindex - 1]->rav : g->hp[g->hindex]->rav : g->hp[g->hindex]->rav;
 	g->hindex = 0;
@@ -2087,10 +2087,12 @@ void do_play_toggle_engine()
     CLEAR_FLAG(d->flags, CF_HUMAN);
 
     if (d->engine && TEST_FLAG(d->flags, CF_ENGINE_LOOP)) {
+        char *fen = pgn_game_to_fen (gp, d->b);
+
 	pgn_board_update(gp, d->b,
 		pgn_history_total(gp->hp));
-	add_engine_command(gp, ENGINE_READY, 
-		"setboard %s\n", pgn_game_to_fen(gp, d->b));
+	add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+	free (fen);
     }
 }
 
@@ -2179,8 +2181,10 @@ void do_play_undo()
     pgn_board_update(gp, d->b, gp->hindex);
 
     if (d->engine && d->engine->status == ENGINE_READY) {
-	add_engine_command(gp, ENGINE_READY, "setboard %s\n",
-		pgn_game_to_fen(gp, d->b));
+        char *fen = pgn_game_to_fen(gp, d->b);
+
+        add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+	free (fen);
 	d->engine->status = ENGINE_READY;
     }
 
@@ -2641,9 +2645,11 @@ void do_edit_help()
 void do_edit_exit()
 {
     struct userdata_s *d = gp->data;
+    char *fen = pgn_game_to_fen(gp, d->b);
 
     config.details--;
-    pgn_tag_add(&gp->tag, "FEN", pgn_game_to_fen(gp, d->b));
+    pgn_tag_add(&gp->tag, "FEN", fen);
+    free (fen);
     pgn_tag_add(&gp->tag, "SetUp", "1");
     pgn_tag_sort(gp->tag);
     pgn_board_update(gp, d->b, gp->hindex);
@@ -3153,9 +3159,12 @@ void do_history_mode_confirm(WIN *win)
 	    return;
     }
 
-    if (!TEST_FLAG(d->flags, CF_HUMAN))
-	add_engine_command(gp, ENGINE_READY,
-		"setboard %s\n", pgn_game_to_fen(gp, d->b));
+    if (!TEST_FLAG(d->flags, CF_HUMAN)) {
+        char *fen =  pgn_game_to_fen(gp, d->b);
+
+	add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+	free (fen);
+    }
 
     do_history_mode_finalize(d);
 }
@@ -3663,15 +3672,23 @@ void do_game_save(WIN *win)
 	for (i = 0; i < gtotal; i++) {
 	    d = game[i]->data;
 
-	    if (d->mode == MODE_EDIT)
-		pgn_tag_add(&game[i]->tag, "FEN", pgn_game_to_fen(game[i], d->b));
+	    if (d->mode == MODE_EDIT) {
+	        char *fen = pgn_game_to_fen(game[i], d->b);
+
+		pgn_tag_add(&game[i]->tag, "FEN", fen);
+		free (fen);
+	    }
 	}
     }
     else {
 	d = game[n]->data;
 
-	if (d->mode == MODE_EDIT)
-	    pgn_tag_add(&game[n]->tag, "FEN", pgn_game_to_fen(game[n], d->b));
+	if (d->mode == MODE_EDIT) {
+	    char *fen = pgn_game_to_fen(game[n], d->b);
+
+	    pgn_tag_add(&game[n]->tag, "FEN", fen);
+	    free (fen);
+	}
     }
 
     save_pgn(tmp, n);
@@ -4129,12 +4146,12 @@ static void do_perl_finalize(WIN *win)
     if (perl_init_file(filename, perl_error))
 	goto done;
 
-    arg = strdup(pgn_game_to_fen(g, d->b));
+    arg = pgn_game_to_fen(g, d->b);
 
     if (perl_call_sub(trim(in->str), arg, &result))
 	goto done;
 
-    d->perlfen = strdup(pgn_game_to_fen(g, d->b));
+    d->perlfen = pgn_game_to_fen(g, d->b);
     d->perlflags = g->flags;
 
     if (pgn_board_init_fen(g, d->b, result) != E_PGN_OK) {

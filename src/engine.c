@@ -221,14 +221,16 @@ static char **parseargs(char *str)
 int init_chess_engine(GAME g)
 {
     struct userdata_s *d = g->data;
+    char *tmp;
 
     if (start_chess_engine(g) > 0) {
 	d->sp.icon = 0;
 	return 1;
     }
 
-    add_engine_command(g, ENGINE_READY, "setboard %s\n",
-	    pgn_game_to_fen(g, d->b));
+    tmp = pgn_game_to_fen(g, d->b);
+    add_engine_command(g, ENGINE_READY, "setboard %s\n", tmp);
+    free (tmp);
     return 0;
 }
 
