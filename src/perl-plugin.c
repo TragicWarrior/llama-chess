@@ -28,7 +28,7 @@
 #include <EXTERN.h>
 #include <perl.h>
 
-#include "perl.h"
+#include "perl-plugin.h"
 
 static PerlInterpreter *my_perl;
 static perl_error_func *error_func;
@@ -37,12 +37,14 @@ int perl_init_file(const char *filename, perl_error_func *efunc)
 {
     char *args[] = {"", "-e", "0"};
     char *buf;
+    int argc;
+    char **argv, **env;
 
     if (my_perl)
 	return 0;
 
     error_func = efunc;
-    PERL_SYS_INIT3(0, NULL, NULL);
+    PERL_SYS_INIT3(&argc, &argv, &env);
     my_perl = perl_alloc();
     perl_construct(my_perl);
     PL_exit_flags |= PERL_EXIT_DESTRUCT_END;

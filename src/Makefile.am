@@ -8,15 +8,9 @@ cboard_LDADD = $(top_builddir)/libchess/libchess.a
 cboard_CPPFLAGS = -DDATA_PATH=\"$(pkgdatadir)\" -I$(top_srcdir)/libchess
 
 if WITH_LIBPERL
-cboard_SOURCES += perl.c perl.h
-LIBPERL_CFLAGS += @LIBPERL_CFLAGS@
-LDFLAGS += @LIBPERL_LDFLAGS@
-
-# This is needed because LIBPERL_CFLAGS has form.h in the include path which
-# conflicts with the curses form.h which is normally in a standard system
-# include path that gcc -I ignores.
-perl.o: perl.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(LIBPERL_CFLAGS) -c $< -o $@
+cboard_SOURCES += perl-plugin.c perl-plugin.h
+cboard_CFLAGS = @LIBPERL_CFLAGS@
+cboard_LDFLAGS += @LIBPERL_LDFLAGS@
 endif
 
 if WITH_DEBUG
