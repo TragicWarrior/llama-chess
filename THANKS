@@ -1,3 +1,11 @@
-Sesshoumaru <sesshoumaru AT altern DOT org> - GCC 3 bug reports.
-Folkert van Heusden <folkert AT vanheusden DOT com> - XBoard protocol reports.
-Travis Poppe <tlp AT lickwid DOT net> - SIGINT bug report.
+Sesshoumaru <sesshoumaru AT altern DOT org>
+    GCC 3 bug reports.
+
+Folkert van Heusden <folkert AT vanheusden DOT com>
+    XBoard protocol reports.
+
+Travis Poppe <tlp AT lickwid DOT net>
+    SIGINT bug report.
+
+Noel Tlatempa Galeana <ntlatempa AT gmail DOT com>
+    Feature patches and bug fixes.
