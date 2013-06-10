@@ -105,8 +105,10 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 			continue;
 
 		    if (kill(d->engine->pid, 0) == -1) {
-			message(_("[ ERROR ]"), _("[ press any key to continue ]"), "Could not write to engine. "
-				"Process no longer exists.");
+			message(_("[ ERROR ]"),
+				_("[ press any key to continue ]"),
+				_("Could not write to engine. "
+				  "Process no longer exists."));
 			d->engine->status = ENGINE_OFFLINE;
 			return 1;
 		    }
@@ -117,8 +119,9 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 		}
 
 		if (len != n) {
-		    message(NULL, _("[ press any key to continue ]"), "try #%i: write() error to engine. "
-			    "Expected %i, got %i.", ++try, len, n);
+		    message(NULL, _("[ press any key to continue ]"),
+			    _("try #%i: write() error to engine. "
+			      "Expected %i, got %i."), ++try, len, n);
 		    continue;
 		}
 

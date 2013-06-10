@@ -1084,7 +1084,7 @@ void update_history_window(GAME g)
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (Annotated", sizeof(buf));
+        strncat(buf, _(" (Annotated"), sizeof(buf));
 	n++;
     }
 
@@ -1109,7 +1109,7 @@ void update_history_window(GAME g)
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
-	strncat(buf, " (Annotated", sizeof(buf));
+        strncat(buf, _(" (Annotated"), sizeof(buf));
 	n++;
     }
 
@@ -1363,12 +1363,12 @@ void update_status_window(GAME g)
 
     if (d->mode == MODE_PLAY) {
 	if (TEST_FLAG(d->flags, CF_HUMAN))
-	    strncat(buf, " (human/human)", len - 1);
+	    strncat(buf, _(" (human/human)"), len - 1);
 	else if (TEST_FLAG(d->flags, CF_ENGINE_LOOP))
-	    strncat(buf, " (engine/engine)", len - 1);
+	    strncat(buf, _(" (engine/engine)"), len - 1);
 	else
 	    strncat(buf, (d->play_mode == PLAY_EH) ?
-	    " (engine/human)" : " (human/engine)", len - 1);
+		    _(" (engine/human)") : _(" (human/engine)"), len - 1);
     }
 
     mvwprintw(statusw, y++, 1, "%-*s", len, buf);
@@ -3344,10 +3344,9 @@ void do_history_toggle()
     // FIXME Resuming from previous history could append to a RAV.
     if (gp->hindex != pgn_history_total(gp->hp)) {
 	if (!pushkey)
-	    construct_message(NULL, "(r)esume or abort", 0, 1, NULL, NULL, NULL, 
-		    do_history_mode_confirm, 0, 0, "%s", 
-		    _("Resuming a game from previous "));
-
+	    construct_message(NULL, _ ("(r)esume or abort"), 0, 1, NULL, NULL,
+			      NULL, do_history_mode_confirm, 0, 0, "%s",
+			      _("Resuming a game from previous "));
 	return;
     }
     else {
@@ -3526,9 +3525,8 @@ void update_loading_window(int n)
     wattron(loadingw, CP_MESSAGE_BORDER);
     box(loadingw, ACS_VLINE, ACS_HLINE);
     wattroff(loadingw, CP_MESSAGE_BORDER);
-    mvwprintw(loadingw, 1, CENTER_INT((COLS / 2),
-		11 + strlen(itoa(gtotal))), "Loading... %i%% (%i games)", n, 
-	    gtotal);
+    mvwprintw(loadingw, 1, CENTER_INT((COLS / 2), 11 + strlen(itoa(gtotal))),
+	      _("Loading... %i%% (%i games)"), n, gtotal);
     update_panels();
     doupdate();
 }
@@ -4207,7 +4205,7 @@ static int globalkeys()
 		  else
 		      keycount = i;
 
-		  update_status_notify(gp, "Repeat %i", keycount);
+		  update_status_notify(gp, _("Repeat %i"), keycount);
 		  return -1;
 	case KEY_UP:
 		  if (d->mode == MODE_HISTORY)
@@ -4689,7 +4687,7 @@ refresh:
 
 void usage(const char *pn, int ret)
 {
-    fprintf((ret) ? stderr : stdout, "%s",
+    fprintf((ret) ? stderr : stdout, "%s", _(
 #ifdef DEBUG
     "Usage: cboard [-hvCD] [-p [-VtRSE] <file>]\n"
     "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
@@ -4704,7 +4702,7 @@ void usage(const char *pn, int ret)
     "  -E  Stop processing on file parsing error (overrides config).\n"
     "  -C  Enable strict castling (overrides config).\n"
     "  -v  Version information.\n"
-    "  -h  This help text.\n");
+    "  -h  This help text.\n"));
 
     exit(ret);
 }
@@ -4828,7 +4826,7 @@ void loading_progress(long total, long offset)
     if (curses_initialized)
 	update_loading_window(n);
     else {
-	fprintf(stderr, "Loading... %i%% (%i games)\r", n, gtotal);
+        fprintf(stderr, _("Loading... %i%% (%i games)\r"), n, gtotal);
 	fflush(stderr);
     }
 }
@@ -5013,7 +5011,7 @@ int main(int argc, char *argv[])
 
     if (LINES < 24 || COLS < 80) {
 	endwin();
-	errx(EXIT_FAILURE, "Need at least an 80x24 terminal.");
+	errx(EXIT_FAILURE, _("Need at least an 80x24 terminal."));
     }
 
     if (has_colors() == TRUE && start_color() == OK)

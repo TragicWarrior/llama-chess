@@ -92,8 +92,8 @@ static short color_name(const char *filename, int line, const char *color)
     else if (strcasecmp(color, "-") == 0)
 	;
     else
-	errx(EXIT_FAILURE, "%s(%i): invalid color \"%s\"", filename, line, 
-		color);
+        errx(EXIT_FAILURE, _("%s(%i): invalid color \"%s\""), filename, line,
+	     color);
 
     return -1;
 }
@@ -106,7 +106,7 @@ static void parse_color(const char *filename, int line, const char *str,
     
     if ((n = sscanf(str, "%[a-zA-Z-] %[a-zA-Z-] %[a-zA-Z,-] %[a-zA-Z,-]", fg, bg,
 		    attr, nattr)) < 2)
-	errx(EXIT_FAILURE, "%s(%i): parse error", filename, line);
+        errx(EXIT_FAILURE, _ ("%s(%i): parse error"), filename, line);
 
     if ((n = color_name(filename, line, fg)) >= 0)
 	c->fg = n;
@@ -133,7 +133,7 @@ static int on_or_off(const char *filename, int lines, const char *str)
 	    strcasecmp(str, "no") == 0 || strcasecmp(str, "false") == 0)
 	return 0;
 
-    errx(EXIT_FAILURE, "%s(%i): invalid value \"%s\"", filename, lines, str);
+    errx(EXIT_FAILURE, _("%s(%i): invalid value \"%s\""), filename, lines, str);
 }
 
 void copydatafile(const char *dst, const char *src)
@@ -171,10 +171,10 @@ static char *fancy_key_name(int c)
     p = buf;
 
     if (*p == '^' && *(p + 1) == '[')
-	return "Escape";
+        return _("Escape");
 
     if (*p == '^' && *(p + 1) == 'J')
-	return "Enter";
+        return _ ("Enter");
 
     if (strncasecmp(p, "KEY_", 4) == 0) {
 	for (p = buf; *p; p++)
@@ -195,16 +195,16 @@ static char *fancy_key_name(int c)
 	    p = buf + 4;
 	}
 	else if (strcmp(p, "ppage") == 0)
-	    return "PgUp";
+	    return _("PgUp");
 	else if (strcmp(p, "npage") == 0)
-	    return "PgDown";
+	    return _ ("PgDown");
 
 	*p = toupper(*p);
 	return p;
     }
 
     if (*p == ' ')
-	return "Space";
+        return _("Space");
 
     return p;
 }
@@ -235,76 +235,76 @@ void add_key_binding(struct key_s ***dst, key_func *func, int c, char *desc,
 
 void set_default_keys()
 {
-    add_key_binding(&history_keys, do_history_jump_next, KEY_UP, "history jump next", 1);
-    add_key_binding(&history_keys, do_history_jump_prev, KEY_DOWN, "history jump previous", 1);
-    add_key_binding(&history_keys, do_history_next, KEY_RIGHT, "next move", 1);
-    add_key_binding(&history_keys, do_history_prev, KEY_LEFT, "previous move", 1);
-    add_key_binding(&history_keys, do_history_half_move_toggle, ' ', "toggle half move (ply) stepping", 0);
-    add_key_binding(&history_keys, do_history_rotate_board, 'r', "rotate board", 0);
-    add_key_binding(&history_keys, do_history_jump, 'j', "jump to move number", 1);
-    add_key_binding(&history_keys, do_history_find_new, '/', "new move text expression", 0);
-    add_key_binding(&history_keys, do_history_find_next, ']', "find next move text expression", 1);
-    add_key_binding(&history_keys, do_history_find_prev, '[', "find previous move text expression", 1);
-    add_key_binding(&history_keys, do_history_annotate, CTRL_KEY('a'), "annotate the previous move", 0);
-    add_key_binding(&history_keys, do_history_rav_next, '+', "next variation of the previous move", 0);
-    add_key_binding(&history_keys, do_history_rav_prev, '-', "previous variation of the previous move", 0);
-    add_key_binding(&history_keys, do_history_menu, 'M', "move history tree", 0);
-    add_key_binding(&history_keys, do_history_help, KEY_F(1), "more help", 0);
+    add_key_binding(&history_keys, do_history_jump_next, KEY_UP, _("history jump next"), 1);
+    add_key_binding(&history_keys, do_history_jump_prev, KEY_DOWN, _("history jump previous"), 1);
+    add_key_binding(&history_keys, do_history_next, KEY_RIGHT, _("next move"), 1);
+    add_key_binding(&history_keys, do_history_prev, KEY_LEFT, _("previous move"), 1);
+    add_key_binding(&history_keys, do_history_half_move_toggle, ' ', _("toggle half move (ply) stepping"), 0);
+    add_key_binding(&history_keys, do_history_rotate_board, 'r', _("rotate board"), 0);
+    add_key_binding(&history_keys, do_history_jump, 'j', _("jump to move number"), 1);
+    add_key_binding(&history_keys, do_history_find_new, '/', _("new move text expression"), 0);
+    add_key_binding(&history_keys, do_history_find_next, ']', _("find next move text expression"), 1);
+    add_key_binding(&history_keys, do_history_find_prev, '[', _("find previous move text expression"), 1);
+    add_key_binding(&history_keys, do_history_annotate, CTRL_KEY('a'), _("annotate the previous move"), 0);
+    add_key_binding(&history_keys, do_history_rav_next, '+', _("next variation of the previous move"), 0);
+    add_key_binding(&history_keys, do_history_rav_prev, '-', _("previous variation of the previous move"), 0);
+    add_key_binding(&history_keys, do_history_menu, 'M', _("move history tree"), 0);
+    add_key_binding(&history_keys, do_history_help, KEY_F(1), _("more help"), 0);
     add_key_binding(&history_keys, do_history_help, CTRL_KEY('g'), NULL, 0);
-    add_key_binding(&history_keys, do_history_toggle, 'h', "exit history mode", 0);
+    add_key_binding(&history_keys, do_history_toggle, 'h', _("exit history mode"), 0);
 
-    add_key_binding(&edit_keys, do_edit_select, ' ', "select piece for movement", 0);
-    add_key_binding(&edit_keys, do_edit_commit, '\n', "commit selected piece", 0);
-    add_key_binding(&edit_keys, do_edit_cancel_selected, KEY_ESCAPE, "cancel selected piece", 0);
-    add_key_binding(&edit_keys, do_edit_delete, 'd', "remove the piece under the cursor", 0);
-    add_key_binding(&edit_keys, do_edit_insert, 'i', "insert piece", 0);
-    add_key_binding(&edit_keys, do_edit_toggle_castle, 'c', "toggle castling availability", 0);
-    add_key_binding(&edit_keys, do_edit_enpassant, 'p', "toggle enpassant square", 0);
-    add_key_binding(&edit_keys, do_edit_switch_turn, 'w', "toggle turn", 0);
-    add_key_binding(&edit_keys, do_edit_help, KEY_F(1), "more help", 0);
+    add_key_binding(&edit_keys, do_edit_select, ' ', _("select piece for movement"), 0);
+    add_key_binding(&edit_keys, do_edit_commit, '\n', _("commit selected piece"), 0);
+    add_key_binding(&edit_keys, do_edit_cancel_selected, KEY_ESCAPE, _("cancel selected piece"), 0);
+    add_key_binding(&edit_keys, do_edit_delete, 'd', _("remove the piece under the cursor"), 0);
+    add_key_binding(&edit_keys, do_edit_insert, 'i', _("insert piece"), 0);
+    add_key_binding(&edit_keys, do_edit_toggle_castle, 'c', _("toggle castling availability"), 0);
+    add_key_binding(&edit_keys, do_edit_enpassant, 'p', _("toggle enpassant square"), 0);
+    add_key_binding(&edit_keys, do_edit_switch_turn, 'w', _("toggle turn"), 0);
+    add_key_binding(&edit_keys, do_edit_help, KEY_F(1), _("more help"), 0);
     add_key_binding(&history_keys, do_edit_help, CTRL_KEY('g'), NULL, 0);
-    add_key_binding(&edit_keys, do_edit_exit, 'e', "exit edit mode", 0);
+    add_key_binding(&edit_keys, do_edit_exit, 'e', _("exit edit mode"), 0);
 
-    add_key_binding(&play_keys, do_play_select, ' ', "select piece for movement", 0);
-    add_key_binding(&play_keys, do_play_commit, '\n', "commit selected piece", 0);
-    add_key_binding(&play_keys, do_play_cancel_selected, KEY_ESCAPE, "cancel selected piece", 0);
-    add_key_binding(&play_keys, do_play_set_clock, 'C', "set clock", 0);
-//    add_key_binding(&play_keys, do_play_switch_turn, 'w', "switch turn", 0);
-    add_key_binding(&play_keys, do_play_undo, 'u', "undo previous move", 1);
-    add_key_binding(&play_keys, do_play_go, 'g', "force the chess engine to make the next move", 0);
-    add_key_binding(&play_keys, do_play_send_command, '|', "send a command to the chess engine", 0);
-    add_key_binding(&play_keys, do_play_toggle_eh_mode, 'w', "toggle engine/human play", 0);
-    add_key_binding(&play_keys, do_play_toggle_engine, 'E', "toggle engine/engine play", 0);
-    add_key_binding(&play_keys, do_play_toggle_human, 'H', "toggle human/human play", 0);
-    add_key_binding(&play_keys, do_play_toggle_pause, 'p', "toggle pausing of this game", 0);
-    add_key_binding(&play_keys, do_play_history_mode, 'h', "enter history mode", 0);
-    add_key_binding(&play_keys, do_play_edit_mode, 'e', "enter edit mode", 0);
-    add_key_binding(&play_keys, do_play_help, KEY_F(1), "more help", 0);
+    add_key_binding(&play_keys, do_play_select, ' ', _("select piece for movement"), 0);
+    add_key_binding(&play_keys, do_play_commit, '\n', _("commit selected piece"), 0);
+    add_key_binding(&play_keys, do_play_cancel_selected, KEY_ESCAPE, _("cancel selected piece"), 0);
+    add_key_binding(&play_keys, do_play_set_clock, 'C', _("set clock"), 0);
+//    add_key_binding(&play_keys, do_play_switch_turn, 'w', _("switch turn"), 0);
+    add_key_binding(&play_keys, do_play_undo, 'u', _("undo previous move"), 1);
+    add_key_binding(&play_keys, do_play_go, 'g', _("force the chess engine to make the next move"), 0);
+    add_key_binding(&play_keys, do_play_send_command, '|', _("send a command to the chess engine"), 0);
+    add_key_binding(&play_keys, do_play_toggle_eh_mode, 'w', _("toggle engine/human play"), 0);
+    add_key_binding(&play_keys, do_play_toggle_engine, 'E', _("toggle engine/engine play"), 0);
+    add_key_binding(&play_keys, do_play_toggle_human, 'H', _("toggle human/human play"), 0);
+    add_key_binding(&play_keys, do_play_toggle_pause, 'p', _("toggle pausing of this game"), 0);
+    add_key_binding(&play_keys, do_play_history_mode, 'h', _("enter history mode"), 0);
+    add_key_binding(&play_keys, do_play_edit_mode, 'e', _("enter edit mode"), 0);
+    add_key_binding(&play_keys, do_play_help, KEY_F(1), _("more help"), 0);
     add_key_binding(&play_keys, do_play_help, CTRL_KEY('g'), NULL, 0);
 
-    add_key_binding(&global_keys, do_global_tag_edit, CTRL_KEY('t'), "edit roster tags", 0);
-    add_key_binding(&global_keys, do_global_tag_view, 't', "view roster tags", 0);
-    add_key_binding(&global_keys, do_global_find_new, '?', "new find game expression", 0);
-    add_key_binding(&global_keys, do_global_find_next, '}', "find next game", 1);
-    add_key_binding(&global_keys, do_global_find_prev, '{', "find previous game", 1);
-    add_key_binding(&global_keys, do_global_new_game, CTRL_KEY('n'), "new game or round", 0);
-    add_key_binding(&global_keys, do_global_new_all, CTRL_KEY('k'), "new game from scratch", 0);
-    add_key_binding(&global_keys, do_global_copy_game, CTRL_KEY('i'), "copy current game", 0);
-    add_key_binding(&global_keys, do_global_next_game, '>', "next game", 1);
-    add_key_binding(&global_keys, do_global_prev_game, '<', "previous game", 1);
-    add_key_binding(&global_keys, do_global_game_jump, 'J', "jump to game", 1);
-    add_key_binding(&global_keys, do_global_toggle_delete, 'X', "toggle delete flag", 1);
-    add_key_binding(&global_keys, do_global_delete_game, CTRL_KEY('X'), "delete the current or flagged games", 0);
-    add_key_binding(&global_keys, do_global_resume_game, CTRL_KEY('r'), "load a PGN file", 0);
-    add_key_binding(&global_keys, do_global_save_game, 's', "save game", 0);
-    add_key_binding(&global_keys, do_global_toggle_board_details, CTRL_KEY('d'), "toggle board details", 0);
-    add_key_binding(&global_keys, do_global_toggle_strict_castling, CTRL_KEY('p'), "toggle strict castling", 0);
-    add_key_binding(&global_keys, do_global_toggle_engine_window, 'W', "toggle chess engine IO window", 0);
+    add_key_binding(&global_keys, do_global_tag_edit, CTRL_KEY('t'), _("edit roster tags"), 0);
+    add_key_binding(&global_keys, do_global_tag_view, 't', _("view roster tags"), 0);
+    add_key_binding(&global_keys, do_global_find_new, '?', _("new find game expression"), 0);
+    add_key_binding(&global_keys, do_global_find_next, '}', _("find next game"), 1);
+    add_key_binding(&global_keys, do_global_find_prev, '{', _("find previous game"), 1);
+    add_key_binding(&global_keys, do_global_new_game, CTRL_KEY('n'), _("new game or round"), 0);
+    add_key_binding(&global_keys, do_global_new_all, CTRL_KEY('k'), _("new game from scratch"), 0);
+    add_key_binding(&global_keys, do_global_copy_game, CTRL_KEY('i'), _("copy current game"), 0);
+    add_key_binding(&global_keys, do_global_next_game, '>', _("next game"), 1);
+    add_key_binding(&global_keys, do_global_prev_game, '<', _("previous game"), 1);
+    add_key_binding(&global_keys, do_global_game_jump, 'J', _("jump to game"), 1);
+    add_key_binding(&global_keys, do_global_toggle_delete, 'X', _("toggle delete flag"), 1);
+    add_key_binding(&global_keys, do_global_delete_game, CTRL_KEY('X'), _("delete the current or flagged games"), 0);
+    add_key_binding(&global_keys, do_global_resume_game, CTRL_KEY('r'), _("load a PGN file"), 0);
+    add_key_binding(&global_keys, do_global_save_game, 's', _("save game"), 0);
+    add_key_binding(&global_keys, do_global_toggle_board_details, CTRL_KEY('d'), _("toggle board details"), 0);
+    add_key_binding(&global_keys, do_global_toggle_strict_castling, CTRL_KEY('p'), _("toggle strict castling"), 0);
+    add_key_binding(&global_keys, do_global_toggle_engine_window, 'W', _("toggle chess engine IO window"), 0);
 #ifdef WITH_LIBPERL
-    add_key_binding(&global_keys, do_global_perl, CTRL_KEY('O'), "Call PERL subroutine", 0);
+    add_key_binding(&global_keys, do_global_perl, CTRL_KEY('O'), _("Call PERL subroutine"), 0);
 #endif
-    add_key_binding(&global_keys, do_global_about, KEY_F(10), "version information", 0);
-    add_key_binding(&global_keys, do_global_quit, 'Q', "quit", 0);
+    add_key_binding(&global_keys, do_global_about, KEY_F(10), _("version information"), 0);
+    add_key_binding(&global_keys, do_global_quit, 'Q', _("quit"), 0);
 }
 
 void set_config_defaults()
@@ -368,8 +368,8 @@ static void update_key(struct key_s **dst, struct custom_key_s config_key,
 	}
     }
 
-    add_key_binding(&dst, config_key.func, c, (desc) ? desc : "no description",
-	    config_key.r);
+    add_key_binding(&dst, config_key.func, c,
+		    (desc) ? desc : _("no description"), config_key.r);
 
 done:
     return;
@@ -386,7 +386,7 @@ static int parse_key(const char *filename, int lines, char **key)
 
     if (*p == '\"') {
 	if (orig[strlen(orig) - 1] != '\"')
-	    errx(EXIT_FAILURE, "%s(%i): unbalanced quotes", filename, lines);
+	    errx(EXIT_FAILURE, _("%s(%i): unbalanced quotes"), filename, lines);
 
 	p++;
 	orig[strlen(orig) - 1] = 0;
@@ -460,8 +460,8 @@ static int parse_key(const char *filename, int lines, char **key)
 	    c = *p++;
 
 	if (*p++ != '>')
-	    errx(EXIT_FAILURE, "%s(%i): parse error \"%s\"", filename, lines, 
-		    orig);
+	    errx(EXIT_FAILURE, _("%s(%i): parse error \"%s\""), filename,
+		 lines, orig);
     }
     else if (*p == '\\') {
 	    p++;
@@ -488,7 +488,7 @@ static void parse_key_binding(const char *filename, int lines, char *val)
     n = sscanf(val, "%s %s %s %s", mode, key, func, desc);
 
     if (n < 3)
-	errx(EXIT_FAILURE, "%s(%i): too few arguments", filename, lines);
+        errx(EXIT_FAILURE, _ ("%s(%i): too few arguments"), filename, lines);
 
     if (strcasecmp(mode, "history") == 0)
 	m = MODE_HISTORY;
@@ -497,8 +497,8 @@ static void parse_key_binding(const char *filename, int lines, char *val)
     else if (strcasecmp(mode, "edit") == 0)
 	m = MODE_EDIT;
     else
-	errx(EXIT_FAILURE, "%s(%i): invalid game mode \"%s\"", filename, lines,
-		mode);
+        errx(EXIT_FAILURE, _ ("%s(%i): invalid game mode \"%s\""), filename,
+	     lines, mode);
 
     p = key;
     c = parse_key(filename, lines, &p);
@@ -506,8 +506,9 @@ static void parse_key_binding(const char *filename, int lines, char *val)
     if (m != -1) {
 	for (i = 0; global_keys[i]; i++) {
 	    if (global_keys[i]->c == c)
-		errx(EXIT_FAILURE, "%s(%i): key \"%s\" conflicts with a global "
-			"key", filename, lines, key);
+	        errx(EXIT_FAILURE,
+		     _("%s(%i): key \"%s\" conflicts with a global key"),
+		     filename, lines, key);
 	}
     }
 
@@ -520,8 +521,8 @@ static void parse_key_binding(const char *filename, int lines, char *val)
     }
 
     if (f == -2)
-	errx(EXIT_FAILURE, "%s(%i): invalid command \"%s\"", filename, lines,
-		func);
+        errx(EXIT_FAILURE, _("%s(%i): invalid command \"%s\""), filename,
+	     lines, func);
 
     switch (m) {
 	case MODE_PLAY:
@@ -551,7 +552,7 @@ static void parse_macro(const char *filename, int lines, char *val)
     n = sscanf(val, "%s %s %255c", mode, key, keys);
 
     if (n != 3)
-	errx(EXIT_FAILURE, "%s(%i): too few arguments", filename, lines);
+         errx(EXIT_FAILURE, _("%s(%i): too few arguments"), filename, lines);
 
     if (strcasecmp(mode, "history") == 0)
 	m = MODE_HISTORY;
@@ -562,8 +563,8 @@ static void parse_macro(const char *filename, int lines, char *val)
     else if (strcasecmp(mode, "any") == 0)
 	m = -1;
     else
-	errx(EXIT_FAILURE, "%s(%i): invalid game mode \"%s\"", filename, lines,
-		mode);
+        errx(EXIT_FAILURE, _ ("%s(%i): invalid game mode \"%s\""), filename,
+	     lines, mode);
 
     p = key;
     c = parse_key(filename, lines, &p);
@@ -639,8 +640,8 @@ void parse_rcfile(const char *filename)
 	}
 	else if (strcmp(var, "mpl") == 0) {
 	    if (!isinteger(val))
-		errx(EXIT_FAILURE, "%s(%i): value is not an integer", filename,
-			lines);
+	        errx(EXIT_FAILURE, _("%s(%i): value is not an integer"),
+		     filename, lines);
 	    pgn_config_set(PGN_MPL, atoi(val));
 	}
 	else if (strcmp(var, "stop_on_error") == 0)

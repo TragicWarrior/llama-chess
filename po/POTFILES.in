@@ -17,8 +17,8 @@ src/message.c
 src/message.h
 src/misc.c
 src/misc.h
-src/perl.c
-src/perl.h
+src/perl-plugin.c
+src/perl-plugin.h
 src/rcfile.c
 src/rcfile.h
 src/tags.c

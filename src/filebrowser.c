@@ -49,17 +49,6 @@
 #include "common.h"
 #include "conf.h"
 
-const char *filebrowser_help = {
-    "    UP/DOWN - previous/next menu item\n" \
-    "   HOME/END - first/last menu item\n" \
-    "  PGDN/PGUP - next/previous page\n" \
-    "  a-zA-Z0-9 - jump to item\n" \
-    "      ENTER - select item\n" \
-    "          ~ - change to home directory\n" \
-    "     CTRL-e - change filename expression\n" \
-    "     ESCAPE - abort"
-};
-
 static void free_file_browser()
 {
     int i;

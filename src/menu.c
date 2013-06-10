@@ -133,7 +133,7 @@ static void fix_menu_vals(WIN *win)
 
     for (i = 0; m->items[i]; i++);
     m->total = i;
-    snprintf(buf, sizeof(buf), "Item %i %s %i  %s", m->selected + 1,
+    snprintf(buf, sizeof(buf), _("Item %i %s %i  %s"), m->selected + 1,
 	    _("of"), m->total, _("Type F1 for help"));
 
 #ifdef HAVE_WRESIZE
