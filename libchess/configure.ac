@@ -60,7 +60,5 @@ AC_DEFUN([AC_DEBUG],
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debugging.]),
     AC_DEBUG([$enableval]), AC_DEBUG)
 
-AM_WITH_DMALLOC
-
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

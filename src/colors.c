@@ -26,10 +26,6 @@
 #include "conf.h"
 #include "colors.h"
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 static int next_cp;
 
 /*

@@ -47,10 +47,6 @@
 #include "debug.h"
 #endif
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 static BOARD pgn_board;
 static int nulltags;
 static int tag_section;

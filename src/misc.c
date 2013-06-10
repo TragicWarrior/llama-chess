@@ -35,10 +35,6 @@
 #include <limits.h>
 #endif
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 #include "common.h"
 #include "misc.h"
 

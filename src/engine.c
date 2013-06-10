@@ -55,10 +55,6 @@
 #include "message.h"
 #include "engine.h"
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 int send_signal_to_engine(pid_t pid, int sig)
 {
     if (kill(pid, sig) == -1)

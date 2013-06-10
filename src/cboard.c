@@ -69,10 +69,6 @@
 #include <debug.h>
 #endif
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 #define COPYRIGHT	"Copyright (C) 2002-2013 " PACKAGE_BUGREPORT
 #define LINE_GRAPHIC(c)	((!config.linegraphics) ? ' ' : c)
 #define ROWTOMATRIX(r)	((8 - r) * 2 + 2 - 1)

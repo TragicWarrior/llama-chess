@@ -41,10 +41,6 @@
 #include "rcfile.h"
 #include "common.h"
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 static int attributes(const char *filename, int line, char *str)
 {
     char *tmp;

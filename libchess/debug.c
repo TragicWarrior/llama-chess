@@ -26,10 +26,6 @@
 
 #include "chess.h"
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 void write_debug_output(const char *filename, const char *format, ...)
 {
     FILE *fp = stderr;

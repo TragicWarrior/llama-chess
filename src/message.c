@@ -40,10 +40,6 @@
 #include "window.h"
 #include "message.h"
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 static void build_message_lines(const char *title, const char *prompt,
 	int force_trim, const char *extra, int *h, int *w, wchar_t ***str,
 	const char *fmt, va_list ap)

@@ -124,19 +124,42 @@ AC_HEADER_SYS_WAIT
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h paths.h sys/socket.h limits.h sys/time.h unistd.h \
 		  stdlib.h string.h strings.h wchar.h getopt.h sys/param.h \
-                  regex.h glob.h stdarg.h paths.h])
+                  regex.h stdarg.h paths.h])
 AC_CHECK_HEADERS([err.h],, [AC_CHECK_FUNCS([fputs_unlocked putwc_unlocked \
 		 putw_unlocked])])
 
 AM_CONDITIONAL([NO_ERR_H], [test "x$ac_cv_header_err_h" = "xno"])
 
-AC_TRY_LINK([#include <err.h>], [extern char *__progname;],
-	       AC_DEFINE([HAVE_PROGNAME], 1, \
-			 [Define if your system has __progname.]))
+if test x"$ac_cv_header_err_h" = "xyes"; then
+    AC_MSG_CHECKING([for __progname])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <stdio.h>
+#include <err.h>
+extern char *__progname;
+]], [[
+printf("%s\n", __progname);
+]])], [have_progname=yes], [have_progname=no])
+    AC_MSG_RESULT($have_progname)
+    if test x"$have_progname" = "xyes"; then
+        AC_DEFINE([HAVE_PROGNAME], 1, \
+                  [Define if your system has __progname.])
+    fi
+fi
 
-AC_TRY_COMPILE([#include <glob.h>], [int n = GLOB_NOMATCH;],
-	       AC_DEFINE([HAVE_GLOB_NOMATCH], 1, \
-			 [Define if glob.h defines GLOB_NOMATCH.]))
+AC_CHECK_HEADERS([glob.h])
+if test x"$ac_cv_header_glob_h" = "xyes"; then
+    AC_MSG_CHECKING([if glob.h defines GLOB_NOMATCH])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <glob.h>
+]], [[
+int n = GLOB_NOMATCH;
+]])], [have_glob_nomatch=yes], [have_glob_nomatch=no])
+    AC_MSG_RESULT($have_glob_nomatch)
+    if test x"$have_glob_nomatch" = "xyes"; then
+         AC_DEFINE([HAVE_GLOB_NOMATCH], 1, \
+	           [Define if glob.h defines GLOB_NOMATCH.])
+    fi
+fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -160,10 +183,6 @@ AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
 		select socket strcasecmp strdup strerror strrchr strstr \
 		vasprintf strsep strchr strncasecmp strpbrk putenv])
-AC_FUNC_ALLOCA
-AC_FUNC_FORK
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
 
 AM_CONDITIONAL([NO_STRSEP], [test "x$ac_cv_func_strsep" = "xno"])
 
@@ -240,8 +259,6 @@ if test "x$have_ptmx" = "xno" -o "x$ptmx_works" = "xno"; then
     AC_MSG_RESULT($p0 $p1)
     fi
 fi
-
-AM_WITH_DMALLOC
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile data/Makefile \
 		 libchess/Makefile po/Makefile.in])

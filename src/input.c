@@ -39,10 +39,6 @@
 #include "input.h"
 #include "common.h"
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 static struct input_history_s {
     char *str;
     struct input_history_s *next;

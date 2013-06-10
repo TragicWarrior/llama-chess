@@ -32,10 +32,6 @@
 #include "debug.h"
 #endif
 
-#ifdef WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
 enum {
     CHECK = 1,
     CHECK_SELF,
