@@ -34,6 +34,64 @@ AX_WITH_CURSES_PANEL
 AX_WITH_CURSES_MENU
 AX_WITH_CURSES_FORM
 
+OLDLIBS="$LIBS"
+LIBS="$CURSES_LIB $LIBS"
+AC_MSG_CHECKING([if curses installation has wresize()])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([], [[void *w = 0; wresize(w, 0, 0);]])],
+				    [have_curses_wresize=yes],
+				    [have_curses_wresize=no])
+AC_MSG_RESULT($have_curses_wresize)
+if test x"$have_curses_wresize" = "xyes"; then
+    AC_DEFINE([HAVE_WRESIZE], 1, \
+              [Define if your curses installation contains wresize().])
+fi
+
+AC_MSG_CHECKING([if curses installation has attr_t])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#if defined(HAVE_NCURSESW_CURSES_H)
+#  include <ncursesw/curses.h>
+#elif defined(HAVE_NCURSESW_H)
+#  include <ncursesw.h>
+#elif defined(HAVE_NCURSES_CURSES_H)
+#  include <ncurses/curses.h>
+#elif defined(HAVE_NCURSES_H)
+#  include <ncurses.h>
+#elif defined(HAVE_CURSES_H)
+#  include <curses.h>
+#else
+#  error "SysV or X/Open-compatible Curses header file required"
+#endif
+]], [[attr_t n = 0;]])], [have_curses_attr_t=yes], [have_curses_attr_t=no])
+AC_MSG_RESULT($have_curses_attr_t)
+if test x"$have_curses_attr_t" = "xyes"; then
+    AC_DEFINE([HAVE_ATTR_T], 1, \
+	      [Define if your curses installation contains attr_t.])
+fi
+
+LIBS="$OLDLIBS"
+OLDLIBS="$LIBS"
+LIBS="$FORM_LIB $LIBS"
+AC_MSG_CHECKING([if curses form installation defines TYPE_IPV4])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#if defined(HAVE_NCURSESW_FORM_H)
+#include <ncursesw/form.h>
+#elif defined(HAVE_NCURSES_FORM_H)
+#include <ncurses/form.h>
+#elif defined(HAVE_FORM_H)
+#include <form.h>
+#else
+#error "SysV-compatible Curses Form header file required"
+#endif
+]], [[FIELDTYPE *t = TYPE_IPV4;]])],
+               [have_curses_form_ipv4=yes],
+	       [have_curses_form_ipv4=no])
+AC_MSG_RESULT($have_curses_form_ipv4)
+if test x"$have_curses_form_ipv4" = "xyes"; then
+    AC_DEFINE([HAVE_TYPE_IPV4], 1, [Define if form.h defines TYPE_IPV4.])
+fi
+
+LIBS="$OLDLIBS"
+
 AC_ARG_WITH(libperl, AC_HELP_STRING([--with-libperl], [PERL support.]),
     want_libperl=yes, want_libperl=no)
 
@@ -65,16 +123,12 @@ AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h paths.h sys/socket.h limits.h sys/time.h unistd.h \
-		  stdlib.h string.h strings.h curses.h panel.h form.h wchar.h \
-		  getopt.h sys/param.h regex.h glob.h stdarg.h paths.h])
+		  stdlib.h string.h strings.h wchar.h getopt.h sys/param.h \
+                  regex.h glob.h stdarg.h paths.h])
 AC_CHECK_HEADERS([err.h],, [AC_CHECK_FUNCS([fputs_unlocked putwc_unlocked \
 		 putw_unlocked])])
 
 AM_CONDITIONAL([NO_ERR_H], [test "x$ac_cv_header_err_h" = "xno"])
-
-AC_TRY_COMPILE([#include <curses.h>], [attr_t n = 0;],
-	       AC_DEFINE([HAVE_ATTR_T], 1, \
-			 [Define if your curses installation contains attr_t.]))
 
 AC_TRY_LINK([#include <err.h>], [extern char *__progname;],
 	       AC_DEFINE([HAVE_PROGNAME], 1, \
@@ -83,10 +137,6 @@ AC_TRY_LINK([#include <err.h>], [extern char *__progname;],
 AC_TRY_COMPILE([#include <glob.h>], [int n = GLOB_NOMATCH;],
 	       AC_DEFINE([HAVE_GLOB_NOMATCH], 1, \
 			 [Define if glob.h defines GLOB_NOMATCH.]))
-
-AC_TRY_COMPILE([#include <form.h>], [FIELDTYPE *t = TYPE_IPV4;],
-	       AC_DEFINE([HAVE_TYPE_IPV4], 1, \
-			 [Define if form.h defines TYPE_IPV4.]))
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -116,10 +166,6 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 
 AM_CONDITIONAL([NO_STRSEP], [test "x$ac_cv_func_strsep" = "xno"])
-
-AC_TRY_LINK([#include <curses.h>], [WINDOW *w; wresize(w, 0, 0);],
-           AC_DEFINE([HAVE_WRESIZE], 1, \
-		     [Define if your curses installation contains wresize().]))
 
 AC_DEFUN([AC_DEBUG],
 [
