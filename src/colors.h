@@ -186,6 +186,10 @@ enum {
 
 void init_color_pairs();
 void set_default_colors();
+#ifdef HAVE_ATTR_T
 chtype mix_cp(chtype a, chtype b, attr_t, int which);
+#else
+chtype mix_cp(chtype a, chtype b, int, int which);
+#endif
 
 #endif
