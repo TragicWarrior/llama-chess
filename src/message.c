@@ -49,7 +49,7 @@ static void build_message_lines(const char *title, const char *prompt,
     wchar_t **lines = NULL;
     int width = 0, height = 0, len;
     int total = 0;
-    wchar_t *wc, *wc_tmp,*wc_line, *wc_delim = str_to_wchar ("\n");
+    wchar_t *wc, *wc_tmp, *wc_line, *wc_delim = str_to_wchar ("\n");
 
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, fmt, ap);

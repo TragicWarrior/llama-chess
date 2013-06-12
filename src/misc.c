@@ -245,11 +245,10 @@ wchar_t *str_to_wchar_len (const char *str, int max)
     if (!len)
         len = mbsrtowcs (NULL, &p, 0, &ps);
 
-    wc = Calloc (1, len * sizeof(wchar_t) + 1);
+    wc = Calloc (len+1, sizeof(wchar_t));
     p = str;
     memset (&ps, 0, sizeof(mbstate_t));
     len = mbsrtowcs (wc, &p, len, &ps);
-    wc[len] = 0;
     return wc;
 }
 
