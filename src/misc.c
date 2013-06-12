@@ -92,11 +92,9 @@ char *trim(char *str)
     return rtrim(str);
 }
 
-char *itoa(long n)
+char *itoa(long n, char *buf)
 {
-    static char buf[16];
-
-    snprintf(buf, sizeof(buf), "%li", n);
+    sprintf(buf, "%li", n);
     return buf;
 }
 
@@ -124,7 +122,10 @@ char *trim_multi(char *value)
 
 int integer_len(long n)
 {
-    return strlen(itoa(n));
+    char buf[32];
+
+    itoa (n, buf);
+    return strlen (buf);
 }
 
 int isinteger(const char *str)

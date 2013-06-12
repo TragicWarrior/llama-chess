@@ -26,7 +26,7 @@ void *Realloc(void *ptr, size_t size);
 void *Calloc(size_t n, size_t size);
 char *trim(char *str);
 char *rtrim(char *str);
-char *itoa(long n);
+char *itoa(long n, char *buf);
 int integer_len(long n);
 int isinteger(const char *str);
 FILE *open_file(const char *filename);

@@ -388,11 +388,13 @@ static void *view_nag(void *arg)
     }
 
     for (i = 0; i < MAX_PGN_NAG; i++) {
+        char buf2[16];
+
 	if (!h->nag[i])
 	    break;
 
 	if (h->nag[i] >= nag_total)
-	    strncat(line, itoa(h->nag[i]), sizeof(line));
+	  strncat(line, itoa(h->nag[i], buf2), sizeof(line));
 	else
 	    strncat(line, nags[h->nag[i]], sizeof(line));
 
@@ -1253,8 +1255,9 @@ static char *time_control_status(struct clock_s *clk)
 	return "";
 
     if (clk->incr) {
+        char buf[16];
 	strncat(buf, " I", sizeof(buf));
-	strncat(buf, itoa(clk->incr), sizeof(buf));
+	strncat(buf, itoa(clk->incr, buf), sizeof(buf));
     }
 
     return buf;
@@ -3514,6 +3517,8 @@ static void free_userdata()
 
 void update_loading_window(int n)
 {
+    char buf[16];
+
     if (!loadingw) {
 	loadingw = newwin(3, COLS / 2, CALCPOSY(3), CALCPOSX(COLS / 2));
 	loadingp = new_panel(loadingw);
@@ -3525,7 +3530,8 @@ void update_loading_window(int n)
     wattron(loadingw, CP_MESSAGE_BORDER);
     box(loadingw, ACS_VLINE, ACS_HLINE);
     wattroff(loadingw, CP_MESSAGE_BORDER);
-    mvwprintw(loadingw, 1, CENTER_INT((COLS / 2), 11 + strlen(itoa(gtotal))),
+    mvwprintw(loadingw, 1, CENTER_INT((COLS / 2), 11 +
+				      strlen(itoa(gtotal, buf))),
 	      _("Loading... %i%% (%i games)"), n, gtotal);
     update_panels();
     doupdate();
