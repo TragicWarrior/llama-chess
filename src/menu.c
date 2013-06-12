@@ -127,6 +127,8 @@ static void fix_menu_vals(WIN *win)
     struct menu_input_s *m = win->data;
     char buf[COLS - 4];
     int i = 0;
+    wchar_t *wc;
+    size_t len;
 #ifdef HAVE_WRESIZE
     int n, nlen = 0, vlen = 0;
 #endif
@@ -141,21 +143,26 @@ static void fix_menu_vals(WIN *win)
 	win->cols = 0;
 
 	for (i = 0; m->items[i]; i++) {
-	    n = strlen(m->items[i]->name);
-
+	    wc = str_to_wchar (m->items[i]->name);
+	    n = wcslen (wc);
+	    free (wc);
 	    if (nlen < n)
 		nlen = n;
 
 	    if (m->items[i]->value) {
-	 	n = strlen(m->items[i]->value);
-
+	        wc = str_to_wchar (m->items[i]->value);
+		n = wcslen (wc);
 		if (vlen < n)
 		    vlen = n;
 
 		n = vlen + nlen;
+		free (wc);
 	    }
-	    else
-		n = (!m->name_only) ? strlen(_("(empty value)")) + nlen : nlen;
+	    else {
+	        char *s = _("empty value");
+
+		n = (!m->name_only) ? mblen(s, strlen (s)) + nlen : nlen;
+	    }
 
 	    if (win->cols < n)
 		win->cols = n;
@@ -177,8 +184,12 @@ static void fix_menu_vals(WIN *win)
     if (!m->rstatic && win->rows > MAX_MENU_HEIGHT)
 	win->rows = MAX_MENU_HEIGHT;
 
-    if (win->cols < strlen(buf))
-	win->cols = strlen(buf) + 2; // 2 box
+    wc = str_to_wchar (buf);
+    len = wcslen (wc);
+    free (wc);
+
+    if (win->cols < len)
+	win->cols = len + 2; // 2 box
 
     if (win->cols > MAX_MENU_WIDTH)
 	win->cols = MAX_MENU_WIDTH;
@@ -186,7 +197,7 @@ static void fix_menu_vals(WIN *win)
     wresize(win->w, win->rows, win->cols);
     replace_panel(win->p, win->w);
 #endif
-    move_panel(win->p, (m->ystatic == -1) ? CALCPOSY(win->rows) : m->ystatic, 
+    move_panel(win->p, (m->ystatic == -1) ? CALCPOSY(win->rows) : m->ystatic,
 	    (m->xstatic == -1) ? CALCPOSX(win->cols) : m->xstatic);
     keypad(win->w, TRUE);
     wmove(win->w, 0, 0);

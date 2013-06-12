@@ -496,15 +496,15 @@ static void tag_print(WIN *win)
 
     wc = str_to_wchar (m->item->name);
     mvwprintw(win->w, m->print_line, 1, "%ls", wc);
-    free (wc);
 
-    for (n = strlen(m->item->name) + 1; n <= len; n++)
+    for (n = wcslen(wc) + 1; n <= len; n++)
 	mvwprintw(win->w, m->print_line, n, "%c", '.');
 
+    free (wc);
     mvwprintw(win->w, m->print_line, n, ": ");
-    i = win->cols - n - 2;
+    i = win->cols - n - 3;
     wc = str_etc (m->item->value, i, 0);
-    mvwprintw(win->w, m->print_line, n + 2, "%-*ls", i - 1, wc);
+    mvwprintw(win->w, m->print_line, n + 2, "%-*ls", i, wc);
     free (wc);
 
     if (m->update) {
