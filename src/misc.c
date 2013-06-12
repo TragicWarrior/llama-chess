@@ -204,6 +204,8 @@ char **split_str(char *str, char *delim, int *n, int *width, int force_trim)
 
     while ((tmp = strsep(&str, delim)) != NULL) {
 	char *p;
+	wchar_t *wc;
+	int len;
 
 	tmp = rtrim(tmp);
 
@@ -212,10 +214,12 @@ char **split_str(char *str, char *delim, int *n, int *width, int force_trim)
 
 	lines = Realloc(lines, (total + 2) * sizeof(char *));
 	p = force_trim ? strdup(trim(tmp)) : strdup(tmp);
+	wc = str_to_wchar (p);
+	len = wcslen (wc);
+	if (w < len)
+	    w = len;
 
-	if (w < strlen(p))
-	    w = strlen(p);
-
+	free (wc);
 	lines[total++] = p;
     }
 

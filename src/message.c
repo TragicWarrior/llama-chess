@@ -44,14 +44,12 @@ static void build_message_lines(const char *title, const char *prompt,
 	int force_trim, const char *extra, int *h, int *w, wchar_t ***str,
 	const char *fmt, va_list ap)
 {
-    int i, n, pos;
+    int n, pos;
     char *line;
     wchar_t **lines = NULL;
     int width = 0, height = 0, len;
-    char buf[LINE_MAX];
-    char *p;
     int total = 0;
-    wchar_t *wc;
+    wchar_t *wc, *wc_tmp,*wc_line, *wc_delim = str_to_wchar ("\n");
 
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, fmt, ap);
@@ -60,47 +58,26 @@ static void build_message_lines(const char *title, const char *prompt,
     vsnprintf(line, LINE_MAX, fmt, ap);
 #endif
 
-    /* Get the longest line to dynamically adjust the message box width. */
-    for (i = n = pos = 0; line[i]; i++, n++) {
-	if (line[i] == '\n') {
-	    if (n > pos)
-		pos = n;
+    wc = str_to_wchar (line);
+    free (line);
+    total = pos = n = 0;
+    for (wc_line = wcstok (wc, wc_delim, &wc_tmp); wc_line; wc_line = wcstok (NULL, wc_delim, &wc_tmp)) {
+        n = wcslen (wc_line);
+	if (n > pos)
+	  pos = n;
 
-	    n = 0;
-	}
+	lines = Realloc (lines, (total+2)*sizeof(wchar_t **));
+	lines[total++] = wcsdup (wc_line);
+	lines[total] = NULL;
     }
 
-    pos = (n > pos) ? n : pos;
+    free (wc);
+    free (wc_delim);
 
-    if (pos) {
-	if (pos > MSG_WIDTH)
-	    width = MSG_WIDTH;
-	else
-	    width = pos;
-    }
-
-    for (i = n = pos = 0; line[i]; i++, n++, pos++) {
-	if (line[i] == '\t')
-	    continue;
-
-	if (line[i] == '\n')
-	    pos = 0;
-
-	if (pos > width) {
-	    while (line[--i] != ' ')
-		buf[--n] = ' ';
-
-	    buf[n++] = '\n';
-	    pos = 0;
-	}
-
-	buf[n] = line[i];
-    }
-
-    free(line);
-    buf[n] = '\0';
-    p = buf;
-    lines = split_str(p, "\n", &total, &width, force_trim);
+    if (pos > MSG_WIDTH)
+        width = MSG_WIDTH;
+    else
+        width = pos;
 
     if (prompt) {
         wc = str_to_wchar (prompt);
@@ -151,7 +128,7 @@ static int display_message(WIN *win)
     for (i = 0; m->lines[i]; i++)
 	mvwprintw(win->w, (win->title) ? 2 + i: 1 + i,
 		(m->center || (!i && !m->lines[i+1])) ?
-		CENTERX(m->w, m->lines[i]) : 1, "%s", m->lines[i]);
+		CENTERX(m->w, m->lines[i]) : 1, "%ls", m->lines[i]);
 
     if (m->extra)
 	window_draw_prompt(win->w, (m->prompt) ? m->h - 3 : m->h - 2, m->w,
