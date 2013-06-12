@@ -3121,7 +3121,7 @@ void history_menu_help(struct menu_input_s *m)
 	       "     CTRL-a - annotate the selected move\n"
 	       "      ENTER - view annotation\n"
 	       "     CTRL-d - toggle board details\n"
-	       "     ESCAPE - quit"
+	       "   ESCAPE/M - return to move history"
 	       ));
 }
 
@@ -3238,6 +3238,7 @@ void history_menu(GAME g)
     struct menu_key_s **keys = NULL;
 
     add_menu_key(&keys, KEY_ESCAPE, history_menu_quit);
+    add_menu_key(&keys, 'M', history_menu_quit);
     add_menu_key(&keys, KEY_UP, history_menu_prev);
     add_menu_key(&keys, KEY_DOWN, history_menu_next);
     add_menu_key(&keys, KEY_F(1), history_menu_help);
