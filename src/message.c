@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <wctype.h>
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
@@ -40,16 +41,79 @@
 #include "window.h"
 #include "message.h"
 
+static void wordwrap_lines (wchar_t ***olines, int *nlines, int *width)
+{
+    int i;
+    wchar_t *buf = NULL, **lines = *olines;
+    int total = *nlines, w = *width;
+
+    for (i = 0; i < total; i++) {
+	size_t len = wcslen (lines[i]);
+	size_t blen = buf ? wcslen (buf) : 0;
+
+	if (buf) {
+	    lines[i] = Realloc (lines[i], len+blen+1*sizeof(wchar_t *));
+	    wmemmove (&lines[i][blen], lines[i], len);
+	    wmemcpy (lines[i], buf, blen);
+	    lines[i][blen+len] = 0;
+	    free (buf);
+	    buf = NULL;
+	    len = wcslen (lines[i]);
+	}
+
+	if (len > w)
+	  w = len;
+
+	if (len-- > MSG_WIDTH) {
+	    wchar_t *p;
+
+	    for (p = lines[i]+len; *p; p--, len--) {
+		if (iswspace (*p) && len == MSG_WIDTH) {
+		    *p++ = 0;
+		    buf = wcsdup (p);
+		    break;
+		}
+	    }
+
+	    /* Its a very long line without any unicode space. Create a
+	     * new message line. */
+	    if (!buf) {
+	        wchar_t *p, c, *bp;
+		size_t len;
+
+		p = lines[i]+MSG_WIDTH;
+		c = *p;
+		*p++ = 0;
+		len = wcslen (p)+2;
+		buf = Malloc (len*sizeof(wchar_t));
+		bp = buf;
+		*bp++ = c;
+		wmemcpy (bp, p, len-1);
+	    }
+	}
+    }
+
+    if (buf) {
+        lines = Realloc (lines, (total+2)*sizeof(wchar_t **));
+	lines[total++] = buf;
+	lines[total] = NULL;
+	*nlines = total;
+	*width = w;
+	*olines = lines;
+	wordwrap_lines (olines, nlines, width);
+    }
+}
+
 static void build_message_lines(const char *title, const char *prompt,
 	int force_trim, const char *extra, int *h, int *w, wchar_t ***str,
 	const char *fmt, va_list ap)
 {
-    int n, pos;
+    int n;
     char *line;
     wchar_t **lines = NULL;
     int width = 0, height = 0, len;
     int total = 0;
-    wchar_t *wc, *wc_tmp, *wc_line, *wc_delim = str_to_wchar ("\n");
+    wchar_t *wc, *wc_tmp, *wc_line, *wc_delim = (wchar_t *)"\n";
 
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, fmt, ap);
@@ -60,24 +124,18 @@ static void build_message_lines(const char *title, const char *prompt,
 
     wc = str_to_wchar (line);
     free (line);
-    total = pos = n = 0;
+    total = n = 0;
     for (wc_line = wcstok (wc, wc_delim, &wc_tmp); wc_line; wc_line = wcstok (NULL, wc_delim, &wc_tmp)) {
-        n = wcslen (wc_line);
-	if (n > pos)
-	  pos = n;
-
 	lines = Realloc (lines, (total+2)*sizeof(wchar_t **));
 	lines[total++] = wcsdup (wc_line);
 	lines[total] = NULL;
     }
 
     free (wc);
-    free (wc_delim);
+    wordwrap_lines (&lines, &total, &width);
 
-    if (pos > MSG_WIDTH)
+    if (width > MSG_WIDTH)
         width = MSG_WIDTH;
-    else
-        width = pos;
 
     if (prompt) {
         wc = str_to_wchar (prompt);
