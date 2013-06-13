@@ -49,9 +49,10 @@ static void wordwrap_lines (wchar_t ***olines, int *nlines, int *width)
 
     for (i = 0; i < total; i++) {
 	size_t len = wcslen (lines[i]);
-	size_t blen = buf ? wcslen (buf) : 0;
 
 	if (buf) {
+	    size_t blen = wcslen (buf);
+
 	    lines[i] = Realloc (lines[i], len+blen+1*sizeof(wchar_t *));
 	    wmemmove (&lines[i][blen], lines[i], len);
 	    wmemcpy (lines[i], buf, blen);
@@ -67,8 +68,8 @@ static void wordwrap_lines (wchar_t ***olines, int *nlines, int *width)
 	if (len-- > MSG_WIDTH) {
 	    wchar_t *p;
 
-	    for (p = lines[i]+len; *p; p--, len--) {
-		if (iswspace (*p) && len == MSG_WIDTH) {
+	    for (p = lines[i]+len; *p && len > 0; p--, len--) {
+		if (iswspace (*p) && len <= MSG_WIDTH) {
 		    *p++ = 0;
 		    buf = wcsdup (p);
 		    break;
@@ -93,12 +94,13 @@ static void wordwrap_lines (wchar_t ***olines, int *nlines, int *width)
 	}
     }
 
+    *width = w;
+
     if (buf) {
         lines = Realloc (lines, (total+2)*sizeof(wchar_t **));
 	lines[total++] = buf;
 	lines[total] = NULL;
 	*nlines = total;
-	*width = w;
 	*olines = lines;
 	wordwrap_lines (olines, nlines, width);
     }
@@ -113,7 +115,7 @@ static void build_message_lines(const char *title, const char *prompt,
     wchar_t **lines = NULL;
     int width = 0, height = 0, len;
     int total = 0;
-    wchar_t *wc, *wc_tmp, *wc_line, *wc_delim = (wchar_t *)"\n";
+    wchar_t *wc, *wc_tmp, *wc_line, wc_delim[] = { '\n', 0 };
 
 #ifdef HAVE_VASPRINTF
     vasprintf(&line, fmt, ap);
