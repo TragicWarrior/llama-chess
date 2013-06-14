@@ -394,11 +394,11 @@ static void *view_nag(void *arg)
 	    break;
 
 	if (h->nag[i] >= nag_total)
-	  strncat(line, itoa(h->nag[i], buf2), sizeof(line));
+	  strncat(line, itoa(h->nag[i], buf2), sizeof(line)-1);
 	else
-	    strncat(line, nags[h->nag[i]], sizeof(line));
+	    strncat(line, nags[h->nag[i]], sizeof(line)-1);
 
-	strncat(line, "\n", sizeof(line));
+	strncat(line, "\n", sizeof(line)-1);
     }
 
     line[strlen(line) - 1] = 0;
@@ -461,8 +461,10 @@ int do_game_write(char *filename, char *mode, int start, int end)
     if (pgn_close(pgn) != E_PGN_OK)
 	message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s", strerror(errno));
 
-    if (start == -1)
+    if (start == -1) {
 	strncpy(loadfile, filename, sizeof(loadfile));
+	loadfile[sizeof(loadfile)-1] = 0;
+    }
 
     return 0;
 }
@@ -1076,8 +1078,9 @@ void update_history_window(GAME g)
 	snprintf(buf, sizeof(buf), "%u %s %u%s", n, _("of"), total,
 		(movestep == 1) ? _(" (ply)") : "");
     else
-	strncpy(buf, _("not available"), sizeof(buf));
+	strncpy(buf, _("not available"), sizeof(buf)-1);
 
+    buf[sizeof(buf)-1] = 0;
     mvwprintw(historyw, 2, 1, "%*s %-*s", 10, _("Move:"),
 	    HISTORY_WIDTH - 13, buf);
 
@@ -1086,22 +1089,22 @@ void update_history_window(GAME g)
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
-        strncat(buf, _(" (Annotated"), sizeof(buf));
+        strncat(buf, _(" (Annotated"), sizeof(buf)-1);
 	n++;
     }
 
     if (h && h->rav) {
-	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf)-1);
 	n++;
     }
 
     if (g->ravlevel) {
-	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf)-1);
 	n++;
     }
 
     if (n)
-	strncat(buf, ")", sizeof(buf));
+	strncat(buf, ")", sizeof(buf)-1);
 
     mvwprintw(historyw, 3, 1, "%s %-*s", _("Next move:"),
 	    HISTORY_WIDTH - 13, buf);
@@ -1111,22 +1114,22 @@ void update_history_window(GAME g)
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
-        strncat(buf, _(" (Annotated"), sizeof(buf));
+        strncat(buf, _(" (Annotated"), sizeof(buf)-1);
 	n++;
     }
 
     if (h && h->rav) {
-	strncat(buf, (n) ? ",+" : " (+", sizeof(buf));
+	strncat(buf, (n) ? ",+" : " (+", sizeof(buf)-1);
 	n++;
     }
 
     if (g->ravlevel) {
-	strncat(buf, (n) ? ",-" : " (-", sizeof(buf));
+	strncat(buf, (n) ? ",-" : " (-", sizeof(buf)-1);
 	n++;
     }
 
     if (n)
-	strncat(buf, ")", sizeof(buf));
+	strncat(buf, ")", sizeof(buf)-1);
 
     mvwprintw(historyw, 4, 1, "%s %-*s", _("Prev move:"),
 	    HISTORY_WIDTH - 13, buf);
@@ -1244,7 +1247,7 @@ static char *timeval_to_char(struct timeval t, long limit)
 
 static char *time_control_status(struct clock_s *clk)
 {
-    static char buf[80];
+    static char buf[80] = {0};
 
     buf[0] = 0;
 
@@ -1256,8 +1259,8 @@ static char *time_control_status(struct clock_s *clk)
 
     if (clk->incr) {
         char buf[16];
-	strncat(buf, " I", sizeof(buf));
-	strncat(buf, itoa(clk->incr, buf), sizeof(buf));
+	strncat(buf, " I", sizeof(buf)-1);
+	strncat(buf, itoa(clk->incr, buf), sizeof(buf)-1);
     }
 
     return buf;
@@ -1267,7 +1270,7 @@ void update_status_window(GAME g)
 {
     int i = 0;
     char *buf;
-    char tmp[15], *engine, *mode;
+    char tmp[15] = {0}, *engine, *mode;
     char t[COLS];
     int w;
     char *p;
@@ -1374,6 +1377,7 @@ void update_status_window(GAME g)
 		    _(" (engine/human)") : _(" (human/engine)"), len - 1);
     }
 
+    buf[len-1] = 0;
     mvwprintw(statusw, y++, 1, "%-*s", len, buf);
     free(buf);
 
@@ -1407,14 +1411,14 @@ void update_status_window(GAME g)
     mvwprintw(statusw, y++, 1, "%*s %-*s", 7, _("Turn:"), w,
 	    (g->turn == WHITE) ? _("white") : _("black"));
 
-    strncpy(tmp, _("white"), sizeof(tmp));
+    strncpy(tmp, _("white"), sizeof(tmp)-1);
     tmp[0] = toupper(tmp[0]);
     snprintf(t, sizeof(t), "%s%s",
 	    timeval_to_char(d->wclock.elapsed, d->wclock.tc[d->wclock.tcn][1]),
 	    time_control_status(&d->wclock));
     mvwprintw(statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
 
-    strncpy(tmp, _("black"), sizeof(tmp));
+    strncpy(tmp, _("black"), sizeof(tmp)-1);
     tmp[0] = toupper(tmp[0]);
     snprintf(t, sizeof(t), "%s%s",
 	    timeval_to_char(d->bclock.elapsed, d->bclock.tc[d->bclock.tcn][1]),
@@ -1684,12 +1688,12 @@ static int find_game_exp(char *str, int which, int count)
     regex_t nexp, vexp;
     int ret = -1;
     int g = 0;
-    char buf[255], *tmp;
+    char buf[255] = {0}, *tmp;
     char errbuf[255];
     int found = 0;
     int incr = (which == 0) ? -(1) : 1;
 
-    strncpy(buf, str, sizeof(buf));
+    strncpy(buf, str, sizeof(buf)-1);
     tmp = buf;
 
     if (strstr(tmp, ":") != NULL) {
@@ -2830,9 +2834,10 @@ void really_do_annotate_finalize(struct input_data_s *in,
 	}
     }
     else {
-	len = strlen(in->str) + 1;
-	h->comment = Realloc(h->comment, len);
+	len = strlen(in->str);
+	h->comment = Realloc(h->comment, len+1);
 	strncpy(h->comment, in->str, len);
+	h->comment[len] = 0;
     }
 
     free(in->str);
@@ -2885,7 +2890,8 @@ void do_find_move_exp(WIN *win)
     int which = *n;
 
     if (in->str) {
-	strncpy(moveexp, in->str, sizeof(moveexp));
+	strncpy(moveexp, in->str, sizeof(moveexp)-1);
+	moveexp[sizeof(moveexp)-1] = 0;
 	do_find_move_exp_finalize(1, which);
 	free(in->str);
     }
@@ -3705,6 +3711,7 @@ void do_find_game_exp(WIN *win)
 
     if (in->str) {
 	strncpy(gameexp, in->str, sizeof(gameexp));
+	gameexp[sizeof(gameexp)-1] = 0;
 
 	if (c == '?')
 	    c = '}';
@@ -3795,6 +3802,7 @@ void do_load_file(WIN *win)
     loadingp = NULL;
     init_userdata();
     strncpy(loadfile, tmp, sizeof(loadfile));
+    loadfile[sizeof(loadfile)-1] = 0;
     gp = game[gindex];
     d = gp->data;
 
@@ -4932,6 +4940,7 @@ int main(int argc, char *argv[])
 	    case 'p':
 		filetype = FILE_PGN;
 		strncpy(loadfile, optarg, sizeof(loadfile));
+		loadfile[sizeof(loadfile)-1] = 0;
 		break;
 	    case 'h':
 	    default:

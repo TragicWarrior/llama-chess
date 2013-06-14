@@ -73,7 +73,9 @@ static int init_country_codes()
 
 	ccodes = Realloc(ccodes, (cindex + 2) * sizeof(struct country_codes));
 	strncpy(ccodes[cindex].code, tmp, sizeof(ccodes[cindex].code));
+	ccodes[cindex].code[sizeof(ccodes[cindex].code)-1] = 0;
 	strncpy(ccodes[cindex].country, s, sizeof(ccodes[cindex].country));
+	ccodes[cindex].country[sizeof(ccodes[cindex].country)-1] = 0;
 	cindex++;
     }
 

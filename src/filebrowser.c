@@ -249,7 +249,8 @@ static void file_browser_select(struct menu_input_s *m)
 	return;
     }
 
-    strncpy(in->buf, files[m->selected]->path, sizeof(in->buf));
+    strncpy(in->buf, files[m->selected]->path, sizeof(in->buf)-1);
+    in->buf[sizeof(in->buf)-1] = 0;
     set_field_buffer(in->fields[0], 0, in->buf);
     pushkey = -1;
 }
@@ -331,13 +332,13 @@ void file_browser(void *arg)
     struct menu_key_s **keys = NULL;
     struct input_s *in = arg;
     char *p;
-    char path[FILENAME_MAX];
+    char path[FILENAME_MAX] = {0};
 
     if (!oldwd && config.savedirectory) {
 	if ((p = pathfix(config.savedirectory)) == NULL)
 	    return;
 
-	strncpy(path, p, sizeof(path));
+	strncpy(path, p, sizeof(path)-1);
 
 	if (access(path, R_OK) == -1) {
 	    cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", path, strerror(errno));
@@ -345,10 +346,10 @@ void file_browser(void *arg)
 	}
     }
     else if (!oldwd)
-	getcwd(path, sizeof(path));
+	getcwd(path, sizeof(path)-1);
     else
-	strncpy(path, oldwd, sizeof(path));
-    
+	strncpy(path, oldwd, sizeof(path)-1);
+
     in->arg = strdup(path);
     add_menu_key(&keys, '\n', file_browser_select);
     add_menu_key(&keys, KEY_F(1), file_browser_help);

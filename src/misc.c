@@ -146,16 +146,16 @@ int isinteger(const char *str)
 
 char *pathfix(const char *str)
 {
-    static char buf[FILENAME_MAX];
+    static char buf[FILENAME_MAX] = {0};
     struct passwd *pw;
 
     if (*str == '~') {
 	pw = getpwuid(getuid());
-	strncpy(buf, pw->pw_dir, sizeof(buf));
-	strncat(buf, str + 1, sizeof(buf));
+	strncpy(buf, pw->pw_dir, sizeof(buf)-1);
+	strncat(buf, str + 1, sizeof(buf)-1);
     }
     else
-	strncpy(buf, str, sizeof(buf));
+	strncpy(buf, str, sizeof(buf)-1);
 
     return buf;
 }

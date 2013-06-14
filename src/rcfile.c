@@ -164,10 +164,10 @@ void copydatafile(const char *dst, const char *src)
 
 static char *fancy_key_name(int c)
 {
-    static char buf[12];
+    static char buf[12] = {0};
     char *p;
 
-    strncpy(buf, keyname(c), sizeof(buf));
+    strncpy(buf, keyname(c), sizeof(buf)-1);
     p = buf;
 
     if (*p == '^' && *(p + 1) == '[')
@@ -602,8 +602,9 @@ void parse_rcfile(const char *filename)
 
     while ((line = fgets(buf, sizeof(buf), fp)) != NULL) {
 	int n;
-	char var[30], val[LINE_MAX - sizeof(var) - 1];
-	char token[MAX_PGN_LINE_LEN + 1], value[MAX_PGN_LINE_LEN + 1];
+	char var[30] = {0}, val[LINE_MAX - sizeof(var) - 1] = {0};
+	char token[MAX_PGN_LINE_LEN + 1] = {0};
+	char value[MAX_PGN_LINE_LEN + 1] = {0};
 	char *p;
 
 	lines++;
@@ -616,10 +617,10 @@ void parse_rcfile(const char *filename)
 	  errx(EXIT_FAILURE, _("%s(%i): parse error %i"), filename, lines,n);
 
 	p = strdup(trim(val));
-	strncpy(val, p, sizeof(val));
+	strncpy(val, p, sizeof(val)-1);
 	free(p);
 	p = strdup(trim(var));
-	strncpy(var, p, sizeof(var));
+	strncpy(var, p, sizeof(var)-1);
 	free(p);
 
 	if (strcmp(var, "jump_count") == 0) {
@@ -655,7 +656,7 @@ void parse_rcfile(const char *filename)
 		value[0] = 0;
 	    else {
 		p = val + strlen(token);
-		strncpy(value, p, sizeof(value));
+		strncpy(value, p, sizeof(value)-1);
 	    }
 
 	    for (n = 0; n < strlen(token); n++) {

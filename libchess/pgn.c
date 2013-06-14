@@ -1127,8 +1127,8 @@ static int annotation_text(GAME g, FILE *fp, int terminator)
  */
 static int tag_text(GAME g, FILE *fp)
 {
-    char name[LINE_MAX], *n = name;
-    char value[LINE_MAX], *v = value;
+    char name[LINE_MAX] = {0}, *n = name;
+    char value[LINE_MAX] = {0}, *v = value;
     int c, i = 0;
     int lastchar = 0;
     char *tmp;
@@ -1175,7 +1175,7 @@ static int tag_text(GAME g, FILE *fp)
     }
 
     tmp = remove_tag_escapes (value);
-    strncpy(value, tmp, sizeof(value));
+    strncpy(value, tmp, sizeof(value)-1);
     free (tmp);
 
     /*
@@ -1330,13 +1330,13 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
 	char *str)
 {
     char *tmp;
-    char line[LINE_MAX], *s;
+    char line[LINE_MAX] = {0}, *s;
     int row = 8, col = 1;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: FEN line is '%s'\n", __FILE__, __LINE__, str);
 #endif
-    strncpy(line, str, sizeof(line));
+    strncpy(line, str, sizeof(line)-1);
     s = line;
     pgn_reset_enpassant(b);
 

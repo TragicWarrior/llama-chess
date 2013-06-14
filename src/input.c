@@ -237,8 +237,10 @@ done:
     if (tmp) {
 	tmp = trim(tmp);
 
-	if (tmp[0])
-	    strncpy(in->buf, tmp, sizeof(in->buf));
+	if (tmp[0]) {
+	    strncpy(in->buf, tmp, sizeof(in->buf)-1);
+	    in->buf[sizeof(in->buf)-1] = 0;
+	}
 	else
 	    in->buf[0] = 0;
     }
@@ -384,7 +386,8 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     va_end(ap);
 
     if (init) {
-	strncpy(in->buf, init, sizeof(in->buf));
+	strncpy(in->buf, init, sizeof(in->buf)-1);
+	in->buf[sizeof(in->buf)-1] = 0;
 	set_field_buffer(in->fields[0], 0, init);
     }
 
