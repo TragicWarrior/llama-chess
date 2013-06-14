@@ -1,0 +1,55 @@
+* BUG Don't rotate the board when leaving history mode.
+  When loading a PGN file. This also affects GF_BLACK_OPENING. There
+  is commented code that will allow a human to open as black but in
+  gnuchess the 'white' and 'black' commands are not yet implemented
+  (version 6.x anyway; v5.x does have these commands).
+
+* BUG Speed up the move validator.
+  It's alot slower since 0.1.6. I need suggestions on this.
+
+* BUG An annotation without any move text is broken.
+  For example:
+
+    { game forfeited } 1-0
+
+  with or without game tags. Not sure how to handle this. Maybe allocate
+  a new history item for the empty board.
+
+* BUG The 'draw' game result needs better handling.
+  Parsing works and the 50 move draw rule works, but offering and
+  accepting draws isn't implemented. Also, chess engine game results
+  need (better) handling.
+
+
+* FICS/ICS network game support.
+
+* Email correspondence games.
+
+* RAV move text support.
+  Can parse into the move history and also save (buggy) but still need
+  a (working) interface to it. Also add the RAV depth next to the
+  piece on the board and fix the move history tree to show the RAV
+  tree.
+
+
+* Sort saved games by tag values specified by the PGN/EPD standard.
+
+* Better matching of tag expressions when searching for games.
+  Maybe a comma separated list of tag/value expressions.
+
+
+* Match move text expressions across games.
+
+* GPM mouse support.
+
+* EPD game format.
+
+* A config option to set the color of the last moved piece.
+
+* Make libchess its own project.
+  This should handle everything not GUI including file parsing, chess
+  engine and chess server interaction.
+
+
+* Implement UCI (Universal Chess Interface).
+

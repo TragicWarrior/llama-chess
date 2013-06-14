@@ -1,4 +1,4 @@
-EXTRA_DIST = KnownBugs ChangeLog debian osdep
+EXTRA_DIST = TODO.org ChangeLog debian osdep
 SUBDIRS = libchess src doc data po
 ACLOCAL_AMFLAGS = -I m4
 
@@ -10,6 +10,5 @@ deb: changelog
 
 version: changelog
 	$(MAKE) $(AM_MAKEFLAGS) distcheck
-	$(MAKE) $(AM_MAKEFLAGS) deb
 
 distcheck-hook:	changelog
