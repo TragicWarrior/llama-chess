@@ -632,18 +632,18 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 static void
 init_wchar_pieces ()
 {
-  w_pawn_wchar = str_to_wchar ("♙");
-  w_rook_wchar = str_to_wchar ("♖");
-  w_bishop_wchar = str_to_wchar ("♗");
-  w_knight_wchar = str_to_wchar ("♘");
-  w_queen_wchar = str_to_wchar ("♕");
-  w_king_wchar = str_to_wchar ("♔");
-  b_pawn_wchar = str_to_wchar ("♟");
-  b_rook_wchar = str_to_wchar ("♜");
-  b_bishop_wchar = str_to_wchar ("♝");
-  b_knight_wchar = str_to_wchar ("♞");
-  b_queen_wchar = str_to_wchar ("♛");
-  b_king_wchar = str_to_wchar ("♚");
+  w_pawn_wchar = str_to_wchar (config.utf8_pieces ? "♙" : "P");
+  w_rook_wchar = str_to_wchar (config.utf8_pieces ? "♖" : "R");
+  w_bishop_wchar = str_to_wchar (config.utf8_pieces ? "♗" : "B");
+  w_knight_wchar = str_to_wchar (config.utf8_pieces ? "♘" : "N");
+  w_queen_wchar = str_to_wchar (config.utf8_pieces ? "♕" : "Q");
+  w_king_wchar = str_to_wchar (config.utf8_pieces ? "♔" : "K");
+  b_pawn_wchar = str_to_wchar (config.utf8_pieces ? "♟" : "p");
+  b_rook_wchar = str_to_wchar (config.utf8_pieces ? "♜" : "r");
+  b_bishop_wchar = str_to_wchar (config.utf8_pieces ? "♝" : "b");
+  b_knight_wchar = str_to_wchar (config.utf8_pieces ? "♞" : "n");
+  b_queen_wchar = str_to_wchar (config.utf8_pieces ? "♛" : "q");
+  b_king_wchar = str_to_wchar (config.utf8_pieces ? "♚" : "k");
   empty_wchar = str_to_wchar (" ");
 }
 
@@ -4704,10 +4704,10 @@ void usage(const char *pn, int ret)
 {
     fprintf((ret) ? stderr : stdout, "%s", _(
 #ifdef DEBUG
-    "Usage: cboard [-hvCD] [-p [-VtRSE] <file>]\n"
+    "Usage: cboard [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
     "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
 #else
-    "Usage: cboard [-hvC] [-p [-VtRSE] <file>]\n"
+    "Usage: cboard [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"
 #endif
     "  -p  Load PGN file.\n"
     "  -V  Validate a game file.\n"
@@ -4716,6 +4716,7 @@ void usage(const char *pn, int ret)
     "  -t  Also write custom PGN tags from config file.\n"
     "  -E  Stop processing on file parsing error (overrides config).\n"
     "  -C  Enable strict castling (overrides config).\n"
+    "  -u  Enable/disable UTF-8 pieces (1=enable, 0=disable, moverrides config).\n"
     "  -v  Version information.\n"
     "  -h  This help text.\n"));
 
@@ -4866,11 +4867,11 @@ int main(int argc, char *argv[])
     int write_custom_tags = 0;
     int i = 0;
     PGN_FILE *pgn;
+    int utf8_pieces = -1;
 
     setlocale (LC_ALL, "");
     bindtextdomain ("cboard", LOCALE_DIR);
     textdomain ("cboard");
-    init_wchar_pieces ();
 
     /* Solaris 5.9 */
 #ifndef HAVE_PROGNAME
@@ -4906,9 +4907,9 @@ int main(int argc, char *argv[])
     set_defaults();
 
 #ifdef DEBUG
-    while ((opt = getopt(argc, argv, "DCEVtSRhp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "DCEVtSRhp:vu::")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "ECVtSRhp:v")) != -1) {
+    while ((opt = getopt(argc, argv, "ECVtSRhp:vu::")) != -1) {
 #endif
 	switch (opt) {
 #ifdef DEBUG
@@ -4941,6 +4942,9 @@ int main(int argc, char *argv[])
 		filetype = FILE_PGN;
 		strncpy(loadfile, optarg, sizeof(loadfile));
 		loadfile[sizeof(loadfile)-1] = 0;
+		break;
+	    case 'u':
+	        utf8_pieces = optarg ? atoi (optarg): 1;
 		break;
 	    case 'h':
 	    default:
@@ -5010,6 +5014,10 @@ int main(int argc, char *argv[])
     else if (ret == E_PGN_ERR)
 	exit(ret);
 
+    if (utf8_pieces != -1)
+        config.utf8_pieces = utf8_pieces;
+
+    init_wchar_pieces ();
     init_userdata();
 
     /*

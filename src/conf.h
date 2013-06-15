@@ -89,6 +89,7 @@ struct {
     char boardleft;
     char exitdialogbox;
     char enginecmdblacktag;
+    int utf8_pieces;    // For the board only.
 } config;
 
 #endif
