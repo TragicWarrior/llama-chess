@@ -261,5 +261,5 @@ if test "x$have_ptmx" = "xno" -o "x$ptmx_works" = "xno"; then
 fi
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile data/Makefile \
-		 libchess/Makefile po/Makefile.in])
+		 libchess/Makefile po/Makefile.in doc/cboard.6])
 AC_OUTPUT

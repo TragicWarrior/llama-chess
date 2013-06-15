@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cboard 0.6.2-dev\n"
 "Report-Msgid-Bugs-To: bjk@luxsci.net\n"
-"POT-Creation-Date: 2013-06-14 18:11-0400\n"
+"POT-Creation-Date: 2013-06-15 10:35-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,8 +21,8 @@ msgstr ""
 #: src/cboard.c:519 src/cboard.c:525 src/cboard.c:534 src/cboard.c:982
 #: src/cboard.c:2063 src/cboard.c:2119 src/cboard.c:3777 src/cboard.c:3781
 #: src/cboard.c:4308 src/cboard.c:4339 src/cboard.c:4531 src/cboard.c:4550
-#: src/cboard.c:4792 src/engine.c:108 src/engine.c:116 src/engine.c:368
-#: src/engine.c:373 src/filebrowser.c:110 src/filebrowser.c:230
+#: src/cboard.c:4793 src/engine.c:109 src/engine.c:117 src/engine.c:375
+#: src/engine.c:380 src/filebrowser.c:110 src/filebrowser.c:230
 #: src/filebrowser.c:344 src/tags.c:58
 msgid "[ ERROR ]"
 msgstr ""
@@ -36,9 +36,9 @@ msgstr ""
 #: src/cboard.c:2671 src/cboard.c:2806 src/cboard.c:2871 src/cboard.c:3121
 #: src/cboard.c:3394 src/cboard.c:3651 src/cboard.c:3668 src/cboard.c:3777
 #: src/cboard.c:3781 src/cboard.c:3916 src/cboard.c:4308 src/cboard.c:4339
-#: src/cboard.c:4354 src/cboard.c:4531 src/cboard.c:4550 src/cboard.c:4792
-#: src/cboard.c:4811 src/engine.c:109 src/engine.c:116 src/engine.c:122
-#: src/engine.c:368 src/engine.c:373 src/filebrowser.c:110
+#: src/cboard.c:4354 src/cboard.c:4531 src/cboard.c:4550 src/cboard.c:4793
+#: src/cboard.c:4812 src/engine.c:110 src/engine.c:117 src/engine.c:124
+#: src/engine.c:375 src/engine.c:380 src/filebrowser.c:110
 #: src/filebrowser.c:210 src/filebrowser.c:230 src/filebrowser.c:236
 #: src/filebrowser.c:344 src/input.c:160 src/tags.c:58 src/tags.c:115
 #: src/tags.c:391 src/tags.c:439 src/tags.c:457 src/tags.c:481
@@ -91,7 +91,7 @@ msgstr ""
 msgid "Not a regular file"
 msgstr ""
 
-#: src/cboard.c:496 src/cboard.c:554 src/cboard.c:4793
+#: src/cboard.c:496 src/cboard.c:554 src/cboard.c:4794
 msgid "Save game failed."
 msgstr ""
 
@@ -99,7 +99,7 @@ msgstr ""
 msgid "Game saved."
 msgstr ""
 
-#: src/cboard.c:534 src/cboard.c:4904
+#: src/cboard.c:534 src/cboard.c:4905
 msgid "Not a directory."
 msgstr ""
 
@@ -480,9 +480,9 @@ msgstr ""
 
 #: src/cboard.c:4707
 msgid ""
-"Usage: cboard [-hvCD] [-p [-VtRSE] <file>]\n"
+"Usage: cboard [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
 "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
-"Usage: cboard [-hvC] [-p [-VtRSE] <file>]\n"
+"Usage: cboard [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"
 "  -p  Load PGN file.\n"
 "  -V  Validate a game file.\n"
 "  -S  Validate and output a PGN formatted game.\n"
@@ -490,34 +490,35 @@ msgid ""
 "  -t  Also write custom PGN tags from config file.\n"
 "  -E  Stop processing on file parsing error (overrides config).\n"
 "  -C  Enable strict castling (overrides config).\n"
+"  -u  Enable/disable UTF-8 pieces (1=enable, 0=disable, moverrides config).\n"
 "  -v  Version information.\n"
 "  -h  This help text.\n"
 msgstr ""
 
-#: src/cboard.c:4811
+#: src/cboard.c:4812
 msgid "Broken pipe. Quitting."
 msgstr ""
 
-#: src/cboard.c:4844
+#: src/cboard.c:4845
 #, c-format
 msgid "Loading... %i%% (%i games)\r"
 msgstr ""
 
-#: src/cboard.c:5024
+#: src/cboard.c:5032
 msgid "Could not initialize curses."
 msgstr ""
 
-#: src/cboard.c:5030
+#: src/cboard.c:5038
 msgid "Need at least an 80x24 terminal."
 msgstr ""
 
-#: src/engine.c:110
+#: src/engine.c:111
 msgid "Could not write to engine. Process no longer exists."
 msgstr ""
 
-#: src/engine.c:123
+#: src/engine.c:125
 #, c-format
-msgid "try #%i: write() error to engine. Expected %i, got %i."
+msgid "short write() count to engine. Expected %i, got %i."
 msgstr ""
 
 #: src/filebrowser.c:210
@@ -588,7 +589,7 @@ msgstr ""
 msgid "%s(%i): parse error"
 msgstr ""
 
-#: src/rcfile.c:136 src/rcfile.c:652 src/rcfile.c:808
+#: src/rcfile.c:136 src/rcfile.c:652 src/rcfile.c:810
 #, c-format
 msgid "%s(%i): invalid value \"%s\""
 msgstr ""
@@ -891,7 +892,7 @@ msgstr ""
 msgid "%s(%i): invalid value"
 msgstr ""
 
-#: src/rcfile.c:826
+#: src/rcfile.c:828
 #, c-format
 msgid "%s(%i): invalid parameter \"%s\""
 msgstr ""

@@ -5,6 +5,10 @@
 # characters and must be on the same line. Options which are noted to have a
 # BOOL value can be one of: true, 1, yes, on OR false, 0, no, off.
 ###############################################################################
+# Set the Black tag to the chess engine command used during human/engine
+# play.
+#engine_cmd_blacktag on
+
 # The command of the chess engine to use. Engines that support the xboard
 # protocol should work.
 #engine_cmd	gnuchess --xboard
@@ -16,6 +20,10 @@
 # Send a command to the chess engine each time a new game is started or reset.
 # Can be used more than once to specify as many commands as needed.
 #engine_init	depth 3
+
+# Send the "go" command to the chess engine during the first move.
+# This fixes a quirk when interfacing with polyglot(1). 
+#fm_polyglot off
 
 # The number of moves to jump when browsing move history and pressing the UP
 # or DOWN keys.
@@ -72,6 +80,20 @@
 # value. Directories (including hidden) are always displayed
 # reguardless of the pattern.
 #pattern		*.[Pp][Gg][Nn]*
+
+# Confirm before quitting.
+#exit_dialog_box on
+
+# Change the layout of the screen to have the chess board on the left
+# side rather than the right.
+#board_left on
+
+# Whether to show the board ranks on the left or right side of the chess
+# board.
+#coords_y_left yes
+
+# Whether to enable UTF-8 board pieces.
+#utf8_pieces off
 
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
@@ -162,7 +184,7 @@
 #bind play	"<enter>"	commit
 #bind play	"<escape>"	cancel_selected
 #bind play	"C"		set_clock
-#bind play	"w"		switch_turn
+#bind play	"w"		toggle_play_eh
 #bind play	"u"		undo
 #bind play	"g"		go
 #bind play	"|"		send_command
@@ -190,6 +212,7 @@
 #bind history	"M"		menu
 #bind history	"h"		toggle
 #bind history	"<f1>"		help
+#bind_history   "r"             rotate_board
 
 # Board editing keys.
 #    Mode       Key             Command
