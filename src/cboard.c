@@ -2432,6 +2432,7 @@ void do_play_cancel_selected()
 
     d->sp.icon = d->sp.srow = d->sp.scol = 0;
     keycount = 0;
+    pgn_reset_valid_moves(d->b);
     update_status_notify(gp, NULL);
 }
 
@@ -2492,8 +2493,11 @@ void do_play_select()
 	    return;
     }
 
-    if (d->sp.icon || (d->engine && d->engine->status == ENGINE_THINKING))
+    if (d->engine && d->engine->status == ENGINE_THINKING)
 	return;
+
+    if (d->sp.icon)
+      do_play_cancel_selected ();
 
     if (rotate)
         rotate_position(CURSOR_POSITION);
