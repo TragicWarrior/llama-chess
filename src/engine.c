@@ -68,7 +68,6 @@ int send_to_engine(GAME g, int status, const char *format, ...)
     va_list ap;
     int len;
     char *line;
-    int try = 0;
     struct userdata_s *d = g->data;
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE || 
@@ -101,8 +100,10 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 		n = write(d->engine->fd[ENGINE_OUT_FD], line, len);
 
 		if (n == -1) {
-		    if (errno == EAGAIN)
+		    if (errno == EAGAIN) {
+		        usleep (50000);
 			continue;
+		    }
 
 		    if (kill(d->engine->pid, 0) == -1) {
 			message(_("[ ERROR ]"),
@@ -110,19 +111,21 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 				_("Could not write to engine. "
 				  "Process no longer exists."));
 			d->engine->status = ENGINE_OFFLINE;
-			return 1;
+			break;
 		    }
 
-		    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "Attempt #%i. write(): %s", ++try,
-			    strerror(errno));
-		    continue;
+		    message(_("[ ERROR ]"), _("[ press any key to continue ]"),
+			    "write() error to engine: %s", strerror(errno));
+		    d->engine->status = ENGINE_OFFLINE;
+		    break;
 		}
 
 		if (len != n) {
 		    message(NULL, _("[ press any key to continue ]"),
-			    _("try #%i: write() error to engine. "
-			      "Expected %i, got %i."), ++try, len, n);
-		    continue;
+			    _("short write() count to engine. Expected %i, got %i."),
+			    len, n);
+		    d->engine->status = ENGINE_OFFLINE;
+		    break;
 		}
 
 		break;
@@ -133,9 +136,13 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 	}
     }
 
-    d->engine->status = status;
+    if (d->engine->status == ENGINE_OFFLINE)
+        stop_engine (g);
+    else
+        d->engine->status = status;
+
     free(line);
-    return 0;
+    return d->engine->status == ENGINE_OFFLINE ? 1 : 0;
 }
 
 #ifndef UNIX98
