@@ -154,6 +154,7 @@ static wchar_t *b_knight_wchar;
 static wchar_t *b_queen_wchar;
 static wchar_t *b_king_wchar;
 static wchar_t *empty_wchar;
+static wchar_t *enpassant_wchar;
 
 static void free_userdata_once(GAME g);
 
@@ -645,6 +646,7 @@ init_wchar_pieces ()
   b_queen_wchar = str_to_wchar (config.utf8_pieces ? "♛" : "q");
   b_king_wchar = str_to_wchar (config.utf8_pieces ? "♚" : "k");
   empty_wchar = str_to_wchar (" ");
+  enpassant_wchar = str_to_wchar ("x");
 }
 
 static wchar_t *
@@ -676,6 +678,8 @@ piece_to_wchar (unsigned char p)
       return w_king_wchar;
     case 'k':
       return b_king_wchar;
+    case 'x':
+      return enpassant_wchar;
     }
 
   return empty_wchar;
