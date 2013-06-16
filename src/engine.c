@@ -518,9 +518,6 @@ void send_engine_command(GAME g)
     if (!d->engine || !d->engine->queue)
 	return;
 
-    if (!q || !q[0])
-	return;
-
     if (send_to_engine(g, q[0]->status, "%s", q[0]->line))
 	return;
 
@@ -534,6 +531,11 @@ void send_engine_command(GAME g)
 	    q[i] = NULL;
 	    break;
 	}
+    }
+
+    if (!q[0]) {
+        free (d->engine->queue);
+	d->engine->queue = NULL;
     }
 }
 
