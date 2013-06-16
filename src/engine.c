@@ -333,7 +333,7 @@ void stop_engine(GAME g)
 	    send_signal_to_engine(d->engine->pid, SIGKILL);
     }
 
-    waitpid(d->engine->pid, &s, 0);
+    waitpid(d->engine->pid, &s, WNOHANG);
     d->engine->pid = -1;
     d->engine->status = ENGINE_OFFLINE;
 }
