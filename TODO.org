@@ -20,6 +20,12 @@
   accepting draws isn't implemented. Also, chess engine game results
   need (better) handling.
 
+* BUG The en-passant square is not shown as an opponent attacking square.
+* BUG a rotated board shows incorrect attacking pieces.
+* BUG Solaris/Sun SIGALRM bugs and engine command window broken.
+* BUG NetBSD has a crappy ncurses installtion. doing manual symlinks works
+   Broken engine IO on PTY's. may be kernel related although screen works.
+
 
 * FICS/ICS network game support.
 
@@ -31,12 +37,10 @@
   piece on the board and fix the move history tree to show the RAV
   tree.
 
-
 * Sort saved games by tag values specified by the PGN/EPD standard.
 
 * Better matching of tag expressions when searching for games.
   Maybe a comma separated list of tag/value expressions.
-
 
 * Match move text expressions across games.
 
@@ -49,7 +53,6 @@
 * Make libchess its own project.
   This should handle everything not GUI including file parsing, chess
   engine and chess server interaction.
-
 
 * Implement UCI (Universal Chess Interface).
 
