@@ -424,9 +424,9 @@ pgn_error_t pgn_board_update(GAME g, BOARD b, int n)
 	    if (ret == E_PGN_OK) {
 		h = pgn_history_by_n(g->hp, n);
 		if (h) {
-		    char *p = h->move, *frfr = NULL;
+		    char *frfr = NULL;
 
-		    ret = pgn_parse_move(g, tb, &p, &frfr);
+		    ret = pgn_parse_move(g, tb, &h->move, &frfr);
 		    if (ret == E_PGN_OK) {
 			h = pgn_history_by_n(g->hp, n-1);
 			ret = pgn_board_init_fen(g, tb, h->fen);
