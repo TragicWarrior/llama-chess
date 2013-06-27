@@ -257,7 +257,8 @@ void update_cursor(GAME g, int idx)
 
     if (idx > t || idx < 0 || !t || !g->hp[idx]->move) {
 	d->c_row = 2, d->c_col = 5;
-	return;
+	goto historyrotate;
+//	return;
     }
 
     p = g->hp[idx]->move;
@@ -281,6 +282,7 @@ void update_cursor(GAME g, int idx)
     d->c_row = RANKTOINT(*p--);
     d->c_col = FILETOINT(*p);
 
+historyrotate:
     if (d->mode == MODE_HISTORY && rotate)
 	rotate_position(CURSOR_POSITION);
 }
