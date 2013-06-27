@@ -1282,10 +1282,12 @@ void update_history_window(GAME g)
 
     buf[sizeof(buf)-1] = 0;
     mvwprintw(historyw, 2, 1, "%*s %-*s", 10, _("Move:"),
-	    HISTORY_WIDTH - 13, buf);
+	    HISTORY_WIDTH - 14, buf);
 
     h = pgn_history_by_n(g->hp, g->hindex);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : _("not available"));
+    snprintf(buf, sizeof(buf), "%s",
+	     (h && h->move) ? h->move
+	     : (LINES < 24) ? _("empty") : _("not available"));
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
@@ -1306,11 +1308,14 @@ void update_history_window(GAME g)
     if (n)
 	strncat(buf, ")", sizeof(buf)-1);
 
-    mvwprintw(historyw, 3, 1, "%s %-*s", _("Next move:"),
-	    HISTORY_WIDTH - 13, buf);
+    mvwprintw(historyw, 3, ((LINES < 24) ? 17 : 1), "%s %-*s",
+	      (LINES < 24) ? _("Next:") :_("Next move:"),
+	      HISTORY_WIDTH - ((LINES < 24) ? 26 : 14), buf);
 
     h = pgn_history_by_n(g->hp, g->hindex - 1);
-    snprintf(buf, sizeof(buf), "%s", (h && h->move) ? h->move : _("not available"));
+    snprintf(buf, sizeof(buf), "%s",
+	     (h && h->move) ? h->move
+	     : (LINES < 24) ? _("empty") : _("not available"));
     n = 0;
 
     if (h && ((h->comment) || h->nag[0])) {
@@ -1331,8 +1336,9 @@ void update_history_window(GAME g)
     if (n)
 	strncat(buf, ")", sizeof(buf)-1);
 
-    mvwprintw(historyw, 4, 1, "%s %-*s", _("Prev move:"),
-	    HISTORY_WIDTH - 13, buf);
+    mvwprintw(historyw, ((LINES < 24) ? 3 : 4), 1, "%s %-*s",
+	      (LINES < 24) ? _("Prev.:") : _("Prev move:"),
+	      HISTORY_WIDTH - ((LINES < 24) ? 26 : 14), buf);
 }
 
 void do_validate_move(char *move)
@@ -2072,7 +2078,7 @@ static void draw_window_decor()
 #ifdef HAVE_WRESIZE
 static void do_window_resize()
 {
-    if (LINES < 24 || COLS < 80)
+    if (LINES < 23 || COLS < 74)
 	return;
 
     resizeterm(LINES, COLS);
@@ -5247,9 +5253,9 @@ int main(int argc, char *argv[])
     else
 	curses_initialized = 1;
 
-    if (LINES < 24 || COLS < 80) {
+    if (LINES < 23 || COLS < 74) {
 	endwin();
-	errx(EXIT_FAILURE, _("Need at least an 80x24 terminal."));
+	errx(EXIT_FAILURE, _("Need at least an 74x23 terminal."));
     }
 
 	COLS_OLD = COLS;
