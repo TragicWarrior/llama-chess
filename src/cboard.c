@@ -74,7 +74,7 @@
 #define ROWTOMATRIX(r)	((8 - r) * 2 + 2 - 1)
 #define COLTOMATRIX(c)	((c == 1) ? 1 : c * 4 - 3)
 #define STATUS_HEIGHT		12
-#define MEGA_BOARD			(LINES >= 50 && COLS >= 144)
+#define MEGA_BOARD		(LINES >= 50 && COLS >= 144)
 #define BOARD_HEIGHT_MB		(50)
 #define BOARD_WIDTH_MB		(98)
 #define STATUS_WIDTH_MB		(COLS - BOARD_WIDTH_MB)
@@ -82,12 +82,12 @@
 #define TAG_WIDTH_MB		(COLS - BOARD_WIDTH_MB)
 #define HISTORY_HEIGHT_MB	(LINES - (STATUS_HEIGHT + TAG_HEIGHT_MB + 1))
 #define HISTORY_WIDTH_MB	(COLS - BOARD_WIDTH_MB)
-#define BIG_BOARD			(LINES >= 40 && COLS >= 112)
+#define BIG_BOARD		(LINES >= 40 && COLS >= 112)
 #define BOARD_HEIGHT		((MEGA_BOARD) ? BOARD_HEIGHT_MB : (BIG_BOARD) ? 34 : 18)
-#define BOARD_WIDTH			((MEGA_BOARD) ? BOARD_WIDTH_MB : (BIG_BOARD) ? 66 : 34)
+#define BOARD_WIDTH		((MEGA_BOARD) ? BOARD_WIDTH_MB : (BIG_BOARD) ? 66 : 34)
 #define STATUS_WIDTH		((MEGA_BOARD) ? STATUS_WIDTH_MB : COLS - BOARD_WIDTH)
-#define TAG_HEIGHT			((MEGA_BOARD) ? TAG_HEIGHT_MB : LINES - STATUS_HEIGHT - 1)
-#define TAG_WIDTH			((MEGA_BOARD) ? TAG_WIDTH_MB : COLS - BOARD_WIDTH)
+#define TAG_HEIGHT		((MEGA_BOARD) ? TAG_HEIGHT_MB : LINES - STATUS_HEIGHT - 1)
+#define TAG_WIDTH		((MEGA_BOARD) ? TAG_WIDTH_MB : COLS - BOARD_WIDTH)
 #define HISTORY_HEIGHT		((MEGA_BOARD) ? HISTORY_HEIGHT_MB : LINES - BOARD_HEIGHT)
 #define HISTORY_WIDTH		((MEGA_BOARD) ? HISTORY_WIDTH_MB : COLS - STATUS_WIDTH)
 #define MAX_VALUE_WIDTH	(COLS - 8)
@@ -139,7 +139,7 @@ static int go_move = 0;
 // Rotation control board
 static int rotate = FALSE;
 
-int COLS_OLD, LINES_OLD;
+static int COLS_OLD, LINES_OLD;
 
 // Status window.
 static struct {
@@ -167,39 +167,41 @@ static wchar_t *b_king_wchar;
 static wchar_t *empty_wchar;
 static wchar_t *enpassant_wchar;
 
-static const char *piece_chars = 			"PpRrNnBbQqKkxx";
+static const char piece_chars[] = "PpRrNnBbQqKkxx";
 static const char *f_pieces[] = {
-	"       ",	// 0
-	"   O   ",
-	"  /_\\  ",
-	" |-|-| ",	// 3
-	"  ] [  ",
-	" /___\\ ",
-	"  /?M  ",	// 6
-	" (@/)) ",
-	"  /__))",
-	"   O   ",	// 9
-	"  (+)  ",
-	"  /_\\  ",
-	  "•°°°°°•",// 12
-	" \\\\|// ",
-	  " |___| ",
-	" __+__ ",	// 15
-	"(__|__)",
-	" |___| ",
-	"  \\ /  ",	// 18
-	 "   X   ",
-	 "  / \\  "};
+    "       ",	// 0
+    "   O   ",
+    "  /_\\  ",
+    " |-|-| ",	// 3
+    "  ] [  ",
+    " /___\\ ",
+    "  /?M  ",	// 6
+    " (@/)) ",
+    "  /__))",
+    "   O   ",	// 9
+    "  (+)  ",
+    "  /_\\  ",
+    "•°°°°°•",// 12
+    " \\\\|// ",
+    " |___| ",
+    " __+__ ",	// 15
+    "(__|__)",
+    " |___| ",
+    "  \\ /  ",	// 18
+    "   X   ",
+    "  / \\  "
+};
 
 static const bool cb[8][8] = {
-	{1,0,1,0,1,0,1,0},
-	{0,1,0,1,0,1,0,1},
-	{1,0,1,0,1,0,1,0},
-	{0,1,0,1,0,1,0,1},
-	{1,0,1,0,1,0,1,0},
-	{0,1,0,1,0,1,0,1},
-	{1,0,1,0,1,0,1,0},
-	{0,1,0,1,0,1,0,1}};
+    {1,0,1,0,1,0,1,0},
+    {0,1,0,1,0,1,0,1},
+    {1,0,1,0,1,0,1,0},
+    {0,1,0,1,0,1,0,1},
+    {1,0,1,0,1,0,1,0},
+    {0,1,0,1,0,1,0,1},
+    {1,0,1,0,1,0,1,0},
+    {0,1,0,1,0,1,0,1}
+};
 
 static void free_userdata_once(GAME g);
 
@@ -802,30 +804,33 @@ static int piece_can_attack (GAME g, int rank, int file)
 
 void print_piece(WINDOW *w, int l, int c, char p)
 {
-	int i, y, ff = 0;
-	
-	for (i = 0; i < 13; i += 2) {
-		if (p == piece_chars[i] || p == piece_chars[i + 1]) {
-			for (y = 0; y < 3; y++)
-				mvwprintw(w, l + y, c, "%s", f_pieces[i + ff + y]);
-			return;
-		}
-		ff++;
+    int i, y, ff = 0;
+
+    for (i = 0; i < 13; i += 2) {
+        if (p == piece_chars[i] || p == piece_chars[i + 1]) {
+	    for (y = 0; y < 3; y++)
+	        mvwprintw(w, l + y, c, "%s", f_pieces[i + ff + y]);
+	    return;
 	}
-	for (y = 0; y < 3; y++)
-		mvwprintw(w, l + y, c, f_pieces[0]);
+
+	ff++;
+    }
+
+    for (y = 0; y < 3; y++)
+        mvwprintw(w, l + y, c, f_pieces[0]);
 }
 
 int inv_int(int x)
 {
-	int fx, fx2 = 8;
-	
-	for (fx = 1; fx < 9; fx++){
-		if (x == fx)
-			break;
-		fx2--;
-	}
-	return fx2;
+    int fx, fx2 = 8;
+
+    for (fx = 1; fx < 9; fx++) {
+        if (x == fx)
+	    break;
+	fx2--;
+    }
+
+    return fx2;
 }
 
 // FIXME: BIG_BOARD - start in dwm monocle layout.
@@ -839,43 +844,42 @@ void update_board_window(GAME g)
     int ncols = 0, offset = 1;
     int rowr = (MEGA_BOARD) ? 6 : (BIG_BOARD) ? 4 : 2;
     int colr = (MEGA_BOARD) ? 12 : (BIG_BOARD) ? 8 : 4;
-    unsigned coords_y = 8, cxgc = 0; 
+    unsigned coords_y = 8, cxgc = 0;
     unsigned i, cpd = 0;
     struct userdata_s *d = g->data;
 
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
 	update_cursor(g, g->hindex);
 
-	if (BIG_BOARD) {
-	if (rotate){
-		brow = 7;
-		coords_y = 1;
+    if (BIG_BOARD) {
+	if (rotate) {
+	    brow = 7;
+	    coords_y = 1;
 	}
-	}
-	else {
-    if (rotate) {
-	brow = 1;
-	coords_y = 1;
     }
-    else
-        brow = 8;
+    else {
+        if (rotate) {
+	    brow = 1;
+	    coords_y = 1;
 	}
+	else
+	    brow = 8;
+    }
 
     for (row = 0; row < maxy; row++) {
-
-	if (BIG_BOARD) {
-	if (rotate)	
-		bcol = 7;
-	else
-		bcol = 0;
+        if (BIG_BOARD) {
+	    if (rotate)
+	        bcol = 7;
+	    else
+	        bcol = 0;
 	}
 	else {
-	if (rotate)
-	    bcol = 8;
-	else
-	    bcol = 1;
+	    if (rotate)
+	        bcol = 8;
+	    else
+	        bcol = 1;
 	}
-	
+
 	for (col = 0; col < maxx; col++) {
 	    int attrwhich = -1;
 	    chtype attrs = 0, old_attrs = 0;
@@ -911,9 +915,10 @@ void update_board_window(GAME g)
 	    if ((row % 2) && col == maxx - 1 &&
 		(coords_y > 0 && coords_y < 9)) {
 		wattron(boardw, CP_BOARD_COORDS);
-			mvwprintw(boardw, (BIG_BOARD) ? row * ((MEGA_BOARD) ? 
-				3 : 2) : row, (l) ? 0 : col, 			
-			  "%d", (rotate) ? coords_y++ : coords_y--);
+			mvwprintw(boardw,
+				  (BIG_BOARD) ? row * ((MEGA_BOARD) ? 3 : 2)
+				  : row, (l) ? 0 : col, "%d",
+				  (rotate) ? coords_y++ : coords_y--);
 		wattroff(boardw, CP_BOARD_COORDS);
 		continue;
 	    }
@@ -945,80 +950,87 @@ void update_board_window(GAME g)
 
 	    if ((row % rowr)) {
 		if ((col % colr)) {
+		    if (BIG_BOARD)
+		        attrwhich = (cb[brow][bcol]) ? WHITE : BLACK;
+		    else {
+		        if (ncols++ == 8) {
+			  offset++;
+			  ncols = 1;
+			}
 
-			if (BIG_BOARD)
-			attrwhich = (cb[brow][bcol]) ? WHITE : BLACK;
-			else {
-		    if (ncols++ == 8) {
-			offset++;
-			ncols = 1;
+			if (((ncols % 2) && !(offset % 2))
+			    || (!(ncols % 2) && (offset % 2)))
+			    attrwhich = BLACK;
+			else
+			    attrwhich = WHITE;
 		    }
 
-		    if (((ncols % 2) && !(offset % 2)) || (!(ncols % 2)
-				&& (offset % 2)))
-			attrwhich = BLACK;
-		    else
-			attrwhich = WHITE;
-			}
-			
-			if (BIG_BOARD && rotate) {
-				brow = inv_int(brow + 1) - 1;
-				bcol = inv_int(bcol + 1) - 1;
-			}
+		    if (BIG_BOARD && rotate) {
+		        brow = inv_int(brow + 1) - 1;
+			bcol = inv_int(bcol + 1) - 1;
+		    }
 
-			if (BIG_BOARD)
-		    p = d->b[brow][bcol].icon;	
+		    if (BIG_BOARD)
+		        p = d->b[brow][bcol].icon;
 		    else
-		    p = d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].icon;
+		        p = d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].icon;
+
 		    int pi = pgn_piece_to_int(p);
 
-		    if (config.details && 
-		    ((!BIG_BOARD && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].enpassant)
-		    || (BIG_BOARD && d->b[brow][bcol].enpassant))) {
-			p = pi = 'x'; 
-			attrs = mix_cp(CP_BOARD_ENPASSANT, (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK, ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
-		    }
-// FIXME: showattacks - BIG_BOARD
-		    if (config.showattacks && config.details
-			&& piece_can_attack (g, brow, bcol)) {
-			attrs = CP_BOARD_ATTACK;
-			old_attrs = attrs;
-			can_attack = 1;
+		    if (config.details &&
+			((!BIG_BOARD && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].enpassant)
+			 || (BIG_BOARD && d->b[brow][bcol].enpassant))) {
+		        p = pi = 'x';
+			attrs = mix_cp(CP_BOARD_ENPASSANT,
+				       (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK,
+				       ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
 
-		    if (config.validmoves && 
-		    ((!BIG_BOARD && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].valid)
-		    || (BIG_BOARD && d->b[brow][bcol].valid))) {
-			old_attrs = -1;
+		    // FIXME: showattacks - BIG_BOARD and rotated board.
+		    if (config.showattacks && config.details
+			&& piece_can_attack (g, brow, bcol)) {
+			    attrs = CP_BOARD_ATTACK;
+			    old_attrs = attrs;
+			    can_attack = 1;
+		    }
+
+		    if (config.validmoves &&
+			((!BIG_BOARD && d->b[RANKTOBOARD (brow)][FILETOBOARD (bcol)].valid)
+			 || (BIG_BOARD && d->b[brow][bcol].valid))) {
+		        old_attrs = -1;
 			valid = 1;
 
 			if (attrwhich == WHITE)
-			    attrs = mix_cp(CP_BOARD_MOVES_WHITE, IS_ENPASSANT(p),
-				    ATTRS(CP_BOARD_MOVES_WHITE), B_FG_A_BG);
+			    attrs = mix_cp(CP_BOARD_MOVES_WHITE,
+					   IS_ENPASSANT(p),
+					   ATTRS(CP_BOARD_MOVES_WHITE),
+					   B_FG_A_BG);
 			else
-			    attrs = mix_cp(CP_BOARD_MOVES_BLACK, IS_ENPASSANT(p),
-				    ATTRS(CP_BOARD_MOVES_BLACK), B_FG_A_BG);
+			    attrs = mix_cp(CP_BOARD_MOVES_BLACK,
+					   IS_ENPASSANT(p),
+					   ATTRS(CP_BOARD_MOVES_BLACK),
+					   B_FG_A_BG);
 		    }
 		    else if (p != 'x' && !can_attack)
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
 			if (BIG_BOARD && rotate) {
-				brow = inv_int(brow + 1) - 1;
-				bcol = inv_int(bcol + 1) - 1;
+			    brow = inv_int(brow + 1) - 1;
+			    bcol = inv_int(bcol + 1) - 1;
 			}
 
-		    if ((!BIG_BOARD && row == ROWTOMATRIX(d->c_row) && 
-				col == COLTOMATRIX(d->c_col)) ||
-			    (BIG_BOARD && brow + 1 == inv_int(d->c_row) && 
-				bcol + 1 == d->c_col)) {
+		    if ((!BIG_BOARD && row == ROWTOMATRIX(d->c_row)
+			 && col == COLTOMATRIX(d->c_col))
+			|| (BIG_BOARD && brow + 1 == inv_int(d->c_row)
+			    && bcol + 1 == d->c_col)) {
 			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
 			old_attrs = -1;
 		    }
 		    else if ((!BIG_BOARD && row == ROWTOMATRIX(d->sp.srow) &&
-			    col == COLTOMATRIX(d->sp.scol)) ||
-			    (BIG_BOARD && brow + 1 == inv_int(d->sp.srow) && 
-			    bcol + 1 == d->sp.scol)) {
+			      col == COLTOMATRIX(d->sp.scol)) ||
+			     (BIG_BOARD && brow + 1 == inv_int(d->sp.srow) &&
+			      bcol + 1 == d->sp.scol)) {
 			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
 			old_attrs = -1;
@@ -1035,15 +1047,15 @@ void update_board_window(GAME g)
 				       ATTRS (CP_BOARD_ATTACK), A_FG_B_BG);
 		    }
 
-			if (BIG_BOARD)
-				wmove(boardw, row, col + ((MEGA_BOARD) ? 5 : 3) + l);
-			else
-				mvwaddch(boardw, row, col + l, ' ' | attrs);
+		    if (BIG_BOARD)
+		        wmove(boardw, row, col + ((MEGA_BOARD) ? 5 : 3) + l);
+		    else
+		        mvwaddch(boardw, row, col + l, ' ' | attrs);
 
 		    if (row == maxy - 1 && cxgc < 8) {
-				waddch(boardw, "abcdefgh"[(BIG_BOARD) ? bcol : bcol - 1] | CP_BOARD_COORDS);
-				cxgc++;
-			}
+		        waddch(boardw, "abcdefgh"[(BIG_BOARD) ? bcol : bcol - 1] | CP_BOARD_COORDS);
+			cxgc++;
+		    }
 		    else {
 			if (old_attrs == -1) {
 			    old_attrs = attrs;
@@ -1068,68 +1080,75 @@ void update_board_window(GAME g)
 			}
 
 printc:
-			if (BIG_BOARD) { 
-			if (config.details && !can_attack
-				&& castling_state(g, d->b, 
-				(rotate) ? inv_int(brow + 1) - 1: brow, 
-				(rotate) ? inv_int(bcol + 1) - 1: bcol, 
-				p, 0)) 
-				attrs = mix_cp(CP_BOARD_CASTLING, attrs,
-					ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
+			if (BIG_BOARD) {
+			    if (config.details && !can_attack
+				&& castling_state(g, d->b,
+				(rotate) ? inv_int(brow + 1) - 1: brow,
+				(rotate) ? inv_int(bcol + 1) - 1: bcol, p, 0))
+			        attrs = mix_cp(CP_BOARD_CASTLING, attrs,
+					       ATTRS(CP_BOARD_CASTLING),
+					       A_FG_B_BG);
 			}
 			else {
-			if (config.details && !can_attack
-			    && castling_state(g, d->b, RANKTOBOARD (brow),
-					      FILETOBOARD (bcol), p, 0)) {
-			    attrs = mix_cp(CP_BOARD_CASTLING, attrs,
-				    ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
+			    if (config.details && !can_attack
+				&& castling_state(g, d->b, RANKTOBOARD (brow),
+						  FILETOBOARD (bcol), p, 0)) {
+			         attrs = mix_cp(CP_BOARD_CASTLING, attrs,
+						ATTRS(CP_BOARD_CASTLING),
+						A_FG_B_BG);
+			    }
 			}
-			}
-			
+
 			if (BIG_BOARD) {
-				if (cpd < 67) { 	// FIXME: Reimpresión de piezas(+3).
+			  // FIXME: Reimpresión de piezas(+3).
+			    if (cpd < 67) {
 				wattron (boardw, attrs);
 				if (MEGA_BOARD){
-					for (i = 0; i < 5; i++)
-						mvwprintw(boardw, i + brow * 6 + 1, 
-						bcol * 12 + 1 + l, "           ");
-					if (pi != OPEN_SQUARE)
-						print_piece(boardw, brow * 6 + 2, 
-							bcol * 12 + 3 + l, p);
+				    for (i = 0; i < 5; i++)
+				        mvwprintw(boardw, i + brow * 6 + 1,
+						  bcol * 12 + 1 + l,
+						  "           ");
+				    if (pi != OPEN_SQUARE)
+				        print_piece(boardw, brow * 6 + 2,
+						    bcol * 12 + 3 + l, p);
 				}
 				else {
-				print_piece(boardw, brow * 4 + 1, bcol * 8 + 1 + l,
-					(pi != OPEN_SQUARE) ? p : 0);
+				    print_piece(boardw, brow * 4 + 1,
+						bcol * 8 + 1 + l,
+						(pi != OPEN_SQUARE) ? p : 0);
 				}
+
 				wattroff (boardw, attrs);
 				cpd++;
-				}
+			    }
 			}
 			else {
-			wattron (boardw, attrs);
-			waddwstr (boardw, piece_to_wchar (pi != OPEN_SQUARE ? p : 0));
-			wattroff (boardw, attrs);
+			    wattron (boardw, attrs);
+			    waddwstr (boardw, piece_to_wchar (pi != OPEN_SQUARE ? p : 0));
+			    wattroff (boardw, attrs);
 			}
+
 			attrs = old_attrs;
 		    }
 
 		    if (BIG_BOARD)
-				col += (MEGA_BOARD) ? 10 : 6;
+		        col += (MEGA_BOARD) ? 10 : 6;
 		    else {
-				waddch(boardw, ' ' | attrs);
-				col += 2;
-			}
+		        waddch(boardw, ' ' | attrs);
+			col += 2;
+		    }
 
 		    if (rotate)
 			bcol--;
 		    else
 			bcol++;
-			if (BIG_BOARD){
-		    if (bcol > 7)
-				bcol = 0;
+
+		    if (BIG_BOARD) {
+		        if (bcol > 7)
+			    bcol = 0;
 			if (bcol < 0)
-				bcol = 7;
-			}
+			    bcol = 7;
+		    }
 		}
 	    }
 	    else {
@@ -1145,11 +1164,12 @@ printc:
 	    else
 		brow--;
 	}
+
 	if (BIG_BOARD) {
-	if (brow > 7)
-		brow = 0;
-	if (brow < 0)
-		brow = 7;
+	    if (brow > 7)
+	        brow = 0;
+	    if (brow < 0)
+	        brow = 7;
 	}
     }
 }
