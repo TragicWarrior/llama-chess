@@ -168,6 +168,8 @@ static wchar_t *empty_wchar;
 static wchar_t *enpassant_wchar;
 
 static const char piece_chars[] = "PpRrNnBbQqKkxx";
+static char *translatable_tag_names[7];
+
 static const char *f_pieces[] = {
     "       ",	// 0
     "   O   ",
@@ -1652,13 +1654,33 @@ void update_status_window(GAME g)
     wattroff(stdscr, CP_STATUS_NOTIFY);
 }
 
+wchar_t *translate_tag_name(const char *tag)
+{
+    if (!strcmp (tag, "Event"))
+        return str_to_wchar (translatable_tag_names[0]);
+    else if (!strcmp (tag, "Site"))
+        return str_to_wchar (translatable_tag_names[1]);
+    else if (!strcmp (tag, "Date"))
+        return str_to_wchar (translatable_tag_names[2]);
+    else if (!strcmp (tag, "Round"))
+        return str_to_wchar (translatable_tag_names[3]);
+    else if (!strcmp (tag, "White"))
+        return str_to_wchar (translatable_tag_names[4]);
+    else if (!strcmp (tag, "Black"))
+        return str_to_wchar (translatable_tag_names[5]);
+    else if (!strcmp (tag, "Result"))
+        return str_to_wchar (translatable_tag_names[6]);
+
+    return str_to_wchar (tag);
+}
+
 void update_tag_window(TAG **t)
 {
     int i, l, w;
     int namel = 0;
 
     for (i = 0; t[i]; i++) {
-        wchar_t *namewc = str_to_wchar (t[i]->name);
+        wchar_t *namewc = translate_tag_name(t[i]->name);
 
 	l = wcslen(namewc);
 	free (namewc);
@@ -1669,7 +1691,7 @@ void update_tag_window(TAG **t)
     w = TAG_WIDTH - namel - 4;
 
     for (i = 0; t[i] && i < TAG_HEIGHT - 3; i++) {
-	wchar_t *namewc = str_to_wchar(t[i]->name);
+        wchar_t *namewc = translate_tag_name(t[i]->name);
 	wchar_t *valuewc = str_etc(t[i]->value, w, 0);
 
 	mvwprintw(tagw, (i + 2), 1, "%*ls: %-*ls", namel, namewc, w, valuewc);
@@ -5240,6 +5262,13 @@ int main(int argc, char *argv[])
         config.utf8_pieces = utf8_pieces;
 
     init_wchar_pieces ();
+    translatable_tag_names[0] = _("Event");
+    translatable_tag_names[1] = _("Site");
+    translatable_tag_names[2] = _("Date");
+    translatable_tag_names[3] = _("Round");
+    translatable_tag_names[4] = _("White");
+    translatable_tag_names[5] = _("Black");
+    translatable_tag_names[6] = _("Result");
     init_userdata();
 
     /*

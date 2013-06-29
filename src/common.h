@@ -143,5 +143,6 @@ void update_tag_window(TAG **tags);
 void update_all(GAME g);
 void edit_tags(GAME g, BOARD b, int edit);
 void add_custom_tags(TAG ***t);
+wchar_t *translate_tag_name(const char *);
 
 #endif

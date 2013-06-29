@@ -489,14 +489,14 @@ static void tag_print(WIN *win)
     wchar_t *wc;
 
     for (i = 0; m->items[i]; i++) {
-        wc = str_to_wchar (m->items[i]->name);
+        wc = translate_tag_name (m->items[i]->name);
 	n = wcslen (wc);
 	free (wc);
 	if (len < n)
 	    len = n;
     }
 
-    wc = str_to_wchar (m->item->name);
+    wc = translate_tag_name(m->item->name);
     mvwprintw(win->w, m->print_line, 1, "%ls", wc);
 
     for (n = wcslen(wc) + 1; n <= len; n++)
