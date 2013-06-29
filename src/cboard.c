@@ -988,9 +988,11 @@ void update_board_window(GAME g)
 				       ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
 
-		    // FIXME: showattacks - BIG_BOARD and rotated board.
+		    // FIXME: showattacks - rotated board.
 		    if (config.showattacks && config.details
-			&& piece_can_attack (g, brow, bcol)) {
+			&& piece_can_attack (g,
+					     BIG_BOARD ? inv_int (brow+1) : brow,
+					     BIG_BOARD ? bcol+1 : bcol)) {
 			    attrs = CP_BOARD_ATTACK;
 			    old_attrs = attrs;
 			    can_attack = 1;
