@@ -1,3 +1,42 @@
+CBoard version 0.7.0
+--------------------
+Many thanks to Noel Tlatempa G <ntlatempa@gmail.com> most all feature
+patches in this release.
+
+UTF-8 support and gettext support.
+
+Unicode chess pieces when -u or 'utf8_pieces' is enabled.
+
+Es translation.
+
+Ability to rotate the board at the beginning of a round and in history mode.
+
+Added option 'coords_y_left' to change sides of the board characters.
+
+Added option 'fm_polyglot' to fix quirks with some chess engine interfaces.
+Sends the 'go' command after beginning a round.
+
+Added the 'board_left' config option to put the chess board to the right or
+left of other windows.
+
+Added confirmation before quitting.
+
+Added option 'engine_cmd_blacktag' to set the oppenent tag to the engine
+command line.
+
+Added option 'show_attacks' to hilight opponent pieces that can attack the
+square under the cursor using the 'color_board_attack' color.
+
+Fixed castling bug.
+
+Fixed game copying.
+
+Added big and mega board sizes. These can be viewed when resizing the
+terminal to 112x40 and 144x50.
+
+Minimal terminal size is now 74x23.
+
+
 CBoard version 0.6.1
 --------------------
 This version fixes a bug when copying a game the FEN tag wasn't getting parsed
