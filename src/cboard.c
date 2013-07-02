@@ -5106,7 +5106,7 @@ void loading_progress(long total, long offset)
     if (curses_initialized)
 	update_loading_window(n);
     else {
-        fprintf(stderr, _("Loading... %i%% (%i games)\r"), n, gtotal);
+        fprintf(stderr, _("Loading... %i%% (%i games)%c"), n, gtotal, '\r');
 	fflush(stderr);
     }
 }
