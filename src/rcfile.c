@@ -346,8 +346,8 @@ void set_config_defaults()
     }
 }
 
-static void update_key(struct key_s **dst, struct custom_key_s config_key, 
-	wint_t c, char *desc)
+static void update_key(struct key_s **dst, struct custom_key_s config_key,
+		       wint_t c, char *desc)
 {
     int i;
 
@@ -359,12 +359,10 @@ static void update_key(struct key_s **dst, struct custom_key_s config_key,
 		free(dst[i]->key);
 
 	    dst[i]->key = strdup(fancy_key_name(c));
-
-	    if (desc && dst[i]->d)
-		free(dst[i]->d);
-
-	    if (desc)
-		dst[i]->d = str_to_wchar(desc);
+	    if (desc) {
+	      free(dst[i]->d);
+	      dst[i]->d = str_to_wchar(desc);
+	    }
 
 	    goto done;
 	}
@@ -479,15 +477,18 @@ static int parse_key(const char *filename, int lines, char **key)
 
 static void parse_key_binding(const char *filename, int lines, char *val)
 {
-    char mode[64], key[16], func[64], desc[64];
+    char mode[64], key[16], func[64];
+    wchar_t desc[64] = {0};
     int n;
     int m = 0;
     wint_t c = 0;
     int f;
     int i;
     char *p;
+    size_t len;
+    char *str;
 
-    n = sscanf(val, "%s %s %s %s", mode, key, func, desc);
+    n = sscanf(val, "%s %s %s %63lc", mode, key, func, desc);
 
     if (n < 3)
         errx(EXIT_FAILURE, _ ("%s(%i): too few arguments"), filename, lines);
@@ -515,7 +516,7 @@ static void parse_key_binding(const char *filename, int lines, char *val)
     }
 
     for (f = -2, i = 0; config_keys[i].name; i++) {
-	if (strcmp(config_keys[i].name, func) == 0 && 
+	if (strcmp(config_keys[i].name, func) == 0 &&
 		config_keys[i].mode == m) {
 	    f = i;
 	    break;
@@ -526,20 +527,27 @@ static void parse_key_binding(const char *filename, int lines, char *val)
         errx(EXIT_FAILURE, _("%s(%i): invalid command \"%s\""), filename,
 	     lines, func);
 
+    len = wcstombs (NULL, desc, 0);
+    str = Malloc (len*sizeof(char)+1);
+    len = wcstombs (str, desc, len);
+    str[len] = 0;
+
     switch (m) {
 	case MODE_PLAY:
-	    update_key(play_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    update_key(play_keys, config_keys[f], c, (n > 3) ? str : NULL);
 	    break;
 	case MODE_HISTORY:
-	    update_key(history_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    update_key(history_keys, config_keys[f], c, (n > 3) ? str : NULL);
 	    break;
 	case MODE_EDIT:
-	    update_key(edit_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    update_key(edit_keys, config_keys[f], c, (n > 3) ? str : NULL);
 	    break;
 	default:
-	    update_key(global_keys, config_keys[f], c, (n > 3) ? desc : NULL);
+	    update_key(global_keys, config_keys[f], c, (n > 3) ? str : NULL);
 	    break;
     }
+
+    free (str);
 }
 
 static void parse_macro(const char *filename, int lines, char *val)
