@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cboard 0.6.2-dev\n"
 "Report-Msgid-Bugs-To: bjk@luxsci.net\n"
-"POT-Creation-Date: 2013-07-01 22:06-0400\n"
+"POT-Creation-Date: 2013-07-02 06:19-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -513,6 +513,26 @@ msgstr ""
 #: src/cboard.c:5109
 #, c-format
 msgid "Loading... %i%% (%i games)\r"
+msgstr ""
+
+#: src/cboard.c:5285
+msgid "y"
+msgstr ""
+
+#: src/cboard.c:5286 src/cboard.c:5290
+msgid "a"
+msgstr ""
+
+#: src/cboard.c:5287
+msgid "o"
+msgstr ""
+
+#: src/cboard.c:5288
+msgid "r"
+msgstr ""
+
+#: src/cboard.c:5289
+msgid "c"
 msgstr ""
 
 #: src/cboard.c:5291

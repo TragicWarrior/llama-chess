@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cboard 0.6.2\n"
 "Report-Msgid-Bugs-To: bjk@luxsci.net\n"
-"POT-Creation-Date: 2013-07-01 22:06-0400\n"
+"POT-Creation-Date: 2013-07-02 06:19-0400\n"
 "PO-Revision-Date: 2013-06-27 19:43+0000\n"
 "Last-Translator: noeld <ntlatempa@gmail.com>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -513,6 +513,27 @@ msgstr "Tuberia rota. Saliendo"
 #: src/cboard.c:5109
 #, c-format
 msgid "Loading... %i%% (%i games)\r"
+msgstr ""
+
+#: src/cboard.c:5285
+msgid "y"
+msgstr "s"
+
+#: src/cboard.c:5286 src/cboard.c:5290
+msgid "a"
+msgstr ""
+
+#: src/cboard.c:5287
+#, fuzzy
+msgid "o"
+msgstr "de"
+
+#: src/cboard.c:5288
+msgid "r"
+msgstr ""
+
+#: src/cboard.c:5289
+msgid "c"
 msgstr ""
 
 #: src/cboard.c:5291
@@ -1051,9 +1072,6 @@ msgstr "Visor de Etiquetas PGN"
 
 #~ msgid "WB"
 #~ msgstr "BN"
-
-#~ msgid "y"
-#~ msgstr "s"
 
 #~ msgid "¡¡WARNING!!"
 #~ msgstr "¡¡CUIDADO!!"

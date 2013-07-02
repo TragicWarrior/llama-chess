@@ -5282,12 +5282,12 @@ int main(int argc, char *argv[])
         config.utf8_pieces = utf8_pieces;
 
     init_wchar_pieces ();
-    yes_wchar = str_to_wchar ("y");
-    all_wchar = str_to_wchar ("a");
-    overwrite_wchar = str_to_wchar ("o");
-    resume_wchar = str_to_wchar ("r");
-    current_wchar = str_to_wchar ("c");
-    append_wchar = str_to_wchar ("a");
+    yes_wchar = str_to_wchar (_("y"));
+    all_wchar = str_to_wchar (_("a"));
+    overwrite_wchar = str_to_wchar (_("o"));
+    resume_wchar = str_to_wchar (_("r"));
+    current_wchar = str_to_wchar (_("c"));
+    append_wchar = str_to_wchar (_("a"));
     translatable_tag_names[0] = _("Event");
     translatable_tag_names[1] = _("Site");
     translatable_tag_names[2] = _("Date");
