@@ -90,7 +90,7 @@ static const struct custom_key_s {
 
 void set_config_defaults();
 void parse_rcfile(const char *filename);
-void add_key_binding(struct key_s ***, key_func *, int c, char *, int);
+void add_key_binding(struct key_s ***, key_func *, wint_t c, char *, int);
 void set_default_keys();
 
 #endif

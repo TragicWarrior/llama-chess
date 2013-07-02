@@ -117,7 +117,7 @@ static int markstart = -1, markend = -1;
 static int keycount;
 static char loadfile[FILENAME_MAX];
 static int quit;
-static int input_c;
+static wint_t input_c;
 
 // Loaded filename from the command line or from the file input dialog.
 static int filetype;
@@ -167,9 +167,15 @@ static wchar_t *b_king_wchar;
 static wchar_t *empty_wchar;
 static wchar_t *enpassant_wchar;
 
+static wchar_t *yes_wchar;
+static wchar_t *all_wchar;         // do_save_game_overwrite_confirm()
+static wchar_t *overwrite_wchar;   // do_save_game_overwrite_confirm()
+static wchar_t *resume_wchar;      // do_history_mode_confirm()
+static wchar_t *current_wchar;     // do_game_save_multi_confirm()
+static wchar_t *append_wchar;      // save_pgn()
+
 static const char piece_chars[] = "PpRrNnBbQqKkxx";
 static char *translatable_tag_names[7];
-
 static const char *f_pieces[] = {
     "       ",	// 0
     "   O   ",
@@ -532,17 +538,14 @@ void do_save_game_overwrite_confirm(WIN *win)
 {
     char *mode = "w";
     struct save_game_s *s = win->data;
+    wchar_t str[] =  { win->c, 0 };
 
-    switch (win->c) {
-	case 'a':
-	    mode = "a";
-	    break;
-	case 'o':
-	    mode = "w";
-	    break;
-	default:
-	    goto done;
-    }
+    if (!wcscmp (str, append_wchar))
+        mode = "a";
+    else if (!wcscmp (str, overwrite_wchar))
+        mode = "w";
+    else
+        goto done;
 
     if (do_game_write(s->filename, mode, s->start, s->end))
 	update_status_notify(gp, "%s", _("Save game failed."));
@@ -596,9 +599,11 @@ void save_pgn(char *filename, int saveindex)
 	s->filename = strdup(filename);
 	s->start = saveindex;
 	s->end = end;
-	construct_message(NULL, _("'a' to append, 'o' to overwrite"), 1, 1, NULL, NULL,
-		s, do_save_game_overwrite_confirm, 0, 0, "%s \"%s\"",
-		_("File exists:"), filename);
+	construct_message(NULL, _("What would you like to do?"), 0, 1, NULL,
+			  NULL, s, do_save_game_overwrite_confirm, 0, 0,
+			  "%s \"%s\"\nPress \"%ls\" to append to this file, \"%ls\" to overwrite or any other key to cancel.",
+			  _("File exists:"), filename, append_wchar,
+			  overwrite_wchar);
 	return;
     }
 
@@ -2744,6 +2749,7 @@ void do_play_select()
 	return;
     }
 
+    // FIXME lookup the keyname by function pointer (and fix dialog text).
     if (((islower(d->sp.icon) && gp->turn != BLACK)
 		|| (isupper(d->sp.icon) && gp->turn != WHITE))) {
 	message(NULL, _("[ press any key to continue ]"), "%s", _("It is not your turn to move. You can switch sides "));
@@ -2784,11 +2790,11 @@ void do_play_select()
 }
 
 /* FIXME: keys with the same function should comma deliminated. */
-static char *build_help(struct key_s **keys)
+static wchar_t *build_help(struct key_s **keys)
 {
     int i, nlen = 1, len, t, n;
-    char *buf = NULL;
-    char *p;
+    wchar_t *buf = NULL, *wc = NULL;
+    wchar_t *p;
 
     if (!keys)
 	return NULL;
@@ -2807,8 +2813,8 @@ static char *build_help(struct key_s **keys)
 	}
 
 	if (keys[i]->d) {
-	    if (strlen(keys[i]->d) > len)
-		len = strlen(keys[i]->d);
+	    if (wcslen(keys[i]->d) > len)
+		len = wcslen(keys[i]->d);
 	}
 
 	t += len;
@@ -2816,7 +2822,7 @@ static char *build_help(struct key_s **keys)
     }
 
     t += 4 + i;
-    buf = Malloc(t);
+    buf = Malloc(t*sizeof(wchar_t));
     p = buf;
 
     for (i = 0; keys[i]; i++) {
@@ -2834,8 +2840,10 @@ static char *build_help(struct key_s **keys)
 	*p = 0;
 
 	if (keys[i]->key) {
-	    strcat(buf, keys[i]->key);
-	    p = buf + strlen(buf);
+	    wc = str_to_wchar (keys[i]->key);
+	    wcscat(buf, wc);
+	    free (wc);
+	    p = buf + wcslen(buf);
 	}
 	else
 	    *p++ = keys[i]->c;
@@ -2846,13 +2854,18 @@ static char *build_help(struct key_s **keys)
 	*p = 0;
 
 	if (keys[i]->d)
-	    strcat(buf, keys[i]->d);
+	    wcscat(buf, keys[i]->d);
 
-	if (keys[i]->r)
-	    strcat(buf, "*");
+	if (keys[i]->r) {
+	    wc = str_to_wchar ("*");
+	    wcscat(buf, wc);
+	    free (wc);
+	}
 
-	strcat(buf, "\n");
-	p = buf + strlen(buf);
+	wc = str_to_wchar ("\n");
+	wcscat(buf, wc);
+	free (wc);
+	p = buf + wcslen(buf);
     }
 
     return buf;
@@ -2861,28 +2874,28 @@ static char *build_help(struct key_s **keys)
 void do_more_help(WIN *);
 void do_main_help(WIN *win)
 {
-    char *buf;
+    wchar_t *buf;
 
     switch (win->c) {
 	case 'p':
 	    buf = build_help(play_keys);
 	    construct_message(_("Play Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	case 'h':
 	    buf = build_help(history_keys);
 	    construct_message(_("History Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	case 'e':
 	    buf = build_help(edit_keys);
 	    construct_message(_("Edit Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	case 'g':
 	    buf = build_help(global_keys);
 	    construct_message(_("Global Game Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%s", buf);
+		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	default:
 	    break;
@@ -2905,10 +2918,11 @@ void do_more_help(WIN *win)
 
 void do_play_help()
 {
-    char *buf = build_help(play_keys);
+    wchar_t *buf = build_help(play_keys);
 
-    construct_message(_("Play Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0, NULL, NULL, buf, 
-	    do_more_help, 0, 1, "%s", buf);
+    construct_message(_("Play Mode Keys (* = can take a repeat count)"),
+		      _("[ press any key to continue ]"), 0, 0, NULL, NULL,
+		      buf, do_more_help, 0, 1, "%ls", buf);
 }
 
 void do_play_history_mode()
@@ -3040,10 +3054,11 @@ void do_edit_enpassant()
 
 void do_edit_help()
 {
-    char *buf = build_help(edit_keys);
+    wchar_t *buf = build_help(edit_keys);
 
-    construct_message(_("Edit Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0, NULL, NULL, buf, 
-	    do_more_help, 0, 1, "%s", buf);
+    construct_message(_("Edit Mode Keys (* = can take a repeat count)"),
+		      _("[ press any key to continue ]"), 0, 0, NULL, NULL,
+		      buf, do_more_help, 0, 1, "%ls", buf);
 }
 
 void do_edit_exit()
@@ -3554,15 +3569,12 @@ void do_history_mode_finalize(struct userdata_s *d)
 void do_history_mode_confirm(WIN *win)
 {
     struct userdata_s *d = gp->data;
+    wchar_t str[] = { win->c, 0 };
 
-    switch (win->c) {
-	case 'R':
-	case 'r':
-	    pgn_history_free(gp->hp, 
-		    gp->hindex);
-	    pgn_board_update(gp, d->b, 
-		    pgn_history_total(gp->hp));
-	    break;
+    if (!wcscmp (str, resume_wchar)) {
+        pgn_history_free(gp->hp, gp->hindex);
+	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
+    }
 #if 0
 	case 'C':
 	case 'c':
@@ -3572,9 +3584,8 @@ void do_history_mode_confirm(WIN *win)
 
 	    break;
 #endif
-	default:
-	    return;
-    }
+     else
+         return;
 
     if (!TEST_FLAG(d->flags, CF_HUMAN)) {
         char *fen =  pgn_game_to_fen(gp, d->b);
@@ -3593,9 +3604,10 @@ void do_history_toggle()
     // FIXME Resuming from previous history could append to a RAV.
     if (gp->hindex != pgn_history_total(gp->hp)) {
 	if (!pushkey)
-	    construct_message(NULL, _ ("(r)esume or abort"), 0, 1, NULL, NULL,
-			      NULL, do_history_mode_confirm, 0, 0, "%s",
-			      _("Resuming a game from previous "));
+	    construct_message(NULL, _ ("What would you like to do?"), 0, 1,
+			      NULL, NULL, NULL, do_history_mode_confirm, 0, 0,
+			      _("The current move is not the final move of this round. Press \"%ls\" to resume a game from the current move and discard future moves or any other key to cancel."),
+			      resume_wchar);
 	return;
     }
     else {
@@ -3628,10 +3640,11 @@ void do_history_annotate()
 
 void do_history_help()
 {
-    char *buf = build_help(history_keys);
+    wchar_t *buf = build_help(history_keys);
 
-    construct_message(_("History Mode Keys (* = can take a repeat count)"), _("[ press any key to continue ]"), 0, 0, NULL, NULL, buf, 
-	    do_more_help, 0, 1, "%s", buf);
+    construct_message(_("History Mode Keys (* = can take a repeat count)"),
+		      _("[ press any key to continue ]"), 0, 0, NULL, NULL,
+		      buf, do_more_help, 0, 1, "%ls", buf);
 }
 
 void do_history_find(int which)
@@ -3831,8 +3844,10 @@ void do_new_game_finalize(GAME g)
 
 void do_new_game_from_scratch(WIN *win)
 {
-    if (tolower(win->c) != 'y')
-	return;
+    wchar_t str[] = {  win->c, 0 };
+
+    if (wcscmp (str, yes_wchar))
+        return;
 
     stop_clock();
     free_userdata();
@@ -3867,13 +3882,13 @@ void do_game_delete_finalize(int n)
 void do_game_delete_confirm(WIN *win)
 {
     int *n;
+    wchar_t str[] = { win->c, 0 };
 
-    if (tolower(win->c) != 'y') {
+    if (wcscmp (str, yes_wchar)) {
 	free(win->data);
 	return;
     }
 
-    
     n = (int *)win->data;
     do_game_delete_finalize(*n);
     free(win->data);
@@ -4137,10 +4152,11 @@ void do_get_game_save_input(int n)
 void do_game_save_multi_confirm(WIN *win)
 {
     int i;
+    wchar_t str[] = { win->c, 0 };
 
-    if (win->c == 'c')
+    if (!wcscmp (str, current_wchar))
 	i = gindex;
-    else if (win->c == 'a')
+    else if (!wcscmp (str, all_wchar))
 	i = -1;
     else {
 	update_status_notify(gp, "%s", _("Save game aborted."));
@@ -4320,8 +4336,10 @@ void do_global_resume_game()
 void do_global_save_game()
 {
     if (gtotal > 1) {
-	construct_message(NULL, _("Type 'c' or 'a' or any other key "), 1, 1, NULL, NULL, NULL, 
-		do_game_save_multi_confirm, 0, 0, "%s", _("There is more than one game "));
+	construct_message(NULL, _("What would you like to do?"), 0, 1,
+			  NULL, NULL, NULL, do_game_save_multi_confirm, 0, 0,
+			  _("There is more than one game loaded. Press \"%ls\" to save the current game, \"%ls\" to save all games or any other key to cancel."),
+			  current_wchar, all_wchar);
 	return;
     }
 
@@ -4377,7 +4395,9 @@ void do_global_new_all()
 
 void do_quit(WIN *win)
 {
-    if (tolower(win->c) != 'y')
+    wchar_t str[] = { win->c, 0 };
+
+    if (wcscmp (str, yes_wchar))
 	return;
 
     quit = 1;
@@ -4830,8 +4850,8 @@ void game_loop()
 		    }
 		}
 		else {
-		    if ((input_c = wgetch(wp)) == ERR)
-			continue;
+		  if (wget_wch(wp, &input_c) == ERR)
+		      continue;
 		}
 	    }
 	    else
@@ -5262,6 +5282,12 @@ int main(int argc, char *argv[])
         config.utf8_pieces = utf8_pieces;
 
     init_wchar_pieces ();
+    yes_wchar = str_to_wchar ("y");
+    all_wchar = str_to_wchar ("a");
+    overwrite_wchar = str_to_wchar ("o");
+    resume_wchar = str_to_wchar ("r");
+    current_wchar = str_to_wchar ("c");
+    append_wchar = str_to_wchar ("a");
     translatable_tag_names[0] = _("Event");
     translatable_tag_names[1] = _("Site");
     translatable_tag_names[2] = _("Date");
@@ -5315,5 +5341,25 @@ int main(int argc, char *argv[])
     draw_window_decor();
     game_loop();
     cleanup_all();
+    free (w_pawn_wchar);
+    free (w_rook_wchar);
+    free (w_bishop_wchar);
+    free (w_knight_wchar);
+    free (w_queen_wchar);
+    free (w_king_wchar);
+    free (b_pawn_wchar);
+    free (b_rook_wchar);
+    free (b_bishop_wchar);
+    free (b_knight_wchar);
+    free (b_queen_wchar);
+    free (b_king_wchar);
+    free (empty_wchar);
+    free (enpassant_wchar);
+    free (yes_wchar);
+    free (all_wchar);
+    free (overwrite_wchar);
+    free (resume_wchar);
+    free (current_wchar);
+    free (append_wchar);
     exit(EXIT_SUCCESS);
 }

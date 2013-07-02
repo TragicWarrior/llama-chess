@@ -54,9 +54,9 @@ enum {
 };
 
 struct config_key_s {
-    int c;
+    wint_t c;
     int type;
-    char *str;
+    wchar_t *str;
 };
 
 struct {

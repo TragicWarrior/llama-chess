@@ -38,14 +38,14 @@ typedef void (key_func)(void);
 
 struct key_s {
     key_func *f;
-    int c;
+    wint_t c;
     char *key;
-    char *d;
+    wchar_t *d;
     int r;
 };
 
 struct macro_s {
-    int c;
+    wint_t c;
     int *keys;
     int n;
     int total;

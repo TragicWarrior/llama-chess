@@ -393,7 +393,7 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
     return win;
 }
 
-void add_menu_key(struct menu_key_s ***dst, int c, menu_key func)
+void add_menu_key(struct menu_key_s ***dst, wint_t c, menu_key func)
 {
     int n = 0;
     struct menu_key_s **keys = *dst;

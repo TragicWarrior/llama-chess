@@ -36,13 +36,14 @@ struct message_s {
     char *extra;
     wchar_t **lines;
     int center;
-    int c;
+    wint_t c;
     message_func *func;
     void *arg;
 };
 
 WIN *construct_message(const char *, const char *, int, int, const char *,
-	message_func *, void *, window_exit_func *, int, int, const char *, ...);
+		       message_func *, void *, window_exit_func *, wint_t,
+		       int, const char *, ...);
 struct message_s *update_message(struct message_s *, char *, char *, char *fmt,
 	...);
 

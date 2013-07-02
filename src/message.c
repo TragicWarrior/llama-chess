@@ -223,8 +223,9 @@ static int display_message(WIN *win)
  * than one line or not (help text vs. tag viewing).
  */
 WIN *construct_message(const char *title, const char *prompt, int center,
-	int force_trim, const char *extra_help, message_func *func, void *arg,
-	window_exit_func *efunc, int ckey, int freedata, const char *fmt, ...)
+		       int force_trim, const char *extra_help,
+		       message_func *func, void *arg, window_exit_func *efunc,
+		       wint_t ckey, int freedata, const char *fmt, ...)
 {
     wchar_t **lines = NULL;
     va_list ap;

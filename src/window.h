@@ -48,13 +48,13 @@ struct window_s {
     window_func *func;
     window_exit_func *efunc;
     void *data;
-    int c;
+    wint_t c;
     int keep;
     int freedata; // Whether or not to free() .data when destroying
 };
 
 WIN **wins;
-int pushkey;
+wint_t pushkey;
 
 WIN *window_create(const char *title, int h, int w, int y, int x, window_func,
 	void *data, window_exit_func);

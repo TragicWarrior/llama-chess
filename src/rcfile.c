@@ -162,11 +162,13 @@ void copydatafile(const char *dst, const char *src)
     fclose(ofp);
 }
 
-static char *fancy_key_name(int c)
+static char *fancy_key_name(wint_t c)
 {
-    static char buf[12] = {0};
+    static char buf[64] = {0};
     char *p;
 
+    /* FIXME key_name() supports wint_t but cannot return a string containing
+     * META characters. */
     strncpy(buf, keyname(c), sizeof(buf)-1);
     p = buf;
 
@@ -209,8 +211,8 @@ static char *fancy_key_name(int c)
     return p;
 }
 
-void add_key_binding(struct key_s ***dst, key_func *func, int c, char *desc, 
-	int repeat)
+void add_key_binding(struct key_s ***dst, key_func *func, wint_t c,
+		     char *desc, int repeat)
 {
     int i = 0;
     struct key_s **k = *dst;
@@ -226,7 +228,7 @@ void add_key_binding(struct key_s ***dst, key_func *func, int c, char *desc,
     k[i]->key = strdup(fancy_key_name(c));
 
     if (desc)
-	k[i]->d = strdup(desc);
+	k[i]->d = str_to_wchar(desc);
 
     i++;
     k[i] = NULL;
@@ -345,7 +347,7 @@ void set_config_defaults()
 }
 
 static void update_key(struct key_s **dst, struct custom_key_s config_key, 
-	int c, char *desc)
+	wint_t c, char *desc)
 {
     int i;
 
@@ -362,7 +364,7 @@ static void update_key(struct key_s **dst, struct custom_key_s config_key,
 		free(dst[i]->d);
 
 	    if (desc)
-		dst[i]->d = strdup(desc);
+		dst[i]->d = str_to_wchar(desc);
 
 	    goto done;
 	}
@@ -379,7 +381,7 @@ static int parse_key(const char *filename, int lines, char **key)
 {
     char *p = *key;
     char *orig = *key;
-    int c = 0;
+    wint_t c = 0;
 
     if (!key || !key[0])
 	return 0;
@@ -480,7 +482,7 @@ static void parse_key_binding(const char *filename, int lines, char *val)
     char mode[64], key[16], func[64], desc[64];
     int n;
     int m = 0;
-    int c = 0;
+    wint_t c = 0;
     int f;
     int i;
     char *p;
@@ -545,7 +547,7 @@ static void parse_macro(const char *filename, int lines, char *val)
     char mode[16], key[8], keys[256] = {0};
     int n;
     int m;
-    int c;
+    wint_t c;
     int i = 0;
     char *p;
 
@@ -821,7 +823,7 @@ void parse_rcfile(const char *filename)
 	    while (isspace(*p))
 		p++;
 
-	    config.keys[k++]->str = strdup(p);
+	    config.keys[k++]->str = str_to_wchar (p);
 	    config.keys[k] = NULL;
 	}
 	else

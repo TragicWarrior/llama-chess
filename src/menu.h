@@ -35,7 +35,7 @@ typedef struct menu_input_s MENU_INPUT;
 typedef void (menu_key)(MENU_INPUT *);
 
 struct menu_key_s {
-    int c;
+    wint_t c;
     menu_key *func;
     void *data;
 };
@@ -65,7 +65,7 @@ struct menu_input_s {
     int xstatic;
 };
 
-void add_menu_key(struct menu_key_s ***dst, int c, menu_key func);
+void add_menu_key(struct menu_key_s ***dst, wint_t c, menu_key func);
 WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
 		    int name_only, menu_items_fn *func,
 		    struct menu_key_s **keys, void *data,
