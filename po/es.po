@@ -51,7 +51,7 @@ msgstr "ninguno"
 
 #: src/cboard.c:361
 msgid "NAG Menu Keys"
-msgstr ""
+msgstr "Teclas Menu NAG"
 
 #: src/cboard.c:363
 msgid ""
@@ -81,7 +81,7 @@ msgstr "Cualquier otra tecla para continuar"
 
 #: src/cboard.c:488 src/cboard.c:492
 msgid "Press 'n' to view NAG"
-msgstr ""
+msgstr "Pulse 'n' para ver NAG"
 
 #: src/cboard.c:493
 msgid "No comment text for this move"
@@ -105,7 +105,7 @@ msgstr "No es un directorio"
 
 #: src/cboard.c:602 src/cboard.c:3607 src/cboard.c:4339
 msgid "What would you like to do?"
-msgstr ""
+msgstr "¿Qué te gustaría hacer?"
 
 #: src/cboard.c:605
 msgid "File exists:"
@@ -125,7 +125,7 @@ msgstr "de"
 
 #: src/cboard.c:1288
 msgid " (ply)"
-msgstr ""
+msgstr " (ply)"
 
 #: src/cboard.c:1290 src/cboard.c:1299 src/cboard.c:1327 src/cboard.c:1508
 msgid "not available"
@@ -161,7 +161,7 @@ msgstr "Mov. Prev.:"
 
 #: src/cboard.c:1423 src/cboard.c:1424
 msgid "abcdefgh"
-msgstr ""
+msgstr "abcdefgh"
 
 #: src/cboard.c:1429
 msgid "Select Pawn Promotion Piece"
@@ -169,7 +169,7 @@ msgstr "Seleciona Pieza de Promoción de Peón"
 
 #: src/cboard.c:1429
 msgid "R/N/B/Q"
-msgstr ""
+msgstr "R/N/B/Q"
 
 #: src/cboard.c:1430
 msgid "R = Rook, N = Knight, B = Bishop, Q = Queen"
@@ -293,7 +293,7 @@ msgstr "Historial de Movimientos"
 
 #: src/cboard.c:2303
 msgid "Maximum number of time controls reached"
-msgstr ""
+msgstr "Maximum number of time controls reached"
 
 #: src/cboard.c:2359
 msgid "Invalid clock specification"
@@ -326,7 +326,7 @@ msgstr ""
 
 #: src/cboard.c:2755 src/cboard.c:2760
 msgid "It is not your turn to move. You can switch sides "
-msgstr ""
+msgstr "Este no es tu turno de mover. puede cambiar de lado "
 
 #: src/cboard.c:2882 src/cboard.c:2923
 msgid "Play Mode Keys (* = can take a repeat count)"
@@ -512,7 +512,7 @@ msgstr "Tuberia rota. Saliendo"
 
 #: src/cboard.c:5109
 #, c-format
-msgid "Loading... %i%% (%i games)\r"
+msgid "Loading... %i%% (%i games)%c"
 msgstr ""
 
 #: src/cboard.c:5285
@@ -521,20 +521,19 @@ msgstr "s"
 
 #: src/cboard.c:5286 src/cboard.c:5290
 msgid "a"
-msgstr ""
+msgstr "a"
 
 #: src/cboard.c:5287
-#, fuzzy
 msgid "o"
-msgstr "de"
+msgstr "s"
 
 #: src/cboard.c:5288
 msgid "r"
-msgstr ""
+msgstr "r"
 
 #: src/cboard.c:5289
 msgid "c"
-msgstr ""
+msgstr "a"
 
 #: src/cboard.c:5291
 msgid "Event"
@@ -579,7 +578,7 @@ msgstr "No se puede escribir en el motor. Proceso ya no existe."
 #: src/engine.c:125
 #, c-format
 msgid "short write() count to engine. Expected %i, got %i."
-msgstr ""
+msgstr "short write() count to engine. Expected %i, got %i."
 
 #: src/filebrowser.c:210
 msgid "File Browser Keys"
@@ -656,31 +655,31 @@ msgstr "%s(%i): valor invalido \"%s\""
 
 #: src/rcfile.c:176
 msgid "Escape"
-msgstr ""
+msgstr "Escape"
 
 #: src/rcfile.c:179
 msgid "Enter"
-msgstr ""
+msgstr "Intro"
 
 #: src/rcfile.c:200
 msgid "PgUp"
-msgstr ""
+msgstr "RePág"
 
 #: src/rcfile.c:202
 msgid "PgDown"
-msgstr ""
+msgstr "Avpág"
 
 #: src/rcfile.c:209
 msgid "Space"
-msgstr ""
+msgstr "Espacio"
 
 #: src/rcfile.c:240
 msgid "history jump next"
-msgstr ""
+msgstr "historial saltar siguiente"
 
 #: src/rcfile.c:241
 msgid "history jump previous"
-msgstr ""
+msgstr "historial saltar anterior"
 
 #: src/rcfile.c:242
 msgid "next move"
@@ -692,7 +691,7 @@ msgstr "mov. previo"
 
 #: src/rcfile.c:244
 msgid "toggle half move (ply) stepping"
-msgstr ""
+msgstr "toggle half move (ply) stepping"
 
 #: src/rcfile.c:245
 msgid "rotate board"
@@ -724,7 +723,7 @@ msgstr "siguiente variacion de el mov. anterior"
 
 #: src/rcfile.c:252
 msgid "previous variation of the previous move"
-msgstr ""
+msgstr "variación anterior del movimiento anterior"
 
 #: src/rcfile.c:253
 msgid "move history tree"
@@ -752,7 +751,7 @@ msgstr "cancela pieza seleccionada"
 
 #: src/rcfile.c:261
 msgid "remove the piece under the cursor"
-msgstr ""
+msgstr "retirar la pieza bajo el cursor"
 
 #: src/rcfile.c:262
 msgid "insert piece"
@@ -764,7 +763,7 @@ msgstr "alterna disponibilidad de enroques"
 
 #: src/rcfile.c:264
 msgid "toggle enpassant square"
-msgstr ""
+msgstr "toggle enpassant square"
 
 #: src/rcfile.c:265
 msgid "toggle turn"
@@ -792,11 +791,11 @@ msgstr "envio un comando al motor de ajedrez"
 
 #: src/rcfile.c:278
 msgid "toggle engine/human play"
-msgstr "alterna jugar motor/humano"
+msgstr "alternar jugar motor/humano"
 
 #: src/rcfile.c:279
 msgid "toggle engine/engine play"
-msgstr "alterna jugar motor/motor"
+msgstr "alternar jugar motor/motor"
 
 #: src/rcfile.c:280
 msgid "toggle human/human play"
@@ -804,7 +803,7 @@ msgstr "alternar jugar humano/humano"
 
 #: src/rcfile.c:281
 msgid "toggle pausing of this game"
-msgstr "alternar pausar de este juego"
+msgstr "alternar pausa de este juego"
 
 #: src/rcfile.c:282
 msgid "enter history mode"
@@ -864,7 +863,7 @@ msgstr "alterna marca de borrado"
 
 #: src/rcfile.c:299
 msgid "delete the current or flagged games"
-msgstr "borra el juego actual o marcado"
+msgstr "borra el juego actual o los marcados"
 
 #: src/rcfile.c:300
 msgid "load a PGN file"
@@ -880,7 +879,7 @@ msgstr "alterna detalles de tablero"
 
 #: src/rcfile.c:303
 msgid "toggle strict castling"
-msgstr ""
+msgstr "alternar enroque estricto"
 
 #: src/rcfile.c:304
 msgid "toggle chess engine IO window"
@@ -1041,7 +1040,7 @@ msgid "Viewing Roster Tags"
 msgstr "Visor de Etiquetas PGN"
 
 #~ msgid "'a' to append, 'o' to overwrite"
-#~ msgstr "'a' anexar, 'o'sobreescribir"
+#~ msgstr "'a' anexar, 'o' sobreescribir"
 
 #~ msgid "(r)esume or abort"
 #~ msgstr "(r)eanudar ó abortar"
