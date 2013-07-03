@@ -4854,7 +4854,7 @@ void game_loop()
 		    }
 		}
 		else {
-		  if (wget_wch(wp, &input_c) == ERR)
+		  if (wget_wch(wp, &input_c) == ERR || input_c == KEY_RESIZE)
 		      continue;
 		}
 	    }
