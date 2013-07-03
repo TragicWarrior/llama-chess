@@ -274,11 +274,15 @@ void update_cursor(GAME g, int idx)
 
     if (*p == 'O') {
 	if (len <= 4)
-	    d->c_col = 7;
+	    d->c_col = rotate ? 3 : 7;
 	else
-	    d->c_col = 3;
+	    d->c_col = rotate ? 6 : 3;
 
-	d->c_row = (g->turn == WHITE) ? 8 : 1;
+	if (rotate)
+	    d->c_row = (g->turn == WHITE) ? 1 : 8;
+	else
+	    d->c_row = (g->turn == WHITE) ? 8 : 1;
+
 	return;
     }
 
