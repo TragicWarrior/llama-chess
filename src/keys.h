@@ -39,7 +39,7 @@ typedef void (key_func)(void);
 struct key_s {
     key_func *f;
     wint_t c;
-    char *key;
+    wchar_t *key;
     wchar_t *d;
     int r;
 };

@@ -167,9 +167,7 @@ static char *fancy_key_name(wint_t c)
     static char buf[64] = {0};
     char *p;
 
-    /* FIXME key_name() supports wint_t but cannot return a string containing
-     * META characters. */
-    strncpy(buf, keyname(c), sizeof(buf)-1);
+    strncpy(buf, keyname(c) ? keyname (c) : key_name (c), sizeof(buf)-1);
     p = buf;
 
     if (*p == '^' && *(p + 1) == '[')
@@ -225,7 +223,7 @@ void add_key_binding(struct key_s ***dst, key_func *func, wint_t c,
     k[i]->f = func;
     k[i]->c = c;
     k[i]->r = repeat;
-    k[i]->key = strdup(fancy_key_name(c));
+    k[i]->key = str_to_wchar (fancy_key_name(c));
 
     if (desc)
 	k[i]->d = str_to_wchar(desc);
@@ -358,7 +356,7 @@ static void update_key(struct key_s **dst, struct custom_key_s config_key,
 	    if (dst[i]->key)
 		free(dst[i]->key);
 
-	    dst[i]->key = strdup(fancy_key_name(c));
+	    dst[i]->key = str_to_wchar(fancy_key_name(c));
 	    if (desc) {
 	      free(dst[i]->d);
 	      dst[i]->d = str_to_wchar(desc);
@@ -375,92 +373,81 @@ done:
     return;
 }
 
-static int parse_key(const char *filename, int lines, char **key)
+static struct known_key_s
 {
-    char *p = *key;
-    char *orig = *key;
+    wint_t c;
+    char *name;
+} known_keys[] = {
+    { KEY_UP, "up" },
+    { KEY_DOWN, "down" },
+    { KEY_LEFT, "left" },
+    { KEY_RIGHT, "right" },
+    { KEY_HOME, "home" },
+    { KEY_END, "end" },
+    { KEY_DC, "delete" },
+    { KEY_PPAGE, "pgup" },
+    { KEY_NPAGE, "pgdn" },
+    { KEY_IC, "insert" },
+    { ' ', "space" },
+    { KEY_ESCAPE, "escape" },
+    { '\n', "enter" },
+    { 0, NULL }
+};
+
+static wint_t parse_key(const char *filename, int lines, wchar_t **key)
+{
+    wchar_t *p = *key;
+    wchar_t *orig = *key;
     wint_t c = 0;
 
-    if (!key || !key[0])
+    if (!key || !wcslen (*key))
 	return 0;
 
     if (*p == '\"') {
-	if (orig[strlen(orig) - 1] != '\"')
+	if (orig[wcslen(orig) - 1] != '\"')
 	    errx(EXIT_FAILURE, _("%s(%i): unbalanced quotes"), filename, lines);
 
 	p++;
-	orig[strlen(orig) - 1] = 0;
+	orig[wcslen(orig) - 1] = 0;
     }
 
     if (*p == '<') {
+        int i;
+
 	p++;
 
-	if (strncasecmp(p, "up", 2) == 0) {
-	    c = KEY_UP;
-	    p += 2;
+	for (i = 0; known_keys[i].name; i++) {
+	    wchar_t *wc = str_to_wchar (known_keys[i].name);
+
+	    if (!wcsncasecmp (p, wc, wcslen (wc))) {
+	        c = known_keys[i].c;
+		p += strlen (known_keys[i].name);
+		free (wc);
+		break;
+	    }
+
+	    free (wc);
 	}
-	else if (strncasecmp(p, "down", 4) == 0) {
-	    c = KEY_DOWN;
-	    p += 4;
-	}
-	else if (strncasecmp(p, "left", 4) == 0) {
-	    c = KEY_LEFT;
-	    p += 4;
-	}
-	else if (strncasecmp(p, "right", 5) == 0) {
-	    c = KEY_RIGHT;
-	    p += 5;
-	}
-	else if (strncasecmp(p, "home", 4) == 0) {
-	    c = KEY_HOME;
-	    p += 4;
-	}
-	else if (strncasecmp(p, "end", 3) == 0) {
-	    c = KEY_END;
-	    p += 3;
-	}
-	else if (strncasecmp(p, "delete", 6) == 0) {
-	    c = KEY_DC;
-	    p += 6;
-	}
-	else if (strncasecmp(p, "pgup", 4) == 0) {
-	    c = KEY_PPAGE;
-	    p += 4;
-	}
-	else if (strncasecmp(p, "pgdn", 4) == 0) {
-	    c = KEY_NPAGE;
-	    p += 4;
-	}
-	else if (strncasecmp(p, "insert", 5) == 0) {
-	    c = KEY_IC;
-	    p += 5;
-	}
-	else if (strncasecmp(p, "space", 5) == 0) {
-	    c = ' ';
-	    p += 5;
-	}
-	else if (strncasecmp(p, "escape", 6) == 0) {
-	    c = KEY_ESCAPE;
-	    p += 6;
-	}
-	else if (strncasecmp(p, "enter", 5) == 0) {
-	    c = '\n';
-	    p += 5;
-	}
-	else if (*p == '^') {
-	    p++;
-	    c = CTRL_KEY(*p++);
-	}
-	else if (*p == 'F' || *p == 'f') {
-	    c = KEY_F(atoi(++p));
-	    p += integer_len(atoi(p));
+
+	if (!c) {
+	    if (*p == '^') {
+	        p++;
+		c = CTRL_KEY(*p++);
+	    }
+	    else if (*p == 'F' || *p == 'f') {
+	        char  *str = wchar_to_str (++p);
+
+		c = KEY_F(atoi(str));
+		p += integer_len(atoi(str));
+		free (str);
+	    }
 	}
 
 	if (!c)
 	    c = *p++;
 
 	if (*p++ != '>')
-	    errx(EXIT_FAILURE, _("%s(%i): parse error \"%s\""), filename,
+	    errx(EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
 		 lines, orig);
     }
     else if (*p == '\\') {
@@ -470,25 +457,25 @@ static int parse_key(const char *filename, int lines, char **key)
     else
 	c = *p++;
 
-    orig += strlen(orig) - strlen(p);
+    orig += wcslen(orig) - wcslen(p);
     *key = orig;
     return c;
 }
 
 static void parse_key_binding(const char *filename, int lines, char *val)
 {
-    char mode[64], key[16], func[64];
+    char mode[64], func[64];
     wchar_t desc[64] = {0};
+    wchar_t key[64];
     int n;
     int m = 0;
     wint_t c = 0;
     int f;
     int i;
-    char *p;
-    size_t len;
+    wchar_t *p;
     char *str;
 
-    n = sscanf(val, "%s %s %s %63lc", mode, key, func, desc);
+    n = sscanf(val, "%s %ls %s %63lc", mode, key, func, desc);
 
     if (n < 3)
         errx(EXIT_FAILURE, _ ("%s(%i): too few arguments"), filename, lines);
@@ -510,7 +497,7 @@ static void parse_key_binding(const char *filename, int lines, char *val)
 	for (i = 0; global_keys[i]; i++) {
 	    if (global_keys[i]->c == c)
 	        errx(EXIT_FAILURE,
-		     _("%s(%i): key \"%s\" conflicts with a global key"),
+		     _("%s(%i): key \"%ls\" conflicts with a global key"),
 		     filename, lines, key);
 	}
     }
@@ -527,10 +514,7 @@ static void parse_key_binding(const char *filename, int lines, char *val)
         errx(EXIT_FAILURE, _("%s(%i): invalid command \"%s\""), filename,
 	     lines, func);
 
-    len = wcstombs (NULL, desc, 0);
-    str = Malloc (len*sizeof(char)+1);
-    len = wcstombs (str, desc, len);
-    str[len] = 0;
+    str = wchar_to_str (desc);
 
     switch (m) {
 	case MODE_PLAY:
@@ -552,14 +536,15 @@ static void parse_key_binding(const char *filename, int lines, char *val)
 
 static void parse_macro(const char *filename, int lines, char *val)
 {
-    char mode[16], key[8], keys[256] = {0};
+    char mode[16];
+    wchar_t keys[2048] = {0}, key[8];
     int n;
     int m;
     wint_t c;
     int i = 0;
-    char *p;
+    wchar_t *p;
 
-    n = sscanf(val, "%s %s %255c", mode, key, keys);
+    n = sscanf(val, "%s %ls %2047lc", mode, key, keys);
 
     if (n != 3)
          errx(EXIT_FAILURE, _("%s(%i): too few arguments"), filename, lines);

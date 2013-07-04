@@ -256,3 +256,12 @@ wchar_t *str_to_wchar (const char *str)
 {
     return str_to_wchar_len (str, 0);
 }
+
+char *wchar_to_str (const wchar_t *str)
+{
+    size_t len = wcstombs (NULL, str, 0);
+    char *s = Malloc (len*sizeof(char)+1);
+    len = wcstombs (s, str, len);
+    s[len] = 0;
+    return s;
+}

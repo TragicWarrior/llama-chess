@@ -2753,10 +2753,20 @@ void do_play_select()
 	return;
     }
 
-    // FIXME lookup the keyname by function pointer (and fix dialog text).
     if (((islower(d->sp.icon) && gp->turn != BLACK)
 		|| (isupper(d->sp.icon) && gp->turn != WHITE))) {
-	message(NULL, _("[ press any key to continue ]"), "%s", _("It is not your turn to move. You can switch sides "));
+        struct key_s **k;
+        char *str = Malloc (512);
+
+	for (k = play_keys; *k; k++) {
+	  if ((*k)->f == do_play_toggle_eh_mode)
+	        break;
+	}
+
+	snprintf (str, 512,  _("It is not your turn to move. You may switch playing sides by pressing \"%lc\"."),
+		  *k ? (*k)->c : '?');
+	message(NULL, _("[ press any key to continue ]"), "%s", str);
+	free (str);
 	d->sp.icon = 0;
 	return;
 #if 0
@@ -2808,8 +2818,8 @@ static wchar_t *build_help(struct key_s **keys)
 	    continue;
 
 	if (keys[i]->key) {
-	    if (strlen(keys[i]->key) > nlen) {
-		nlen = strlen(keys[i]->key);
+	    if (wcslen(keys[i]->key) > nlen) {
+		nlen = wcslen(keys[i]->key);
 		t += nlen;
 	    }
 	    else
@@ -2834,7 +2844,7 @@ static wchar_t *build_help(struct key_s **keys)
 	    continue;
 
 	if (keys[i]->key)
-	    n = strlen(keys[i]->key);
+	    n = wcslen(keys[i]->key);
 	else
 	    n = 1;
 
@@ -2844,9 +2854,7 @@ static wchar_t *build_help(struct key_s **keys)
 	*p = 0;
 
 	if (keys[i]->key) {
-	    wc = str_to_wchar (keys[i]->key);
-	    wcscat(buf, wc);
-	    free (wc);
+	    wcscat(buf, keys[i]->key);
 	    p = buf + wcslen(buf);
 	}
 	else
