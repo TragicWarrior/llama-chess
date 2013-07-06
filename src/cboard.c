@@ -91,7 +91,6 @@
 #define HISTORY_HEIGHT		((MEGA_BOARD) ? HISTORY_HEIGHT_MB : LINES - BOARD_HEIGHT)
 #define HISTORY_WIDTH		((MEGA_BOARD) ? HISTORY_WIDTH_MB : COLS - STATUS_WIDTH)
 #define MAX_VALUE_WIDTH	        (COLS - 8)
-#define ANY_KEY_STR             _("[ press any key to continue ]")
 
 enum {
     UP, DOWN, LEFT, RIGHT
@@ -307,7 +306,7 @@ static int init_nag()
     int i = 0;
 
     if ((fp = fopen(config.nagfile, "r")) == NULL) {
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s: %s", config.nagfile, strerror(errno));
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", config.nagfile, strerror(errno));
 	return 1;
     }
 
@@ -507,11 +506,11 @@ int do_game_write(char *filename, char *mode, int start, int end)
     i = pgn_open(filename, mode, &pgn);
 
     if (i == E_PGN_ERR) {
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s\n%s", filename, strerror(errno));
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s\n%s", filename, strerror(errno));
 	return 1;
     }
     else if (i == E_PGN_INVALID) {
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s\n%s", filename, _("Not a regular file"));
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s\n%s", filename, _("Not a regular file"));
 	return 1;
     }
 
@@ -522,7 +521,7 @@ int do_game_write(char *filename, char *mode, int start, int end)
     }
 
     if (pgn_close(pgn) != E_PGN_OK)
-	message(_("[ ERROR ]"), ANY_KEY_STR, "%s", strerror(errno));
+	message(ERROR_STR, ANY_KEY_STR, "%s", strerror(errno));
 
     if (start == -1) {
 	strncpy(loadfile, filename, sizeof(loadfile));
@@ -576,13 +575,13 @@ void save_pgn(char *filename, int saveindex)
 	if (stat(config.savedirectory, &st) == -1) {
 	    if (errno == ENOENT) {
 		if (mkdir(config.savedirectory, 0755) == -1) {
-		    cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s: %s", config.savedirectory,
+		    cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", config.savedirectory,
 			    strerror(errno));
 		    return;
 		}
 	    }
 	    else {
-		cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s: %s", config.savedirectory,
+		cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", config.savedirectory,
 			strerror(errno));
 		return;
 	    }
@@ -591,7 +590,7 @@ void save_pgn(char *filename, int saveindex)
 	stat(config.savedirectory, &st);
 
 	if (!S_ISDIR(st.st_mode)) {
-	    cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s: %s", config.savedirectory, _("Not a directory."));
+	    cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", config.savedirectory, _("Not a directory."));
 	    return;
 	}
 
@@ -1193,7 +1192,7 @@ printc:
 void invalid_move(int n, int e, const char *m)
 {
     if (curses_initialized)
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s \"%s\" (round #%i)", (e == E_PGN_AMBIGUOUS)
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s \"%s\" (round #%i)", (e == E_PGN_AMBIGUOUS)
 		? _("Ambiguous move") : _("Invalid move"), m, n);
     else
 	warnx("%s: %s \"%s\" (round #%i)", loadfile, (e == E_PGN_AMBIGUOUS) 
@@ -2303,7 +2302,7 @@ tc:
 	    return 1;
 
 	if (tc >= MAX_TC) {
-	    message(_("[ ERROR ]"), ANY_KEY_STR, "%s (%i)", _("Maximum number of time controls reached"), MAX_TC);
+	    message(ERROR_STR, ANY_KEY_STR, "%s (%i)", _("Maximum number of time controls reached"), MAX_TC);
 	    return 1;
 	}
 
@@ -2359,7 +2358,7 @@ static int parse_which_clock(struct clock_s *clk, char *str)
     memcpy(&tmp, clk, sizeof(struct clock_s));
 
     if (parse_clock_input(&tmp, str, &incr)) {
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, _("Invalid clock specification"));
+	cmessage(ERROR_STR, ANY_KEY_STR, _("Invalid clock specification"));
 	return 1;
     }
 
@@ -4039,11 +4038,11 @@ void do_load_file(WIN *win)
     n = pgn_open(tmp, "r", &pgn);
 
     if (n == E_PGN_ERR) {
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s\n%s", tmp, strerror(errno));
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s\n%s", tmp, strerror(errno));
 	goto done;
     }
     else if (n == E_PGN_INVALID) {
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s\n%s", tmp, _("Not a regular file"));
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s\n%s", tmp, _("Not a regular file"));
 	goto done;
     }
 
@@ -4569,7 +4568,7 @@ static void perl_error(const char *fmt, ...)
     vasprintf(&buf, fmt, ap);
     va_end(ap);
 
-    message(_("[ ERROR ]"), ANY_KEY_STR, "%s", buf);
+    message(ERROR_STR, ANY_KEY_STR, "%s", buf);
     free(buf);
 }
 
@@ -4600,7 +4599,7 @@ static void do_perl_finalize(WIN *win)
     d->perlflags = g->flags;
 
     if (pgn_board_init_fen(g, d->b, result) != E_PGN_OK) {
-	message(_("[ ERROR ]"), ANY_KEY_STR, "%s", _("FEN parse error."));
+	message(ERROR_STR, ANY_KEY_STR, "%s", _("FEN parse error."));
 	pgn_board_init_fen(g, d->b, d->perlfen);
 	g->flags = d->perlflags;
 	free(d->perlfen);
@@ -4792,7 +4791,7 @@ void game_loop()
 			    }
 			    else if (len == -1) {
 				if (errno != EAGAIN) {
-				    cmessage(_("[ ERROR ]"), ANY_KEY_STR, "Engine read(): %s",
+				    cmessage(ERROR_STR, ANY_KEY_STR, "Engine read(): %s",
 					    strerror(errno));
 				    waitpid(d->engine->pid, &n, 0);
 				    free(d->engine);
@@ -4811,7 +4810,7 @@ void game_loop()
 	    }
 	    else {
 		if (n == -1)
-		    cmessage(_("[ ERROR ]"), ANY_KEY_STR, "select(): %s", strerror(errno));
+		    cmessage(ERROR_STR, ANY_KEY_STR, "select(): %s", strerror(errno));
 		/* timeout */
 	    }
 	}
@@ -5059,7 +5058,7 @@ static void signal_save_pgn(int sig)
     asprintf(&buf, "%s/signal-%i-%li.pgn", p, sig, now);
 
     if (do_game_write(buf, "w", 0, gtotal)) {
-	cmessage(_("[ ERROR ]"), ANY_KEY_STR, "%s: %s", p, strerror(errno));
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", p, strerror(errno));
 	update_status_notify(gp, "%s", _("Save game failed."));
     }
 

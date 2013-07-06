@@ -158,7 +158,7 @@ static int get_input(WIN *win)
 	    form_driver(in->f, REQ_CLR_FIELD);
 	    break;
 	case KEY_F(1):
-	    message(_("Line Editing Keys"), _("[ press any key to continue ]"),
+	    message(_("Line Editing Keys"), ANY_KEY_STR,
 		    "%s",
 		    _ (
 		       "UP/DOWN/LEFT/RIGHT - position cursor (multiline)\n"

@@ -106,22 +106,21 @@ int send_to_engine(GAME g, int status, const char *format, ...)
 		    }
 
 		    if (kill(d->engine->pid, 0) == -1) {
-			message(_("[ ERROR ]"),
-				_("[ press any key to continue ]"),
+			message(ERROR_STR, ANY_KEY_STR,
 				_("Could not write to engine. "
 				  "Process no longer exists."));
 			d->engine->status = ENGINE_OFFLINE;
 			break;
 		    }
 
-		    message(_("[ ERROR ]"), _("[ press any key to continue ]"),
+		    message(ERROR_STR, ANY_KEY_STR,
 			    "write() error to engine: %s", strerror(errno));
 		    d->engine->status = ENGINE_OFFLINE;
 		    break;
 		}
 
 		if (len != n) {
-		    message(NULL, _("[ press any key to continue ]"),
+		    message(NULL, ANY_KEY_STR,
 			    _("short write() count to engine. Expected %i, got %i."),
 			    len, n);
 		    d->engine->status = ENGINE_OFFLINE;
@@ -372,12 +371,12 @@ int start_chess_engine(GAME g)
     switch (exec_chess_engine(g, args)) {
 	case -1:
 	    /* Pty allocation. */
-	    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "Could not allocate PTY");
+	    message(ERROR_STR, ANY_KEY_STR, "Could not allocate PTY");
 	    d->engine->status = ENGINE_OFFLINE;
 	    break;
 	case -2:
 	    /* Could not execute engine. */
-	    message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", args[0], strerror(errno));
+	    message(ERROR_STR, ANY_KEY_STR, "%s: %s", args[0], strerror(errno));
 	    d->engine->status = ENGINE_OFFLINE;
 	    break;
 	default:

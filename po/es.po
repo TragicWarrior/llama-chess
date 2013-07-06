@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cboard 0.6.2\n"
 "Report-Msgid-Bugs-To: bjk@luxsci.net\n"
-"POT-Creation-Date: 2013-07-02 06:19-0400\n"
+"POT-Creation-Date: 2013-07-06 16:53-0400\n"
 "PO-Revision-Date: 2013-06-27 19:43+0000\n"
 "Last-Translator: noeld <ntlatempa@gmail.com>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -17,43 +17,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/cboard.c:305 src/cboard.c:505 src/cboard.c:509 src/cboard.c:520
-#: src/cboard.c:574 src/cboard.c:580 src/cboard.c:589 src/cboard.c:1191
-#: src/cboard.c:2303 src/cboard.c:2359 src/cboard.c:4031 src/cboard.c:4035
-#: src/cboard.c:4567 src/cboard.c:4598 src/cboard.c:4790 src/cboard.c:4809
-#: src/cboard.c:5057 src/engine.c:109 src/engine.c:117 src/engine.c:375
-#: src/engine.c:380 src/filebrowser.c:110 src/filebrowser.c:230
-#: src/filebrowser.c:344 src/tags.c:58
-msgid "[ ERROR ]"
-msgstr "[ ERROR ]"
-
-#: src/cboard.c:305 src/cboard.c:361 src/cboard.c:463 src/cboard.c:487
-#: src/cboard.c:505 src/cboard.c:509 src/cboard.c:520 src/cboard.c:574
-#: src/cboard.c:580 src/cboard.c:589 src/cboard.c:1191 src/cboard.c:1886
-#: src/cboard.c:1911 src/cboard.c:1940 src/cboard.c:1956 src/cboard.c:2303
-#: src/cboard.c:2359 src/cboard.c:2543 src/cboard.c:2755 src/cboard.c:2760
-#: src/cboard.c:2882 src/cboard.c:2887 src/cboard.c:2892 src/cboard.c:2897
-#: src/cboard.c:2924 src/cboard.c:3060 src/cboard.c:3125 src/cboard.c:3375
-#: src/cboard.c:3646 src/cboard.c:3905 src/cboard.c:3922 src/cboard.c:4031
-#: src/cboard.c:4035 src/cboard.c:4171 src/cboard.c:4567 src/cboard.c:4598
-#: src/cboard.c:4613 src/cboard.c:4790 src/cboard.c:4809 src/cboard.c:5057
-#: src/cboard.c:5076 src/engine.c:110 src/engine.c:117 src/engine.c:124
-#: src/engine.c:375 src/engine.c:380 src/filebrowser.c:110
-#: src/filebrowser.c:210 src/filebrowser.c:230 src/filebrowser.c:236
-#: src/filebrowser.c:344 src/input.c:160 src/tags.c:58 src/tags.c:115
-#: src/tags.c:391 src/tags.c:439 src/tags.c:457 src/tags.c:481
-msgid "[ press any key to continue ]"
-msgstr "[ presiona cualquier tecla para continuar ]"
-
-#: src/cboard.c:310
+#: src/cboard.c:314
 msgid "none"
 msgstr "ninguno"
 
-#: src/cboard.c:361
+#: src/cboard.c:365
 msgid "NAG Menu Keys"
 msgstr "Teclas Menu NAG"
 
-#: src/cboard.c:363
+#: src/cboard.c:367
 msgid ""
 "    UP/DOWN - previous/next menu item\n"
 "   HOME/END - first/last menu item\n"
@@ -63,296 +35,303 @@ msgid ""
 "     CTRL-X - quit with changes"
 msgstr ""
 
-#: src/cboard.c:429
+#: src/cboard.c:433
 msgid "Numeric Annotation Glyphs"
 msgstr "Glifos Notación Numérica"
 
-#: src/cboard.c:441
+#: src/cboard.c:445
 msgid "Viewing NAG for"
 msgstr "Visualización de NAG para"
 
-#: src/cboard.c:469 src/cboard.c:484
+#: src/cboard.c:473 src/cboard.c:488
 msgid "Viewing Annotation for"
 msgstr "Visualización de anotación para"
 
-#: src/cboard.c:487 src/cboard.c:492
+#: src/cboard.c:491 src/cboard.c:496
 msgid "Any other key to continue"
 msgstr "Cualquier otra tecla para continuar"
 
-#: src/cboard.c:488 src/cboard.c:492
+#: src/cboard.c:492 src/cboard.c:496
 msgid "Press 'n' to view NAG"
 msgstr "Pulse 'n' para ver NAG"
 
-#: src/cboard.c:493
+#: src/cboard.c:497
 msgid "No comment text for this move"
 msgstr "Sin texto de comentario para este movimiento"
 
-#: src/cboard.c:509 src/cboard.c:4035
+#: src/cboard.c:513 src/cboard.c:4045
 msgid "Not a regular file"
 msgstr "No es un archivo regular"
 
-#: src/cboard.c:551 src/cboard.c:611 src/cboard.c:5058
+#: src/cboard.c:555 src/cboard.c:615 src/cboard.c:5062
 msgid "Save game failed."
 msgstr "Guardar juego fallo."
 
-#: src/cboard.c:553 src/cboard.c:613
+#: src/cboard.c:557 src/cboard.c:617
 msgid "Game saved."
 msgstr "Juego guardado"
 
-#: src/cboard.c:589 src/cboard.c:5169
+#: src/cboard.c:593 src/cboard.c:5173
 msgid "Not a directory."
 msgstr "No es un directorio"
 
-#: src/cboard.c:602 src/cboard.c:3607 src/cboard.c:4339
+#: src/cboard.c:606 src/cboard.c:3617 src/cboard.c:4346
 msgid "What would you like to do?"
 msgstr "¿Qué te gustaría hacer?"
 
-#: src/cboard.c:605
+#: src/cboard.c:609
 msgid "File exists:"
 msgstr "Archivo existe:"
 
-#: src/cboard.c:1192 src/cboard.c:1195
+#: src/cboard.c:1196 src/cboard.c:1199
 msgid "Ambiguous move"
 msgstr "Mov. Ambiguo"
 
-#: src/cboard.c:1192 src/cboard.c:1195
+#: src/cboard.c:1196 src/cboard.c:1199
 msgid "Invalid move"
 msgstr "Mov. Invalido"
 
-#: src/cboard.c:1287 src/cboard.c:1511 src/menu.c:139
+#: src/cboard.c:1291 src/cboard.c:1515 src/menu.c:137
 msgid "of"
 msgstr "de"
 
-#: src/cboard.c:1288
+#: src/cboard.c:1292
 msgid " (ply)"
 msgstr " (ply)"
 
-#: src/cboard.c:1290 src/cboard.c:1299 src/cboard.c:1327 src/cboard.c:1508
+#: src/cboard.c:1294 src/cboard.c:1303 src/cboard.c:1331 src/cboard.c:1512
 msgid "not available"
 msgstr "no disponible"
 
-#: src/cboard.c:1293
+#: src/cboard.c:1297
 msgid "Move:"
 msgstr "Movimiento:"
 
-#: src/cboard.c:1299 src/cboard.c:1327
+#: src/cboard.c:1303 src/cboard.c:1331
 msgid "empty"
 msgstr "vacio"
 
-#: src/cboard.c:1303 src/cboard.c:1331
+#: src/cboard.c:1307 src/cboard.c:1335
 msgid " (Annotated"
 msgstr " (Anotado"
 
-#: src/cboard.c:1321
+#: src/cboard.c:1325
 msgid "Next:"
 msgstr "Próx:"
 
-#: src/cboard.c:1321
+#: src/cboard.c:1325
 msgid "Next move:"
 msgstr "Mov. Próx.:"
 
-#: src/cboard.c:1349
+#: src/cboard.c:1353
 msgid "Prev.:"
 msgstr "Prev.:"
 
-#: src/cboard.c:1349
+#: src/cboard.c:1353
 msgid "Prev move:"
 msgstr "Mov. Prev.:"
 
-#: src/cboard.c:1423 src/cboard.c:1424
+#: src/cboard.c:1427 src/cboard.c:1428
 msgid "abcdefgh"
 msgstr "abcdefgh"
 
-#: src/cboard.c:1429
+#: src/cboard.c:1433
 msgid "Select Pawn Promotion Piece"
 msgstr "Seleciona Pieza de Promoción de Peón"
 
-#: src/cboard.c:1429
+#: src/cboard.c:1433
 msgid "R/N/B/Q"
 msgstr "R/N/B/Q"
 
-#: src/cboard.c:1430
+#: src/cboard.c:1434
 msgid "R = Rook, N = Knight, B = Bishop, Q = Queen"
 msgstr "R = Torre, N = Caballo, B = Alfil, Q = Dama"
 
-#: src/cboard.c:1509
+#: src/cboard.c:1513
 msgid "File:"
 msgstr "Arch:"
 
-#: src/cboard.c:1512
+#: src/cboard.c:1516
 msgid "Game:"
 msgstr "Juego:"
 
-#: src/cboard.c:1566
+#: src/cboard.c:1570
 msgid "Flags:"
 msgstr "Marcas:"
 
-#: src/cboard.c:1570
+#: src/cboard.c:1574
 msgid "move history"
 msgstr "historial de movs."
 
-#: src/cboard.c:1573
+#: src/cboard.c:1577
 msgid "edit"
 msgstr "editor"
 
-#: src/cboard.c:1576
+#: src/cboard.c:1580
 msgid "play"
 msgstr "jugar"
 
-#: src/cboard.c:1579 src/cboard.c:1614
+#: src/cboard.c:1583 src/cboard.c:1618
 msgid "(empty value)"
 msgstr "(valor vacio)"
 
-#: src/cboard.c:1583
+#: src/cboard.c:1587
 msgid "Mode:"
 msgstr "Modo:"
 
-#: src/cboard.c:1587
+#: src/cboard.c:1591
 msgid " (human/human)"
 msgstr " (humano/humano)"
 
-#: src/cboard.c:1589
+#: src/cboard.c:1593
 msgid " (engine/engine)"
 msgstr " (motor/motor)"
 
-#: src/cboard.c:1592
+#: src/cboard.c:1596
 msgid " (engine/human)"
 msgstr " (motor/humano)"
 
-#: src/cboard.c:1592
+#: src/cboard.c:1596
 msgid " (human/engine)"
 msgstr " (humano/motor)"
 
-#: src/cboard.c:1602
+#: src/cboard.c:1606
 msgid "pondering..."
 msgstr "ponderando..."
 
-#: src/cboard.c:1605
+#: src/cboard.c:1609
 msgid "ready"
 msgstr "listo"
 
-#: src/cboard.c:1608
+#: src/cboard.c:1612
 msgid "initializing..."
 msgstr "iniciando..."
 
-#: src/cboard.c:1611 src/cboard.c:1619
+#: src/cboard.c:1615 src/cboard.c:1623
 msgid "offline"
 msgstr "desconectado"
 
-#: src/cboard.c:1621
+#: src/cboard.c:1625
 msgid "Engine:"
 msgstr "Motor:"
 
-#: src/cboard.c:1626
+#: src/cboard.c:1630
 msgid "Turn:"
 msgstr "Turno:"
 
-#: src/cboard.c:1627 src/cboard.c:1629
+#: src/cboard.c:1631 src/cboard.c:1633
 msgid "white"
 msgstr "blanco"
 
-#: src/cboard.c:1627 src/cboard.c:1636
+#: src/cboard.c:1631 src/cboard.c:1640
 msgid "black"
 msgstr "negro"
 
-#: src/cboard.c:1643
+#: src/cboard.c:1647
 msgid "Total:"
 msgstr "Total:"
 
-#: src/cboard.c:1650 src/cboard.c:4717 src/input.c:112 src/menu.c:139
+#: src/cboard.c:1654 src/cboard.c:4721 src/input.c:112 src/menu.c:137
 msgid "Type F1 for help"
 msgstr "F1 Ayuda"
 
-#: src/cboard.c:1750 src/cboard.c:4420
+#: src/cboard.c:1754 src/cboard.c:4427
 msgid "Engine IO Window"
 msgstr "Ventana IO de Motor"
 
-#: src/cboard.c:1886
+#: src/cboard.c:1890
 msgid "Error Matching Regular Expression"
 msgstr "Error Coincidencia de expresiones regulares"
 
-#: src/cboard.c:1911 src/cboard.c:3905 src/cboard.c:3922
+#: src/cboard.c:1915 src/cboard.c:3915 src/cboard.c:3932
 msgid "Cannot delete last game."
 msgstr "No puede borrar ultimo juego"
 
-#: src/cboard.c:1940 src/cboard.c:1956 src/cboard.c:3125
+#: src/cboard.c:1944 src/cboard.c:1960 src/cboard.c:3135
 msgid "Error Compiling Regular Expression"
 msgstr "Error Compilar Expresión Regular"
 
-#: src/cboard.c:2097
+#: src/cboard.c:2101
 msgid "Game Status"
 msgstr "Estatus de Juego"
 
-#: src/cboard.c:2100
+#: src/cboard.c:2104
 msgid "Roster Tags"
 msgstr "Etiquetas PGN"
 
-#: src/cboard.c:2103
+#: src/cboard.c:2107
 msgid "Move History"
 msgstr "Historial de Movimientos"
 
-#: src/cboard.c:2303
+#: src/cboard.c:2305
 msgid "Maximum number of time controls reached"
 msgstr "Maximum number of time controls reached"
 
-#: src/cboard.c:2359
+#: src/cboard.c:2361
 msgid "Invalid clock specification"
 msgstr "Especificación de reloj válido"
 
-#: src/cboard.c:2457
+#: src/cboard.c:2459
 msgid "Set Clock"
 msgstr "Configuar Relog"
 
-#: src/cboard.c:2458
+#: src/cboard.c:2460
 msgid ""
 "Format: [W | B] [+]T[+I] | ++I | M/T [M/T [...] [SD/T]] [+I]\n"
 "T = time (hms), I = increment, M = moves per, SD = sudden death\n"
 "e.g., 30m or 4m+12s or 35/90m SD/30m"
 msgstr ""
 
-#: src/cboard.c:2512
+#: src/cboard.c:2514
 msgid "Engine Command"
 msgstr "Comando de Motor"
 
-#: src/cboard.c:2538
+#: src/cboard.c:2540
 msgid "Press 'g' to start the game"
 msgstr "Presiona 'g' para inciar el juego"
 
-#: src/cboard.c:2544
+#: src/cboard.c:2546
 msgid ""
 "You may only switch sides at the start of the \n"
 "game. Press ^K or ^N to begin a new game."
 msgstr ""
 
-#: src/cboard.c:2755 src/cboard.c:2760
+#: src/cboard.c:2764
+#, fuzzy, c-format
+msgid ""
+"It is not your turn to move. You may switch playing sides by pressing \"%lc"
+"\"."
+msgstr "Este no es tu turno de mover. puede cambiar de lado "
+
+#: src/cboard.c:2772
 msgid "It is not your turn to move. You can switch sides "
 msgstr "Este no es tu turno de mover. puede cambiar de lado "
 
-#: src/cboard.c:2882 src/cboard.c:2923
+#: src/cboard.c:2892 src/cboard.c:2933
 msgid "Play Mode Keys (* = can take a repeat count)"
 msgstr "Teclas Modo Jugar (* = puede tomar un número de repeticiones)"
 
-#: src/cboard.c:2887 src/cboard.c:3645
+#: src/cboard.c:2897 src/cboard.c:3655
 msgid "History Mode Keys (* = can take a repeat count)"
 msgstr "Teclas Modo Historial (* = puede tomar un número de repeticiones)"
 
-#: src/cboard.c:2892 src/cboard.c:3059
+#: src/cboard.c:2902 src/cboard.c:3069
 msgid "Edit Mode Keys (* = can take a repeat count)"
 msgstr "Teclas Modo Editor (* = puede tomar un número de repeticiones)"
 
-#: src/cboard.c:2897
+#: src/cboard.c:2907
 msgid "Global Game Keys (* = can take a repeat count)"
 msgstr "Teclas de Juego Globales (* = puede tomar un número de repeticiones)"
 
-#: src/cboard.c:2908
+#: src/cboard.c:2918
 msgid "Command Key Index"
 msgstr "Índice de Teclas Comando"
 
-#: src/cboard.c:2909
+#: src/cboard.c:2919
 msgid "p/h/e/g or any other key to quit"
 msgstr "p/h/e/g ó cualquier otra tecla para salir"
 
-#: src/cboard.c:2912
+#: src/cboard.c:2922
 msgid ""
 "p - play mode keys\n"
 "h - history mode keys\n"
@@ -360,19 +339,19 @@ msgid ""
 "g - global game keys"
 msgstr ""
 
-#: src/cboard.c:3041
+#: src/cboard.c:3051
 msgid "Insert Piece"
 msgstr "Inserta Pieza"
 
-#: src/cboard.c:3041
+#: src/cboard.c:3051
 msgid "P=pawn, R=rook, N=knight, B=bishop, "
 msgstr "P=peón, R=torre, N=caballo, B=alfil, "
 
-#: src/cboard.c:3042
+#: src/cboard.c:3052
 msgid "Type the piece letter to insert. Lowercase "
 msgstr "Teclee letra de pieza a insertar. Minúsculas "
 
-#: src/cboard.c:3377
+#: src/cboard.c:3387
 msgid ""
 "    UP/DOWN - previous/next menu item\n"
 "   HOME/END - first/last menu item\n"
@@ -384,19 +363,19 @@ msgid ""
 "   ESCAPE/M - return to move history"
 msgstr ""
 
-#: src/cboard.c:3393 src/cboard.c:3431
+#: src/cboard.c:3403 src/cboard.c:3441
 msgid "Editing Annotation for"
 msgstr "Editando Anotación para"
 
-#: src/cboard.c:3398 src/cboard.c:3437
+#: src/cboard.c:3408 src/cboard.c:3447
 msgid "Type CTRL-t to edit NAG"
 msgstr "Teclee CTRL-t para editar NAG"
 
-#: src/cboard.c:3509
+#: src/cboard.c:3519
 msgid "Move History Tree"
 msgstr "Arbol de Historial de Movs."
 
-#: src/cboard.c:3609
+#: src/cboard.c:3619
 #, c-format
 msgid ""
 "The current move is not the final move of this round. Press \"%ls\" to "
@@ -404,92 +383,92 @@ msgid ""
 "key to cancel."
 msgstr ""
 
-#: src/cboard.c:3665
+#: src/cboard.c:3675
 msgid "Find Move Text Expression"
 msgstr "Buscar Movimiento por Expresión de texto"
 
-#: src/cboard.c:3716
+#: src/cboard.c:3726
 msgid "Jump to Move Number"
 msgstr "Saltar a Mov. Número"
 
-#: src/cboard.c:3794
+#: src/cboard.c:3804
 #, c-format
 msgid "Loading... %i%% (%i games)"
 msgstr "Cargando... %i%% (%i juegos)"
 
-#: src/cboard.c:3919
+#: src/cboard.c:3929
 msgid "Delete the current game?"
 msgstr "¿Borrar el juego actual?"
 
-#: src/cboard.c:3926
+#: src/cboard.c:3936
 msgid "Delete all games marked for deletion?"
 msgstr "Borra todos los juegos marcados para borrar"
 
-#: src/cboard.c:3932 src/cboard.c:4392 src/cboard.c:4409
+#: src/cboard.c:3942 src/cboard.c:4399 src/cboard.c:4416
 msgid "[ Yes or No ]"
 msgstr "[ Si ó No ]"
 
-#: src/cboard.c:3947
+#: src/cboard.c:3957
 msgid "No matches found"
 msgstr "No se han encontrado coincidencias"
 
-#: src/cboard.c:4148
+#: src/cboard.c:4155
 msgid "Save Game Filename"
 msgstr "Guardar Juego en archivo"
 
-#: src/cboard.c:4148 src/cboard.c:4332
+#: src/cboard.c:4155 src/cboard.c:4339
 msgid "Type TAB for file browser"
 msgstr "Teclee TAB para explorador de archivos"
 
-#: src/cboard.c:4162
+#: src/cboard.c:4169
 msgid "Save game aborted."
 msgstr "Guardar juego abortado."
 
-#: src/cboard.c:4230
+#: src/cboard.c:4237
 msgid "Find Game by Tag Expression"
 msgstr "Buscar Juego por Expresión de Etiqueta"
 
-#: src/cboard.c:4231
+#: src/cboard.c:4238
 msgid "[name expression:]value expression"
 msgstr "[expresión de nombre:]expresión de valor"
 
-#: src/cboard.c:4264
+#: src/cboard.c:4271
 msgid "Jump to Game Number"
 msgstr "Saltar a Juego Número"
 
-#: src/cboard.c:4332
+#: src/cboard.c:4339
 msgid "Load Filename"
 msgstr "Cargar Archivo"
 
-#: src/cboard.c:4341
+#: src/cboard.c:4348
 #, c-format
 msgid ""
 "There is more than one game loaded. Press \"%ls\" to save the current game, "
 "\"%ls\" to save all games or any other key to cancel."
 msgstr ""
 
-#: src/cboard.c:4393
+#: src/cboard.c:4400
 msgid "Really start a new game from scratch?"
 msgstr "¿Realmente desea iniciar un juego nuevo desde cero?"
 
-#: src/cboard.c:4410
+#: src/cboard.c:4417
 msgid "Want to Quit?"
 msgstr "¿Desea salir?"
 
-#: src/cboard.c:4482
+#: src/cboard.c:4489
 #, c-format
 msgid "Repeat %i"
 msgstr "Repetir %i"
 
-#: src/cboard.c:4598
+#: src/cboard.c:4602
 msgid "FEN parse error."
 msgstr "error de análisis de FEN"
 
-#: src/cboard.c:4631
+#: src/cboard.c:4635
 msgid "PERL Subroutine Filter"
 msgstr "Filtro de Subrutinas PERL"
 
-#: src/cboard.c:4971
+#: src/cboard.c:4975
 msgid ""
 "Usage: cboard [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
 "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
@@ -506,70 +485,78 @@ msgid ""
 "  -h  This help text.\n"
 msgstr ""
 
-#: src/cboard.c:5076
+#: src/cboard.c:5080
 msgid "Broken pipe. Quitting."
 msgstr "Tuberia rota. Saliendo"
 
-#: src/cboard.c:5109
+#: src/cboard.c:5113
 #, c-format
 msgid "Loading... %i%% (%i games)%c"
 msgstr ""
 
-#: src/cboard.c:5285
+#: src/cboard.c:5289
 msgid "y"
 msgstr "s"
 
-#: src/cboard.c:5286 src/cboard.c:5290
+#: src/cboard.c:5290 src/cboard.c:5294
 msgid "a"
 msgstr "a"
 
-#: src/cboard.c:5287
+#: src/cboard.c:5291
 msgid "o"
 msgstr "s"
 
-#: src/cboard.c:5288
+#: src/cboard.c:5292
 msgid "r"
 msgstr "r"
 
-#: src/cboard.c:5289
+#: src/cboard.c:5293
 msgid "c"
 msgstr "a"
 
-#: src/cboard.c:5291
+#: src/cboard.c:5295
 msgid "Event"
 msgstr "Evento"
 
-#: src/cboard.c:5292
+#: src/cboard.c:5296
 msgid "Site"
 msgstr "Lugar"
 
-#: src/cboard.c:5293
+#: src/cboard.c:5297
 msgid "Date"
 msgstr "Fecha"
 
-#: src/cboard.c:5294
+#: src/cboard.c:5298
 msgid "Round"
 msgstr "Ronda"
 
-#: src/cboard.c:5295
+#: src/cboard.c:5299
 msgid "White"
 msgstr "Blanco"
 
-#: src/cboard.c:5296
+#: src/cboard.c:5300
 msgid "Black"
 msgstr "Negro"
 
-#: src/cboard.c:5297
+#: src/cboard.c:5301
 msgid "Result"
 msgstr "Result"
 
-#: src/cboard.c:5309
+#: src/cboard.c:5313
 msgid "Could not initialize curses."
 msgstr "No se pudo inicializar curses."
 
-#: src/cboard.c:5315
+#: src/cboard.c:5319
 msgid "Need at least an 74x23 terminal."
 msgstr "Necesita al menos un terminal de 74x23."
+
+#: src/common.h:92
+msgid "[ press any key to continue ]"
+msgstr "[ presiona cualquier tecla para continuar ]"
+
+#: src/common.h:93
+msgid "[ ERROR ]"
+msgstr "[ ERROR ]"
 
 #: src/engine.c:111
 msgid "Could not write to engine. Process no longer exists."
@@ -600,11 +587,11 @@ msgstr ""
 msgid "Filename Expression"
 msgstr "Expresión Nombre del archivo"
 
-#: src/input.c:160
+#: src/input.c:161
 msgid "Line Editing Keys"
 msgstr "Teclas de Edición de Linea"
 
-#: src/input.c:163
+#: src/input.c:164
 msgid ""
 "UP/DOWN/LEFT/RIGHT - position cursor (multiline)\n"
 "         UP/CTRL-P - previous input history\n"
@@ -620,12 +607,12 @@ msgid ""
 "             ENTER - quit with changes"
 msgstr ""
 
-#: src/menu.c:138
+#: src/menu.c:136
 #, c-format
 msgid "Item %i %s %i  %s"
 msgstr "Elem. %i %s %i  %s"
 
-#: src/menu.c:162
+#: src/menu.c:159
 msgid "empty value"
 msgstr "valor vacio"
 
@@ -648,310 +635,310 @@ msgstr "%s(%i): color invalido \"%s\""
 msgid "%s(%i): parse error"
 msgstr "%s(%i): analizar error"
 
-#: src/rcfile.c:136 src/rcfile.c:654 src/rcfile.c:812
+#: src/rcfile.c:136 src/rcfile.c:647 src/rcfile.c:805
 #, c-format
 msgid "%s(%i): invalid value \"%s\""
 msgstr "%s(%i): valor invalido \"%s\""
 
-#: src/rcfile.c:176
+#: src/rcfile.c:174
 msgid "Escape"
 msgstr "Escape"
 
-#: src/rcfile.c:179
+#: src/rcfile.c:177
 msgid "Enter"
 msgstr "Intro"
 
-#: src/rcfile.c:200
+#: src/rcfile.c:198
 msgid "PgUp"
 msgstr "RePág"
 
-#: src/rcfile.c:202
+#: src/rcfile.c:200
 msgid "PgDown"
 msgstr "Avpág"
 
-#: src/rcfile.c:209
+#: src/rcfile.c:207
 msgid "Space"
 msgstr "Espacio"
 
-#: src/rcfile.c:240
+#: src/rcfile.c:238
 msgid "history jump next"
 msgstr "historial saltar siguiente"
 
-#: src/rcfile.c:241
+#: src/rcfile.c:239
 msgid "history jump previous"
 msgstr "historial saltar anterior"
 
-#: src/rcfile.c:242
+#: src/rcfile.c:240
 msgid "next move"
 msgstr "mov. próx."
 
-#: src/rcfile.c:243
+#: src/rcfile.c:241
 msgid "previous move"
 msgstr "mov. previo"
 
-#: src/rcfile.c:244
+#: src/rcfile.c:242
 msgid "toggle half move (ply) stepping"
 msgstr "toggle half move (ply) stepping"
 
-#: src/rcfile.c:245
+#: src/rcfile.c:243
 msgid "rotate board"
 msgstr "girar el tablero"
 
-#: src/rcfile.c:246
+#: src/rcfile.c:244
 msgid "jump to move number"
 msgstr "salta a mov. número"
 
-#: src/rcfile.c:247
+#: src/rcfile.c:245
 msgid "new move text expression"
 msgstr "nueva expresión de movimiento"
 
-#: src/rcfile.c:248
+#: src/rcfile.c:246
 msgid "find next move text expression"
 msgstr "buscar expresión de movimiento siguiente"
 
-#: src/rcfile.c:249
+#: src/rcfile.c:247
 msgid "find previous move text expression"
 msgstr "buscar expresión de movimiento siguiente"
 
-#: src/rcfile.c:250
+#: src/rcfile.c:248
 msgid "annotate the previous move"
 msgstr "anotacion de movimiento previo"
 
-#: src/rcfile.c:251
+#: src/rcfile.c:249
 msgid "next variation of the previous move"
 msgstr "siguiente variacion de el mov. anterior"
 
-#: src/rcfile.c:252
+#: src/rcfile.c:250
 msgid "previous variation of the previous move"
 msgstr "variación anterior del movimiento anterior"
 
-#: src/rcfile.c:253
+#: src/rcfile.c:251
 msgid "move history tree"
 msgstr "arbol de historial de movs."
 
-#: src/rcfile.c:254 src/rcfile.c:266 src/rcfile.c:284
+#: src/rcfile.c:252 src/rcfile.c:264 src/rcfile.c:282
 msgid "more help"
 msgstr "más ayuda"
 
-#: src/rcfile.c:256
+#: src/rcfile.c:254
 msgid "exit history mode"
 msgstr "salir de modo historial"
 
-#: src/rcfile.c:258 src/rcfile.c:270
+#: src/rcfile.c:256 src/rcfile.c:268
 msgid "select piece for movement"
 msgstr "seleciona pieza para mover"
 
-#: src/rcfile.c:259 src/rcfile.c:271
+#: src/rcfile.c:257 src/rcfile.c:269
 msgid "commit selected piece"
 msgstr "mueve pieza selecionada"
 
-#: src/rcfile.c:260 src/rcfile.c:272
+#: src/rcfile.c:258 src/rcfile.c:270
 msgid "cancel selected piece"
 msgstr "cancela pieza seleccionada"
 
-#: src/rcfile.c:261
+#: src/rcfile.c:259
 msgid "remove the piece under the cursor"
 msgstr "retirar la pieza bajo el cursor"
 
-#: src/rcfile.c:262
+#: src/rcfile.c:260
 msgid "insert piece"
 msgstr "inserta pieza"
 
-#: src/rcfile.c:263
+#: src/rcfile.c:261
 msgid "toggle castling availability"
 msgstr "alterna disponibilidad de enroques"
 
-#: src/rcfile.c:264
+#: src/rcfile.c:262
 msgid "toggle enpassant square"
 msgstr "toggle enpassant square"
 
-#: src/rcfile.c:265
+#: src/rcfile.c:263
 msgid "toggle turn"
 msgstr "cambiar turno"
 
-#: src/rcfile.c:268
+#: src/rcfile.c:266
 msgid "exit edit mode"
 msgstr "salir modo editor"
 
-#: src/rcfile.c:273
+#: src/rcfile.c:271
 msgid "set clock"
 msgstr "configurar relog"
 
-#: src/rcfile.c:275
+#: src/rcfile.c:273
 msgid "undo previous move"
 msgstr "deshacer movimiento previo"
 
-#: src/rcfile.c:276
+#: src/rcfile.c:274
 msgid "force the chess engine to make the next move"
 msgstr "obliga al motor de ajedrez a hacer el próx. mov."
 
-#: src/rcfile.c:277
+#: src/rcfile.c:275
 msgid "send a command to the chess engine"
 msgstr "envio un comando al motor de ajedrez"
 
-#: src/rcfile.c:278
+#: src/rcfile.c:276
 msgid "toggle engine/human play"
 msgstr "alternar jugar motor/humano"
 
-#: src/rcfile.c:279
+#: src/rcfile.c:277
 msgid "toggle engine/engine play"
 msgstr "alternar jugar motor/motor"
 
-#: src/rcfile.c:280
+#: src/rcfile.c:278
 msgid "toggle human/human play"
 msgstr "alternar jugar humano/humano"
 
-#: src/rcfile.c:281
+#: src/rcfile.c:279
 msgid "toggle pausing of this game"
 msgstr "alternar pausa de este juego"
 
-#: src/rcfile.c:282
+#: src/rcfile.c:280
 msgid "enter history mode"
 msgstr "entrar a modo historial"
 
-#: src/rcfile.c:283
+#: src/rcfile.c:281
 msgid "enter edit mode"
 msgstr "entrar a modo editor"
 
-#: src/rcfile.c:287
+#: src/rcfile.c:285
 msgid "edit roster tags"
 msgstr "editar etiquetas pgn"
 
-#: src/rcfile.c:288
+#: src/rcfile.c:286
 msgid "view roster tags"
 msgstr "ver etiquetas pgn"
 
-#: src/rcfile.c:289
+#: src/rcfile.c:287
 msgid "new find game expression"
 msgstr "nueva busqueda de expresión de juego"
 
-#: src/rcfile.c:290
+#: src/rcfile.c:288
 msgid "find next game"
 msgstr "buscar próximo juego"
 
-#: src/rcfile.c:291
+#: src/rcfile.c:289
 msgid "find previous game"
 msgstr "buscar juego anterior"
 
-#: src/rcfile.c:292
+#: src/rcfile.c:290
 msgid "new game or round"
 msgstr "nuevo juego o ronda"
 
-#: src/rcfile.c:293
+#: src/rcfile.c:291
 msgid "new game from scratch"
 msgstr "nuevo juego desde cero"
 
-#: src/rcfile.c:294
+#: src/rcfile.c:292
 msgid "copy current game"
 msgstr "copia juego actual"
 
-#: src/rcfile.c:295
+#: src/rcfile.c:293
 msgid "next game"
 msgstr "juego próx."
 
-#: src/rcfile.c:296
+#: src/rcfile.c:294
 msgid "previous game"
 msgstr "juego previo"
 
-#: src/rcfile.c:297
+#: src/rcfile.c:295
 msgid "jump to game"
 msgstr "salta a juego"
 
-#: src/rcfile.c:298
+#: src/rcfile.c:296
 msgid "toggle delete flag"
 msgstr "alterna marca de borrado"
 
-#: src/rcfile.c:299
+#: src/rcfile.c:297
 msgid "delete the current or flagged games"
 msgstr "borra el juego actual o los marcados"
 
-#: src/rcfile.c:300
+#: src/rcfile.c:298
 msgid "load a PGN file"
 msgstr "cargar un archivo PGN"
 
-#: src/rcfile.c:301
+#: src/rcfile.c:299
 msgid "save game"
 msgstr "juego guardado"
 
-#: src/rcfile.c:302
+#: src/rcfile.c:300
 msgid "toggle board details"
 msgstr "alterna detalles de tablero"
 
-#: src/rcfile.c:303
+#: src/rcfile.c:301
 msgid "toggle strict castling"
 msgstr "alternar enroque estricto"
 
-#: src/rcfile.c:304
+#: src/rcfile.c:302
 msgid "toggle chess engine IO window"
 msgstr "alterna ventana IO de motor"
 
-#: src/rcfile.c:306
+#: src/rcfile.c:304
 msgid "Call PERL subroutine"
 msgstr "Llame subrutina PERL "
 
-#: src/rcfile.c:308
+#: src/rcfile.c:306
 msgid "version information"
 msgstr "información de versión"
 
-#: src/rcfile.c:309
+#: src/rcfile.c:307
 msgid "quit"
 msgstr "salir"
 
-#: src/rcfile.c:374
+#: src/rcfile.c:370
 msgid "no description"
 msgstr "no hay descripción"
 
-#: src/rcfile.c:391
+#: src/rcfile.c:408
 #, c-format
 msgid "%s(%i): unbalanced quotes"
 msgstr "%s(%i): citas desequilibradas"
 
-#: src/rcfile.c:465
-#, c-format
-msgid "%s(%i): parse error \"%s\""
+#: src/rcfile.c:450
+#, fuzzy, c-format
+msgid "%s(%i): parse error \"%ls\""
 msgstr "%s(%i): analizar error \"%s\""
 
-#: src/rcfile.c:493 src/rcfile.c:557
+#: src/rcfile.c:481 src/rcfile.c:550
 #, c-format
 msgid "%s(%i): too few arguments"
 msgstr "%s(%i): muy pocos argumentos"
 
-#: src/rcfile.c:502 src/rcfile.c:568
+#: src/rcfile.c:490 src/rcfile.c:561
 #, c-format
 msgid "%s(%i): invalid game mode \"%s\""
 msgstr "%s(%i): modo de juego invalido \"%s\""
 
-#: src/rcfile.c:512
-#, c-format
-msgid "%s(%i): key \"%s\" conflicts with a global key"
+#: src/rcfile.c:500
+#, fuzzy, c-format
+msgid "%s(%i): key \"%ls\" conflicts with a global key"
 msgstr "%s(%i): tecla \"%s\" en conflicto con una tecla global"
 
-#: src/rcfile.c:526
+#: src/rcfile.c:514
 #, c-format
 msgid "%s(%i): invalid command \"%s\""
 msgstr "%s(%i): comando invalido \"%s\""
 
-#: src/rcfile.c:619
+#: src/rcfile.c:612
 #, c-format
 msgid "%s(%i): parse error %i"
 msgstr "%s(%i): analizar error %i"
 
-#: src/rcfile.c:630 src/rcfile.c:646 src/rcfile.c:704
+#: src/rcfile.c:623 src/rcfile.c:639 src/rcfile.c:697
 #, c-format
 msgid "%s(%i): value is not an integer"
 msgstr "%s(%i): el valor no es un entero"
 
-#: src/rcfile.c:667
+#: src/rcfile.c:660
 #, c-format
 msgid "%s(%i): token names must match 0-9A-Za-z_."
 msgstr "%s(%i): nombres simbólicos deben coincidir 0-9A-Za-z_."
 
-#: src/rcfile.c:710
+#: src/rcfile.c:703
 #, c-format
 msgid "%s(%i): invalid value"
 msgstr "%s(%i): valor invalido"
 
-#: src/rcfile.c:830
+#: src/rcfile.c:823
 #, c-format
 msgid "%s(%i): invalid parameter \"%s\""
 msgstr "%s(%i): parametro invalido \"%s\""
@@ -982,23 +969,23 @@ msgstr "Edicion de Etiquetas abortada"
 msgid "Type CTRL-t for country codes"
 msgstr "Teclee CTRL-t para códigos de país"
 
-#: src/tags.c:335 src/tags.c:368
+#: src/tags.c:335 src/tags.c:369
 msgid "Editing Tag"
 msgstr "Editando Etiqueta"
 
-#: src/tags.c:380
+#: src/tags.c:381
 msgid "New Tag Name"
 msgstr "Nuevo Nombre de Etiqueta"
 
-#: src/tags.c:391
+#: src/tags.c:392
 msgid "Cannot remove the Seven Tag Roster"
 msgstr "No se puede eliminar la Septima Etiqueta PGN"
 
-#: src/tags.c:439
+#: src/tags.c:440
 msgid "Tag Editing Keys"
 msgstr "Teclas de Editor de Etiquetas"
 
-#: src/tags.c:441
+#: src/tags.c:442
 msgid ""
 "    UP/DOWN - previous/next menu item\n"
 "   HOME/END - first/last menu item\n"
@@ -1013,11 +1000,11 @@ msgid ""
 "     ESCAPE - quit without changes"
 msgstr ""
 
-#: src/tags.c:457
+#: src/tags.c:458
 msgid "Tag Viewing Keys"
 msgstr "Teclas de Visor de Etiquetas"
 
-#: src/tags.c:459
+#: src/tags.c:460
 msgid ""
 "    UP/DOWN - previous/next menu item\n"
 "   HOME/END - first/last menu item\n"
@@ -1027,15 +1014,15 @@ msgid ""
 "     ESCAPE - cancel"
 msgstr ""
 
-#: src/tags.c:479
+#: src/tags.c:480
 msgid "Viewing Tag"
 msgstr "Visor de Etiquetas"
 
-#: src/tags.c:547
+#: src/tags.c:548
 msgid "Editing Roster Tags"
 msgstr "Editando Etiquetas PGN"
 
-#: src/tags.c:547
+#: src/tags.c:548
 msgid "Viewing Roster Tags"
 msgstr "Visor de Etiquetas PGN"
 

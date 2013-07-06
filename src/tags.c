@@ -55,7 +55,7 @@ static int init_country_codes()
     int cindex = 0;
 
     if ((fp = fopen(config.ccfile, "r")) == NULL) {
-	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", config.ccfile, strerror(errno));
+	cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", config.ccfile, strerror(errno));
 	return 1;
     }
 
@@ -112,7 +112,7 @@ static struct menu_item_s **get_cc_items(WIN *win)
 
 static void do_cc_help(struct menu_input_s *m)
 {
-    message(_("Country Code Keys"), _("[ press any key to continue ]"), "%s",
+    message(_("Country Code Keys"), ANY_KEY_STR, "%s",
 	    _ (
 	       "    UP/DOWN - previous/next menu item\n"
 	       "   HOME/END - first/last menu item\n"
@@ -389,7 +389,7 @@ static void edit_tag_remove(struct menu_input_s *m)
     int i, n = pgn_tag_total(t);
 
     if (m->selected < 7) {
-        cmessage(NULL, _("[ press any key to continue ]"), "%s", _ ("Cannot remove the Seven Tag Roster"));
+        cmessage(NULL, ANY_KEY_STR, "%s", _ ("Cannot remove the Seven Tag Roster"));
 	return;
     }
 
@@ -437,7 +437,7 @@ static void edit_tag_save(struct menu_input_s *m)
 
 static void edit_tag_help(struct menu_input_s *m)
 {
-    message(_("Tag Editing Keys"), _("[ press any key to continue ]"),
+    message(_("Tag Editing Keys"), ANY_KEY_STR,
 	    _ (
 	       "    UP/DOWN - previous/next menu item\n"
 	       "   HOME/END - first/last menu item\n"
@@ -455,7 +455,7 @@ static void edit_tag_help(struct menu_input_s *m)
 
 static void view_tag_help(struct menu_input_s *m)
 {
-  message(_("Tag Viewing Keys"), _("[ press any key to continue ]"),
+  message(_("Tag Viewing Keys"), ANY_KEY_STR,
 	  _ (
 	     "    UP/DOWN - previous/next menu item\n"
 	     "   HOME/END - first/last menu item\n"
@@ -479,7 +479,7 @@ static void view_tag_value(struct menu_input_s *m)
 
     snprintf(buf, sizeof(buf), "%s \"%ls\"", _("Viewing Tag"), wc);
     free (wc);
-    construct_message(buf, _("[ press any key to continue ]"), 0, 1, NULL,
+    construct_message(buf, ANY_KEY_STR, 0, 1, NULL,
 		      NULL, NULL, NULL, 0, 0, item->value);
 }
 

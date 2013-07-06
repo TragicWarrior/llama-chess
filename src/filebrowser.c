@@ -107,7 +107,7 @@ new_glob:
 #else
     if (glob(pattern, x, NULL, &g) != 0) {
 #endif
-	cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "glob() failed:\n%s", pattern);
+	cmessage(ERROR_STR, ANY_KEY_STR, "glob() failed:\n%s", pattern);
 	return NULL;
     }
 
@@ -207,7 +207,7 @@ new_glob:
 
 static void file_browser_help(struct menu_input_s *m)
 {
-    message(_("File Browser Keys"), _("[ press any key to continue ]"), "%s",
+    message(_("File Browser Keys"), ANY_KEY_STR, "%s",
 	    _ (
 	       "    UP/DOWN - previous/next menu item\n"
 	       "   HOME/END - first/last menu item\n"
@@ -227,13 +227,13 @@ static void file_browser_select(struct menu_input_s *m)
     struct stat st;
 
     if (stat(files[m->selected]->path, &st) == -1) {
-	message(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s", strerror(errno));
+	message(ERROR_STR, ANY_KEY_STR, "%s", strerror(errno));
 	return;
     }
 
     if (S_ISDIR(st.st_mode)) {
 	if (access(files[m->selected]->path, R_OK) != 0) {
-	    cmessage(files[m->selected]->path, _("[ press any key to continue ]"), "%s", strerror(errno));
+	    cmessage(files[m->selected]->path, ANY_KEY_STR, "%s", strerror(errno));
 	    return;
 	}
 
@@ -341,7 +341,7 @@ void file_browser(void *arg)
 	strncpy(path, p, sizeof(path)-1);
 
 	if (access(path, R_OK) == -1) {
-	    cmessage(_("[ ERROR ]"), _("[ press any key to continue ]"), "%s: %s", path, strerror(errno));
+	    cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", path, strerror(errno));
 	    getcwd(path, sizeof(path));
 	}
     }

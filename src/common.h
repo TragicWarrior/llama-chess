@@ -89,6 +89,9 @@
 #include <sys/time.h>
 #define MAX_TC		8	/* Time controls. */
 
+#define ANY_KEY_STR             _("[ press any key to continue ]")
+#define ERROR_STR               _("[ ERROR ]")
+
 struct clock_s {
     struct timeval elapsed;
     unsigned short move;	/* move count */
