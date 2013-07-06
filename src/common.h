@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#include <wchar.h>
+
 #if defined(HAVE_NCURSESW_CURSES_H)
 #include <ncursesw/curses.h>
 #elif defined(HAVE_NCURSESW_H)
