@@ -808,6 +808,7 @@ static void set_default_tags(GAME g)
     char tbuf[11] = {0};
     struct tm *tp;
     struct passwd *pw = getpwuid(getuid());
+    char host[64] = { 0 };
 
     time(&now);
     tp = localtime(&now);
@@ -817,12 +818,13 @@ static void set_default_tags(GAME g)
     if (pgn_tag_add(&g->tag, "Event", "?") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Site", "?") != E_PGN_OK)
+    gethostname (host, sizeof(host)-1);
+    if (pgn_tag_add(&g->tag, "Site", host) != E_PGN_OK)
 	warn("pgn_tag_add()");
-	
+
     if (pgn_tag_add(&g->tag, "Date", tbuf) != E_PGN_OK)
 	warn("pgn_tag_add()");
-	
+
     if (pgn_tag_add(&g->tag, "Round", "-") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
