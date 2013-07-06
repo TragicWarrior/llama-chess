@@ -6,8 +6,10 @@ validate and save to (optionally reduced) PGN format. Multiple games
 (human/human, human/engine, engine/engine) can be loaded, created, searched
 and edited. You can also customize the key bindings and create macros.
 
-Builds on Solaris, Linux, *BSD (but not NetBSD as it doesn't have libpanel
-from libcurses for some reason), Darwin and Linux.
+Since there are many variations of the curses library, CBoard requires
+NCurses to be installed to make porting to other operating systems
+easier. There are known issues with Sun/Solaris and NetBSD, although
+CBoard has been tested to work well on OpenBSD, FreeBSD and Linux.
 
 Read INSTALL for generic build and installation details. After installing,
 type "cboard -h" for command-line options or just "cboard" then press F1 for

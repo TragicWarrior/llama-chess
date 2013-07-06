@@ -2109,7 +2109,6 @@ static void draw_window_decor()
 	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
 }
 
-#ifdef HAVE_WRESIZE
 static void do_window_resize()
 {
     if (LINES < 23 || COLS < 74)
@@ -2131,7 +2130,6 @@ static void do_window_resize()
     draw_window_decor();
     update_all(gp);
 }
-#endif
 
 void stop_clock()
 {
@@ -4545,11 +4543,8 @@ static int globalkeys()
 		      d->c_col = 1;
 
 		  return 1;
-#ifdef HAVE_WRESIZE
 	case KEY_RESIZE:
-//		  do_window_resize();
 		  return 1;
-#endif
 	case 0:
 	default:
 		  for (i = 0; global_keys[i]; i++) {
