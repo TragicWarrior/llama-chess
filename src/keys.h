@@ -46,7 +46,7 @@ struct key_s {
 
 struct macro_s {
     wint_t c;
-    int *keys;
+    wint_t *keys;
     int n;
     int total;
     int mode;

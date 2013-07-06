@@ -282,7 +282,7 @@ static void edit_tag_add_finalize(WIN *w)
 }
 
 static void set_menu_stuff(TAG **t, char *name, char **init, int *type,
-	int *lines, input_func **func, int *key, char **eprompt, void **arg)
+	int *lines, input_func **func, wint_t *key, char **eprompt, void **arg)
 {
     int n;
     char *p;
@@ -321,7 +321,7 @@ static void edit_tag_value(struct menu_input_s *m)
     char *name;
     int type = -1;
     input_func *func = NULL;
-    int key = 0;
+    wint_t key = 0;
     char *eprompt = NULL;
     void *arg = NULL;
     int lines = MAX_PGN_LINE_LEN / INPUT_WIDTH;
@@ -347,7 +347,8 @@ static void edit_tag_add_name_finalize(WIN *w)
     char buf[COLS - 4];
     char *init = NULL;
     char *name;
-    int key = 0, type = -1;
+    wint_t key = 0;
+    int type = -1;
     input_func *func = NULL;
     char *eprompt = NULL;
     int lines = MAX_PGN_LINE_LEN / INPUT_WIDTH;

@@ -54,7 +54,7 @@ struct input_s {
     char **extra;
     input_func *func;
     char *arg;
-    int c;
+    wint_t c;
     void *data;
     int reset;
     int hist;
@@ -68,7 +68,7 @@ struct input_data_s {
 };
 
 WIN *construct_input(const char *title, const char *init, int lines, int reset,
-	const char *extra_help, input_func *func, void *arg, int key,
+	const char *extra_help, input_func *func, void *arg, wint_t key,
 	struct input_data_s *id, int history, int type, ...);
 
 #endif

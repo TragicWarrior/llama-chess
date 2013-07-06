@@ -4828,7 +4828,7 @@ void game_loop()
 	 * This is needed to detect terminal resizing.
 	 */
 	doupdate();
-    if (LINES != LINES_OLD || COLS != COLS_OLD){
+	if (LINES != LINES_OLD || COLS != COLS_OLD) {
 		COLS_OLD = COLS;
 		LINES_OLD = LINES;
 		do_window_resize();
@@ -4836,7 +4836,7 @@ void game_loop()
 
 	/*
 	 * Finds the top level window in the window stack so we know what
-	 * window the wgetch()ed key belongs to.
+	 * window the wget_wch()'ed key belongs to.
 	 */
 	if (wins) {
 	    for (i = 0; wins[i]; i++);

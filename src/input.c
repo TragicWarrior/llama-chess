@@ -108,8 +108,9 @@ static int get_input(WIN *win)
     struct input_s *in = win->data;
     char *tmp;
     struct input_data_s *data = in->data;
-    int i;
+    int i, n;
     char *prompt = _("Type F1 for help");
+    char str[MB_CUR_MAX];
 
     curs_set(1);
     window_draw_title(win->w, win->title, in->w, CP_INPUT_TITLE,
@@ -226,7 +227,9 @@ static int get_input(WIN *win)
 		tmp = (in->buf[0]) ? in->buf : NULL;
 	    goto done;
 	default:
-	    form_driver(in->f, (win->c & A_CHARTEXT));
+	    n = wctomb (str, win->c);
+	    for (i = 0; n != -1 && i < n; i++)
+	      form_driver(in->f, (unsigned char )str[i]);
 	    break;
     }
 
@@ -295,7 +298,7 @@ done:
  * FIXME form validation is buggy (integers).
  */
 WIN *construct_input(const char *title, const char *init, int lines, int reset,
-	const char *extra_help, input_func *func, void *arg, int key,
+	const char *extra_help, input_func *func, void *arg, wint_t key,
 	struct input_data_s *id, int history, int type, ...)
 {
     WIN *win;

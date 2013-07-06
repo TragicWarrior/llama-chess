@@ -575,7 +575,7 @@ static void parse_macro(const char *filename, int lines, char *val)
 
     while ((c = parse_key(filename, lines, &p)) != 0) {
 	macros[i]->keys = Realloc(macros[i]->keys, (macros[i]->total + 2) *
-		sizeof(int));
+		sizeof(wint_t));
 	macros[i]->keys[macros[i]->total++] = c;
     }
 
