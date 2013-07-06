@@ -62,7 +62,7 @@ struct config_key_s {
 struct {
     int jumpcount;	// KEY_UP and KEY_DOWN in history mode.
     int linegraphics;	// Board line graphics.
-    int saveprompt;	// Prompt to save modified games on quit. FIXME
+    int saveprompt;	// Prompt to save modified games on quit.
     int deleteprompt;	// Prompt when deleting a game.
     int clevel;		// Compression level for compressed files.
     int validmoves;	// Display valid squares a selected piece can move to.
@@ -73,7 +73,7 @@ struct {
     char *ccfile;	// The pathname to the Country Code data file.
     char *savedirectory; // Directory where saved games are stored.
     char *datadir;	// ~/.cboard
-    char *engine_cmd;	// Alternate chess engine command. FIXME
+    char *engine_cmd;	// Alternate chess engine command.
     int engine_protocol; // XBoard protocol: 1 or 2
     struct color_s color[CONF_MAX_COLORS]; // Color configuration.
     TAG **tag;		// Custom PGN tags.
