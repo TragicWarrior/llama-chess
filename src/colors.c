@@ -31,7 +31,6 @@ static int next_cp;
 /*
  * Looks for a matching color pair or creates a new color pair if not found.
  */
-#ifdef HAVE_ATTR_T
 static chtype find_cp(short fg, short bg, attr_t attrs)
 {
     int i;
@@ -78,12 +77,6 @@ chtype mix_cp(chtype a, chtype b, attr_t attrs, int which)
 
     return 0;
 }
-#else
-chtype mix_cp(chtype a, chtype b, int attrs, int which)
-{
-    return a;
-}
-#endif
 
 void init_color_pairs()
 {
