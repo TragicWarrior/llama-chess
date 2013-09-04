@@ -3467,17 +3467,13 @@ void history_menu_print(WIN *win)
  * Solaris 5.9 doesn't have wattr_get() or any function that requires an
  * attr_t data type.
  */
-#ifdef HAVE_ATTR_T
     attr_t attrs;
     short pair;
-#endif
     int total;
 
     for (total = 0; hm[total]; total++);
-#ifdef HAVE_ATTR_T
     wattr_get(win->w, &attrs, &pair, NULL);
     wattroff(win->w, COLOR_PAIR(pair));
-#endif
     mvwaddch(win->w, m->print_line, 1,
 	    *p == 'W' ? *p | mix_cp(CP_BOARD_WHITE, CP_HISTORY_WINDOW, ATTRS(CP_BOARD_WHITE), A_FG_B_BG) : *p | mix_cp(CP_BOARD_BLACK, CP_HISTORY_WINDOW, ATTRS(CP_BOARD_BLACK), A_FG_B_BG));
     p++;
@@ -3492,9 +3488,7 @@ void history_menu_print(WIN *win)
     else
 	waddch(win->w, ACS_VLINE | CP_HISTORY_MENU_LG);
 
-#ifdef HAVE_ATTR_T
     wattron(win->w, COLOR_PAIR(pair) | attrs);
-#endif
 
     for (i = 2; *p; p++, i++)
 	waddch(win->w, (*p == '!') ? *p | A_BOLD : *p);
