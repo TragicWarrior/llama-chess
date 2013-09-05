@@ -846,6 +846,37 @@ int inv_int(int x)
     return fx2;
 }
 
+int coordofmove(char *move, int yorx)
+{
+    int l, i;
+
+    if (!rotate) {
+	if (!strcmp(move, "O-O"))
+	    return (yorx) ? 8 : 7;
+	else if (!strcmp(move, "O-O-O"))
+	    return (yorx) ? 8 : 3;
+    }
+    else {
+	if (!strcmp(move, "O-O"))
+	    return (yorx) ? 1 : 7;
+	else if (!strcmp(move, "O-O-O"))
+	    return (yorx) ? 1 : 3;
+    }
+
+    l = strlen(move);
+
+    if (yorx)
+	return move[l - 1] - 48;
+    else {
+	for (i = 0; i < 8; i++) {
+	    if (move[l - 2] == "abcdefgh"[i])
+		return i + 1;
+	}
+    }
+
+    return 0;
+}
+
 // FIXME: BIG_BOARD - start in dwm monocle layout.
 // Example: lxterminal -e cboard (dmenu, geany, etc.)
 void update_board_window(GAME g)
@@ -860,6 +891,13 @@ void update_board_window(GAME g)
     unsigned coords_y = 8, cxgc = 0;
     unsigned i, cpd = 0;
     struct userdata_s *d = g->data;
+    HISTORY *h = NULL;
+
+    h = pgn_history_by_n(g->hp, g->hindex - 1);
+    d->pm_row = (h && h->move && d->mode == MODE_PLAY)
+	? coordofmove(h->move, 1) : 0;
+    d->pm_col = (h && h->move && d->mode == MODE_PLAY)
+	? coordofmove(h->move, 0) : 0;
 
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
 	update_cursor(g, g->hindex);
@@ -1048,6 +1086,16 @@ void update_board_window(GAME g)
 			      bcol + 1 == d->sp.scol)) {
 			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
+			old_attrs = -1;
+		    }
+		    else if ((!BIG_BOARD &&
+			      row == ROWTOMATRIX(((rotate) ? inv_int(d->pm_row) : d->pm_row)) &&
+			      col == COLTOMATRIX(((rotate) ? inv_int(d->pm_col) : d->pm_col))) ||
+			     (BIG_BOARD &&
+			      brow + 1 == ((rotate) ? d->pm_row : inv_int(d->pm_row)) &&
+			      bcol + 1 == ((rotate) ? inv_int(d->pm_col) : d->pm_col))) {
+			attrs = mix_cp(CP_BOARD_PREVMOVE, IS_ENPASSANT(p),
+				       ATTRS(CP_BOARD_PREVMOVE), B_FG_A_BG);
 			old_attrs = -1;
 		    }
 

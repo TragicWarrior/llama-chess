@@ -125,6 +125,7 @@
 #color_board_castling		yellow	black	bold	bold
 #color_board_enpassant		magenta black	bold	bold
 #color_board_attack             blue    black   bold    reverse
+#color_board_prev_move		white	magenta	none	bold,reverse
 #
 #color_status_window	white	black
 #color_status_title	white	blue	none	reverse

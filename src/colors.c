@@ -169,6 +169,8 @@ void init_color_pairs()
 	    config.color[CONF_BENPASSANT].bg);
     init_pair(next_cp++, config.color[CONF_BATTACK].fg, 
 	      config.color[CONF_BATTACK].bg);
+    init_pair(next_cp++, config.color[CONF_BPREVMOVE].fg,
+	      config.color[CONF_BPREVMOVE].bg);
 }
 
 void set_default_colors()
@@ -178,7 +180,7 @@ void set_default_colors()
     config.color[CONF_BCOORDS].fg = COLOR_YELLOW;
     config.color[CONF_BCOORDS].bg = COLOR_BLACK;
     config.color[CONF_BMOVESW].fg = COLOR_WHITE;
-    config.color[CONF_BMOVESW].bg = COLOR_MAGENTA;
+    config.color[CONF_BMOVESW].bg = COLOR_WHITE;
     config.color[CONF_BMOVESW].nattrs = A_REVERSE;
     config.color[CONF_BMOVESB].fg = COLOR_WHITE;
     config.color[CONF_BMOVESB].bg = COLOR_BLUE;
@@ -269,4 +271,7 @@ void set_default_colors()
     config.color[CONF_BATTACK].bg = COLOR_BLACK;
     config.color[CONF_BATTACK].attrs = A_BOLD;
     config.color[CONF_BATTACK].nattrs = A_REVERSE;
+    config.color[CONF_BPREVMOVE].fg = COLOR_WHITE;
+    config.color[CONF_BPREVMOVE].bg = COLOR_MAGENTA;
+    config.color[CONF_BPREVMOVE].nattrs = A_BOLD|A_REVERSE;
 }

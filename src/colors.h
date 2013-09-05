@@ -184,6 +184,10 @@ enum {
 	COLOR_PAIR(40) | config.color[CONF_BATTACK].attrs : \
 	config.color[CONF_BATTACK].nattrs)
 
+#define CP_BOARD_PREVMOVE	((COLORS) ? \
+	COLOR_PAIR(41) | config.color[CONF_BPREVMOVE].attrs : \
+	config.color[CONF_BPREVMOVE].nattrs)
+
 void init_color_pairs();
 void set_default_colors();
 chtype mix_cp(chtype a, chtype b, attr_t, int which);

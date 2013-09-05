@@ -730,6 +730,8 @@ void parse_rcfile(const char *filename)
 	    parse_color(filename, lines, val, &config.color[CONF_BENPASSANT]);
 	else if (strcmp(var, "color_board_attack") == 0)
 	  parse_color(filename, lines, val, &config.color[CONF_BATTACK]);
+	else if (strcmp(var, "color_board_prev_move") == 0)
+	  parse_color(filename, lines, val, &config.color[CONF_BPREVMOVE]);
 	else if (strcmp(var, "color_status_window") == 0)
 	    parse_color(filename, lines, val, &config.color[CONF_SWINDOW]);
 	else if (strcmp(var, "color_status_title") == 0)

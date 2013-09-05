@@ -109,6 +109,8 @@ struct userdata_s {
     unsigned short flags;
     char c_row;
     char c_col;
+    char pm_row; // Previous move
+    char pm_col;
     char paused;
     unsigned n;
     unsigned char mode;
