@@ -75,10 +75,10 @@
 #define COLTOMATRIX(c)  	((c == 1) ? 1 : c * 4 - 3)
 #define STATUS_HEIGHT		12
 #define MEGA_BOARD		(LINES >= 50 && COLS >= 144)
-#define BOARD_HEIGHT_MB		(50)
-#define BOARD_WIDTH_MB		(98)
+#define BOARD_HEIGHT_MB		50
+#define BOARD_WIDTH_MB		98
 #define STATUS_WIDTH_MB		(COLS - BOARD_WIDTH_MB)
-#define TAG_HEIGHT_MB		(20)
+#define TAG_HEIGHT_MB		31
 #define TAG_WIDTH_MB		(COLS - BOARD_WIDTH_MB)
 #define HISTORY_HEIGHT_MB	(LINES - (STATUS_HEIGHT + TAG_HEIGHT_MB + 1))
 #define HISTORY_WIDTH_MB	(COLS - BOARD_WIDTH_MB)
@@ -3568,9 +3568,10 @@ void history_menu(GAME g)
     add_menu_key(&keys, CTRL_KEY('a'), history_menu_annotate);
     add_menu_key(&keys, CTRL_KEY('d'), history_menu_details);
     add_menu_key(&keys, '\n', history_menu_view_annotation);
-    construct_menu(LINES, TAG_WIDTH, 0, config.boardleft ? BOARD_WIDTH : 0,
-		   _("Move History Tree"), 1, get_history_items, keys, g,
-		   history_menu_print, history_menu_exit);
+    construct_menu(MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES,
+			TAG_WIDTH, 0, config.boardleft ? BOARD_WIDTH : 0,
+			_("Move History Tree"), 1, get_history_items, keys, g,
+			history_menu_print, history_menu_exit);
 }
 
 void do_history_menu()
