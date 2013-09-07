@@ -269,7 +269,7 @@ void set_default_colors()
     config.color[CONF_BENPASSANT].nattrs = A_BOLD;
     config.color[CONF_BATTACK].fg = COLOR_BLUE;
     config.color[CONF_BATTACK].bg = COLOR_BLACK;
-    config.color[CONF_BATTACK].attrs = A_BOLD;
+    config.color[CONF_BATTACK].attrs = A_BOLD|A_BLINK;
     config.color[CONF_BATTACK].nattrs = A_REVERSE;
     config.color[CONF_BPREVMOVE].fg = COLOR_WHITE;
     config.color[CONF_BPREVMOVE].bg = COLOR_MAGENTA;

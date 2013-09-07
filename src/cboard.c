@@ -877,6 +877,20 @@ int coordofmove(char *move, int yorx)
     return 0;
 }
 
+static int is_prev_move (struct userdata_s *d, int brow, int bcol,
+			 int row, int col)
+{
+    if ((!BIG_BOARD &&
+	 row == ROWTOMATRIX(((rotate) ? inv_int(d->pm_row) : d->pm_row)) &&
+	 col == COLTOMATRIX(((rotate) ? inv_int(d->pm_col) : d->pm_col)))
+	|| (BIG_BOARD &&
+	    brow + 1 == ((rotate) ? d->pm_row : inv_int(d->pm_row)) &&
+	    bcol + 1 == ((rotate) ? inv_int(d->pm_col) : d->pm_col)))
+	return 1;
+
+    return 0;
+}
+
 // FIXME: BIG_BOARD - start in dwm monocle layout.
 // Example: lxterminal -e cboard (dmenu, geany, etc.)
 void update_board_window(GAME g)
@@ -1088,12 +1102,8 @@ void update_board_window(GAME g)
 				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
 			old_attrs = -1;
 		    }
-		    else if ((!BIG_BOARD &&
-			      row == ROWTOMATRIX(((rotate) ? inv_int(d->pm_row) : d->pm_row)) &&
-			      col == COLTOMATRIX(((rotate) ? inv_int(d->pm_col) : d->pm_col))) ||
-			     (BIG_BOARD &&
-			      brow + 1 == ((rotate) ? d->pm_row : inv_int(d->pm_row)) &&
-			      bcol + 1 == ((rotate) ? inv_int(d->pm_col) : d->pm_col))) {
+		    else if (is_prev_move (d, brow, bcol, row, col) && !valid)
+			{
 			attrs = mix_cp(CP_BOARD_PREVMOVE, IS_ENPASSANT(p),
 				       ATTRS(CP_BOARD_PREVMOVE), B_FG_A_BG);
 			old_attrs = -1;
@@ -1103,11 +1113,12 @@ void update_board_window(GAME g)
 			attrs = 0;
 
 		    if (can_attack) {
-			attrs = mix_cp(CP_BOARD_ATTACK,
-				       valid ?
-				       (attrwhich == WHITE) ? CP_BOARD_MOVES_WHITE : CP_BOARD_MOVES_BLACK :
-				       (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK,
+			int n = is_prev_move (d, brow, bcol, row, col);
+			chtype a = n && !valid
+			    ? CP_BOARD_PREVMOVE : attrwhich == WHITE ? valid ? CP_BOARD_MOVES_WHITE : CP_BOARD_WHITE : valid ? CP_BOARD_MOVES_BLACK : CP_BOARD_BLACK;
+			attrs = mix_cp(CP_BOARD_ATTACK, a,
 				       ATTRS (CP_BOARD_ATTACK), A_FG_B_BG);
+			old_attrs = -1;
 		    }
 
 		    if (BIG_BOARD)
