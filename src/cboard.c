@@ -3441,7 +3441,7 @@ void history_menu_prev(struct menu_input_s *m)
 
 void history_menu_help(struct menu_input_s *m)
 {
-    message("History Menu Help", ANY_KEY_STR, "%s",
+    message(_("History Menu Help"), ANY_KEY_STR, "%s",
 	    _ (
 	       "    UP/DOWN - previous/next menu item\n"
 	       "   HOME/END - first/last menu item\n"
@@ -5021,7 +5021,7 @@ refresh:
     }
 }
 
-void usage(const char *pn, int ret)
+/*
 {
     fprintf((ret) ? stderr : stdout, "%s", _(
 #ifdef DEBUG
@@ -5031,13 +5031,27 @@ void usage(const char *pn, int ret)
     "Usage: cboard [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"
 #endif
     "  -p  Load PGN file.\n"
+*/
+void usage(const char *pn, int ret)
+{
+    fprintf((ret) ? stderr : stdout, "%s%s",
+#ifdef DEBUG
+    _(
+    "Usage: cboard [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
+    "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"),
+#else
+	_(
+    "Usage: cboard [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"),
+#endif
+    _(
+    "  -p  Load PGN file.\n"
     "  -V  Validate a game file.\n"
     "  -S  Validate and output a PGN formatted game.\n"
     "  -R  Like -S but write a reduced PGN formatted game.\n"
     "  -t  Also write custom PGN tags from config file.\n"
     "  -E  Stop processing on file parsing error (overrides config).\n"
     "  -C  Enable strict castling (overrides config).\n"
-    "  -u  Enable/disable UTF-8 pieces (1=enable, 0=disable, moverrides config).\n"
+    "  -u  Enable/disable UTF-8 pieces (1=enable, 0=disable, overrides config).\n"
     "  -v  Version information.\n"
     "  -h  This help text.\n"));
 
