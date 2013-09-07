@@ -5021,17 +5021,6 @@ refresh:
     }
 }
 
-/*
-{
-    fprintf((ret) ? stderr : stdout, "%s", _(
-#ifdef DEBUG
-    "Usage: cboard [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
-    "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
-#else
-    "Usage: cboard [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"
-#endif
-    "  -p  Load PGN file.\n"
-*/
 void usage(const char *pn, int ret)
 {
     fprintf((ret) ? stderr : stdout, "%s%s",
