@@ -337,7 +337,7 @@ void stop_engine(GAME g)
     d->engine->status = ENGINE_OFFLINE;
 }
 
-void set_engine_defaults(GAME g, char **init)
+void set_engine_defaults(GAME g, wchar_t **init)
 {
     int i;
 
@@ -345,7 +345,7 @@ void set_engine_defaults(GAME g, char **init)
 	return;
 
     for (i = 0; init[i]; i++)
-	add_engine_command(g, ENGINE_READY, "%s\n", init[i]);
+	add_engine_command(g, ENGINE_READY, "%ls\n", init[i]);
 }
 
 int start_chess_engine(GAME g)

@@ -84,7 +84,7 @@ struct {
     struct color_s color[CONF_MAX_COLORS]; // Color configuration.
     TAG **tag;		// Custom PGN tags.
     char *pattern;	// Filename filter in the file browser.
-    char **einit;	/* Strings to send to the chess engine upon each reset
+    wchar_t **einit;	/* Strings to send to the chess engine upon each reset
                          * or new game.
 			 */
     struct config_key_s **keys; // Custom commands to send to the engine.

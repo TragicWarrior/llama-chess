@@ -59,7 +59,7 @@ struct engine_s {
 int send_signal_to_engine(pid_t, int);
 int send_to_engine(GAME g, int, const char *format, ...);
 int start_chess_engine(GAME);
-void set_engine_defaults(GAME, char **);
+void set_engine_defaults(GAME, wchar_t **);
 void stop_engine(GAME);
 void append_enginebuf(GAME, char *);
 void send_engine_command(GAME g);

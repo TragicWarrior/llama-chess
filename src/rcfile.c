@@ -626,8 +626,8 @@ void parse_rcfile(const char *filename)
 	    config.jumpcount = atoi(val);
 	}
 	else if (strcmp(var, "engine_init") == 0) {
-	    config.einit = Realloc(config.einit, (init + 2) * sizeof(char *));
-	    config.einit[init++] = strdup(val);
+	    config.einit = Realloc(config.einit, (init + 2) * sizeof(wchar_t *));
+	    config.einit[init++] = str_to_wchar (val);
 	    config.einit[init] = NULL;
 	}
 	else if (strcmp(var, "pattern") == 0) {

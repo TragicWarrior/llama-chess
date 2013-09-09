@@ -2691,15 +2691,15 @@ void do_play_config_command()
 	    if (config.keys[x]->c == input_c) {
 		switch (config.keys[x]->type) {
 		    case KEY_DEFAULT:
-			add_engine_command(gp, -1, "%s\n", 
+			add_engine_command(gp, -1, "%ls\n",
 				config.keys[x]->str);
 			break;
 		    case KEY_SET:
 			if (!keycount)
 			    break;
 
-			add_engine_command(gp, -1, 
-				"%s %i\n", config.keys[x]->str, keycount);
+			add_engine_command(gp, -1,
+				"%ls %i\n", config.keys[x]->str, keycount);
 			keycount = 0;
 			break;
 		    case KEY_REPEAT:
@@ -2708,7 +2708,7 @@ void do_play_config_command()
 
 			for (w = 0; w < keycount; w++)
 			    add_engine_command(gp, -1,
-				    "%s\n", config.keys[x]->str);
+				    "%ls\n", config.keys[x]->str);
 			keycount = 0;
 			break;
 		}
