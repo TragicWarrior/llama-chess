@@ -1799,13 +1799,10 @@ void update_engine_window(GAME g)
     int i;
     struct userdata_s *d = g->data;
 
-    if (!d->engine || !d->engine->enginebuf)
-	return;
-
     wmove(enginew, 0, 0);
     wclrtobot(enginew);
 
-    if (d->engine->enginebuf) {
+    if (d->engine && d->engine->enginebuf) {
 	for (i = 0; d->engine->enginebuf[i]; i++)
 	    mvwprintw(enginew, i + 2, 1, "%s", d->engine->enginebuf[i]);
     }
@@ -1823,15 +1820,6 @@ void update_all(GAME g)
      */
     if (macro_match != -1)
 	return;
-
-    /*
-     * No need to update when the engine window is being shown.
-     */
-    if (enginep && panel_hidden(enginep) == ERR) {
-	update_panels();
-	doupdate();
-	return;
-    }
 
     wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
     update_board_window(g);
@@ -2173,20 +2161,24 @@ static void do_window_resize()
 	return;
 
     resizeterm(LINES, COLS);
-	wresize(boardw, BOARD_HEIGHT, BOARD_WIDTH);
+    endwin();
+    wresize(boardw, BOARD_HEIGHT, BOARD_WIDTH);
     wresize(historyw, HISTORY_HEIGHT, HISTORY_WIDTH);
     wresize(statusw, STATUS_HEIGHT, STATUS_WIDTH);
     wresize(tagw, TAG_HEIGHT, TAG_WIDTH);
-	wmove(boardw, 0, 0);
-    wclrtobot(boardw);
-    wmove(historyw, 0, 0);
-    wclrtobot(historyw);
-    wmove(tagw, 0, 0);
-    wclrtobot(tagw);
-    wmove(statusw, 0, 0);
-    wclrtobot(statusw);
+    clear ();
+    wclear (boardw);
+    wclear (historyw);
+    wclear (tagw);
+    wclear (statusw);
+    wclear (loadingw);
+    wclear (enginew);
     draw_window_decor();
     update_all(gp);
+    keypad(boardw, TRUE);
+    curs_set(0);
+    cbreak();
+    noecho();
 }
 
 void stop_clock()
@@ -4514,10 +4506,7 @@ static int globalkeys()
      */
     switch (input_c) {
 	case CTRL_KEY('L'):
-	    endwin();
-	    keypad(boardw, TRUE);
-	    wmove(stdscr, 0, 0);
-	    wclrtobot(stdscr);
+	    do_window_resize ();
 	    return 1;
 	case KEY_ESCAPE:
 	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
@@ -4918,10 +4907,7 @@ void game_loop()
 	    if (win) {
 		switch (input_c) {
 		    case CTRL_KEY('L'):
-			endwin();
-			keypad(boardw, TRUE);
-			wmove(stdscr, 0, 0);
-			wclrtobot(stdscr);
+			do_window_resize ();
 			goto refresh;
 		}
 
@@ -5144,10 +5130,8 @@ void catch_signal(int which)
 	    break;
 	case SIGCONT:
 	    resetty();
+	    do_window_resize ();
 	    keypad(boardw, TRUE);
-	    curs_set(0);
-	    cbreak();
-	    noecho();
 	    break;
 	case SIGINT:
 	    quit = 1;
@@ -5376,8 +5360,8 @@ int main(int argc, char *argv[])
 	errx(EXIT_FAILURE, _("Need at least an 74x23 terminal."));
     }
 
-	COLS_OLD = COLS;
-	LINES_OLD = LINES;
+    COLS_OLD = COLS;
+    LINES_OLD = LINES;
 
     if (has_colors() == TRUE && start_color() == OK)
 	init_color_pairs();
