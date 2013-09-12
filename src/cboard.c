@@ -4242,10 +4242,10 @@ void do_game_save_multi_confirm(WIN *win)
 
 void do_global_about()
 {
-    cmessage("ABOUT", ANY_KEY_STR, "%s\nUsing %s with %i colors "
-	    "and %i color pairs\n%s",
-	    PACKAGE_STRING, curses_version(), COLORS, COLOR_PAIRS,
-	    COPYRIGHT);
+    cmessage(_("ABOUT"), ANY_KEY_STR,
+	     _("%s\nUsing %s with %i colors and %i color pairs\n%s"),
+	     PACKAGE_STRING, curses_version(), COLORS, COLOR_PAIRS,
+	     COPYRIGHT);
 }
 
 void global_game_next_prev(int which)
