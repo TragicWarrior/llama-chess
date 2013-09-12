@@ -751,6 +751,10 @@ static int piece_can_attack (GAME g, int rank, int file)
     char *m, *frfr = NULL;
     pgn_error_t e;
     int row, col, p;
+    if (rotate) {
+        rotate_position(CURSOR_POSITION);
+	rotate_position(SPS_POSITION);
+	}
     int v = d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].valid;
     int pi = pgn_piece_to_int (d->b[RANKTOBOARD (rank)][FILETOBOARD (file)].icon);
     int cpi = d->sp.icon
@@ -758,9 +762,14 @@ static int piece_can_attack (GAME g, int rank, int file)
       : pgn_piece_to_int (d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].icon);
 
     if (pi == OPEN_SQUARE || cpi == OPEN_SQUARE || !VALIDFILE (file)
-	|| !VALIDRANK (rank))
+	|| !VALIDRANK (rank)) {
+    if (rotate) {
+        rotate_position(CURSOR_POSITION);
+	rotate_position(SPS_POSITION);
+	}
         return 0;
-
+	}
+    
     if (d->sp.icon) {
 	col = v ? d->c_col : d->sp.scol;
 	row = v ? d->c_row : d->sp.srow;
@@ -790,6 +799,10 @@ static int piece_can_attack (GAME g, int rank, int file)
 	pgn_switch_turn (g);
 	free (m);
 	free (frfr);
+    if (rotate) {
+        rotate_position(CURSOR_POSITION);
+	rotate_position(SPS_POSITION);
+	}
 	return e == E_PGN_OK ? 1 : 0;
     }
 
@@ -812,6 +825,10 @@ static int piece_can_attack (GAME g, int rank, int file)
 
     free (m);
     free (frfr);
+    if (rotate) {
+        rotate_position(CURSOR_POSITION);
+	rotate_position(SPS_POSITION);
+	}
     return e == E_PGN_OK ? 1 : 0;
 }
 
@@ -891,8 +908,6 @@ static int is_prev_move (struct userdata_s *d, int brow, int bcol,
     return 0;
 }
 
-// FIXME: BIG_BOARD - start in dwm monocle layout.
-// Example: lxterminal -e cboard (dmenu, geany, etc.)
 void update_board_window(GAME g)
 {
     int row, col;
@@ -1051,7 +1066,6 @@ void update_board_window(GAME g)
 				       ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
 		    }
 
-		    // FIXME: showattacks - rotated board.
 		    if (config.showattacks && config.details
 			&& piece_can_attack (g,
 					     BIG_BOARD ? inv_int (brow+1) : brow,
