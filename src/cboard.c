@@ -872,28 +872,49 @@ int inv_int(int x)
 
 int coordofmove(char *move, int yorx)
 {
-    int l, i;
+    int l, y, x, i;
 
     if (!rotate) {
-	if (!strcmp(move, "O-O"))
+	if (NULL != strstr(move, "O-O"))
 	    return (yorx) ? 8 : 7;
-	else if (!strcmp(move, "O-O-O"))
+	else if (NULL != strstr(move, "O-O-O"))
 	    return (yorx) ? 8 : 3;
     }
     else {
-	if (!strcmp(move, "O-O"))
+	if (NULL != strstr(move, "O-O"))
 	    return (yorx) ? 1 : 7;
-	else if (!strcmp(move, "O-O-O"))
+	else if (NULL != strstr(move, "O-O-O"))
 	    return (yorx) ? 1 : 3;
     }
 
     l = strlen(move);
+    
+    if ((NULL != strchr(move, '+')) && (NULL != strchr(move, '=')))
+    {
+		y = 4;
+		x = 5;
+	}
+	else if ((NULL == strchr(move, '+')) && (NULL != strchr(move, '=')))
+	{
+		y = 3;
+		x = 4;
+	}
+	else if ((NULL != strchr(move, '+')) && (NULL == strchr(move, '=')))
+	{
+		y = 2;
+		x = 3;
+	}
+	else
+	{
+		y = 1;
+		x = 2;
+	}
 
     if (yorx)
-	return move[l - 1] - 48;
+		return move[l - y] - 48;
     else {
 	for (i = 0; i < 8; i++) {
-	    if (move[l - 2] == "abcdefgh"[i])
+	    if (move[l - x] == "abcdefgh"[i])
 		return i + 1;
 	}
     }
@@ -1195,7 +1216,7 @@ printc:
 			}
 
 			if (BIG_BOARD) {
-			  // FIXME: Reimpresión de piezas(+3).
+			  // FIXME: Reimpresión de piezas(+4).
 			    if (cpd < 67) {
 				wattron (boardw, attrs);
 				if (MEGA_BOARD){
