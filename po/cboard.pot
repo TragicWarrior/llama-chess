@@ -1,20 +1,19 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR Noel Tlatempa
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Copyright (C) 2013 Ben Kibbey
+# This file is distributed under the same license as the cboard package.
+# Ben Kibbey <bjk@luxsci.net>, 2013.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: cboard 0.7.0\n"
-"Report-Msgid-Bugs-To: ntlatempa@gmail.com\n"
+"Report-Msgid-Bugs-To: bjk@luxsci.net\n"
 "POT-Creation-Date: 2013-09-12 14:13+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2013-09-14 08:37:54+0000\n"
+"Last-Translator: Ben Kibbey <bjk@luxsci.net>\n"
+"Language-Team: English <en@li.org>\n"
+"Language: en\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: src/tags.c:442

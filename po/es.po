@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: cboard 0.6.2\n"
-"Report-Msgid-Bugs-To: ntlatempa@gmail.com\n"
+"Report-Msgid-Bugs-To: bjk@luxsci.net\n"
 "POT-Creation-Date: 2013-09-12 14:13+0000\n"
 "PO-Revision-Date: 2013-06-27 19:43+0000\n"
 "Last-Translator: noeld <ntlatempa@gmail.com>\n"
@@ -190,7 +190,9 @@ msgid ""
 msgstr ""
 "%s\n"
 "Usando %s con %i colores y %i pares de colores\n"
-"%s\n Traducción al Español por:\nNoel Tlatempa G. ntlatempa@gmail.com"
+"%s\n"
+" Traducción al Español por:\n"
+"Noel Tlatempa G. ntlatempa@gmail.com"
 
 #: src/rcfile.c:67
 #, c-format
