@@ -870,48 +870,43 @@ int inv_int(int x)
     return fx2;
 }
 
-int coordofmove(char *move, int yorx)
+int coordofmove(GAME g, char *move, int yorx)
 {
     int l, y, x, i;
 
-    if (!rotate) {
-	if (NULL != strstr(move, "O-O"))
-	    return (yorx) ? 8 : 7;
-	else if (NULL != strstr(move, "O-O-O"))
-	    return (yorx) ? 8 : 3;
+    if (!strcmp (move, "O-O")) {
+	if (yorx)
+	    return g->turn == WHITE ? 8 : 1;
+
+	return  7;
     }
-    else {
-	if (NULL != strstr(move, "O-O"))
-	    return (yorx) ? 1 : 7;
-	else if (NULL != strstr(move, "O-O-O"))
-	    return (yorx) ? 1 : 3;
+    else if (!strcmp (move, "O-O-O")) {
+	if (yorx)
+	    return g->turn == WHITE ? 8 : 1;
+
+	return  3;
     }
 
     l = strlen(move);
-    
-    if ((NULL != strchr(move, '+')) && (NULL != strchr(move, '=')))
-    {
-		y = 4;
-		x = 5;
-	}
-	else if ((NULL == strchr(move, '+')) && (NULL != strchr(move, '=')))
-	{
-		y = 3;
-		x = 4;
-	}
-	else if ((NULL != strchr(move, '+')) && (NULL == strchr(move, '=')))
-	{
-		y = 2;
-		x = 3;
-	}
-	else
-	{
-		y = 1;
-		x = 2;
-	}
+    if (strchr(move, '+') && strchr(move, '=')) {
+	y = 4;
+	x = 5;
+    }
+    else if (!strchr(move, '+') && strchr(move, '=')) {
+	y = 3;
+	x = 4;
+    }
+    else if (strchr(move, '+') && !strchr(move, '=')) {
+	y = 2;
+	x = 3;
+    }
+    else {
+	y = 1;
+	x = 2;
+    }
 
     if (yorx)
-		return move[l - y] - 48;
+	return move[l - y] - 48;
     else {
 	for (i = 0; i < 8; i++) {
 	    if (move[l - x] == "abcdefgh"[i])
@@ -952,9 +947,9 @@ void update_board_window(GAME g)
 
     h = pgn_history_by_n(g->hp, g->hindex - 1);
     d->pm_row = (h && h->move && d->mode == MODE_PLAY)
-	? coordofmove(h->move, 1) : 0;
+	? coordofmove(g, h->move, 1) : 0;
     d->pm_col = (h && h->move && d->mode == MODE_PLAY)
-	? coordofmove(h->move, 0) : 0;
+	? coordofmove(g, h->move, 0) : 0;
 
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
 	update_cursor(g, g->hindex);
