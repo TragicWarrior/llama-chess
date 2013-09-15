@@ -803,6 +803,19 @@ static int piece_can_attack (GAME g, int rank, int file)
 	free (m);
 	free (frfr);
 
+	if (e != E_PGN_OK && pgn_piece_to_int (d->sp.icon) == PAWN) {
+	    int n = (d->sp.srow == 7 && rank == 5) ? 6 :
+		(d->sp.srow == 2 && rank == 4) ? 3 : 0;
+
+	    if (n) {
+		if (file == d->c_col-1 || file == d->c_col+1) {
+		    p = d->b[RANKTOBOARD (rank)][FILETOBOARD (file)].icon;
+		    if (pgn_piece_to_int (p) == PAWN && p != d->sp.icon)
+			e = E_PGN_OK;
+		}
+	    }
+	}
+
 	if (rotate) {
 	    rotate_position(CURSOR_POSITION);
 	    rotate_position(SPS_POSITION);

@@ -20,7 +20,6 @@
   accepting draws isn't implemented. Also, chess engine game results
   need (better) handling.
 
-* BUG The en-passant square is not shown as an opponent attacking square.
 * BUG Solaris/Sun SIGALRM bugs and engine command window broken.
 * BUG NetBSD has a crappy ncurses installtion. doing manual symlinks works
    Broken engine IO on PTY's. may be kernel related although screen works.
