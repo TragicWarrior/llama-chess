@@ -807,12 +807,28 @@ static int piece_can_attack (GAME g, int rank, int file)
 	    int n = (d->sp.srow == 7 && rank == 5) ? 6 :
 		(d->sp.srow == 2 && rank == 4) ? 3 : 0;
 
-	    if (n) {
-		if (file == d->c_col-1 || file == d->c_col+1) {
-		    p = d->b[RANKTOBOARD (rank)][FILETOBOARD (file)].icon;
-		    if (pgn_piece_to_int (p) == PAWN && p != d->sp.icon)
-			e = E_PGN_OK;
-		}
+	    if (n && (file == d->c_col-1 || file == d->c_col+1)) {
+		unsigned short flags = g->flags;
+
+		memcpy (b, d->b, sizeof(BOARD));
+		p = b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon;
+		b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon =
+		    pgn_int_to_piece (WHITE, OPEN_SQUARE);
+		b[RANKTOBOARD (row)][FILETOBOARD (col)].icon = p;
+		b[RANKTOBOARD (n)][FILETOBOARD (d->sp.scol)].enpassant = 1;
+		m = malloc(MAX_SAN_MOVE_LEN+1);
+		m[0] = INTTOFILE (file);
+		m[1] = INTTORANK (rank);
+		m[2] = INTTOFILE (col);
+		m[3] = INTTORANK (n);
+		m[4] = 0;
+		pgn_switch_turn(g);
+		SET_FLAG (g->flags, GF_ENPASSANT);
+		e = pgn_validate_move (g, b, &m, &frfr);
+		g->flags = flags;
+		pgn_switch_turn (g);
+		free (m);
+		free (frfr);
 	    }
 	}
 
