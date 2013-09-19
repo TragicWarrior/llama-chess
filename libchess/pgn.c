@@ -1844,7 +1844,9 @@ pgn_error_t pgn_parse(PGN_FILE *pgn)
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN parsing->..\n", __FILE__, __LINE__);
 #endif
+    parsing_file = 1;
     pgn_ret = read_file(pgn->fp);
+    parsing_file = 0;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END parsing->..\n", __FILE__, __LINE__);

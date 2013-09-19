@@ -1041,14 +1041,14 @@ static void black_opening(GAME g, BOARD b, int rank)
 #endif
 }
 
-static char *format_santofrfr(int promo, int sfile, int srank, int file, 
-	int rank)
+static char *format_santofrfr(int promo, int sfile, int srank, int file,
+			      int rank)
 {
     char *frfr = malloc(6);
 
     memset(frfr, 0, 6);
-    snprintf(frfr, 6, "%c%c%c%c", INTTOFILE(sfile), 
-	    INTTORANK(srank), INTTOFILE(file), INTTORANK(rank));
+    snprintf(frfr, 6, "%c%c%c%c", INTTOFILE(sfile),
+	     INTTORANK(srank), INTTOFILE(file), INTTORANK(rank));
 
     if (promo)
 	frfr[4] = pgn_int_to_piece(BLACK, promo);
@@ -1062,17 +1062,18 @@ static char *format_santofrfr(int promo, int sfile, int srank, int file,
  */
 static int frfrtosan(GAME g, BOARD b, char **m, char **dst)
 {
-    char *bp = *m;
+    char buf[MAX_SAN_MOVE_LEN+1] = {0}, *bp = buf;
     int icon, p, dp, promo = 0;
     int sfile, srank, file, rank;
     int n;
     int fc, rc;
     int ff = 0, rr = 0;
-    
+
 #ifdef DEBUG
     PGN_DUMP("%s:%d: converting to SAN format\n", __FILE__, __LINE__);
 #endif
 
+    strcpy (buf, *m);
     sfile = FILETOINT(bp[0]);
     srank = RANKTOINT(bp[1]);
     file = FILETOINT(bp[2]);
@@ -1108,22 +1109,35 @@ static int frfrtosan(GAME g, BOARD b, char **m, char **dst)
 	return E_PGN_INVALID;
 
     if (p == KING && abs(sfile - file) > 1) {
-	strcpy(bp, (file > FILETOINT('e')) ? "O-O" : "O-O-O");
+	strcpy(buf, (file > FILETOINT('e')) ? "O-O" : "O-O-O");
 
 	if (finalize_move(g, b, promo, sfile, srank, file, rank) != E_PGN_OK)
 	    return E_PGN_INVALID;
 
 	if (g->check)
-	    strcat(bp, (g->check == CHECK) ? "+" : "#");
+	    strcat(buf, (g->check == CHECK) ? "+" : "#");
+
+	/* The move buffer size may be shorter than frfr format. Since
+	 * pgn_parse() uses a buffer allocated on the stack, this is not
+	 * needed because its' size is always MAX_SAN_MOVE_LEN+1.
+	 */
+	if (!parsing_file && strlen (*m) < strlen (buf)) {
+	    free (*m);
+	    *m = malloc (strlen (buf)+1);
+	    strcpy (*m, buf);
+	}
+	else
+	    strcpy (*m, buf);
 
 	*dst = format_santofrfr(promo, sfile, srank, file, rank);
 	return E_PGN_OK;
     }
 
+    bp = buf;
     *bp++ = toupper(icon);
     fc = rc = 0;
     n = find_source_square(g, b, p, &fc, &rc, file, rank);
-    
+
     if (!n)
 	return E_PGN_INVALID;
     else if (n > 1) {
@@ -1169,7 +1183,7 @@ capture:
     *bp++ = INTTOFILE(file);
     *bp++ = INTTORANK(rank);
 
-    if (p == PAWN && !promo && (rank == 8 || rank == 1)) 
+    if (p == PAWN && !promo && (rank == 8 || rank == 1))
 	promo = pgn_piece_to_int('q');
 
     /*
@@ -1195,7 +1209,21 @@ capture:
     if (g->check)
 	*bp++ = (g->check == CHECK) ? '+' : '#';
 
-    *bp = g->check = 0;
+    *bp = 0;
+
+    /* The move buffer size may be shorter than frfr format. Since
+     * pgn_parse() uses a buffer allocated on the stack, this is not
+     * needed because its' size is always MAX_SAN_MOVE_LEN+1.
+     */
+    if (strlen (*m) < strlen (buf)) {
+	free (*m);
+	*m = malloc (strlen (buf)+1);
+	strcpy (*m, buf);
+    }
+    else
+	strcpy (*m, buf);
+
+    g->check = 0;
     *dst = format_santofrfr(promo, sfile, srank, file, rank);
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END validating %s\n", __FILE__, __LINE__, *m);
@@ -1203,8 +1231,8 @@ capture:
     return E_PGN_OK;
 }
 
-static int do_santofrfr(GAME g, BOARD b, char **san, int *promo, int *sfile, 
-	int *srank, int *file, int *rank)
+static int do_santofrfr(GAME g, BOARD b, char **san, int *promo, int *sfile,
+			int *srank, int *file, int *rank)
 {
     char *p;
     int piece;
@@ -1384,6 +1412,7 @@ pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
     char *m = *mp, *p;
     int i;
     int promo = -1;
+    size_t len = strlen (m);
 
     /*
      * This may be an empty move with only an annotation. Kinda strange.
@@ -1400,11 +1429,11 @@ pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
     srank = rank = file = sfile = promo = 0;
     find_king_squares(g, b, &g->kfile, &g->krank, &g->okfile, &g->okrank);
 
-    if (m[strlen(m) - 1] == '+')
-	m[strlen(m) - 1] = 0;
+    if (m[len-1] == '+')
+	m[--len] = 0;
 
-    if (VALIDCOL(*m) && VALIDROW(*(m + 1)) && VALIDCOL(*(m + 2)) && 
-	    VALIDROW(*(m + 3)))
+    if (VALIDCOL(*m) && VALIDROW(*(m + 1)) && VALIDCOL(*(m + 2))
+	&& VALIDROW(*(m + 3)))
 	return frfrtosan(g, b, mp, dst);
     else if (*m == 'O') {
 	if (strcmp(m, "O-O") == 0)
@@ -1418,6 +1447,17 @@ pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
 		E_PGN_OK)
 	    return E_PGN_INVALID;
 
+	/* The move buffer size may be shorter than frfr format. Since
+	 * pgn_parse() uses a buffer allocated on the stack, this is not
+	 * needed because its' size is always MAX_SAN_MOVE_LEN+1.
+	 */
+	if (len < 4 && !parsing_file) {
+	    m = malloc (5*sizeof(char));
+	    free (*mp);
+	    *mp = m;
+	}
+
+	m = *mp;
 	*m++ = INTTOFILE(sfile);
 	*m++ = INTTORANK(srank);
 	*m++ = INTTOFILE(file);

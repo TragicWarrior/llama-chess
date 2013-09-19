@@ -425,7 +425,9 @@ static void parse_xboard_line(GAME g, char *str)
 
     // We should now have the real move which may be in SAN or frfr format.
     if (sscanf(p, "%[0-9a-hprnqkxPRNBQKO+=#-]%n", m, &count) == 1) {
-	/* 
+	char *buf = NULL;
+
+	/*
 	 * For engine commands (the '|' key). Don't try and validate them.
 	 */
 	if (count != strlen(p))
@@ -442,20 +444,20 @@ static void parse_xboard_line(GAME g, char *str)
 	p = m + strlen(m) - 1;
 
 	// Test SAN or a2a4 format.
-	if (!isdigit(*p) && *p != 'O' && *p != '+' && *p != '#' &&
-		((*(p - 1) != '=' || !isdigit(*(p - 1))) && 
-		 pgn_piece_to_int(*p) == -1))
+	if (!isdigit(*p) && *p != 'O' && *p != '+' && *p != '#'
+	    && ((*(p - 1) != '=' || !isdigit(*(p - 1)))
+		&& pgn_piece_to_int(*p) == -1))
 	    return;
 
-	p = m;
-
-	if ((n = pgn_parse_move(g, d->b, &p, &frfr)) != E_PGN_OK) {
+	buf = strdup (m);
+	if ((n = pgn_parse_move(g, d->b, &buf, &frfr)) != E_PGN_OK) {
 	    invalid_move(d->n + 1, n, m);
 	    RETURN(d);
 	}
 
 	free (frfr);
-	pgn_history_add(g, d->b, p);
+	pgn_history_add(g, d->b, buf);
+	free (buf);
 	SET_FLAG(d->flags, CF_MODIFIED);
 	pgn_switch_turn(g);
 

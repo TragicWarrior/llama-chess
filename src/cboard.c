@@ -1477,30 +1477,30 @@ void update_history_window(GAME g)
 	      HISTORY_WIDTH - ((LINES < 24) ? 26 : 14), buf);
 }
 
-void do_validate_move(char *move)
+void do_validate_move(char **move)
 {
     struct userdata_s *d = gp->data;
     int n;
     char *frfr = NULL;
 
     if (TEST_FLAG(d->flags, CF_HUMAN)) {
-	if ((n = pgn_parse_move(gp, d->b, &move, &frfr)) != E_PGN_OK) {
-	    invalid_move(d->n + 1, n, move);
+	if ((n = pgn_parse_move(gp, d->b, move, &frfr)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, *move);
 	    return;
 	}
 
 	update_time_control(gp);
-	pgn_history_add(gp, d->b, move);
+	pgn_history_add(gp, d->b, *move);
 	pgn_switch_turn(gp);
     }
     else {
-	if ((n = pgn_validate_move(gp, d->b, &move, &frfr)) != E_PGN_OK) {
-	    invalid_move(d->n + 1, n, move);
+	if ((n = pgn_validate_move(gp, d->b, move, &frfr)) != E_PGN_OK) {
+	    invalid_move(d->n + 1, n, *move);
 	    return;
 	}
 
-	add_engine_command(gp, ENGINE_THINKING, "%s\n", 
-		(config.engine_protocol == 1) ? frfr : move);
+	add_engine_command(gp, ENGINE_THINKING, "%s\n",
+			   (config.engine_protocol == 1) ? frfr : *move);
     }
 
     d->sp.srow = d->sp.scol = d->sp.icon = 0;
@@ -1530,8 +1530,8 @@ void do_promotion_piece_finalize(WIN *win)
     p = str + strlen(str);
     *p++ = toupper(win->c);
     *p = '\0';
-    do_validate_move(str);
-    free (win->data);
+    do_validate_move(&str);
+    free (str);
     win->data = NULL;
 }
 
@@ -1541,14 +1541,14 @@ static void move_to_engine(GAME g)
     char *str;
     int piece;
 
-    if (config.validmoves && 
-	    !d->b[RANKTOBOARD(d->sp.row)][FILETOBOARD(d->sp.col)].valid)
+    if (config.validmoves &&
+	!d->b[RANKTOBOARD(d->sp.row)][FILETOBOARD(d->sp.col)].valid)
 	return;
 
     str = Malloc(MAX_SAN_MOVE_LEN + 1);
     snprintf(str, MAX_SAN_MOVE_LEN + 1, "%c%i%c%i",
-	    _("abcdefgh")[d->sp.scol - 1], 
-	    d->sp.srow, _("abcdefgh")[d->sp.col - 1], d->sp.row);
+	     _("abcdefgh")[d->sp.scol - 1],
+	     d->sp.srow, _("abcdefgh")[d->sp.col - 1], d->sp.row);
 
     piece = pgn_piece_to_int(d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon);
 
@@ -1558,7 +1558,7 @@ static void move_to_engine(GAME g)
 	return;
     }
 
-    do_validate_move(str);
+    do_validate_move(&str);
     free (str);
 }
 
@@ -4489,15 +4489,16 @@ void do_global_copy_game()
     // FIXME RAV
     for (i = 0; i < n; i++) {
 	char *frfr = NULL;
-	char move[MAX_SAN_MOVE_LEN+1] = {0}, *m = move;
+	char *move = strdup (game[g]->history[i]->move);
 
-	strcpy (move, game[g]->history[i]->move);
-	if (pgn_parse_move(gp, d->b, &m, &frfr) != E_PGN_OK) {
+	if (pgn_parse_move(gp, d->b, &move, &frfr) != E_PGN_OK) {
+	    free (move);
 	    SET_FLAG(gp->flags, GF_PERROR);
 	    return;
 	}
 
 	pgn_history_add(gp, d->b, move);
+	free (move);
 	free(frfr);
 	pgn_switch_turn(gp);
     }

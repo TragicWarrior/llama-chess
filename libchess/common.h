@@ -33,6 +33,8 @@ struct {
     int strict_castling;
 } pgn_config;
 
+int parsing_file;
+
 #ifdef DEBUG
 int dumptofile;
 #endif
