@@ -3002,22 +3002,22 @@ void do_main_help(WIN *win)
     switch (win->c) {
 	case 'p':
 	    buf = build_help(play_keys);
-	    construct_message(_("Play Mode Keys (* = can take a repeat count)"), ANY_KEY_STR, 0, 0,
+	    construct_message(_("Play Mode Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	case 'h':
 	    buf = build_help(history_keys);
-	    construct_message(_("History Mode Keys (* = can take a repeat count)"), ANY_KEY_STR, 0, 0,
+	    construct_message(_("History Mode Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	case 'e':
 	    buf = build_help(edit_keys);
-	    construct_message(_("Edit Mode Keys (* = can take a repeat count)"), ANY_KEY_STR, 0, 0,
+	    construct_message(_("Edit Mode Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	case 'g':
 	    buf = build_help(global_keys);
-	    construct_message(_("Global Game Keys (* = can take a repeat count)"), ANY_KEY_STR, 0, 0,
+	    construct_message(_("Global Game Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
 		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
 	    break;
 	default:

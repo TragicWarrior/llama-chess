@@ -90,6 +90,7 @@
 #define MAX_TC		8	/* Time controls. */
 
 #define ANY_KEY_STR             _("[ press any key to continue ]")
+#define ANY_KEY_SCROLL_STR      _("[ press any key to continue (or scroll) ]")
 #define ERROR_STR               _("[ ERROR ]")
 
 struct clock_s {

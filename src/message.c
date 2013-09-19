@@ -107,8 +107,9 @@ static void wordwrap_lines (wchar_t ***olines, int *nlines, int *width)
 }
 
 static void build_message_lines(const char *title, const char *prompt,
-	int force_trim, const char *extra, int *h, int *w, wchar_t ***str,
-	const char *fmt, va_list ap)
+				int force_trim, const char *extra, int *h,
+				int *w, wchar_t ***str, const char *fmt,
+				va_list ap)
 {
     int n;
     char *line;
@@ -180,15 +181,26 @@ static int display_message(WIN *win)
     struct message_s *m = win->data;
     int i;
     void *p = NULL;
+    int n_lines = 0;
+    int r = 0;
 
     keypad(win->w, TRUE);
     window_draw_title(win->w, win->title, m->w, CP_MESSAGE_TITLE,
 	    CP_MESSAGE_BORDER);
 
-    for (i = 0; m->lines[i]; i++)
-	mvwprintw(win->w, (win->title) ? 2 + i: 1 + i,
-		(m->center || (!i && !m->lines[i+1])) ?
-		CENTERX(m->w, m->lines[i]) : 1, "%ls", m->lines[i]);
+    for (i = 0; m->lines[i]; i++) {
+	n_lines++;
+
+	if (m->offset && i < m->offset)
+	    continue;
+
+	mvwprintw(win->w, (win->title) ? 2 + r: 1 + r,
+		  (m->center || (!i && !m->lines[i+1])) ?
+		  CENTERX(m->w, m->lines[i]) : 1, "%ls", m->lines[i]);
+	r++;
+	if (r >= LINES-5)
+	    break;
+    }
 
     if (m->extra)
 	window_draw_prompt(win->w, (m->prompt) ? m->h - 3 : m->h - 2, m->w,
@@ -203,6 +215,26 @@ static int display_message(WIN *win)
     }
 
     if (win->c != 0) {
+	if (win->c == KEY_DOWN || win->c == 'k' || win->c == KEY_UP
+	    || win->c == 'j') {
+	    int n = 3;
+
+	    n += m->extra ? 1 : 0;
+
+	    if ((n_lines + n) - m->offset >= LINES-2)
+		m->offset = win->c == KEY_DOWN || win->c == 'k'
+		    ? m->offset+1 : m->offset-1;
+	    else if (win->c == KEY_UP || win->c == 'j')
+		m->offset--;
+
+	    if (m->offset < 0)
+		m->offset = 0;
+
+	    werase (win->w);
+	    win->c = 0;
+	    return display_message (win);
+	}
+
 	for (i = 0; m->lines[i]; i++)
 	    free(m->lines[i]);
 
@@ -234,13 +266,14 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     int h, w;
 
     va_start(ap, fmt);
-    build_message_lines(title, prompt, force_trim, extra_help, &h, &w, &lines, fmt, ap);
+    build_message_lines(title, prompt, force_trim, extra_help, &h, &w, &lines,
+			fmt, ap);
     va_end(ap);
 
     m = Calloc(1, sizeof(struct message_s));
     m->lines = lines;
     m->w = w;
-    m->h = h;
+    m->h = h > LINES-2 ? LINES-2 : h;
     m->center = center;
     m->c = ckey;
     m->func = func;
@@ -252,8 +285,8 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     if (extra_help)
 	m->extra = strdup(extra_help);
 
-    win = window_create(title, h, w, CALCPOSY(h), CALCPOSX(w), display_message,
-			m, efunc);
+    win = window_create(title, m->h, m->w, CALCPOSY(m->h), CALCPOSX(m->w),
+			display_message, m, efunc);
 
     win->freedata = freedata;
     wbkgd(win->w, CP_MESSAGE_WINDOW);

@@ -39,6 +39,7 @@ struct message_s {
     wint_t c;
     message_func *func;
     void *arg;
+    int offset;
 };
 
 WIN *construct_message(const char *, const char *, int, int, const char *,
