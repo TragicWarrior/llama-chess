@@ -2217,7 +2217,7 @@ static void draw_window_decor()
 	    CP_HISTORY_TITLE, CP_HISTORY_BORDER);
 }
 
-static void do_window_resize()
+void do_window_resize()
 {
     if (LINES < 23 || COLS < 74)
 	return;
@@ -2241,6 +2241,11 @@ static void do_window_resize()
     curs_set(0);
     cbreak();
     noecho();
+}
+
+void do_global_redraw ()
+{
+    do_window_resize ();
 }
 
 void stop_clock()
@@ -4567,9 +4572,6 @@ static int globalkeys()
      * these.
      */
     switch (input_c) {
-	case CTRL_KEY('L'):
-	    do_window_resize ();
-	    return 1;
 	case KEY_ESCAPE:
 	    d->sp.icon = d->sp.srow = d->sp.scol = 0;
 	    markend = markstart = 0;

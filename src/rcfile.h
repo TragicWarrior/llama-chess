@@ -85,6 +85,7 @@ static const struct custom_key_s {
     { -1, "quit", do_global_quit, 0},
     { -1, "toggle_engine_window", do_global_toggle_engine_window, 0},
     { -1, "toggle_board_details", do_global_toggle_board_details, 0},
+    { -1, "redraw the screen", do_global_redraw, 0},
     { -1, NULL, NULL, 0}
 };
 

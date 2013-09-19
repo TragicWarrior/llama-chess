@@ -304,6 +304,7 @@ void set_default_keys()
     add_key_binding(&global_keys, do_global_perl, CTRL_KEY('O'), _("Call PERL subroutine"), 0);
 #endif
     add_key_binding(&global_keys, do_global_about, KEY_F(10), _("version information"), 0);
+    add_key_binding(&global_keys, do_global_redraw, CTRL_KEY('L'), _("redraw the screen"), 0);
     add_key_binding(&global_keys, do_global_quit, 'Q', _("quit"), 0);
 }
 
