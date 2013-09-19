@@ -808,8 +808,6 @@ static int piece_can_attack (GAME g, int rank, int file)
 		(d->sp.srow == 2 && rank == 4) ? 3 : 0;
 
 	    if (n && (file == d->c_col-1 || file == d->c_col+1)) {
-		unsigned short flags = g->flags;
-
 		memcpy (b, d->b, sizeof(BOARD));
 		p = b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon;
 		b[RANKTOBOARD (d->sp.srow)][FILETOBOARD (d->sp.scol)].icon =
@@ -825,7 +823,7 @@ static int piece_can_attack (GAME g, int rank, int file)
 		pgn_switch_turn(g);
 		SET_FLAG (g->flags, GF_ENPASSANT);
 		e = pgn_validate_move (g, b, &m, &frfr);
-		g->flags = flags;
+		CLEAR_FLAG (g->flags, GF_ENPASSANT);
 		pgn_switch_turn (g);
 		free (m);
 		free (frfr);

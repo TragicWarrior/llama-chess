@@ -1454,6 +1454,7 @@ pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **dst)
 {
     int ret;
     int side = g->side, turn = g->turn;
+    unsigned short flags = g->flags;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN validate only\n", __FILE__, __LINE__);
@@ -1466,10 +1467,11 @@ pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **dst)
 #endif
     g->side = side;
     g->turn = turn;
+    g->flags = flags;
     return ret;
 }
 
-/* 
+/*
  * Sets valid moves from game 'g' using board 'b'. The valid moves are for the
  * piece on the board 'b' at 'rank' and 'file'. Returns nothing.
  */
