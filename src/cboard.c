@@ -1947,7 +1947,6 @@ static void delete_game(int which)
 	    i--;
 	    which = -1;
 	}
-
     }
 
     if (which != -1) {
@@ -3999,7 +3998,8 @@ void do_game_delete_finalize(int n)
 
     delete_game((!n) ? gindex : -1);
     d = gp->data;
-    pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
+    if (d->mode != MODE_EDIT)
+	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
 }
 
 void do_game_delete_confirm(WIN *win)
