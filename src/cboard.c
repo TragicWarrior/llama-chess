@@ -1928,13 +1928,13 @@ static void game_next_prev(GAME g, int n, int count)
 
 static void delete_game(int which)
 {
-    int i;
+    int i, w = which;
     struct userdata_s *d;
 
     for (i = 0; i < gtotal; i++) {
 	d = game[i]->data;
 
-	if (i == which || TEST_FLAG(d->flags, CF_DELETE)) {
+	if (i == w || TEST_FLAG(d->flags, CF_DELETE)) {
 	    int n;
 
 	    free_userdata_once(game[i]);
@@ -1945,7 +1945,7 @@ static void delete_game(int which)
 
 	    gtotal--;
 	    i--;
-	    which = -1;
+	    w = -1;
 	}
     }
 
