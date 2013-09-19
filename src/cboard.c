@@ -1928,8 +1928,6 @@ static void game_next_prev(GAME g, int n, int count)
 
 static void delete_game(int which)
 {
-    GAME *g = NULL;
-    int gi = 0;
     int i;
     struct userdata_s *d;
 
@@ -1937,22 +1935,20 @@ static void delete_game(int which)
 	d = game[i]->data;
 
 	if (i == which || TEST_FLAG(d->flags, CF_DELETE)) {
+	    int n;
+
 	    free_userdata_once(game[i]);
 	    pgn_free(game[i]);
-	    continue;
+
+	    for (n = i; n+1 < gtotal; n++)
+		game[n] = game[n+1];
+
+	    gtotal--;
+	    i--;
+	    which = -1;
 	}
 
-	g = Realloc(g, (gi + 1) * sizeof(GAME *));
-	g[gi] = Calloc(1, sizeof(struct game_s));
-	memcpy(g[gi], game[i], sizeof(struct game_s));
-	g[gi]->tag = game[i]->tag;
-	g[gi]->history = game[i]->history;
-	g[gi]->hp = game[i]->hp;
-	gi++;
     }
-
-    game = g;
-    gtotal = gi;
 
     if (which != -1) {
 	if (which + 1 >= gtotal)
