@@ -1,3 +1,26 @@
+CBoard version 0.7.1
+--------------------
+Fixed color pair mixing.
+
+Added configuration color parameter "color_board_prev_move".
+
+Fixed the "engine_init" and "cbind" configuration parameters.
+
+Fixed "show_attacks" to work with a rotated board and the en-passant square.
+
+Translatable string fixes and updated ES translation.
+
+Fixed memory leak when deleting a game.
+
+Redraw the entire screen during terminal resize.
+
+Let message dialog boxes scroll.
+
+Fixed a couple of potential buffer overruns while parsing a move.
+
+Restore game flags before returning from pgn_validate_move().
+
+
 CBoard version 0.7.0
 --------------------
 Many thanks to Noel Tlatempa G <ntlatempa@gmail.com> most all feature
