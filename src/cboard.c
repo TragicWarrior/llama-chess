@@ -2128,14 +2128,11 @@ void update_status_notify(GAME g, char *fmt, ...)
     char line[COLS];
 #endif
 
-    if (!fmt) {
-	if (status.notify) {
-	    free(status.notify);
-	    status.notify = NULL;
-	}
+    free(status.notify);
+    status.notify = NULL;
 
+    if (!fmt)
 	return;
-    }
 
     va_start(ap, fmt);
 #ifdef HAVE_VASPRINTF
@@ -2144,9 +2141,6 @@ void update_status_notify(GAME g, char *fmt, ...)
     vsnprintf(line, sizeof(line), fmt, ap);
 #endif
     va_end(ap);
-
-    if (status.notify)
-	free(status.notify);
 
     status.notify = str_to_wchar(line);
 
@@ -5469,5 +5463,6 @@ int main(int argc, char *argv[])
     free (resume_wchar);
     free (current_wchar);
     free (append_wchar);
+    free (status.notify);
     exit(EXIT_SUCCESS);
 }
