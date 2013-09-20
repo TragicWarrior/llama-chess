@@ -17,7 +17,7 @@
 \\$2 \(laURL: \\$1 \(ra\\$3
 ..
 .if \n[.g] .mso www.tmac
-.TH CBOARD 6 "Jun 15 2013" "@VERSION@" "Curses Chess Board"
+.TH CBOARD 6 "Sep 19 2013" "@VERSION@" "Curses Chess Board"
 
 .SH NAME
 .B cboard
@@ -391,6 +391,8 @@ characters of the given parameter set.
 .TP
 .I color_board_attack foreground background [<cattr>] [<attr>]
 .TP
+.I color_board_prev_move foreground background [<cattr>] [<attr>]
+.TP
 .I color_status_window foreground background [<cattr>] [<attr>]
 .TP
 .I color_status_title foreground background [<cattr>] [<attr>]
@@ -449,7 +451,7 @@ Configuration file.
 
 .TP
 .I ~/.cboard/cc.data
-Country codes. Used when editing the \"Site\" tag.
+Country codes. Used when editing the "Site" tag.
 
 .TP
 .I ~/.cboard/nag.data
