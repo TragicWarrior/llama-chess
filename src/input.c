@@ -279,11 +279,11 @@ done:
  * dynamically determined based on the init argument or INPUT_WIDTH if init is
  * NULL.
  *
- * The reset argument is whether pressing ESC returns the initial value or 
- * NULL. 
+ * The reset argument is whether pressing ESC returns the initial value or
+ * NULL.
  *
- * The extra_help argument is an extra line of help prompt normally used with 
- * the custom_func argument. The custom_func argument is a pointer to a 
+ * The extra_help argument is an extra line of help prompt normally used with
+ * the custom_func argument. The custom_func argument is a pointer to a
  * function of type void which takes one pointer-to-void argument. This
  * function is called when the ckey argument is pressed.
  *
@@ -328,7 +328,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     in->arg = arg;
     in->c = key;
     in->lines = (lines) ? lines : 1;
-    win = window_create(title, in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w), 
+    win = window_create(title, in->h, in->w, CALCPOSY(in->h), CALCPOSX(in->w),
 	    get_input, in, id->efunc);
     in = win->data;
     in->hist = history;

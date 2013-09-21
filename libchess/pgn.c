@@ -719,7 +719,7 @@ pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value)
     *dst = tdata;
 
 #ifdef DEBUG
-    PGN_DUMP("%s:%d: added tag: name='%s' value='%s'\n", __FILE__, __LINE__, 
+    PGN_DUMP("%s:%d: added tag: name='%s' value='%s'\n", __FILE__, __LINE__,
 	    name, (value) ? value : "null");
 #endif
 
@@ -1160,7 +1160,7 @@ static int tag_text(GAME g, FILE *fp)
     }
 
     *v = '\0';
-    
+
     while (isspace(*--v))
 	*v = '\0';
 
@@ -1257,8 +1257,8 @@ static int rav_text(GAME g, FILE *fp, int which, BOARD o)
 	}
 
 	g->rav = pgn_rav_p = r;
-	
-	if ((g->rav[g->ravlevel].fen = pgn_game_to_fen(g, pgn_board)) 
+
+	if ((g->rav[g->ravlevel].fen = pgn_game_to_fen(g, pgn_board))
 		== NULL) {
 	    warn("strdup()");
 	    return 1;
@@ -1288,7 +1288,7 @@ static int rav_text(GAME g, FILE *fp, int which, BOARD o)
 	g->hindex = 0;
 	g->ravlevel++;
 
-	/* 
+	/*
 	 * Undo move_text()'s switch.
 	 */
 	pgn_switch_turn(g);
@@ -1328,7 +1328,7 @@ static int rav_text(GAME g, FILE *fp, int which, BOARD o)
  * returned on success when there is no move count in the FEN tag otherwise
  * the move count is returned.
  */
-static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply, 
+static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
 	char *str)
 {
     char *tmp;
@@ -1361,7 +1361,7 @@ static int parse_fen_line(BOARD b, unsigned *flags, char *turn, char *ply,
 		for (; n; --n, col++)
 		    b[RANKTOBOARD(row)][FILETOBOARD(col)].icon =
 			pgn_int_to_piece(WHITE, OPEN_SQUARE);
-	    } 
+	    }
 	    else if (pgn_piece_to_int(*tmp) != -1)
 		b[RANKTOBOARD(row)][FILETOBOARD(col++)].icon = *tmp;
 	    else
@@ -1387,7 +1387,7 @@ other:
 	default:
 	    return E_PGN_PARSE;
     }
-	
+
     tmp++;
 
     while (*tmp && *tmp != ' ') {
@@ -1412,7 +1412,7 @@ other:
     }
 
     tmp++;
-    
+
     // En passant.
     if (*tmp != '-') {
 	if (!VALIDCOL(*tmp))
@@ -1427,7 +1427,7 @@ other:
 	b[row][col].enpassant = 1;
 	SET_FLAG(*flags, GF_ENPASSANT);
     }
-    else 
+    else
 	tmp++;
 
     if (*tmp)
@@ -1476,7 +1476,7 @@ pgn_error_t pgn_board_init_fen(GAME g, BOARD b, char *fen)
      * If the FEN tag exists and there is no SetUp tag go ahead and parse it.
      * If there is a SetUp tag only parse the FEN tag if the value is 1.
      */
-    if ((n >= 0 && i >= 0 && atoi(g->tag[n]->value) == 1) 
+    if ((n >= 0 && i >= 0 && atoi(g->tag[n]->value) == 1)
 	    || (i >= 0 && n == -1) || fen) {
 	if ((n = parse_fen_line(tmpboard, &flags, &turn, &ply,
 			(fen) ? fen : g->tag[i]->value)) != E_PGN_OK)
@@ -1492,7 +1492,7 @@ pgn_error_t pgn_board_init_fen(GAME g, BOARD b, char *fen)
 	    g->ply = ply;
 	}
     }
-    else 
+    else
 	return (i >= 0 && n >= 0) ? E_PGN_OK : E_PGN_ERR;
 
     return E_PGN_OK;
@@ -1527,7 +1527,7 @@ pgn_error_t pgn_new_game()
     }
 
     game[gindex] = newg;
-    
+
     if ((game[gindex]->hp = calloc(1, sizeof(HISTORY *))) == NULL) {
 	free(game[gindex]);
 	warn("calloc()");
@@ -1559,7 +1559,7 @@ static int read_file(FILE *fp)
 	int lastchar = c;
 	int n;
 
-	/* 
+	/*
 	 * A parse error may have occured at EOF.
 	 */
 	if (parse_error) {
@@ -1598,7 +1598,7 @@ static int read_file(FILE *fp)
 	 */
 	if (parse_error) {
 	    pgn_ret = E_PGN_PARSE;
-	    
+
 	    if (game[gindex]->ravlevel)
 		return 1;
 
@@ -1610,7 +1610,7 @@ static int read_file(FILE *fp)
 		nulltags = 1;
 		tag_section = 0;
 	    }
-	    else 
+	    else
 		continue;
 	}
 
@@ -1628,7 +1628,7 @@ static int read_file(FILE *fp)
 	 * PGN: Application comment. The '%' must be on the first column of
 	 * the line. The comment continues until the end of the current line.
 	 */
-	if (c == '%') { 
+	if (c == '%') {
 	    if (lastchar == '\n' || lastchar == 0) {
 		while ((c = Fgetc(fp)) != EOF && c != '\n');
 		continue;
@@ -1680,7 +1680,7 @@ static int read_file(FILE *fp)
 	}
 
 	// PGN: Numeric Annotation Glyph.
-	if (c == '$' || c == '!' || c == '?' || c == '+' || c == '-' || 
+	if (c == '$' || c == '!' || c == '?' || c == '+' || c == '-' ||
 		c == '~' || c == '=') {
 	    Ungetc(c, fp);
 	    nag_text(game[gindex], fp);
@@ -1734,7 +1734,7 @@ static int read_file(FILE *fp)
 	    tag_section = 0;
 
 	    if (!game[gindex]->done_fen_tag) {
-		if (pgn_tag_find(game[gindex]->tag, "FEN") != -1 && 
+		if (pgn_tag_find(game[gindex]->tag, "FEN") != -1 &&
 			pgn_board_init_fen(game[gindex], pgn_board, NULL)) {
 		    parse_error = 1;
 		    continue;
@@ -1748,15 +1748,15 @@ static int read_file(FILE *fp)
 	}
 
 	// PGN: Move text.
-	if ((isdigit(c) && c != '0') || VALIDCOL(c) || c == 'N' || c == 'K' 
+	if ((isdigit(c) && c != '0') || VALIDCOL(c) || c == 'N' || c == 'K'
 		    || c == 'Q' || c == 'B' || c == 'R' || c == 'P' ||
 		    c == 'O') {
 	    Ungetc(c, fp);
 
 	    // PGN: If a FEN tag exists, initialize the board to the value.
 	    if (tag_section) {
-		if (pgn_tag_find(game[gindex]->tag, "FEN") != E_PGN_ERR && 
-			(n = pgn_board_init_fen(game[gindex], pgn_board, 
+		if (pgn_tag_find(game[gindex]->tag, "FEN") != E_PGN_ERR &&
+			(n = pgn_board_init_fen(game[gindex], pgn_board,
 						NULL)) == E_PGN_PARSE) {
 		    parse_error = 1;
 		    continue;
@@ -1789,7 +1789,7 @@ static int read_file(FILE *fp)
 	    memcpy(old, pgn_board, sizeof(BOARD));
 
 	    if (move_text(game[gindex], fp)) {
-		if (pgn_tag_add(&game[gindex]->tag, "Result", "*") == 
+		if (pgn_tag_add(&game[gindex]->tag, "Result", "*") ==
 			E_PGN_ERR) {
 		    warn("pgn_tag_add()");
 		    pgn_ret = E_PGN_ERR;
@@ -2049,10 +2049,10 @@ static char *compression_cmd(const char *filename, int expand)
 	    filename[len - 2] == 'i' && filename[len - 1] == 'p' &&
 	    filename[len] == '\0') {
 	if (expand)
-	    snprintf(command, sizeof(command), "unzip -p %s 2>/dev/null", 
+	    snprintf(command, sizeof(command), "unzip -p %s 2>/dev/null",
 		    filename);
 	else
-	    snprintf(command, sizeof(command), "zip -9 >%s 2>/dev/null", 
+	    snprintf(command, sizeof(command), "zip -9 >%s 2>/dev/null",
 		    filename);
 
 	return strdup (command);
@@ -2077,7 +2077,7 @@ static char *compression_cmd(const char *filename, int expand)
     }
     else if ((filename[len - 4] == '.' && filename[len - 3] == 'b' &&
 	    filename[len - 2] == 'z' && filename[len - 1] == '2' &&
-	    filename[len] == '\0') || (filename[len - 3] == '.' && 
+	    filename[len] == '\0') || (filename[len - 3] == '.' &&
 		filename[len - 2] == 'b' && filename[len - 1] == 'z' &&
 		filename[len] == '\0')) {
 	if (expand)
@@ -2285,7 +2285,7 @@ fail:
     return ret;
 }
 
-/* 
+/*
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
  * E_PGN_ERR if not.
  */

@@ -479,7 +479,7 @@ void view_annotation(HISTORY *h)
 
     if (h->comment && h->comment[0])
         comment++;
- 
+
     if (h->nag[0])
  	nag++;
 
@@ -490,11 +490,11 @@ void view_annotation(HISTORY *h)
 
     if (comment)
 	construct_message(buf, (nag) ? _("Any other key to continue") : ANY_KEY_STR, 0, 1,
-		(nag) ? _("Press 'n' to view NAG") : NULL, 
+		(nag) ? _("Press 'n' to view NAG") : NULL,
 		(nag) ? view_nag : NULL, (nag) ? h : NULL, NULL,
 		(nag) ? 'n' : 0, 0, "%s", h->comment);
     else
-	construct_message(buf, _("Any other key to continue"), 0, 1, _("Press 'n' to view NAG"), view_nag, h, NULL, 
+	construct_message(buf, _("Any other key to continue"), 0, 1, _("Press 'n' to view NAG"), view_nag, h, NULL,
 		'n', 0, "%s", _("No comment text for this move"));
 }
 
@@ -653,7 +653,7 @@ static int castling_state(GAME g, BOARD b, int row, int col, int piece, int mod)
 	return 1;
     }
     else if (pgn_piece_to_int(piece) == KING && col == 4
-	    && row == 7 && 
+	    && row == 7 &&
 	    (mod || (pgn_piece_to_int(b[7][7].icon) == ROOK &&
 	      TEST_FLAG(g->flags, GF_WK_CASTLE))
 	      ||
@@ -1319,7 +1319,7 @@ void invalid_move(int n, int e, const char *m)
 	cmessage(ERROR_STR, ANY_KEY_STR, "%s \"%s\" (round #%i)", (e == E_PGN_AMBIGUOUS)
 		? _("Ambiguous move") : _("Invalid move"), m, n);
     else
-	warnx("%s: %s \"%s\" (round #%i)", loadfile, (e == E_PGN_AMBIGUOUS) 
+	warnx("%s: %s \"%s\" (round #%i)", loadfile, (e == E_PGN_AMBIGUOUS)
 		? _("Ambiguous move") : _("Invalid move"), m, n);
 }
 
@@ -2189,12 +2189,12 @@ static void draw_window_decor()
     move_panel(boardp, 0,
 	       (config.boardleft) ? 0 : COLS - BOARD_WIDTH);
     move_panel(historyp, LINES - HISTORY_HEIGHT,
-		(config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH : 0 : 
+		(config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH : 0 :
 		(MEGA_BOARD) ? 0 : COLS - HISTORY_WIDTH);
     move_panel(statusp, 0,
 	       (config.boardleft) ? BOARD_WIDTH : 0);
-	move_panel(tagp, STATUS_HEIGHT + 1, 
-		(config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH : 
+	move_panel(tagp, STATUS_HEIGHT + 1,
+		(config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH :
 		HISTORY_WIDTH : 0);
 
     wbkgd(boardw, CP_BOARD_WINDOW);
@@ -2632,7 +2632,7 @@ void do_play_switch_turn()
     pgn_switch_turn(gp);
 
     if (!TEST_FLAG(d->flags, CF_HUMAN))
-	add_engine_command(gp, -1, 
+	add_engine_command(gp, -1,
 		(gp->side == WHITE) ? "white\n" : "black\n");
 
     update_status_window(gp);
@@ -2710,7 +2710,7 @@ void do_play_toggle_pause()
 {
     struct userdata_s *d = gp->data;
 
-    if (!TEST_FLAG(d->flags, CF_HUMAN) && gp->turn != 
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && gp->turn !=
 	    gp->side) {
 	d->paused = -1;
 	return;
@@ -2795,7 +2795,7 @@ void do_play_commit()
     pushkey = keycount = 0;
     update_status_notify(gp, NULL);
 
-    if (!TEST_FLAG(d->flags, CF_HUMAN) && 
+    if (!TEST_FLAG(d->flags, CF_HUMAN) &&
 	    (!d->engine || d->engine->status == ENGINE_THINKING))
 	return;
 
@@ -3048,7 +3048,7 @@ void do_play_history_mode()
 {
     struct userdata_s *d = gp->data;
 
-    if (!pgn_history_total(gp->hp) || 
+    if (!pgn_history_total(gp->hp) ||
 	    (d->engine && d->engine->status == ENGINE_THINKING))
 	return;
 
@@ -3121,7 +3121,7 @@ void do_edit_delete()
     struct userdata_s *d = gp->data;
 
     if (d->sp.icon)
-	d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon = 
+	d->b[RANKTOBOARD(d->sp.srow)][FILETOBOARD(d->sp.scol)].icon =
 	    pgn_int_to_piece(gp->turn, OPEN_SQUARE);
     else
 	d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon =
@@ -3148,7 +3148,7 @@ void do_edit_toggle_castle()
 {
     struct userdata_s *d = gp->data;
 
-    castling_state(gp, d->b, RANKTOBOARD(d->c_row), 
+    castling_state(gp, d->b, RANKTOBOARD(d->c_row),
 	    FILETOBOARD(d->c_col),
 	    d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon, 1);
 }
@@ -3194,7 +3194,7 @@ void do_edit_exit()
     d->mode = MODE_PLAY;
 }
 
-void really_do_annotate_finalize(struct input_data_s *in, 
+void really_do_annotate_finalize(struct input_data_s *in,
 	struct userdata_s *d)
 {
     HISTORY *h = in->data;
@@ -3314,7 +3314,7 @@ struct history_menu_s {
 void free_history_menu_data(struct history_menu_s **h)
 {
     int i;
-    
+
     if (!h)
 	return;
 
@@ -3352,7 +3352,7 @@ void get_history_data(HISTORY **hp, struct history_menu_s ***menu, int m,
 	hmenu[n]->move = (n && depth > hmenu[n-1]->ravlevel) ? m++ : m;
 	n++;
 	hmenu[n] = NULL;
-	
+
 #if 0
 	if (hp[i]->rav) {
 	    depth++;
@@ -3465,7 +3465,7 @@ void history_menu_next(struct menu_input_s *m)
 	n = 0;
     else
 	n = hm[m->selected + 1]->hindex;
-    
+
     n++;
     g->hindex = n;
 }
@@ -3513,7 +3513,7 @@ void do_annotate_move(HISTORY *hp)
     in = Calloc(1, sizeof(struct input_data_s));
     in->data = hp;
     in->efunc = do_annotate_finalize;
-    construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
+    construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0,
 	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL_KEY('T'), in, -1, -1);
 }
 
@@ -3552,7 +3552,7 @@ void history_menu_annotate(struct menu_input_s *m)
     in->data = hp;
     in->moredata = m->data;
     in->efunc = history_menu_annotate_finalize;
-    construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0, 
+    construct_input(buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0,
 	    _("Type CTRL-t to edit NAG"), edit_nag, NULL, CTRL_KEY('T'), in, -1, -1);
 }
 
@@ -3645,7 +3645,7 @@ void do_history_jump_next()
     struct userdata_s *d = gp->data;
 
     pgn_history_next(gp, d->b, (keycount > 0) ?
-	    config.jumpcount * keycount * movestep : 
+	    config.jumpcount * keycount * movestep :
 	    config.jumpcount * movestep);
 }
 
@@ -3654,7 +3654,7 @@ void do_history_jump_prev()
     struct userdata_s *d = gp->data;
 
     pgn_history_prev(gp, d->b, (keycount) ?
-	    config.jumpcount * keycount * movestep : 
+	    config.jumpcount * keycount * movestep :
 	    config.jumpcount * movestep);
 }
 
@@ -3670,7 +3670,7 @@ void do_history_next()
 {
     struct userdata_s *d = gp->data;
 
-    pgn_history_next(gp, d->b, (keycount) ? 
+    pgn_history_next(gp, d->b, (keycount) ?
 	    keycount * movestep : movestep);
 }
 
@@ -3776,7 +3776,7 @@ void do_history_find(int which)
     in->efunc = do_find_move_exp;
 
     if (!*moveexp || which == 0) {
-	construct_input(_("Find Move Text Expression"), NULL, 1, 0, NULL, NULL, NULL, 
+	construct_input(_("Find Move Text Expression"), NULL, 1, 0, NULL, NULL, NULL,
 		0, in, INPUT_HIST_MOVE_EXP, -1);
 	return;
     }
@@ -3827,7 +3827,7 @@ void do_history_jump()
 	in = Calloc(1, sizeof(struct input_data_s));
 	in->efunc = do_move_jump;
 
-	construct_input(_("Jump to Move Number"), NULL, 1, 1, NULL, 
+	construct_input(_("Jump to Move Number"), NULL, 1, 1, NULL,
 		NULL, NULL, 0, in, -1, 0);
 	return;
     }
@@ -4057,7 +4057,7 @@ void do_find_game_exp_finalize(int which)
     struct userdata_s *d = gp->data;
     int n;
 
-    if ((n = find_game_exp(gameexp, (which == -1) ? 0 : 1, 
+    if ((n = find_game_exp(gameexp, (which == -1) ? 0 : 1,
 		    (keycount) ? keycount : 1)) == -1) {
 	update_status_notify(gp, "%s", _("No matches found"));
 	return;
@@ -4339,8 +4339,8 @@ void global_find(int which)
     in->efunc = do_find_game_exp;
 
     if (!*gameexp || which == 0) {
-	construct_input(_("Find Game by Tag Expression"), NULL, 1, 0, 
-		_("[name expression:]value expression"), NULL, NULL, 0, in, 
+	construct_input(_("Find Game by Tag Expression"), NULL, 1, 0,
+		_("[name expression:]value expression"), NULL, NULL, 0, in,
 		INPUT_HIST_GAME_EXP, -1);
 	return;
     }
@@ -4502,7 +4502,7 @@ void do_global_copy_game()
 
 void do_global_new_all()
 {
-    construct_message(NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, NULL, 
+    construct_message(NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, NULL,
 	    do_new_game_from_scratch, 0, 0, "%s", _("Really start a new game from scratch?"));
 }
 
@@ -4868,7 +4868,7 @@ void game_loop()
 
 			    if (len > 0) {
 				if (d->engine->iobuf)
-				    d->engine->iobuf = Realloc(d->engine->iobuf, d->engine->len + len + 1); 
+				    d->engine->iobuf = Realloc(d->engine->iobuf, d->engine->len + len + 1);
 				else
 				    d->engine->iobuf = Calloc(1, len + 1);
 

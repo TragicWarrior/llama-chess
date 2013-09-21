@@ -42,7 +42,7 @@ enum {
     KINGSIDE = 1, QUEENSIDE
 };
 
-static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank, 
+static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	int file, int rank);
 static int find_source_square(GAME, BOARD, int, int *, int *, int, int);
 static int check_self(GAME g, BOARD b, int file, int rank);
@@ -59,8 +59,8 @@ static int val_piece_side(char turn, int c)
     return 0;
 }
 
-static int count_piece(GAME g, BOARD b, int piece, int sfile, 
-	int srank, int file, int rank, 
+static int count_piece(GAME g, BOARD b, int piece, int sfile,
+	int srank, int file, int rank,
 	int *count)
 {
     int p, pi;
@@ -100,7 +100,7 @@ static int count_piece(GAME g, BOARD b, int piece, int sfile,
  * Search for 'piece' stops when a non-empty square is found.
  */
 static int count_by_diag(GAME g, BOARD b, int piece,
-	int sfile, int srank, int file, 
+	int sfile, int srank, int file,
 	int rank)
 {
     int count = 0;
@@ -175,8 +175,8 @@ static int count_by_rank(GAME g, BOARD b, int piece,
     return count;
 }
 
-static int count_by_file(GAME g, BOARD b, int piece, 
-	int sfile, int srank, int file, 
+static int count_by_file(GAME g, BOARD b, int piece,
+	int sfile, int srank, int file,
 	int rank)
 {
     int i;
@@ -198,7 +198,7 @@ static int count_by_file(GAME g, BOARD b, int piece,
 }
 
 static int count_by_rank_file(GAME g, BOARD b, int piece,
-	int sfile, int srank, int file, 
+	int sfile, int srank, int file,
 	int rank)
 {
     int count;
@@ -238,7 +238,7 @@ static int opponent_can_attack(GAME g, BOARD b, int file,
     return 0;
 }
 
-static int validate_castle_move(GAME g, BOARD b, int side, int sfile, 
+static int validate_castle_move(GAME g, BOARD b, int side, int sfile,
 	int srank, int file, int rank)
 {
     int n;
@@ -255,9 +255,9 @@ static int validate_castle_move(GAME g, BOARD b, int side, int sfile,
     }
 
     if (file > FILETOINT('e')) {
-	if (b[RANKTOBOARD(srank)][FILETOBOARD((sfile + 1))].icon 
+	if (b[RANKTOBOARD(srank)][FILETOBOARD((sfile + 1))].icon
 		!= pgn_int_to_piece(g->turn, OPEN_SQUARE) ||
-		b[RANKTOBOARD(srank)][FILETOBOARD((sfile + 2))].icon 
+		b[RANKTOBOARD(srank)][FILETOBOARD((sfile + 2))].icon
 		!= pgn_int_to_piece(g->turn, OPEN_SQUARE))
 	    return E_PGN_INVALID;
 
@@ -271,11 +271,11 @@ static int validate_castle_move(GAME g, BOARD b, int side, int sfile,
 	}
     }
     else {
-	if (b[RANKTOBOARD(srank)][FILETOBOARD((sfile - 1))].icon != 
+	if (b[RANKTOBOARD(srank)][FILETOBOARD((sfile - 1))].icon !=
 		pgn_int_to_piece(g->turn, OPEN_SQUARE) ||
-		b[RANKTOBOARD(srank)][FILETOBOARD((sfile - 2))].icon != 
+		b[RANKTOBOARD(srank)][FILETOBOARD((sfile - 2))].icon !=
 		pgn_int_to_piece(g->turn, OPEN_SQUARE) ||
-		b[RANKTOBOARD(srank)][FILETOBOARD((sfile - 3))].icon != 
+		b[RANKTOBOARD(srank)][FILETOBOARD((sfile - 3))].icon !=
 		pgn_int_to_piece(g->turn, OPEN_SQUARE))
 	    return E_PGN_INVALID;
 
@@ -335,7 +335,7 @@ static int validate_piece(GAME g, BOARD b, int p, int sfile,
 
 		    if (pgn_piece_to_int(p) != PAWN || !val_piece_side(g->turn, p) || dist > 2)
 			return E_PGN_INVALID;
-		} 
+		}
 
 		if (g->turn == WHITE) {
 		    if ((srank == 2 && dist > 2) || (srank > 2 && dist > 1))
@@ -395,7 +395,7 @@ static int validate_piece(GAME g, BOARD b, int p, int sfile,
 
 	    if (!val_piece_side(g->turn, p))
 		return E_PGN_INVALID;
-	    
+
 	    break;
 	case KING:
 	    f = abs(sfile - file);
@@ -448,7 +448,7 @@ static int find_ambiguous(GAME g, BOARD b, int p, int sfile,
 	    count = count_by_diag(g, b, p, sfile, srank, file, rank);
 	    break;
 	case QUEEN:
-	    count = count_by_rank_file(g, b, p, sfile, srank, file, rank); 
+	    count = count_by_rank_file(g, b, p, sfile, srank, file, rank);
 	    count += count_by_diag(g, b, p, sfile, srank, file, rank);
 	    break;
 	case KING:
@@ -484,12 +484,12 @@ static void find_king_squares(GAME g, BOARD b, int *file,
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: king location: %c%c %c%c(opponent)\n", __FILE__,
-	    __LINE__, INTTOFILE(*file), INTTORANK(*rank), 
+	    __LINE__, INTTOFILE(*file), INTTORANK(*rank),
 	    INTTOFILE(*ofile), INTTORANK(*orank));
 #endif
 }
 
-static int parse_castle_move(GAME g, BOARD b, int side, int *sfile, 
+static int parse_castle_move(GAME g, BOARD b, int side, int *sfile,
 	int *srank, int *file, int *rank)
 {
     *srank = *rank = (g->turn == WHITE) ? 1 : 8;
@@ -632,7 +632,7 @@ static int check_test(GAME g, BOARD b)
     return g->check;
 }
 
-static int validate_pawn(GAME g, BOARD b, int sfile, 
+static int validate_pawn(GAME g, BOARD b, int sfile,
 	int srank, int file, int rank)
 {
     int n = abs(srank - rank);
@@ -658,7 +658,7 @@ static int validate_pawn(GAME g, BOARD b, int sfile,
     if (!val_piece_side(g->turn, p) || pgn_piece_to_int(p) != PAWN)
 	return 0;
 
-    if (srank == rank || (g->turn == WHITE && rank < srank) || 
+    if (srank == rank || (g->turn == WHITE && rank < srank) ||
 	    (g->turn == BLACK && rank > srank))
 	return 0;
 
@@ -736,7 +736,7 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     memcpy(tmpb, b, sizeof(BOARD));
     memcpy(&newg, g, sizeof(struct game_s));
 
-    if (finalize_move(&newg, tmpb, 0, sfile, srank, file, rank) 
+    if (finalize_move(&newg, tmpb, 0, sfile, srank, file, rank)
 	    != E_PGN_OK) {
 	g->check_testing = 0;
 	g->validate = oldv;
@@ -769,7 +769,7 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     return 1;
 }
 
-static int find_source_square(GAME g, BOARD b, int piece, int *sfile, 
+static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
 	int *srank, int file, int rank)
 {
     int p = 0;
@@ -779,8 +779,8 @@ static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: finding source square: piece=%c source=%c%c dest=%c%c\n",
-	    __FILE__, __LINE__, pgn_int_to_piece(g->turn, piece), 
-	    (*sfile) ? INTTOFILE(*sfile) : '0', 
+	    __FILE__, __LINE__, pgn_int_to_piece(g->turn, piece),
+	    (*sfile) ? INTTOFILE(*sfile) : '0',
 	    (*srank) ? INTTORANK(*srank) : '0', INTTOFILE(file),
 	    INTTORANK(rank));
 #endif
@@ -821,7 +821,7 @@ static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
 		return count;
 
 	    if (!g->check_testing) {
-		if (check_self_test(g, b, piece, *sfile, *srank, file, rank) 
+		if (check_self_test(g, b, piece, *sfile, *srank, file, rank)
 			== 0)
 		    return 0;
 	    }
@@ -863,7 +863,7 @@ static int find_source_square(GAME g, BOARD b, int piece, int *sfile,
     return count;
 }
 
-static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank, 
+static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	int file, int rank)
 {
     int p, pi;
@@ -882,7 +882,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
     if (!g->validate) {
 #ifdef DEBUG
 	if (!g->check_testing)
-	    PGN_DUMP("%s:%d: updating board and game flags\n", __FILE__, 
+	    PGN_DUMP("%s:%d: updating board and game flags\n", __FILE__,
 		    __LINE__);
 #endif
 	pgn_reset_enpassant(b);
@@ -892,7 +892,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	if (pi == PAWN) {
 	    p = b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon;
 
-	    if (sfile != file && pgn_piece_to_int(p) == OPEN_SQUARE && 
+	    if (sfile != file && pgn_piece_to_int(p) == OPEN_SQUARE &&
 		    TEST_FLAG(g->flags, GF_ENPASSANT)) {
 		p = (g->turn == WHITE) ? rank - 1 : rank + 1;
 		b[RANKTOBOARD(p)][FILETOBOARD(file)].icon =
@@ -939,10 +939,10 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	    b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon = p;
 
 	    if (file > FILETOINT('e'))
-		b[RANKTOBOARD(rank)][FILETOBOARD((file - 1))].icon = 
+		b[RANKTOBOARD(rank)][FILETOBOARD((file - 1))].icon =
 		    pgn_int_to_piece(g->turn, ROOK);
 	    else
-		b[RANKTOBOARD(rank)][FILETOBOARD((file + 1))].icon = 
+		b[RANKTOBOARD(rank)][FILETOBOARD((file + 1))].icon =
 		    pgn_int_to_piece(g->turn, ROOK);
 
 	    if (g->turn == WHITE)
@@ -958,7 +958,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	    else
 		p = b[RANKTOBOARD(srank)][FILETOBOARD(sfile)].icon;
 
-	    b[RANKTOBOARD(srank)][FILETOBOARD(sfile)].icon = 
+	    b[RANKTOBOARD(srank)][FILETOBOARD(sfile)].icon =
 		pgn_int_to_piece(g->turn, OPEN_SQUARE);
 	    b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon = p;
 	}
@@ -978,7 +978,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 		g->check = CHECK_MATE;
 
 		if (!g->validate) {
-		    pgn_tag_add(&g->tag, "Result", 
+		    pgn_tag_add(&g->tag, "Result",
 			    (g->turn == WHITE) ? "1-0" : "0-1");
 		    SET_FLAG(g->flags, GF_GAMEOVER);
 		}
@@ -988,7 +988,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 	}
 
 	// FIXME RAV
-	if (!g->validate && (g->pgn_fen_tag > 0 && !g->done_fen_tag) && 
+	if (!g->validate && (g->pgn_fen_tag > 0 && !g->done_fen_tag) &&
 		!pgn_history_total(g->hp) && srank >= 7)
 	    SET_FLAG(g->flags, GF_BLACK_OPENING);
     }
@@ -1329,7 +1329,7 @@ again:
 
 	/*
 	 * P[fr][x]fr
-	 * 
+	 *
 	 * The first character is the piece but only if not a pawn.
 	 */
 	if ((piece = pgn_piece_to_int(*p++)) == -1)
@@ -1399,7 +1399,7 @@ again:
     return E_PGN_OK;
 }
 
-/* 
+/*
  * Valididate move 'mp' against the game state 'g' and game board 'b' and
  * update board 'b'. 'mp' is updated to SAN format for moves which aren't
  * (frfr or e8Q for example). Returns E_PGN_PARSE if there was a move text
@@ -1421,7 +1421,7 @@ pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
 	return E_PGN_OK;
 
 #ifdef DEBUG
-    PGN_DUMP("%s:%d: BEGIN validating '%s' (%s)...\n", __FILE__, __LINE__, m, 
+    PGN_DUMP("%s:%d: BEGIN validating '%s' (%s)...\n", __FILE__, __LINE__, m,
 	    (g->turn == WHITE) ? "white" : "black");
 #endif
 
@@ -1536,13 +1536,13 @@ void pgn_find_valid_moves(GAME g, BOARD b, int file, int rank)
 	    if (find_source_square(g, b, p, &file, &rank, f, r) != 0) {
 		b[RANKTOBOARD(r)][FILETOBOARD(f)].valid = 1;
 #ifdef DEBUG
-		PGN_DUMP("%s:%d: %c%c is valid\n", __FILE__, __LINE__, 
+		PGN_DUMP("%s:%d: %c%c is valid\n", __FILE__, __LINE__,
 			INTTOFILE(f), INTTORANK(r));
 #endif
 	    }
 	}
     }
-    
+
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END valid destination squares for %c%c\n", __FILE__,
 	    __LINE__, INTTOFILE(file), INTTORANK(rank));

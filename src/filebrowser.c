@@ -166,7 +166,7 @@ new_glob:
 		}
 	    }
 	}
-	
+
 	tp = localtime(&st.st_mtime);
 	strftime(tbuf, sizeof(tbuf), "%b %d %T", tp);
 	snprintf(sbuf, sizeof(sbuf), "%s %6i", tbuf, (int)st.st_size);
@@ -323,7 +323,7 @@ static void file_browser_print(WIN *win)
 	    len = n;
     }
 
-    mvwprintw(win->w, m->print_line, 1, "%*s %-*s", len, m->item->value, 
+    mvwprintw(win->w, m->print_line, 1, "%*s %-*s", len, m->item->value,
 	    win->cols - len - 3, m->item->name);
 }
 

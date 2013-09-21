@@ -70,7 +70,7 @@ int send_to_engine(GAME g, int status, const char *format, ...)
     char *line;
     struct userdata_s *d = g->data;
 
-    if (!d->engine || d->engine->status == ENGINE_OFFLINE || 
+    if (!d->engine || d->engine->status == ENGINE_OFFLINE ||
 	    TEST_FLAG(d->flags, CF_HUMAN))
 	return 1;
 
@@ -155,13 +155,13 @@ static int get_pty(char *pty_name)
 	int n;
 
 	for (n = 0; PTY_MINOR[n]; n++) {
-	    sprintf(pty_name, "%spty%c%c", _PATH_DEV, PTY_MAJOR[i], 
+	    sprintf(pty_name, "%spty%c%c", _PATH_DEV, PTY_MAJOR[i],
 		    PTY_MINOR[n]);
 
 	    if ((fd = open(pty_name, O_RDWR | O_NOCTTY)) == -1)
 		continue;
 
-	    sprintf(pty_name, "%stty%c%c", _PATH_DEV, PTY_MAJOR[i], 
+	    sprintf(pty_name, "%stty%c%c", _PATH_DEV, PTY_MAJOR[i],
 		    PTY_MINOR[n]);
 
 	    if (access(pty_name, R_OK | W_OK) == -1) {
@@ -205,7 +205,7 @@ static char **parseargs(char *str)
 	    arg[0] = i = 0;
 	    continue;
 	}
-	
+
 	if ((i + 1) == sizeof(arg))
 	    continue;
 

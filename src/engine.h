@@ -32,7 +32,7 @@ enum {
     ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
 };
 
-enum { 
+enum {
     HUMAN, ENGINE
 };
 

@@ -81,7 +81,7 @@ typedef struct tags {
  *
  * g.hp is the pointer to the current history which may be .rav for
  * Recursive Annotated Variations. The depth of recursion is kept track of in
- * g.ravlevel. 
+ * g.ravlevel.
  */
 typedef struct history {
     char *move;				// The SAN move text.
@@ -101,14 +101,14 @@ typedef struct {
     HISTORY **hp;	// Pointer to the root move.
 } RAV;
 
-/* 
+/*
  * This is an array of 'games' structures. One for each game in a file, or
  * the current game.
  */
 typedef struct game_s {
     TAG **tag;			// Roster tags.
     HISTORY **history;		// Move history for this game.
-    HISTORY **hp; 		// History pointer pointing to the location 
+    HISTORY **hp; 		// History pointer pointing to the location
     				// in *history used mainly for RAV.
     RAV *rav;			// Saved game states for the root move of RAV.
     int ravlevel;		// An index to *rav.
@@ -232,7 +232,7 @@ pgn_error_t pgn_config_set(pgn_config_flag f, ...);
  */
 pgn_error_t pgn_config_get(pgn_config_flag f, ...);
 
-/* 
+/*
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
  * E_PGN_ERR if not.
  */
@@ -343,7 +343,7 @@ char *pgn_game_to_fen(GAME g, BOARD b);
  */
 void pgn_board_init(BOARD b);
 
-/* 
+/*
  * Valididate move 'm' against the game state 'g' and game board 'b' and
  * update board 'b'. 'm' is ensured to be in SAN format and 'frfr' will the
  * file/rank representation of 'm' and should be freed. Returns E_PGN_PARSE if
@@ -440,7 +440,7 @@ void pgn_reset_enpassant(BOARD b);
  */
 void pgn_reset_valid_moves(BOARD b);
 
-/* 
+/*
  * Sets valid moves (b.valid) from game 'g' using board 'b'. The valid moves
  * are for the piece on the board 'b' at 'rank' and 'file'. Returns nothing.
  */

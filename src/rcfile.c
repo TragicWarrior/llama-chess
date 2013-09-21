@@ -103,7 +103,7 @@ static void parse_color(const char *filename, int line, const char *str,
 {
     char fg[16], bg[16], attr[64], nattr[64];
     int n;
-    
+
     if ((n = sscanf(str, "%[a-zA-Z-] %[a-zA-Z-] %[a-zA-Z,-] %[a-zA-Z,-]", fg, bg,
 		    attr, nattr)) < 2)
         errx(EXIT_FAILURE, _ ("%s(%i): parse error"), filename, line);
@@ -125,7 +125,7 @@ static void parse_color(const char *filename, int line, const char *str,
 
 static int on_or_off(const char *filename, int lines, const char *str)
 {
-    if (strcasecmp(str, "on") == 0 || strcasecmp(str, "1") == 0 || 
+    if (strcasecmp(str, "on") == 0 || strcasecmp(str, "1") == 0 ||
 	    strcasecmp(str, "yes") == 0 || strcasecmp(str, "true") == 0)
 	return 1;
 
