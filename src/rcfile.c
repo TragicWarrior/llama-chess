@@ -262,7 +262,7 @@ void set_default_keys()
     add_key_binding(&edit_keys, do_edit_enpassant, 'p', _("toggle enpassant square"), 0);
     add_key_binding(&edit_keys, do_edit_switch_turn, 'w', _("toggle turn"), 0);
     add_key_binding(&edit_keys, do_edit_help, KEY_F(1), _("more help"), 0);
-    add_key_binding(&history_keys, do_edit_help, CTRL_KEY('g'), NULL, 0);
+    add_key_binding(&edit_keys, do_edit_help, CTRL_KEY('g'), NULL, 0);
     add_key_binding(&edit_keys, do_edit_exit, 'e', _("exit edit mode"), 0);
 
     add_key_binding(&play_keys, do_play_select, ' ', _("select piece for movement"), 0);
@@ -305,6 +305,8 @@ void set_default_keys()
 #endif
     add_key_binding(&global_keys, do_global_about, KEY_F(10), _("version information"), 0);
     add_key_binding(&global_keys, do_global_redraw, CTRL_KEY('L'), _("redraw the screen"), 0);
+    add_key_binding(&global_keys, NULL, KEY_F(1), _("more help"), 0);
+    add_key_binding(&global_keys, NULL, CTRL_KEY('g'), NULL, 0);
     add_key_binding(&global_keys, do_global_quit, 'Q', _("quit"), 0);
 }
 

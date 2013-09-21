@@ -124,6 +124,7 @@ key_func do_global_toggle_engine_window;
 key_func do_global_toggle_board_details;
 key_func do_global_toggle_strict_castling;
 key_func do_global_redraw;
+key_func do_global_help;
 #ifdef WITH_LIBPERL
 key_func do_global_perl;
 #endif

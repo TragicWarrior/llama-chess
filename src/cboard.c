@@ -212,6 +212,7 @@ static const bool cb[8][8] = {
 };
 
 static void free_userdata_once(GAME g);
+static void do_more_help(WIN *);
 
 // Posición por rotación de tablero.
 // Rotation board position.
@@ -2910,7 +2911,6 @@ void do_play_select()
     start_clock(gp);
 }
 
-/* FIXME: keys with the same function should comma deliminated. */
 static wchar_t *build_help(struct key_s **keys)
 {
     int i, nlen = 1, len, t, n;
@@ -2929,9 +2929,9 @@ static wchar_t *build_help(struct key_s **keys)
 		nlen = wcslen(keys[i]->key);
 		t += nlen;
 	    }
-	    else
-		t++;
 	}
+	else
+	    t++;
 
 	if (keys[i]->d) {
 	    if (wcslen(keys[i]->d) > len)
@@ -2990,38 +2990,36 @@ static wchar_t *build_help(struct key_s **keys)
     return buf;
 }
 
-void do_more_help(WIN *);
+void do_global_help ()
+{
+    wchar_t *buf = build_help(global_keys);
+
+    construct_message(_("Global Game Keys (* = can take a repeat count)"),
+		      ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL, buf, do_more_help,
+		      0, 1, "%ls", buf);
+}
+
 void do_main_help(WIN *win)
 {
-    wchar_t *buf;
-
     switch (win->c) {
 	case 'p':
-	    buf = build_help(play_keys);
-	    construct_message(_("Play Mode Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
+	    do_play_help ();
 	    break;
 	case 'h':
-	    buf = build_help(history_keys);
-	    construct_message(_("History Mode Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
+	    do_history_help ();
 	    break;
 	case 'e':
-	    buf = build_help(edit_keys);
-	    construct_message(_("Edit Mode Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
+	    do_edit_help ();
 	    break;
 	case 'g':
-	    buf = build_help(global_keys);
-	    construct_message(_("Global Game Keys (* = can take a repeat count)"), ANY_KEY_SCROLL_STR, 0, 0,
-		    NULL, NULL, buf, do_more_help, 0, 1, "%ls", buf);
+	    do_global_help ();
 	    break;
 	default:
 	    break;
     }
 }
 
-void do_more_help(WIN *win)
+static void do_more_help(WIN *win)
 {
     if (win->c == KEY_F(1) || win->c == CTRL_KEY('g'))
       construct_message(_("Command Key Index"),
@@ -3040,7 +3038,7 @@ void do_play_help()
     wchar_t *buf = build_help(play_keys);
 
     construct_message(_("Play Mode Keys (* = can take a repeat count)"),
-		      ANY_KEY_STR, 0, 0, NULL, NULL,
+		      ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL,
 		      buf, do_more_help, 0, 1, "%ls", buf);
 }
 
@@ -3176,8 +3174,8 @@ void do_edit_help()
     wchar_t *buf = build_help(edit_keys);
 
     construct_message(_("Edit Mode Keys (* = can take a repeat count)"),
-		      ANY_KEY_STR, 0, 0, NULL, NULL,
-		      buf, do_more_help, 0, 1, "%ls", buf);
+		      ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL, buf, do_more_help,
+		      0, 1, "%ls", buf);
 }
 
 void do_edit_exit()
@@ -3757,7 +3755,7 @@ void do_history_help()
     wchar_t *buf = build_help(history_keys);
 
     construct_message(_("History Mode Keys (* = can take a repeat count)"),
-		      ANY_KEY_STR, 0, 0, NULL, NULL,
+		      ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL,
 		      buf, do_more_help, 0, 1, "%ls", buf);
 }
 
@@ -4579,80 +4577,80 @@ static int globalkeys()
 
 	    return 1;
 	case '0' ... '9':
-		  i = input_c - '0';
+	    i = input_c - '0';
 
-		  if (keycount)
-		      keycount = keycount * 10 + i;
-		  else
-		      keycount = i;
+	    if (keycount)
+		keycount = keycount * 10 + i;
+	    else
+		keycount = i;
 
-		  update_status_notify(gp, _("Repeat %i"), keycount);
-		  return -1;
+	    update_status_notify(gp, _("Repeat %i"), keycount);
+	    return -1;
 	case KEY_UP:
-		  if (d->mode == MODE_HISTORY)
-		      return 0;
+	    if (d->mode == MODE_HISTORY)
+		return 0;
 
-		  if (keycount)
-		      d->c_row += keycount;
-		  else
-		      d->c_row++;
+	    if (keycount)
+		d->c_row += keycount;
+	    else
+		d->c_row++;
 
-		  if (d->c_row > 8)
-		      d->c_row = 1;
+	    if (d->c_row > 8)
+		d->c_row = 1;
 
-		  return 1;
+	    return 1;
 	case KEY_DOWN:
-		  if (d->mode == MODE_HISTORY)
-		      return 0;
+	    if (d->mode == MODE_HISTORY)
+		return 0;
 
-		  if (keycount) {
-		      d->c_row -= keycount;
-		      update_status_notify(gp, NULL);
-		  }
-		  else
-		      d->c_row--;
+	    if (keycount) {
+		d->c_row -= keycount;
+		update_status_notify(gp, NULL);
+	    }
+	    else
+		d->c_row--;
 
-		  if (d->c_row < 1)
-		      d->c_row = 8;
+	    if (d->c_row < 1)
+		d->c_row = 8;
 
-		  return 1;
+	    return 1;
 	case KEY_LEFT:
-		  if (d->mode == MODE_HISTORY)
-		      return 0;
+	    if (d->mode == MODE_HISTORY)
+		return 0;
 
-		  if (keycount)
-		      d->c_col -= keycount;
-		  else
-		      d->c_col--;
+	    if (keycount)
+		d->c_col -= keycount;
+	    else
+		d->c_col--;
 
-		  if (d->c_col < 1)
-		      d->c_col = 8;
+	    if (d->c_col < 1)
+		d->c_col = 8;
 
-		  return 1;
+	    return 1;
 	case KEY_RIGHT:
-		  if (d->mode == MODE_HISTORY)
-		      return 0;
+	    if (d->mode == MODE_HISTORY)
+		return 0;
 
-		  if (keycount)
-		      d->c_col += keycount;
-		  else
-		      d->c_col++;
+	    if (keycount)
+		d->c_col += keycount;
+	    else
+		d->c_col++;
 
-		  if (d->c_col > 8)
-		      d->c_col = 1;
+	    if (d->c_col > 8)
+		d->c_col = 1;
 
-		  return 1;
+	    return 1;
 	case KEY_RESIZE:
-		  return 1;
+	    return 1;
 	case 0:
 	default:
-		  for (i = 0; global_keys[i]; i++) {
-		      if (input_c == global_keys[i]->c) {
-			  (*global_keys[i]->f)();
-			  return 1;
-		      }
-		  }
-		  break;
+	    for (i = 0; global_keys[i]; i++) {
+		if (input_c == global_keys[i]->c && global_keys[i]->f) {
+		    (*global_keys[i]->f)();
+		    return 1;
+		}
+	    }
+	    break;
     }
 
     return 0;
@@ -4962,12 +4960,6 @@ void game_loop()
 		input_c = pushkey;
 
 	    if (win) {
-		switch (input_c) {
-		    case CTRL_KEY('L'):
-			do_window_resize ();
-			goto refresh;
-		}
-
 		win->c = input_c;
 
 		/*
