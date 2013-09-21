@@ -1,3 +1,10 @@
+cboard (0.7.1-1) UNRELEASED; urgency=low
+
+  * New upstream.
+  * Update Debian control file and standards version.
+
+ -- Ben Kibbey <bjk@luxsci.net>  Sat, 21 Sep 2013 10:05:23 -0400
+
 cboard (0.7.0-1) UNRELEASED; urgency=low
 
   * New upstream.

@@ -11,9 +11,12 @@ NCurses to be installed to make porting to other operating systems
 easier. There are known issues with Sun/Solaris and NetBSD, although
 CBoard has been tested to work well on OpenBSD, FreeBSD and Linux.
 
-Read INSTALL for generic build and installation details. After installing,
-type "cboard -h" for command-line options or just "cboard" then press F1 for
-help on in-game command keys.
+Read INSTALL for generic build and installation details. Or just do:
+
+     ./configure && make && make install
+     
+After installing, type "cboard -h" for command-line options or just "cboard"
+then press F1 for help on in-game command keys.
 
 If you want PERL support you'll need to have libperl installed and pass
 --with-libperl to 'configure'. When compiled with PERL support, pressing ^O

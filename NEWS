@@ -20,6 +20,8 @@ Fixed a couple of potential buffer overruns while parsing a move.
 
 Restore game flags before returning from pgn_validate_move().
 
+Fixed buffer overrun while building a help message box.
+
 
 CBoard version 0.7.0
 --------------------

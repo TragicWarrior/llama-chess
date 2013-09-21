@@ -1,14 +1,15 @@
 Source: cboard
 Section: games
-Priority: optional
+Priority: extra
 Maintainer: Ben Kibbey <bjk@luxsci.net>
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, libncurses5-dev
+Standards-Version: 3.9.4
 Homepage: http://c-board.sourceforge.net/
-Build-Depends: debhelper (>= 5), autotools-dev, libncurses5-dev
-Standards-Version: 3.9.1
+Vcs-Git: git://repo.or.cz/cboard.git
 
 Package: cboard
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: crafty, gnuchess
 Description: An NCurses PGN browser, editor and chess engine interface.
  CBoard is a Console/Curses PGN file browser, editor and interface
