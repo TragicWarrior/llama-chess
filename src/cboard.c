@@ -2929,6 +2929,8 @@ static wchar_t *build_help(struct key_s **keys)
 		nlen = wcslen(keys[i]->key);
 		t += nlen;
 	    }
+	    else
+		t++;
 	}
 	else
 	    t++;
@@ -2942,8 +2944,8 @@ static wchar_t *build_help(struct key_s **keys)
 	t += keys[i]->r;
     }
 
-    t += 4 + i;
-    buf = Malloc(t*sizeof(wchar_t));
+    t += 4 + i + 1;
+    buf = Malloc((t+1)*sizeof(wchar_t));
     p = buf;
 
     for (i = 0; keys[i]; i++) {
@@ -2961,7 +2963,7 @@ static wchar_t *build_help(struct key_s **keys)
 	*p = 0;
 
 	if (keys[i]->key) {
-	    wcscat(buf, keys[i]->key);
+	    wcsncat(buf, keys[i]->key, t-1);
 	    p = buf + wcslen(buf);
 	}
 	else
@@ -2973,11 +2975,11 @@ static wchar_t *build_help(struct key_s **keys)
 	*p = 0;
 
 	if (keys[i]->d)
-	    wcscat(buf, keys[i]->d);
+	    wcsncat(buf, keys[i]->d, t-1);
 
 	if (keys[i]->r) {
 	    wc = str_to_wchar ("*");
-	    wcscat(buf, wc);
+	    wcsncat(buf, wc, t-1);
 	    free (wc);
 	}
 
