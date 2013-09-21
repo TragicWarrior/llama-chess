@@ -50,7 +50,7 @@ static int validate_pawn(GAME g, BOARD b, int sfile, int srank, int file,
 	int rank);
 static int find_source_square(GAME, BOARD, int, int *, int *, int, int);
 
-static int val_piece_side(register char turn, register int c)
+static int val_piece_side(char turn, int c)
 {
     if ((isupper(c) && turn == WHITE) ||
 	    (islower(c) && turn == BLACK))
@@ -59,11 +59,11 @@ static int val_piece_side(register char turn, register int c)
     return 0;
 }
 
-static int count_piece(GAME g, BOARD b, register int piece, register int sfile, 
-	register int srank, register int file, register int rank, 
-	register int *count)
+static int count_piece(GAME g, BOARD b, int piece, int sfile, 
+	int srank, int file, int rank, 
+	int *count)
 {
-    register int p, pi;
+    int p, pi;
 
     if (!VALIDRANK(rank) || !VALIDFILE(file))
 	return 0;
@@ -99,14 +99,14 @@ static int count_piece(GAME g, BOARD b, register int piece, register int sfile,
  * value is the number of 'piece' found (on the current g->side) or zero.
  * Search for 'piece' stops when a non-empty square is found.
  */
-static int count_by_diag(GAME g, BOARD b, register int piece,
-	register int sfile, register int srank, register int file, 
-	register int rank)
+static int count_by_diag(GAME g, BOARD b, int piece,
+	int sfile, int srank, int file, 
+	int rank)
 {
     int count = 0;
-    register int ul = 0, ur = 0, dl = 0, dr = 0;
-    register int i;
-    register int f, r;
+    int ul = 0, ur = 0, dl = 0, dr = 0;
+    int i;
+    int f, r;
 
     for (i = 1; VALIDFILE(i); i++) {
 	r = rank + i;
@@ -153,13 +153,13 @@ static int count_knight(GAME g, BOARD b, int piece, int sfile, int srank,
     return count;
 }
 
-static int count_by_rank(GAME g, BOARD b, register int piece,
-	register int sfile, register int srank, register int file,
-	register int rank)
+static int count_by_rank(GAME g, BOARD b, int piece,
+	int sfile, int srank, int file,
+	int rank)
 {
-    register int i;
+    int i;
     int count = 0;
-    register int u = 0, d = 0;
+    int u = 0, d = 0;
 
     for (i = 1; VALIDRANK(i); i++) {
 	if (!u && VALIDRANK((rank + i)))
@@ -175,13 +175,13 @@ static int count_by_rank(GAME g, BOARD b, register int piece,
     return count;
 }
 
-static int count_by_file(GAME g, BOARD b, register int piece, 
-	register int sfile, register int srank, register int file, 
-	register int rank)
+static int count_by_file(GAME g, BOARD b, int piece, 
+	int sfile, int srank, int file, 
+	int rank)
 {
-    register int i;
+    int i;
     int count = 0;
-    register int l = 0, r = 0;
+    int l = 0, r = 0;
 
     for (i = 1; VALIDFILE(i); i++) {
 	if (!r && VALIDFILE((file + i)))
@@ -197,21 +197,21 @@ static int count_by_file(GAME g, BOARD b, register int piece,
     return count;
 }
 
-static int count_by_rank_file(GAME g, BOARD b, register int piece,
-	register int sfile, register int srank, register int file, 
-	register int rank)
+static int count_by_rank_file(GAME g, BOARD b, int piece,
+	int sfile, int srank, int file, 
+	int rank)
 {
-    register int count;
+    int count;
 
     count = count_by_rank(g, b, piece, sfile, srank, file, rank);
     return count + count_by_file(g, b, piece, sfile, srank, file, rank);
 }
 
-static int opponent_can_attack(GAME g, BOARD b, register int file,
-	register int rank)
+static int opponent_can_attack(GAME g, BOARD b, int file,
+	int rank)
 {
     int f, r;
-    register int p, pi;
+    int p, pi;
     int kf = g->kfile, kr = g->krank;
 
     pgn_switch_turn(g);
@@ -304,11 +304,11 @@ static int validate_castle_move(GAME g, BOARD b, int side, int sfile,
     return E_PGN_OK;
 }
 
-static int validate_piece(GAME g, BOARD b, register int p, register int sfile,
-	register int srank, register int file, register int rank)
+static int validate_piece(GAME g, BOARD b, int p, int sfile,
+	int srank, int file, int rank)
 {
-    register int f, r;
-    register int i, dist;
+    int f, r;
+    int i, dist;
 
     switch (p) {
 	case PAWN:
@@ -429,8 +429,8 @@ static int validate_piece(GAME g, BOARD b, register int p, register int sfile,
  * function or set to 0 if unknown. Returns 0 if the move is impossible for
  * the piece 'p'.
  */
-static int find_ambiguous(GAME g, BOARD b, register int p, register int sfile,
-	register int srank, register int file, register int rank)
+static int find_ambiguous(GAME g, BOARD b, int p, int sfile,
+	int srank, int file, int rank)
 {
     int count = 0;
 
@@ -462,15 +462,15 @@ static int find_ambiguous(GAME g, BOARD b, register int p, register int sfile,
     return count;
 }
 
-static void find_king_squares(GAME g, BOARD b, register int *file,
-	register int *rank, register int *ofile, register int *orank)
+static void find_king_squares(GAME g, BOARD b, int *file,
+	int *rank, int *ofile, int *orank)
 {
-    register int f, r;
+    int f, r;
 
     for (r = 1; VALIDRANK(r); r++) {
 	for (f = 1; VALIDFILE(f); f++) {
-	    register int p = b[RANKTOBOARD(r)][FILETOBOARD(f)].icon;
-	    register int pi = pgn_piece_to_int(p);
+	    int p = b[RANKTOBOARD(r)][FILETOBOARD(f)].icon;
+	    int pi = pgn_piece_to_int(p);
 
 	    if (pi == OPEN_SQUARE || pi != KING)
 		continue;
@@ -509,8 +509,8 @@ static int parse_castle_move(GAME g, BOARD b, int side, int *sfile,
  */
 static int check_mate_thingy(GAME g, BOARD b, int file, int rank)
 {
-    register int r, f;
-    register int p = pgn_piece_to_int(b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon);
+    int r, f;
+    int p = pgn_piece_to_int(b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon);
 
     for (r = 1; VALIDRANK(r); r++) {
 	for (f = 1; VALIDFILE(f); f++) {
@@ -527,9 +527,9 @@ static int check_mate_thingy(GAME g, BOARD b, int file, int rank)
 
 static int checkmate_test(GAME g, BOARD b)
 {
-    register int f, r;
+    int f, r;
     int n = CHECK_MATE;
-    register int kf = g->kfile, kr = g->krank, okf = g->okfile, okr = g->okrank;
+    int kf = g->kfile, kr = g->krank, okf = g->okfile, okr = g->okrank;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN checkmate test\n", __FILE__, __LINE__);
@@ -564,10 +564,10 @@ done:
     return n;
 }
 
-static int check_opponent(GAME g, BOARD b, register int file, register int rank)
+static int check_opponent(GAME g, BOARD b, int file, int rank)
 {
     int f, r;
-    register int p, pi;
+    int p, pi;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN opponent check test\n", __FILE__, __LINE__);
@@ -592,7 +592,7 @@ static int check_opponent(GAME g, BOARD b, register int file, register int rank)
 static int check_self(GAME g, BOARD b, int file, int rank)
 {
     int f, r;
-    register int p, pi;
+    int p, pi;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN self check test\n", __FILE__, __LINE__);
@@ -632,11 +632,11 @@ static int check_test(GAME g, BOARD b)
     return g->check;
 }
 
-static int validate_pawn(GAME g, BOARD b, register int sfile, 
-	register int srank, register int file, register int rank)
+static int validate_pawn(GAME g, BOARD b, int sfile, 
+	int srank, int file, int rank)
 {
-    register int n = abs(srank - rank);
-    register int p;
+    int n = abs(srank - rank);
+    int p;
 
     if (abs(sfile - file) > 1)
 	return 0;
@@ -770,11 +770,11 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
 }
 
 static int find_source_square(GAME g, BOARD b, int piece, int *sfile, 
-	int *srank, register int file, register int rank)
+	int *srank, int file, int rank)
 {
     int p = 0;
-    register int r, f, i;
-    register int dist = 0;
+    int r, f, i;
+    int dist = 0;
     int count = 0;
 
 #ifdef DEBUG
@@ -1517,8 +1517,8 @@ pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **dst)
  */
 void pgn_find_valid_moves(GAME g, BOARD b, int file, int rank)
 {
-    register int p = pgn_piece_to_int(b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon);
-    register int r, f;
+    int p = pgn_piece_to_int(b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon);
+    int r, f;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN valid destination squares for %c%c\n", __FILE__,

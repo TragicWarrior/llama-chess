@@ -65,7 +65,7 @@ extern char *strptime(const char *, const char *, struct tm *);
 
 static int Fgetc(FILE *fp)
 {
-    register int c;
+    int c;
 
     if ((c = fgetc(fp)) != EOF) {
 	if (pgn_config.progress && pgn_config.pfunc) {
