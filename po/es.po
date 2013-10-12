@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cboard 0.6.2\n"
+"Project-Id-Version: cboard 0.7.1\n"
 "Report-Msgid-Bugs-To: bjk@luxsci.net\n"
-"POT-Creation-Date: 2013-09-21 09:50-0400\n"
+"POT-Creation-Date: 2013-10-13 14:04-0400\n"
 "PO-Revision-Date: 2013-06-27 19:43+0000\n"
 "Last-Translator: noeld <ntlatempa@gmail.com>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -297,7 +297,7 @@ msgstr "Comando de Motor"
 
 #: src/cboard.c:2650
 msgid "Press 'g' to start the game"
-msgstr "Presiona 'g' para inciar el juego"
+msgstr "Presiona 'g' para iniciar el juego"
 
 #: src/cboard.c:2656
 msgid ""
@@ -626,9 +626,8 @@ msgid "[ press any key to continue ]"
 msgstr "[ presiona cualquier tecla para continuar ]"
 
 #: src/common.h:93
-#, fuzzy
 msgid "[ press any key to continue (UP/DN to scroll) ]"
-msgstr "[ presiona cualquier tecla para continuar ]"
+msgstr "[ presiona cualquier tecla para continuar (UP/DN to scroll) ]"
 
 #: src/common.h:94
 msgid "[ ERROR ]"
@@ -978,7 +977,7 @@ msgstr "información de versión"
 
 #: src/rcfile.c:307
 msgid "redraw the screen"
-msgstr ""
+msgstr "redibuja la pantalla"
 
 #: src/rcfile.c:310
 msgid "quit"
@@ -1148,6 +1147,12 @@ msgstr "Editando Etiquetas PGN"
 #: src/tags.c:548
 msgid "Viewing Roster Tags"
 msgstr "Visor de Etiquetas PGN"
+
+#~ msgid "Check Mate"
+#~ msgstr "Jaque Mate"
+
+#~ msgid "GAMEOVER!!"
+#~ msgstr "¡¡FIN DE JUEGO!!"
 
 #~ msgid "P=pawn, R=rook, N=knight, B=bishop,* "
 #~ msgstr "P=peón, T=torre, C=caballo, A=alfil, "
