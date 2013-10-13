@@ -902,17 +902,17 @@ int coordofmove(GAME g, char *move, int yorx)
 {
     int l, y, x, i;
 
-    if (!strcmp (move, "O-O")) {
-	if (yorx)
-	    return g->turn == WHITE ? 8 : 1;
-
-	return  7;
-    }
-    else if (!strcmp (move, "O-O-O")) {
+    if (!strncmp (move, "O-O-O", 5)) {
 	if (yorx)
 	    return g->turn == WHITE ? 8 : 1;
 
 	return  3;
+    }
+    else if (!strncmp (move, "O-O", 3)) {
+	if (yorx)
+	    return g->turn == WHITE ? 8 : 1;
+
+	return  7;
     }
 
     l = strlen(move);
