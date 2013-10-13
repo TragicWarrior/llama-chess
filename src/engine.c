@@ -473,6 +473,11 @@ static void parse_xboard_line(GAME g, char *str)
 	    return;
 	}
 
+	if (TEST_FLAG(gp->flags, GF_GAMEOVER)) {
+	    gameover (g);
+	    return;
+	}
+
 	if (g->side == g->turn)
 	    RETURN(d);
 
