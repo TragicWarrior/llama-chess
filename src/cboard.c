@@ -214,11 +214,8 @@ void coordofmove(GAME g, char *move, char *prow, char *pcol)
     
     if (*move == 'O') {
 		*prow = (g->turn == WHITE) ? 8 : 1;
-	if (l <= 4)
-	    *pcol = 7;
-	else
-	    *pcol = 3;
-	return;
+		*pcol = (l <= 4) ? 7 : 3;
+		return;
 	}
 
     move += l;
@@ -1108,7 +1105,7 @@ void update_board_window(GAME g)
 
 		    if (config.showattacks && config.details
 			&& piece_can_attack (g,
-					     BIG_BOARD ? INV_INT (brow+1) : brow,
+					     BIG_BOARD ? INV_INT0(brow)+1 : brow,
 					     BIG_BOARD ? bcol+1 : bcol)) {
 			    attrs = CP_BOARD_ATTACK;
 			    old_attrs = attrs;
