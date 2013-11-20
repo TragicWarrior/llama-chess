@@ -132,12 +132,6 @@ static int macro_match;
 // Primer movimiento de juego cargado
 // First move loaded game
 static char fm_loaded_file = FALSE;
-// Movimiento resultado de la función 'do_play_go'
-// Movement function result 'do_play_go'
-static int go_move = 0;
-// Controla rotación de tablero
-// Rotation control board
-static int rotate = FALSE;
 
 static int COLS_OLD, LINES_OLD;
 
@@ -262,7 +256,7 @@ void update_cursor(GAME g, int idx)
 	else
 	coordofmove(g, g->hp[idx]->move, &d->c_row, &d->c_col);
 
-    if (d->mode == MODE_HISTORY && rotate)
+    if (d->mode == MODE_HISTORY && d->rotate)
 	rotate_position(&d->c_row, &d->c_col);
 }
 
@@ -719,7 +713,7 @@ static int piece_can_attack (GAME g, int rank, int file)
     pgn_error_t e;
     int row, col, p, v, pi, cpi;
 
-    if (rotate) {
+    if (d->rotate) {
 		rotate_position(&d->c_row, &d->c_col);
 	rotate_position(&d->sp.srow, &d->sp.scol);
     }
@@ -732,7 +726,7 @@ static int piece_can_attack (GAME g, int rank, int file)
 
     if (pi == OPEN_SQUARE || cpi == OPEN_SQUARE || !VALIDFILE (file)
 	|| !VALIDRANK (rank)) {
-	if (rotate) {
+	if (d->rotate) {
 		rotate_position(&d->c_row, &d->c_col);
 		rotate_position(&d->sp.srow, &d->sp.scol);
 	}
@@ -821,7 +815,7 @@ static int piece_can_attack (GAME g, int rank, int file)
     free (frfr);
 
 pca_quit:
-    if (rotate) {
+    if (d->rotate) {
 		rotate_position(&d->c_row, &d->c_col);
 	rotate_position(&d->sp.srow, &d->sp.scol);
     }
@@ -885,7 +879,7 @@ void update_board_window(GAME g)
     h = pgn_history_by_n(g->hp, g->hindex - 1);
 	if (h && h->move && d->mode == MODE_PLAY)
 		coordofmove(g, h->move, &d->pm_row, &d->pm_col);
-		if (rotate) {
+		if (d->rotate) {
 			rotate_position(&d->pm_row, &d->pm_col);
 		}
 	else {
@@ -897,13 +891,13 @@ void update_board_window(GAME g)
 	update_cursor(g, g->hindex);
 
     if (BIG_BOARD) {
-	if (rotate) {
+	if (d->rotate) {
 	    brow = 7;
 	    coords_y = 1;
 	}
     }
     else {
-        if (rotate) {
+        if (d->rotate) {
 	    brow = 1;
 	    coords_y = 1;
 	}
@@ -913,13 +907,13 @@ void update_board_window(GAME g)
 
     for (row = 0; row < maxy; row++) {
         if (BIG_BOARD) {
-	    if (rotate)
+	    if (d->rotate)
 	        bcol = 7;
 	    else
 	        bcol = 0;
 	}
 	else {
-	    if (rotate)
+	    if (d->rotate)
 	        bcol = 8;
 	    else
 	        bcol = 1;
@@ -963,7 +957,7 @@ void update_board_window(GAME g)
 			mvwprintw(boardw,
 				  (BIG_BOARD) ? row * ((MEGA_BOARD) ? 3 : 2)
 				  : row, (l) ? 0 : col, "%d",
-				  (rotate) ? coords_y++ : coords_y--);
+				  (d->rotate) ? coords_y++ : coords_y--);
 		wattroff(boardw, CP_BOARD_COORDS);
 		continue;
 	    }
@@ -1010,7 +1004,7 @@ void update_board_window(GAME g)
 			    attrwhich = WHITE;
 		    }
 
-		    if (BIG_BOARD && rotate) {
+		    if (BIG_BOARD && d->rotate) {
 		        brow = INV_INT0(brow);
 			bcol = INV_INT0(bcol);
 		    }
@@ -1060,7 +1054,7 @@ void update_board_window(GAME g)
 		    else if (p != 'x' && !can_attack)
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
-			if (BIG_BOARD && rotate) {
+			if (BIG_BOARD && d->rotate) {
 		        brow = INV_INT0(brow);
 				bcol = INV_INT0(bcol);
 			}
@@ -1132,8 +1126,8 @@ printc:
 			if (BIG_BOARD) {
 			    if (config.details && !can_attack
 				&& castling_state(g, d->b,
-				(rotate) ? INV_INT(brow + 1) - 1: brow,
-				(rotate) ? INV_INT(bcol + 1) - 1: bcol, p, 0))
+				(d->rotate) ? INV_INT(brow + 1) - 1: brow,
+				(d->rotate) ? INV_INT(bcol + 1) - 1: bcol, p, 0))
 			        attrs = mix_cp(CP_BOARD_CASTLING, attrs,
 					       ATTRS(CP_BOARD_CASTLING),
 					       A_FG_B_BG);
@@ -1187,7 +1181,7 @@ printc:
 			col += 2;
 		    }
 
-		    if (rotate)
+		    if (d->rotate)
 			bcol--;
 		    else
 			bcol++;
@@ -1208,7 +1202,7 @@ printc:
 	}
 
 	if (row % rowr) {
-	    if (rotate)
+	    if (d->rotate)
 		brow++;
 	    else
 		brow--;
@@ -2559,7 +2553,7 @@ void do_play_toggle_eh_mode()
 	    if (gp->side == BLACK)
 	        update_status_notify(gp, _("Press 'g' to start the game"));
 
-	    rotate = (rotate) ? FALSE : TRUE;
+	    d->rotate = !d->rotate;
 	}
 	else
 	    message(NULL, ANY_KEY_STR,
@@ -2579,7 +2573,7 @@ void do_play_undo()
         if (gp->hindex - keycount < 0)
 	    gp->hindex = 0;
 	else {
-	    if (go_move)
+	    if (d->go_move)
 	        gp->hindex -= (keycount * 2) -1;
 	    else
 	        gp->hindex -= keycount * 2;
@@ -2589,7 +2583,7 @@ void do_play_undo()
         if (gp->hindex - 2 < 0)
 	    gp->hindex = 0;
 	else {
-	    if (go_move)
+	    if (d->go_move)
 	        gp->hindex -= 1;
 	    else
 	        gp->hindex -= 2;
@@ -2610,9 +2604,9 @@ void do_play_undo()
 
     update_history_window(gp);
 
-    if (go_move) {
+    if (d->go_move) {
         pgn_switch_side(gp, FALSE);
-	go_move--;
+	d->go_move--;
     }
 }
 
@@ -2648,7 +2642,7 @@ void do_play_go()
     if (gp->side == gp->turn)
         pgn_switch_side(gp, FALSE);
 
-    go_move++;
+    d->go_move++;
 }
 
 void do_play_config_command()
@@ -2715,7 +2709,7 @@ void do_play_commit()
     d->sp.row = d->c_row;
     d->sp.col = d->c_col;
 
-    if (rotate) {
+    if (d->rotate) {
 		rotate_position(&d->sp.row, &d->sp.col);
 	rotate_position(&d->sp.srow, &d->sp.scol);
     }
@@ -2730,7 +2724,7 @@ void do_play_commit()
     if (gp->side != gp->turn)
         pgn_switch_side(gp, FALSE);
 
-    if (rotate && d->sp.icon)
+    if (d->rotate && d->sp.icon)
 		rotate_position(&d->sp.srow, &d->sp.scol);
 
     // Envia comando 'go' a Polyglot en el primer movimiento  debido a que
@@ -2741,7 +2735,7 @@ void do_play_commit()
 	((gp->side == WHITE && !gp->hindex) || fm_loaded_file))
 	add_engine_command(gp, ENGINE_THINKING, "go\n");
 
-    go_move = 0;
+    d->go_move = 0;
     fm_loaded_file = FALSE;
 }
 
@@ -2761,7 +2755,7 @@ void do_play_select()
     if (d->sp.icon)
       do_play_cancel_selected ();
 
-    if (rotate)
+    if (d->rotate)
 		rotate_position(&d->c_row, &d->c_col);
 
     d->sp.icon = d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon;
@@ -2812,7 +2806,7 @@ void do_play_select()
     if (config.validmoves)
 	pgn_find_valid_moves(gp, d->b, d->sp.scol, d->sp.srow);
 
-    if (rotate) {
+    if (d->rotate) {
 		rotate_position(&d->c_row, &d->c_col);
 	rotate_position(&d->sp.srow, &d->sp.scol);
     }
@@ -3547,7 +3541,8 @@ void do_history_half_move_toggle()
 
 void do_history_rotate_board()
 {
-    rotate = (rotate) ? FALSE : TRUE;
+    struct userdata_s *d = gp->data;
+    d->rotate = !d->rotate;
 }
 
 void do_history_jump_next()
@@ -3644,7 +3639,7 @@ void do_history_toggle()
     }
     else {
         d->play_mode = PLAY_HE;
-	rotate = FALSE;
+	d->rotate = FALSE;
     }
 
     do_history_mode_finalize(d);
@@ -3864,6 +3859,8 @@ void do_new_game_finalize(GAME g)
 
     d->mode = MODE_PLAY;
     update_status_notify(g, NULL);
+    d->rotate = FALSE;
+    d->go_move = 0;
 }
 
 void do_new_game_from_scratch(WIN *win)
@@ -3881,7 +3878,6 @@ void do_new_game_from_scratch(WIN *win)
     init_userdata();
     loadfile[0] = 0;
     do_new_game_finalize(gp);
-    rotate = FALSE;
 }
 
 void do_new_game()
@@ -3891,7 +3887,6 @@ void do_new_game()
     add_custom_tags(&gp->tag);
     init_userdata_once(gp, gindex);
     do_new_game_finalize(gp);
-    rotate = FALSE;
 }
 
 void do_game_delete_finalize(int n)
@@ -4088,6 +4083,7 @@ void do_load_file(WIN *win)
     pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
 
     fm_loaded_file = TRUE;
+	d->rotate = FALSE;
 
 done:
     pgn_close(pgn);
@@ -4724,6 +4720,9 @@ void game_loop()
          d->mode = MODE_PLAY;
 	 d->play_mode = PLAY_HE;
     }
+
+	d->rotate = FALSE;
+	d->go_move = 0;
 
     if (d->mode == MODE_HISTORY)
 	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
