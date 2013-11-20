@@ -847,16 +847,23 @@ void print_piece(WINDOW *w, int l, int c, char p)
         mvwprintw(w, l + y, c, f_pieces[0]);
 }
 
+static int is_the_square (int brow, int bcol, int row, int col,
+			int prow, int pcol)
+{
+    if ((!BIG_BOARD &&
+		row == ROWTOMATRIX(prow) && col == COLTOMATRIX(pcol))
+	|| (BIG_BOARD &&
+		brow + 1 == INV_INT(prow) && bcol + 1 == pcol))
+	return 1;
+
+    return 0;
+}
+
 static int is_prev_move (struct userdata_s *d, int brow, int bcol,
 			 int row, int col)
 {
-    if ((!BIG_BOARD &&
-	 row == ROWTOMATRIX(((rotate) ? INV_INT(d->pm_row) : d->pm_row)) &&
-	 col == COLTOMATRIX(((rotate) ? INV_INT(d->pm_col) : d->pm_col)))
-	|| (BIG_BOARD &&
-	    brow + 1 == ((rotate) ? d->pm_row : INV_INT(d->pm_row)) &&
-	    bcol + 1 == ((rotate) ? INV_INT(d->pm_col) : d->pm_col)))
-	return 1;
+	if (is_the_square (brow, bcol, row, col, d->pm_row, d->pm_col))
+		return 1;
 
     return 0;
 }
@@ -878,6 +885,9 @@ void update_board_window(GAME g)
     h = pgn_history_by_n(g->hp, g->hindex - 1);
 	if (h && h->move && d->mode == MODE_PLAY)
 		coordofmove(g, h->move, &d->pm_row, &d->pm_col);
+		if (rotate) {
+			rotate_position(&d->pm_row, &d->pm_col);
+		}
 	else {
 		d->pm_row = 0;
 		d->pm_col = 0;
@@ -1055,18 +1065,14 @@ void update_board_window(GAME g)
 				bcol = INV_INT0(bcol);
 			}
 
-		    if ((!BIG_BOARD && row == ROWTOMATRIX(d->c_row)
-			 && col == COLTOMATRIX(d->c_col))
-			|| (BIG_BOARD && brow + 1 == INV_INT(d->c_row)
-			    && bcol + 1 == d->c_col)) {
+			if (is_the_square (brow, bcol, row, col, d->c_row,
+				d->c_col)) {
 			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
 			old_attrs = -1;
 		    }
-		    else if ((!BIG_BOARD && row == ROWTOMATRIX(d->sp.srow) &&
-			      col == COLTOMATRIX(d->sp.scol)) ||
-			     (BIG_BOARD && brow + 1 == INV_INT(d->sp.srow) &&
-			      bcol + 1 == d->sp.scol)) {
+			else if (is_the_square (brow, bcol, row, col, d->sp.srow,
+				d->sp.scol)) {
 			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
 			old_attrs = -1;
