@@ -96,6 +96,7 @@ struct {
     char exitdialogbox;
     char enginecmdblacktag;
     int utf8_pieces;    // For the board only.
+    char bprevmove;
 } config;
 
 #endif

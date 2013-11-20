@@ -841,6 +841,87 @@ void print_piece(WINDOW *w, int l, int c, char p)
         mvwprintw(w, l + y, c, f_pieces[0]);
 }
 
+void board_prev_move_play (GAME g)
+{
+    struct userdata_s *d = g->data;
+	
+	char l = strlen(d->pm_frfr);
+	if (l) {
+		char q = (l > 4) ? 2 : 1;
+
+		d->pm_row = RANKTOINT(d->pm_frfr[l - q++]);
+		d->pm_col = FILETOINT(d->pm_frfr[l - q++]);
+		d->ospm_row = RANKTOINT(d->pm_frfr[l - q++]);
+		d->ospm_col = FILETOINT(d->pm_frfr[l - q]);
+		if (d->rotate) {
+			rotate_position(&d->pm_row, &d->pm_col);
+			rotate_position(&d->ospm_row, &d->ospm_col);
+		}
+	}
+	else {
+		d->pm_row = 0;
+		d->pm_col = 0;
+		d->ospm_row = 0;
+		d->ospm_col = 0;
+	}
+}
+
+void board_prev_move_history (GAME g)
+{
+    struct userdata_s *d = g->data;
+
+	if (g->hindex) {
+		char *move = g->hp[g->hindex - 1]->move;
+
+		if (move) {
+			if (d->mode == MODE_PLAY)
+				coordofmove(g, move, &d->pm_row, &d->pm_col);
+			else {
+				d->pm_row = 0;
+				d->pm_col = 0;
+			}
+
+			if (*move == 'O') {
+				d->ospm_row = g->turn == WHITE ? 8 : 1;
+				d->ospm_col = 5;
+				return;
+			}
+
+			BOARD ob;
+			char f, r;
+			pgn_board_init(ob);
+			if (g->hindex > 1) {
+				HISTORY *h = pgn_history_by_n(g->hp, g->hindex - 2);
+				if (h) {
+					pgn_board_init_fen(g, ob, h->fen);
+					pgn_switch_turn(g);
+				}
+			}
+			for (f = 0; f < 8; f++) {
+			for (r = 0; r < 8; r++) {
+				if (ob[f][r].icon != '.' && d->b[f][r].icon == '.') {
+					d->ospm_row = INV_INT0(f) + 1;
+					d->ospm_col = r + 1;
+					break;
+				}
+			}
+			}
+			if (d->rotate) {
+				if (d->mode == MODE_PLAY)
+					rotate_position(&d->pm_row, &d->pm_col);
+				rotate_position(&d->ospm_row, &d->ospm_col);
+			}
+		return;
+		}
+	}
+	else {
+		d->ospm_row = 0;
+		d->ospm_col = 0;
+		d->pm_row = 0;
+		d->pm_col = 0;
+	}
+}
+
 static int is_the_square (int brow, int bcol, int row, int col,
 			int prow, int pcol)
 {
@@ -874,17 +955,17 @@ void update_board_window(GAME g)
     unsigned coords_y = 8, cxgc = 0;
     unsigned i, cpd = 0;
     struct userdata_s *d = g->data;
-    HISTORY *h = NULL;
 
-    h = pgn_history_by_n(g->hp, g->hindex - 1);
-	if (h && h->move && d->mode == MODE_PLAY)
-		coordofmove(g, h->move, &d->pm_row, &d->pm_col);
-		if (d->rotate) {
-			rotate_position(&d->pm_row, &d->pm_col);
-		}
+	if (config.bprevmove && d->mode != MODE_EDIT)
+		if (!d->pm_undo && d->mode == MODE_PLAY)
+			board_prev_move_play(g);
+		else
+			board_prev_move_history(g);
 	else {
 		d->pm_row = 0;
 		d->pm_col = 0;
+		d->ospm_row = 0;
+		d->ospm_col = 0;
 	}
 
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
@@ -1071,8 +1152,9 @@ void update_board_window(GAME g)
 				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
 			old_attrs = -1;
 		    }
-		    else if (is_prev_move (d, brow, bcol, row, col) && !valid)
-			{
+		    else if ((is_prev_move (d, brow, bcol, row, col) && !valid)
+				|| (is_the_square (brow, bcol, row, col, d->ospm_row, 
+				d->ospm_col))) {
 			attrs = mix_cp(CP_BOARD_PREVMOVE, IS_ENPASSANT(p),
 				       ATTRS(CP_BOARD_PREVMOVE), B_FG_A_BG);
 			old_attrs = -1;
@@ -1394,6 +1476,7 @@ void do_validate_move(char **move)
 	    return;
 	}
 
+	strcpy(d->pm_frfr, frfr);
 	update_time_control(gp);
 	pgn_history_add(gp, d->b, *move);
 	pgn_switch_turn(gp);
@@ -2608,6 +2691,7 @@ void do_play_undo()
         pgn_switch_side(gp, FALSE);
 	d->go_move--;
     }
+	d->pm_undo = TRUE;
 }
 
 void do_play_toggle_pause()
@@ -2737,6 +2821,7 @@ void do_play_commit()
 
     d->go_move = 0;
     fm_loaded_file = FALSE;
+	d->pm_undo = FALSE;
 }
 
 void do_play_select()
@@ -4723,6 +4808,8 @@ void game_loop()
 
 	d->rotate = FALSE;
 	d->go_move = 0;
+	d->pm_undo = FALSE;
+	d->pm_frfr[0] = '\0';
 
     if (d->mode == MODE_HISTORY)
 	pgn_board_update(gp, d->b, pgn_history_total(gp->hp));

@@ -455,6 +455,8 @@ static void parse_xboard_line(GAME g, char *str)
 	    RETURN(d);
 	}
 
+	strcpy(d->pm_frfr, frfr);
+
 	free (frfr);
 	pgn_history_add(g, d->b, buf);
 	free (buf);

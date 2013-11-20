@@ -329,6 +329,7 @@ void set_config_defaults()
     config.boardleft = TRUE;
     config.exitdialogbox = TRUE;
     config.enginecmdblacktag = TRUE;
+    config.bprevmove = TRUE;
 
     set_default_colors();
 
@@ -691,6 +692,8 @@ void parse_rcfile(const char *filename)
 	    config.exitdialogbox = on_or_off(filename, lines, val);
 	else if (strcmp(var, "engine_cmd_blacktag") == 0 )
 	    config.enginecmdblacktag = on_or_off(filename, lines, val);
+	else if (strcmp(var, "board_prev_move") == 0 )
+	    config.bprevmove = on_or_off(filename, lines, val);
 	else if (strcmp(var, "strict_castling") == 0)
 	    pgn_config_set(PGN_STRICT_CASTLING, on_or_off(filename, lines, val));
 	else if (strcmp(var, "engine_cmd") == 0)
