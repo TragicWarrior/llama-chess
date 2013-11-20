@@ -236,42 +236,15 @@ void coordofmove(GAME g, char *move, char *prow, char *pcol)
 	*pcol = FILETOINT(*move);
 }
 
+#define INV_INT(x) (9 - x)
+#define INV_INT0(x) (7 - x)
+
 // Posición por rotación de tablero.
 // Rotation board position.
-static void rotate_position(int p)
+void rotate_position(char *prow, char *pcol)
 {
-    struct userdata_s *d = gp->data;
-    char fr, fc;
-    char fr2 = 8, fc2 = 8;
-
-    for (fr = 1; fr < 9; fr++)  {
-	if (fr2 < 1)
-	    fr2 = 8;
-	for (fc = 1; fc < 9; fc++){
-	    if (fc2 < 1)
-		fc2 = 8;
-	    if (p == CURSOR_POSITION &&
-		d->c_row == fr && d->c_col == fc) {
-		d->c_row = fr2;
-		d->c_col = fc2;
-		return;
-	    }
-	    else if (p == SP_POSITION &&
-		     d->sp.row == fr && d->sp.col == fc) {
-		d->sp.row = fr2;
-		d->sp.col = fc2;
-		return;
-	    }
-	    else if (p == SPS_POSITION &&
-		     d->sp.srow == fr && d->sp.scol == fc) {
-		d->sp.srow = fr2;
-		d->sp.scol = fc2;
-		return;
-	    }
-	    fc2--;
-	}
-	fr2--;
-    }
+	*prow = INV_INT(*prow); 
+	*pcol = INV_INT(*pcol);
 }
 
 void update_cursor(GAME g, int idx)
@@ -290,7 +263,7 @@ void update_cursor(GAME g, int idx)
 	coordofmove(g, g->hp[idx]->move, &d->c_row, &d->c_col);
 
     if (d->mode == MODE_HISTORY && rotate)
-	rotate_position(CURSOR_POSITION);
+	rotate_position(&d->c_row, &d->c_col);
 }
 
 static int init_nag()
@@ -747,8 +720,8 @@ static int piece_can_attack (GAME g, int rank, int file)
     int row, col, p, v, pi, cpi;
 
     if (rotate) {
-        rotate_position(CURSOR_POSITION);
-	rotate_position(SPS_POSITION);
+		rotate_position(&d->c_row, &d->c_col);
+	rotate_position(&d->sp.srow, &d->sp.scol);
     }
 
     v = d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].valid;
@@ -760,8 +733,8 @@ static int piece_can_attack (GAME g, int rank, int file)
     if (pi == OPEN_SQUARE || cpi == OPEN_SQUARE || !VALIDFILE (file)
 	|| !VALIDRANK (rank)) {
 	if (rotate) {
-	    rotate_position(CURSOR_POSITION);
-	    rotate_position(SPS_POSITION);
+		rotate_position(&d->c_row, &d->c_col);
+		rotate_position(&d->sp.srow, &d->sp.scol);
 	}
 
         return 0;
@@ -824,12 +797,7 @@ static int piece_can_attack (GAME g, int rank, int file)
 	    }
 	}
 
-	if (rotate) {
-	    rotate_position(CURSOR_POSITION);
-	    rotate_position(SPS_POSITION);
-	}
-
-	return e == E_PGN_OK ? 1 : 0;
+	goto pca_quit;
     }
 
     pgn_switch_turn(g);
@@ -852,9 +820,10 @@ static int piece_can_attack (GAME g, int rank, int file)
     free (m);
     free (frfr);
 
+pca_quit:
     if (rotate) {
-        rotate_position(CURSOR_POSITION);
-	rotate_position(SPS_POSITION);
+		rotate_position(&d->c_row, &d->c_col);
+	rotate_position(&d->sp.srow, &d->sp.scol);
     }
 
     return e == E_PGN_OK ? 1 : 0;
@@ -878,28 +847,15 @@ void print_piece(WINDOW *w, int l, int c, char p)
         mvwprintw(w, l + y, c, f_pieces[0]);
 }
 
-int inv_int(int x)
-{
-    int fx, fx2 = 8;
-
-    for (fx = 1; fx < 9; fx++) {
-        if (x == fx)
-	    break;
-	fx2--;
-    }
-
-    return fx2;
-}
-
 static int is_prev_move (struct userdata_s *d, int brow, int bcol,
 			 int row, int col)
 {
     if ((!BIG_BOARD &&
-	 row == ROWTOMATRIX(((rotate) ? inv_int(d->pm_row) : d->pm_row)) &&
-	 col == COLTOMATRIX(((rotate) ? inv_int(d->pm_col) : d->pm_col)))
+	 row == ROWTOMATRIX(((rotate) ? INV_INT(d->pm_row) : d->pm_row)) &&
+	 col == COLTOMATRIX(((rotate) ? INV_INT(d->pm_col) : d->pm_col)))
 	|| (BIG_BOARD &&
-	    brow + 1 == ((rotate) ? d->pm_row : inv_int(d->pm_row)) &&
-	    bcol + 1 == ((rotate) ? inv_int(d->pm_col) : d->pm_col)))
+	    brow + 1 == ((rotate) ? d->pm_row : INV_INT(d->pm_row)) &&
+	    bcol + 1 == ((rotate) ? INV_INT(d->pm_col) : d->pm_col)))
 	return 1;
 
     return 0;
@@ -1045,8 +1001,8 @@ void update_board_window(GAME g)
 		    }
 
 		    if (BIG_BOARD && rotate) {
-		        brow = inv_int(brow + 1) - 1;
-			bcol = inv_int(bcol + 1) - 1;
+		        brow = INV_INT0(brow);
+			bcol = INV_INT0(bcol);
 		    }
 
 		    if (BIG_BOARD)
@@ -1067,7 +1023,7 @@ void update_board_window(GAME g)
 
 		    if (config.showattacks && config.details
 			&& piece_can_attack (g,
-					     BIG_BOARD ? inv_int (brow+1) : brow,
+					     BIG_BOARD ? INV_INT (brow+1) : brow,
 					     BIG_BOARD ? bcol+1 : bcol)) {
 			    attrs = CP_BOARD_ATTACK;
 			    old_attrs = attrs;
@@ -1095,13 +1051,13 @@ void update_board_window(GAME g)
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
 			if (BIG_BOARD && rotate) {
-			    brow = inv_int(brow + 1) - 1;
-			    bcol = inv_int(bcol + 1) - 1;
+		        brow = INV_INT0(brow);
+				bcol = INV_INT0(bcol);
 			}
 
 		    if ((!BIG_BOARD && row == ROWTOMATRIX(d->c_row)
 			 && col == COLTOMATRIX(d->c_col))
-			|| (BIG_BOARD && brow + 1 == inv_int(d->c_row)
+			|| (BIG_BOARD && brow + 1 == INV_INT(d->c_row)
 			    && bcol + 1 == d->c_col)) {
 			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
@@ -1109,7 +1065,7 @@ void update_board_window(GAME g)
 		    }
 		    else if ((!BIG_BOARD && row == ROWTOMATRIX(d->sp.srow) &&
 			      col == COLTOMATRIX(d->sp.scol)) ||
-			     (BIG_BOARD && brow + 1 == inv_int(d->sp.srow) &&
+			     (BIG_BOARD && brow + 1 == INV_INT(d->sp.srow) &&
 			      bcol + 1 == d->sp.scol)) {
 			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
 				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
@@ -1170,8 +1126,8 @@ printc:
 			if (BIG_BOARD) {
 			    if (config.details && !can_attack
 				&& castling_state(g, d->b,
-				(rotate) ? inv_int(brow + 1) - 1: brow,
-				(rotate) ? inv_int(bcol + 1) - 1: bcol, p, 0))
+				(rotate) ? INV_INT(brow + 1) - 1: brow,
+				(rotate) ? INV_INT(bcol + 1) - 1: bcol, p, 0))
 			        attrs = mix_cp(CP_BOARD_CASTLING, attrs,
 					       ATTRS(CP_BOARD_CASTLING),
 					       A_FG_B_BG);
@@ -2754,8 +2710,8 @@ void do_play_commit()
     d->sp.col = d->c_col;
 
     if (rotate) {
-        rotate_position(SP_POSITION);
-	rotate_position(SPS_POSITION);
+		rotate_position(&d->sp.row, &d->sp.col);
+	rotate_position(&d->sp.srow, &d->sp.scol);
     }
 
     move_to_engine(gp);
@@ -2769,7 +2725,7 @@ void do_play_commit()
         pgn_switch_side(gp, FALSE);
 
     if (rotate && d->sp.icon)
-        rotate_position(SPS_POSITION);
+		rotate_position(&d->sp.srow, &d->sp.scol);
 
     // Envia comando 'go' a Polyglot en el primer movimiento  debido a que
     // polyglot no envia el movimiento y cboard se queda esperando.
@@ -2800,7 +2756,7 @@ void do_play_select()
       do_play_cancel_selected ();
 
     if (rotate)
-        rotate_position(CURSOR_POSITION);
+		rotate_position(&d->c_row, &d->c_col);
 
     d->sp.icon = d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon;
 
@@ -2851,8 +2807,8 @@ void do_play_select()
 	pgn_find_valid_moves(gp, d->b, d->sp.scol, d->sp.srow);
 
     if (rotate) {
-        rotate_position(CURSOR_POSITION);
-	rotate_position(SPS_POSITION);
+		rotate_position(&d->c_row, &d->c_col);
+	rotate_position(&d->sp.srow, &d->sp.scol);
     }
 
     CLEAR_FLAG(d->flags, CF_NEW);
