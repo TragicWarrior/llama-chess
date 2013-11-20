@@ -214,6 +214,28 @@ static const bool cb[8][8] = {
 static void free_userdata_once(GAME g);
 static void do_more_help(WIN *);
 
+void coordofmove(GAME g, char *move, char *prow, char *pcol)
+{
+    char l = strlen(move);
+    
+    if (*move == 'O') {
+		*prow = (g->turn == WHITE) ? 8 : 1;
+	if (l <= 4)
+	    *pcol = 7;
+	else
+	    *pcol = 3;
+	return;
+	}
+
+    move += l;
+
+    while (!isdigit(*move))
+	move--;
+
+	*prow = RANKTOINT(*move--);
+	*pcol = FILETOINT(*move);
+}
+
 // Posición por rotación de tablero.
 // Rotation board position.
 static void rotate_position(int p)
@@ -254,8 +276,6 @@ static void rotate_position(int p)
 
 void update_cursor(GAME g, int idx)
 {
-    char *p;
-    int len;
     int t = pgn_history_total(g->hp);
     struct userdata_s *d = g->data;
 
@@ -264,38 +284,11 @@ void update_cursor(GAME g, int idx)
      */
     idx--;
 
-    if (idx > t || idx < 0 || !t || !g->hp[idx]->move) {
+    if (idx > t || idx < 0 || !t || !g->hp[idx]->move)
 	d->c_row = 2, d->c_col = 5;
-	goto historyrotate;
-//	return;
-    }
-
-    p = g->hp[idx]->move;
-    len = strlen(p);
-
-    if (*p == 'O') {
-	if (len <= 4)
-	    d->c_col = rotate ? 3 : 7;
 	else
-	    d->c_col = rotate ? 6 : 3;
+	coordofmove(g, g->hp[idx]->move, &d->c_row, &d->c_col);
 
-	if (rotate)
-	    d->c_row = (g->turn == WHITE) ? 1 : 8;
-	else
-	    d->c_row = (g->turn == WHITE) ? 8 : 1;
-
-	return;
-    }
-
-    p += len;
-
-    while (!isdigit(*p))
-	p--;
-
-    d->c_row = RANKTOINT(*p--);
-    d->c_col = FILETOINT(*p);
-
-historyrotate:
     if (d->mode == MODE_HISTORY && rotate)
 	rotate_position(CURSOR_POSITION);
 }
@@ -898,53 +891,6 @@ int inv_int(int x)
     return fx2;
 }
 
-int coordofmove(GAME g, char *move, int yorx)
-{
-    int l, y, x, i;
-
-    if (!strncmp (move, "O-O-O", 5)) {
-	if (yorx)
-	    return g->turn == WHITE ? 8 : 1;
-
-	return  3;
-    }
-    else if (!strncmp (move, "O-O", 3)) {
-	if (yorx)
-	    return g->turn == WHITE ? 8 : 1;
-
-	return  7;
-    }
-
-    l = strlen(move);
-    if (strchr(move, '+') && strchr(move, '=')) {
-	y = 4;
-	x = 5;
-    }
-    else if (!strchr(move, '+') && strchr(move, '=')) {
-	y = 3;
-	x = 4;
-    }
-    else if (strchr(move, '+') && !strchr(move, '=')) {
-	y = 2;
-	x = 3;
-    }
-    else {
-	y = 1;
-	x = 2;
-    }
-
-    if (yorx)
-	return move[l - y] - 48;
-    else {
-	for (i = 0; i < 8; i++) {
-	    if (move[l - x] == "abcdefgh"[i])
-		return i + 1;
-	}
-    }
-
-    return 0;
-}
-
 static int is_prev_move (struct userdata_s *d, int brow, int bcol,
 			 int row, int col)
 {
@@ -974,10 +920,12 @@ void update_board_window(GAME g)
     HISTORY *h = NULL;
 
     h = pgn_history_by_n(g->hp, g->hindex - 1);
-    d->pm_row = (h && h->move && d->mode == MODE_PLAY)
-	? coordofmove(g, h->move, 1) : 0;
-    d->pm_col = (h && h->move && d->mode == MODE_PLAY)
-	? coordofmove(g, h->move, 0) : 0;
+	if (h && h->move && d->mode == MODE_PLAY)
+		coordofmove(g, h->move, &d->pm_row, &d->pm_col);
+	else {
+		d->pm_row = 0;
+		d->pm_col = 0;
+	}
 
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
 	update_cursor(g, g->hindex);
