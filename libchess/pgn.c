@@ -2216,7 +2216,7 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		if (tmpnam(tmp) == NULL)
 		    goto fail;
 
-		if ((fd = open(tmp, O_RDWR|O_EXCL|O_CREAT)) == -1)
+		if ((fd = open(tmp, O_RDWR|O_EXCL|O_CREAT, 0600)) == -1)
 		    goto fail;
 
 		if ((tfp = fdopen(fd, "a+")) == NULL)
