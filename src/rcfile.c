@@ -330,6 +330,7 @@ void set_config_defaults()
     config.exitdialogbox = TRUE;
     config.enginecmdblacktag = TRUE;
     config.bprevmove = TRUE;
+    config.utf8_pieces = 1;
 
     set_default_colors();
 

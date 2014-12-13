@@ -93,7 +93,7 @@
 #coords_y_left yes
 
 # Whether to enable UTF-8 board pieces.
-#utf8_pieces off
+#utf8_pieces on
 
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color

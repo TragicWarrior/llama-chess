@@ -17,7 +17,7 @@
 \\$2 \(laURL: \\$1 \(ra\\$3
 ..
 .if \n[.g] .mso www.tmac
-.TH CBOARD 6 "Sep 19 2013" "@VERSION@" "Curses Chess Board"
+.TH CBOARD 6 "Dec 12 2014" "@VERSION@" "Curses Chess Board"
 
 .SH NAME
 .B cboard
@@ -127,7 +127,7 @@ OR
 
 .TP
 .I utf8_pieces  <bool>
-Whether to show UTF-8 chess pieces on the board. The default is off.
+Whether to show UTF-8 chess pieces on the board. The default is on.
 
 .TP
 .I board_left <bool>
