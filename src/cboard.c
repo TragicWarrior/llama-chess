@@ -211,20 +211,20 @@ static void do_more_help(WIN *);
 void coordofmove(GAME g, char *move, char *prow, char *pcol)
 {
     char l = strlen(move);
-    
+
     if (*move == 'O') {
-		*prow = (g->turn == WHITE) ? 8 : 1;
-		*pcol = (l <= 4) ? 7 : 3;
-		return;
-	}
+        *prow = (g->turn == WHITE) ? 8 : 1;
+        *pcol = (l <= 4) ? 7 : 3;
+        return;
+    }
 
     move += l;
 
     while (!isdigit(*move))
 	move--;
 
-	*prow = RANKTOINT(*move--);
-	*pcol = FILETOINT(*move);
+    *prow = RANKTOINT(*move--);
+    *pcol = FILETOINT(*move);
 }
 
 #define INV_INT(x) (9 - x)
@@ -234,8 +234,8 @@ void coordofmove(GAME g, char *move, char *prow, char *pcol)
 // Rotation board position.
 void rotate_position(char *prow, char *pcol)
 {
-	*prow = INV_INT(*prow); 
-	*pcol = INV_INT(*pcol);
+  *prow = INV_INT(*prow);
+  *pcol = INV_INT(*pcol);
 }
 
 void update_cursor(GAME g, int idx)
@@ -250,8 +250,8 @@ void update_cursor(GAME g, int idx)
 
     if (idx > t || idx < 0 || !t || !g->hp[idx]->move)
 	d->c_row = 2, d->c_col = 5;
-	else
-	coordofmove(g, g->hp[idx]->move, &d->c_row, &d->c_col);
+    else
+        coordofmove(g, g->hp[idx]->move, &d->c_row, &d->c_col);
 
     if (d->mode == MODE_HISTORY && d->rotate)
 	rotate_position(&d->c_row, &d->c_col);
@@ -711,8 +711,8 @@ static int piece_can_attack (GAME g, int rank, int file)
     int row, col, p, v, pi, cpi;
 
     if (d->rotate) {
-		rotate_position(&d->c_row, &d->c_col);
-	rotate_position(&d->sp.srow, &d->sp.scol);
+        rotate_position(&d->c_row, &d->c_col);
+        rotate_position(&d->sp.srow, &d->sp.scol);
     }
 
     v = d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].valid;
@@ -724,8 +724,8 @@ static int piece_can_attack (GAME g, int rank, int file)
     if (pi == OPEN_SQUARE || cpi == OPEN_SQUARE || !VALIDFILE (file)
 	|| !VALIDRANK (rank)) {
 	if (d->rotate) {
-		rotate_position(&d->c_row, &d->c_col);
-		rotate_position(&d->sp.srow, &d->sp.scol);
+            rotate_position(&d->c_row, &d->c_col);
+            rotate_position(&d->sp.srow, &d->sp.scol);
 	}
 
         return 0;
@@ -813,7 +813,7 @@ static int piece_can_attack (GAME g, int rank, int file)
 
 pca_quit:
     if (d->rotate) {
-		rotate_position(&d->c_row, &d->c_col);
+        rotate_position(&d->c_row, &d->c_col);
 	rotate_position(&d->sp.srow, &d->sp.scol);
     }
 
@@ -840,92 +840,96 @@ void print_piece(WINDOW *w, int l, int c, char p)
 
 void board_prev_move_play (GAME g)
 {
-    struct userdata_s *d = g->data;
-	
-	char l = strlen(d->pm_frfr);
-	if (l) {
-		char q = (l > 4) ? 2 : 1;
+  struct userdata_s *d = g->data;
+  char l = strlen(d->pm_frfr);
 
-		d->pm_row = RANKTOINT(d->pm_frfr[l - q++]);
-		d->pm_col = FILETOINT(d->pm_frfr[l - q++]);
-		d->ospm_row = RANKTOINT(d->pm_frfr[l - q++]);
-		d->ospm_col = FILETOINT(d->pm_frfr[l - q]);
-		if (d->rotate) {
-			rotate_position(&d->pm_row, &d->pm_col);
-			rotate_position(&d->ospm_row, &d->ospm_col);
-		}
-	}
-	else {
-		d->pm_row = 0;
-		d->pm_col = 0;
-		d->ospm_row = 0;
-		d->ospm_col = 0;
-	}
+  if (l) {
+      char q = (l > 4) ? 2 : 1;
+
+      d->pm_row = RANKTOINT(d->pm_frfr[l - q++]);
+      d->pm_col = FILETOINT(d->pm_frfr[l - q++]);
+      d->ospm_row = RANKTOINT(d->pm_frfr[l - q++]);
+      d->ospm_col = FILETOINT(d->pm_frfr[l - q]);
+      if (d->rotate) {
+          rotate_position(&d->pm_row, &d->pm_col);
+          rotate_position(&d->ospm_row, &d->ospm_col);
+      }
+  }
+  else {
+      d->pm_row = 0;
+      d->pm_col = 0;
+      d->ospm_row = 0;
+      d->ospm_col = 0;
+  }
 }
 
 void board_prev_move_history (GAME g)
 {
-    struct userdata_s *d = g->data;
+  struct userdata_s *d = g->data;
 
-	if (g->hindex) {
-		char *move = g->hp[g->hindex - 1]->move;
+  if (g->hindex) {
+      char *move = g->hp[g->hindex - 1]->move;
 
-		if (move) {
-			if (d->mode == MODE_PLAY)
-				coordofmove(g, move, &d->pm_row, &d->pm_col);
-			else {
-				d->pm_row = 0;
-				d->pm_col = 0;
-			}
+      if (move) {
+          if (d->mode == MODE_PLAY)
+            coordofmove(g, move, &d->pm_row, &d->pm_col);
+          else {
+              d->pm_row = 0;
+              d->pm_col = 0;
+          }
 
-			if (*move == 'O') {
-				d->ospm_row = g->turn == WHITE ? 8 : 1;
-				d->ospm_col = 5;
-				return;
-			}
+          if (*move == 'O') {
+              d->ospm_row = g->turn == WHITE ? 8 : 1;
+              d->ospm_col = 5;
+              return;
+          }
 
-			BOARD ob;
-			char f, r;
-			pgn_board_init(ob);
-			if (g->hindex > 1) {
-				HISTORY *h = pgn_history_by_n(g->hp, g->hindex - 2);
-				if (h) {
-					pgn_board_init_fen(g, ob, h->fen);
-					pgn_switch_turn(g);
-				}
-			}
-			for (f = 0; f < 8; f++) {
-			for (r = 0; r < 8; r++) {
-				if (ob[f][r].icon != '.' && d->b[f][r].icon == '.') {
-					d->ospm_row = INV_INT0(f) + 1;
-					d->ospm_col = r + 1;
-					break;
-				}
-			}
-			}
-			if (d->rotate) {
-				if (d->mode == MODE_PLAY)
-					rotate_position(&d->pm_row, &d->pm_col);
-				rotate_position(&d->ospm_row, &d->ospm_col);
-			}
-		return;
-		}
-	}
-	else {
-		d->ospm_row = 0;
-		d->ospm_col = 0;
-		d->pm_row = 0;
-		d->pm_col = 0;
-	}
+          BOARD ob;
+          char f, r;
+
+          pgn_board_init(ob);
+
+          if (g->hindex > 1) {
+              HISTORY *h = pgn_history_by_n(g->hp, g->hindex - 2);
+              if (h) {
+                  pgn_board_init_fen(g, ob, h->fen);
+                  pgn_switch_turn(g);
+              }
+          }
+
+          for (f = 0; f < 8; f++) {
+              for (r = 0; r < 8; r++) {
+                  if (ob[f][r].icon != '.' && d->b[f][r].icon == '.') {
+                      d->ospm_row = INV_INT0(f) + 1;
+                      d->ospm_col = r + 1;
+                      break;
+                  }
+              }
+          }
+
+          if (d->rotate) {
+              if (d->mode == MODE_PLAY)
+                  rotate_position(&d->pm_row, &d->pm_col);
+
+              rotate_position(&d->ospm_row, &d->ospm_col);
+          }
+
+          return;
+      }
+  }
+  else {
+      d->ospm_row = 0;
+      d->ospm_col = 0;
+      d->pm_row = 0;
+      d->pm_col = 0;
+  }
 }
 
 static int is_the_square (int brow, int bcol, int row, int col,
 			int prow, int pcol)
 {
-    if ((!BIG_BOARD &&
-		row == ROWTOMATRIX(prow) && col == COLTOMATRIX(pcol))
-	|| (BIG_BOARD &&
-		brow + 1 == INV_INT(prow) && bcol + 1 == pcol))
+    if ((!BIG_BOARD && row == ROWTOMATRIX(prow) && col == COLTOMATRIX(pcol))
+        || (BIG_BOARD && brow + 1 == INV_INT(prow) && bcol + 1 == pcol))
 	return 1;
 
     return 0;
@@ -934,8 +938,8 @@ static int is_the_square (int brow, int bcol, int row, int col,
 static int is_prev_move (struct userdata_s *d, int brow, int bcol,
 			 int row, int col)
 {
-	if (is_the_square (brow, bcol, row, col, d->pm_row, d->pm_col))
-		return 1;
+    if (is_the_square (brow, bcol, row, col, d->pm_row, d->pm_col))
+        return 1;
 
     return 0;
 }
@@ -953,17 +957,18 @@ void update_board_window(GAME g)
     unsigned i, cpd = 0;
     struct userdata_s *d = g->data;
 
-	if (config.bprevmove && d->mode != MODE_EDIT)
-		if (!d->pm_undo && d->mode == MODE_PLAY)
-			board_prev_move_play(g);
-		else
-			board_prev_move_history(g);
-	else {
-		d->pm_row = 0;
-		d->pm_col = 0;
-		d->ospm_row = 0;
-		d->ospm_col = 0;
-	}
+    if (config.bprevmove && d->mode != MODE_EDIT) {
+        if (!d->pm_undo && d->mode == MODE_PLAY)
+            board_prev_move_play(g);
+        else
+            board_prev_move_history(g);
+    }
+    else {
+        d->pm_row = 0;
+        d->pm_col = 0;
+        d->ospm_row = 0;
+        d->ospm_col = 0;
+    }
 
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
 	update_cursor(g, g->hindex);
@@ -1132,26 +1137,26 @@ void update_board_window(GAME g)
 		    else if (p != 'x' && !can_attack)
 			attrs = (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
 
-			if (BIG_BOARD && d->rotate) {
-		        brow = INV_INT0(brow);
-				bcol = INV_INT0(bcol);
-			}
+                    if (BIG_BOARD && d->rotate) {
+                        brow = INV_INT0(brow);
+                        bcol = INV_INT0(bcol);
+                    }
 
-			if (is_the_square (brow, bcol, row, col, d->c_row,
-				d->c_col)) {
-			attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p),
-				ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
-			old_attrs = -1;
-		    }
-			else if (is_the_square (brow, bcol, row, col, d->sp.srow,
-				d->sp.scol)) {
-			attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
-				ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
-			old_attrs = -1;
-		    }
+                    if (is_the_square (brow, bcol, row, col, d->c_row,
+                                       d->c_col)) {
+                        attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p),
+                                       ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
+                        old_attrs = -1;
+                    }
+                    else if (is_the_square (brow, bcol, row, col,
+                                            d->sp.srow, d->sp.scol)) {
+                        attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
+                                       ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
+                        old_attrs = -1;
+                    }
 		    else if ((is_prev_move (d, brow, bcol, row, col) && !valid)
-				|| (is_the_square (brow, bcol, row, col, d->ospm_row, 
-				d->ospm_col))) {
+                             || (is_the_square (brow, bcol, row, col,
+                                                d->ospm_row, d->ospm_col))) {
 			attrs = mix_cp(CP_BOARD_PREVMOVE, IS_ENPASSANT(p),
 				       ATTRS(CP_BOARD_PREVMOVE), B_FG_A_BG);
 			old_attrs = -1;
@@ -2688,7 +2693,8 @@ void do_play_undo()
         pgn_switch_side(gp, FALSE);
 	d->go_move--;
     }
-	d->pm_undo = TRUE;
+
+    d->pm_undo = TRUE;
 }
 
 void do_play_toggle_pause()
@@ -2791,7 +2797,7 @@ void do_play_commit()
     d->sp.col = d->c_col;
 
     if (d->rotate) {
-		rotate_position(&d->sp.row, &d->sp.col);
+        rotate_position(&d->sp.row, &d->sp.col);
 	rotate_position(&d->sp.srow, &d->sp.scol);
     }
 
@@ -2806,7 +2812,7 @@ void do_play_commit()
         pgn_switch_side(gp, FALSE);
 
     if (d->rotate && d->sp.icon)
-		rotate_position(&d->sp.srow, &d->sp.scol);
+        rotate_position(&d->sp.srow, &d->sp.scol);
 
     // Envia comando 'go' a Polyglot en el primer movimiento  debido a que
     // polyglot no envia el movimiento y cboard se queda esperando.
@@ -2818,7 +2824,7 @@ void do_play_commit()
 
     d->go_move = 0;
     fm_loaded_file = FALSE;
-	d->pm_undo = FALSE;
+    d->pm_undo = FALSE;
 }
 
 void do_play_select()
@@ -2838,7 +2844,7 @@ void do_play_select()
       do_play_cancel_selected ();
 
     if (d->rotate)
-		rotate_position(&d->c_row, &d->c_col);
+        rotate_position(&d->c_row, &d->c_col);
 
     d->sp.icon = d->b[RANKTOBOARD(d->c_row)][FILETOBOARD(d->c_col)].icon;
 
@@ -2889,7 +2895,7 @@ void do_play_select()
 	pgn_find_valid_moves(gp, d->b, d->sp.scol, d->sp.srow);
 
     if (d->rotate) {
-		rotate_position(&d->c_row, &d->c_col);
+        rotate_position(&d->c_row, &d->c_col);
 	rotate_position(&d->sp.srow, &d->sp.scol);
     }
 

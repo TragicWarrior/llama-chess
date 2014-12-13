@@ -110,12 +110,12 @@ struct userdata_s {
     unsigned short flags;
     char c_row;
     char c_col;
-	char pm_frfr[6]; // Previous move
+    char pm_frfr[6]; // Previous move
     char pm_row;
     char pm_col;
-	char ospm_row;
-	char ospm_col;
-	char pm_undo;
+    char ospm_row;
+    char ospm_col;
+    char pm_undo;
     char paused;
     unsigned n;
     unsigned char mode;
