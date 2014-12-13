@@ -885,7 +885,7 @@ void board_prev_move_history (GAME g)
           }
 
           BOARD ob;
-          char f, r;
+          unsigned char f, r;
 
           pgn_board_init(ob);
 
