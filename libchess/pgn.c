@@ -2201,24 +2201,33 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 	}
 
 	if ((cmd = compression_cmd(filename, m)) != NULL) {
+            char tmp[21];
+            int fd;
+
+#ifdef HAVE_MKSTEMP
+            snprintf (tmp, sizeof(tmp), "cboard.XXXXXX");
+#else
+            if (tmpnam(tmp) == NULL)
+                goto fail;
+#endif
+
 	    pgn->pipe = 1;
 
 	    if (append && access(filename, R_OK) == 0) {
-		char tmp[21];
-		int fd;
-
 		free (cmd);
 		cmd = compression_cmd(filename, 1);
 
 		if ((fp = popen(cmd, "r")) == NULL)
 		    goto fail;
 
-		if (tmpnam(tmp) == NULL)
-		    goto fail;
-
+#ifdef HAVE_MKSTEMP
+                fd = mkstemp (tmp);
+                if (fd == -1)
+                    goto fail;
+#else
 		if ((fd = open(tmp, O_RDWR|O_EXCL|O_CREAT, 0600)) == -1)
 		    goto fail;
-
+#endif
 		if ((tfp = fdopen(fd, "a+")) == NULL)
 		    goto fail;
 
@@ -2235,7 +2244,15 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		goto fail;
 
 	    if (m) {
-		if ((tfp = tmpfile()) == NULL)
+#ifdef HAVE_MKSTEMP
+                fd = mkstemp (tmp);
+                if (fd == -1)
+                    goto fail;
+#else
+		if ((fd = open(tmp, O_RDWR|O_EXCL|O_CREAT|O_TRUNC, 0600)) == -1)
+		    goto fail;
+#endif
+		if ((tfp = fdopen(fd, "w+")) == NULL)
 		    goto fail;
 
 		while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
@@ -2243,6 +2260,7 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 
 		pclose(fp);
 		pgn->fp = tfp;
+		pgn->tmpfile = strdup(tmp);
 	    }
 	    else
 		pgn->fp = fp;

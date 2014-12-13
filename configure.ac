@@ -124,7 +124,7 @@ AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
 		select socket strcasecmp strdup strerror strrchr strstr \
-		vasprintf strsep strchr strncasecmp strpbrk putenv])
+		vasprintf strsep strchr strncasecmp strpbrk putenv mkstemp])
 
 AM_CONDITIONAL([NO_STRSEP], [test "x$ac_cv_func_strsep" = "xno"])
 
