@@ -1,3 +1,14 @@
+CBoard version 0.7.2
+--------------------
+Remember the "rotate" setting as a per-game setting rather than a global.
+
+"board_prev_move" now works in different game modes (engine, history, etc).
+
+UTF-8 pieces are now enabled by default.
+
+A few bugfixes and cleanups.
+
+
 CBoard version 0.7.1
 --------------------
 Fixed color pair mixing.

@@ -25,9 +25,10 @@ will "filter" the current game through a PERL subroutine defined in
 generated FEN tag of the current game. The subroutine should return a FEN tag
 after processing.
 
-The latest version can be found at http://c-board.sourceforge.net/. Feel free
-to send me a description of any bugs you find along with the associated .pgn
-(if any), feature requests and patches.
+The latest version can be found at http://c-board.sourceforge.net/. If you
+find a bug or have a patch to fix one or a feature request you can use the
+Sourceforge Ticket system at http://sourceforge.net/p/c-board/tickets/ or send
+me an email.
 
 There is also a public GIT repository available. Anonymous checkouts can be
 done by doing:
