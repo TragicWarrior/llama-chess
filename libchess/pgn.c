@@ -1514,7 +1514,7 @@ pgn_error_t pgn_new_game()
 #endif
     gindex = t - 1;
 
-    if ((g = realloc(game, t * sizeof(GAME *))) == NULL) {
+    if ((g = realloc(game, t * sizeof(GAME))) == NULL) {
 	warn("realloc()");
 	return E_PGN_ERR;
     }
