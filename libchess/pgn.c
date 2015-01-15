@@ -2259,6 +2259,7 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		    fprintf(tfp, "%s", p);
 
 		pclose(fp);
+                fp = NULL;
 		pgn->fp = tfp;
 		pgn->tmpfile = strdup(tmp);
 	    }
