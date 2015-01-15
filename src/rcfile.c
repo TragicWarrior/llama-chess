@@ -401,8 +401,8 @@ static struct known_key_s
 
 static wint_t parse_key(const char *filename, int lines, wchar_t **key)
 {
-    wchar_t *p = *key;
-    wchar_t *orig = *key;
+    wchar_t *p = key ? *key : NULL;
+    wchar_t *orig = key ? *key : NULL;
     wint_t c = 0;
 
     if (!key || !wcslen (*key))
