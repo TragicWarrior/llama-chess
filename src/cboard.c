@@ -546,7 +546,11 @@ void save_pgn(char *filename, int saveindex)
 	    }
 	}
 
-	stat(config.savedirectory, &st);
+	if (stat(config.savedirectory, &st) == -1) {
+            cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", config.savedirectory,
+                     strerror(errno));
+            return;
+        }
 
 	if (!S_ISDIR(st.st_mode)) {
 	    cmessage(ERROR_STR, ANY_KEY_STR, "%s: %s", config.savedirectory, _("Not a directory."));
