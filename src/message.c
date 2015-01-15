@@ -129,7 +129,7 @@ static void build_message_lines(const char *title, const char *prompt,
     free (line);
     total = n = 0;
     for (wc_line = wcstok (wc, wc_delim, &wc_tmp); wc_line; wc_line = wcstok (NULL, wc_delim, &wc_tmp)) {
-	lines = Realloc (lines, (total+2)*sizeof(wchar_t **));
+	lines = Realloc (lines, (total+2)*sizeof(wchar_t *));
 	lines[total++] = wcsdup (wc_line);
 	lines[total] = NULL;
     }
