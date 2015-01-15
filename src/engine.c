@@ -311,8 +311,13 @@ static pid_t exec_chess_engine(GAME g, char **args)
 
     d->engine->fd[ENGINE_IN_FD] = from[0];
     d->engine->fd[ENGINE_OUT_FD] = to[1];
-    fcntl(d->engine->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK);
-    fcntl(d->engine->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK);
+    
+    if (fcntl(d->engine->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK) == -1)
+        return -2;
+
+    if (fcntl(d->engine->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK) == -1)
+        return -2;
+
     d->engine->pid = pid;
     return 0;
 }
