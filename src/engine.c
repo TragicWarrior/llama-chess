@@ -554,13 +554,16 @@ void add_engine_command(GAME g, int s, char *fmt, ...)
     va_list ap;
     int i = 0;
     struct userdata_s *d = g->data;
-    struct queue_s **q;
+    struct queue_s **q = NULL;
     char *line;
 
     if (!d->engine || d->engine->status == ENGINE_OFFLINE) {
 	if (init_chess_engine(g))
 	    return;
     }
+
+    if (!d->engine)
+      return;
 
     q = d->engine->queue;
 
