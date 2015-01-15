@@ -95,7 +95,7 @@ static struct menu_item_s **get_cc_items(WIN *win)
 	    free(items[i]);
     }
 
-    for (i = 0; ccodes[i].code && ccodes[i].code[0]; i++) {
+    for (i = 0; ccodes[i].code[0]; i++) {
 	items = Realloc(items, (i+2) * sizeof(struct menu_item_s *));
 	items[i] = Malloc(sizeof(struct menu_item_s));
 	items[i]->name = ccodes[i].code;
