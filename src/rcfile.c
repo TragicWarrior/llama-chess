@@ -572,7 +572,7 @@ static void parse_macro(const char *filename, int lines, char *val)
     if (macros)
 	for (i = 0; macros[i]; i++);
 
-    macros = Realloc(macros, (i + 2) * sizeof(struct macro_s));
+    macros = Realloc(macros, (i + 2) * sizeof(struct macro_s *));
     macros[i] = Calloc(1, sizeof(struct macro_s));
     macros[i]->c = c;
     macros[i]->mode = m;
