@@ -657,6 +657,7 @@ pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value)
     TAG **tdata = *dst;
     TAG **a = NULL;
     int t = pgn_tag_total(tdata);
+    TAG *newtag;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: adding tag\n", __FILE__, __LINE__);
@@ -691,29 +692,34 @@ pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value)
 	}
     }
 
-    if ((a = realloc(tdata, (t + 2) * sizeof(TAG *))) == NULL)
-	return E_PGN_ERR;
+    newtag = calloc (1, sizeof (TAG));
+    if (!newtag)
+        return E_PGN_ERR;
 
-    tdata = a;
-
-    if ((tdata[t] = malloc(sizeof(TAG))) == NULL)
-	return E_PGN_ERR;
-
-    if ((tdata[t]->name = strdup(name)) == NULL) {
-	tdata[t] = NULL;
+    if ((newtag->name = strdup(name)) == NULL) {
+	free(newtag);
 	return E_PGN_ERR;
     }
 
     if (value) {
-	if ((tdata[t]->value = strdup(value)) == NULL) {
-	    free(tdata[t]->name);
-	    tdata[t] = NULL;
+	if ((newtag->value = strdup(value)) == NULL) {
+	    free(newtag->name);
+            free(newtag);
 	    return E_PGN_ERR;
 	}
     }
     else
-	tdata[t]->value = NULL;
+	newtag->value = NULL;
 
+    if ((a = realloc(tdata, (t + 2) * sizeof(TAG *))) == NULL) {
+        free(newtag->name);
+        free(newtag->value);
+        free (newtag);
+	return E_PGN_ERR;
+    }
+
+    tdata = a;
+    tdata[t] = newtag;
     tdata[t]->name[0] = toupper(tdata[t]->name[0]);
     tdata[++t] = NULL;
     *dst = tdata;
