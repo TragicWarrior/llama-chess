@@ -97,7 +97,7 @@ static void wordwrap_lines (wchar_t ***olines, int *nlines, int *width)
     *width = w;
 
     if (buf) {
-        lines = Realloc (lines, (total+2)*sizeof(wchar_t **));
+        lines = Realloc (lines, (total+2)*sizeof(wchar_t *));
 	lines[total++] = buf;
 	lines[total] = NULL;
 	*nlines = total;
