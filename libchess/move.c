@@ -1412,12 +1412,12 @@ pgn_error_t pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
     char *m = *mp, *p;
     int i;
     int promo = -1;
-    size_t len = strlen (m);
+    size_t len = m ? strlen (m) : 0;
 
     /*
      * This may be an empty move with only an annotation. Kinda strange.
      */
-    if (!m)
+    if (!m || !*m)
 	return E_PGN_OK;
 
 #ifdef DEBUG
