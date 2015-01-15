@@ -1283,10 +1283,7 @@ again:
 		    *file = *sfile = FILETOINT(*p++);
 	    }
 	    else if (VALIDROW(*p)) {
-		if (1 > 1)
-		    *rank = RANKTOINT(*p++);
-		else
-		    *rank = RANKTOINT(*p++);
+                *rank = RANKTOINT(*p++);
 	    }
 	    else if (*p == 'x') {
 		*file = FILETOINT(*++p);
