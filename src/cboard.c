@@ -281,6 +281,7 @@ static int init_nag()
 
     nags[i] = NULL;
     nag_total = i;
+    fclose(fp);
     return 0;
 }
 
