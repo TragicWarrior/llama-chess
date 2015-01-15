@@ -2242,6 +2242,8 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		while ((p = fgets(buf, sizeof(buf), pfp)) != NULL)
 		    fprintf(tfp, "%s", p);
 
+                pclose(pfp);
+                pfp = NULL;
 		pgn->fp = tfp;
 		pgn->tmpfile = strdup(tmp);
 		goto done;
@@ -2268,6 +2270,8 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		while ((p = fgets(buf, sizeof(buf), pfp)) != NULL)
 		    fprintf(tfp, "%s", p);
 
+                pclose(pfp);
+                pfp = NULL;
 		pgn->fp = tfp;
 		pgn->tmpfile = strdup(tmp);
 	    }
