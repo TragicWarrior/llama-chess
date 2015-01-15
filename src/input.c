@@ -404,7 +404,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     if (in->lines == 1)
 	field_opts_off(in->fields[0], O_STATIC);
 
-    if (in->buf)
+    if (in->buf[0])
 	set_field_buffer(in->fields[0], 0, in->buf);
 
     field_opts_off(in->fields[0], O_BLANK|O_AUTOSKIP);
