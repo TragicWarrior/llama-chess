@@ -2157,7 +2157,7 @@ pgn_error_t pgn_close(PGN_FILE *pgn)
  */
 pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 {
-    FILE *fp = NULL, *tfp = NULL;
+    FILE *fp = NULL, *tfp = NULL, *pfp = NULL;
     char buf[PATH_MAX], *p;
     char *cmd = NULL;
     PGN_FILE *pgn;
@@ -2220,7 +2220,7 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		free (cmd);
 		cmd = compression_cmd(filename, 1);
 
-		if ((fp = popen(cmd, "r")) == NULL)
+		if ((pfp = popen(cmd, "r")) == NULL)
 		    goto fail;
 
 #ifdef HAVE_MKSTEMP
@@ -2234,16 +2234,15 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		if ((tfp = fdopen(fd, "a+")) == NULL)
 		    goto fail;
 
-		while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+		while ((p = fgets(buf, sizeof(buf), pfp)) != NULL)
 		    fprintf(tfp, "%s", p);
 
-		pclose(fp);
 		pgn->fp = tfp;
 		pgn->tmpfile = strdup(tmp);
 		goto done;
 	    }
 
-	    if ((fp = popen(cmd, m ? "r" : "w")) == NULL)
+	    if ((pfp = popen(cmd, m ? "r" : "w")) == NULL)
 		goto fail;
 
 	    if (m) {
@@ -2258,16 +2257,14 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		if ((tfp = fdopen(fd, "w+")) == NULL)
 		    goto fail;
 
-		while ((p = fgets(buf, sizeof(buf), fp)) != NULL)
+		while ((p = fgets(buf, sizeof(buf), pfp)) != NULL)
 		    fprintf(tfp, "%s", p);
 
-		pclose(fp);
-                fp = NULL;
 		pgn->fp = tfp;
 		pgn->tmpfile = strdup(tmp);
 	    }
 	    else
-		pgn->fp = fp;
+		pgn->fp = pfp;
 	}
 	else {
 	    if ((fp = fopen(filename, mode)) == NULL)
@@ -2301,6 +2298,9 @@ done:
 fail:
     if (fp)
 	fclose(fp);
+
+    if (pfp)
+        pclose(pfp);
 
     free (cmd);
     free(pgn);
