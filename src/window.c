@@ -89,6 +89,7 @@ void window_destroy(WIN *win)
 	    free(win->title);
 	    delwin(win->w);
 	    free(win);
+            win = NULL;
 	    continue;
 	}
 
