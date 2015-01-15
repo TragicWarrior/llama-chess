@@ -3774,6 +3774,8 @@ void do_history_find(int which)
 	return;
     }
 
+    free(p);
+    free(in);
     do_find_move_exp_finalize(0, which);
 }
 
