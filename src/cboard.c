@@ -2045,7 +2045,7 @@ static int find_game_exp(char *str, int which, int count)
 
     exp = tmp;
 
-    while (*exp && isspace(*exp))
+    while (exp && *exp && isspace(*exp))
 	exp++;
 
     if (exp == NULL)
