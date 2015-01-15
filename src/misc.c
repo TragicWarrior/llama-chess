@@ -224,11 +224,13 @@ char **split_str(char *str, char *delim, int *n, int *width, int force_trim)
 	lines[total++] = p;
     }
 
-    lines[total] = NULL;
-    *n += total;
+    if (total) {
+        lines[total] = NULL;
+        *n += total;
 
-    if (*width < w + 2)
-	*width = w + 2;
+        if (*width < w + 2)
+          *width = w + 2;
+    }
 
     return lines;
 }
