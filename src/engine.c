@@ -520,11 +520,13 @@ void parse_engine_output(GAME g, char *str)
 void send_engine_command(GAME g)
 {
     struct userdata_s *d = g->data;
-    struct queue_s **q = d->engine->queue;
+    struct queue_s **q;
     int i;
 
     if (!d->engine || !d->engine->queue)
 	return;
+
+    q = d->engine->queue;
 
     if (send_to_engine(g, q[0]->status, "%s", q[0]->line))
 	return;
