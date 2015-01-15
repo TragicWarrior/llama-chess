@@ -99,20 +99,15 @@ void window_destroy(WIN *win)
 	}
 
 	new = Realloc(new, (n + 2) * sizeof(WIN *));
-	new[n] = wins[i];
-	n++;
+	new[n++] = wins[i];
     }
 
     free(wins);
     wins = NULL;
 
     if (new) {
-	if (n) {
-	    new[n] = NULL;
-	    wins = new;
-	}
-	else
-	    free(new);
+        new[n] = NULL;
+        wins = new;
     }
 }
 
