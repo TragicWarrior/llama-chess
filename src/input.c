@@ -58,6 +58,11 @@ static void add_input_history(int which, const char *str)
 	for (p = input_history[which]->head; p->next; p = p->next);
 
     new = calloc(1, sizeof(struct input_history_s));
+    if (!new) {
+        fprintf(stderr, "Out of core!\n");
+        exit (EXIT_FAILURE);
+    }
+
     new->str = strdup(str);
     new->prev = p;
 
