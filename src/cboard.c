@@ -4339,6 +4339,8 @@ void global_find(int which)
 	return;
     }
 
+    free(p);
+    free(in);
     do_find_game_exp_finalize(which);
 }
 
