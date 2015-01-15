@@ -2217,14 +2217,19 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 	    pgn->pipe = 1;
 
 	    if (append && access(filename, R_OK) == 0) {
+#ifdef HAVE_MKSTEMP
+                mode_t mode;
+#endif
+
 		free (cmd);
 		cmd = compression_cmd(filename, 1);
-
 		if ((pfp = popen(cmd, "r")) == NULL)
 		    goto fail;
 
 #ifdef HAVE_MKSTEMP
+                mode = umask(600);
                 fd = mkstemp (tmp);
+                umask(mode);
                 if (fd == -1)
                     goto fail;
 #else
@@ -2247,7 +2252,10 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 
 	    if (m) {
 #ifdef HAVE_MKSTEMP
+                mode_t mode = umask (600);
+
                 fd = mkstemp (tmp);
+                umask (mode);
                 if (fd == -1)
                     goto fail;
 #else
