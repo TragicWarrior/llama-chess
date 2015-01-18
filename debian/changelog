@@ -1,3 +1,9 @@
+cboard (0.7.3-1) UNRELEASED; urgency=medium
+
+  * New upstream. 
+
+ -- Ben Kibbey <bjk@luxsci.net>  Sun, 18 Jan 2015 12:25:17 -0500
+
 cboard (0.7.2-1) testing; urgency=low
 
   * New upstream.

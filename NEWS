@@ -1,3 +1,8 @@
+CBoard version 0.7.3
+--------------------
+Fixed a few bugs found by Coverity.
+
+
 CBoard version 0.7.2
 --------------------
 Remember the "rotate" setting as a per-game setting rather than a global.
