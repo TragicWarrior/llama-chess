@@ -1384,7 +1384,7 @@ static void update_time_control(GAME g)
 
     if (!clk->tc[clk->tcn][0] || clk->move >= clk->tc[clk->tcn][0]) {
 	clk->move = 0;
-	clk->tc[clk->tcn + 1][1] += abs(clk->elapsed.tv_sec - clk->tc[clk->tcn][1]);
+	clk->tc[clk->tcn + 1][1] += labs(clk->elapsed.tv_sec - clk->tc[clk->tcn][1]);
 	memset(&clk->elapsed, 0, sizeof(clk->elapsed));
 	clk->tcn++;
     }
@@ -1573,7 +1573,7 @@ static char *timeval_to_char(struct timeval t, long limit)
 {
     static char buf[9];
     int h = 0, m = 0, s = 0;
-    int n = limit ? abs(limit - t.tv_sec) : 0;
+    int n = limit ? labs(limit - t.tv_sec) : 0;
 
     h = n / 3600;
     m = (n % 3600) / 60;
