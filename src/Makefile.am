@@ -4,7 +4,7 @@ cboard_SOURCES = cboard.c message.c message.h misc.c engine.c \
 		 colors.h window.h window.c conf.h misc.h common.h \
 		 menu.c menu.h tags.c keys.h filebrowser.c filebrowser.h \
 		 gettext.h
-cboard_LDFLAGS = @PANEL_LIB@ @MENU_LIB@ @FORM_LIB@ @CURSES_LIB@ \
+cboard_LDFLAGS = @PANEL_LIBS@ @MENU_LIBS@ @FORM_LIBS@ @CURSES_LIBS@ \
 		 @LTLIBINTL@
 cboard_LDADD = $(top_builddir)/libchess/libchess.a
 cboard_CPPFLAGS = -DDATA_PATH=\"$(pkgdatadir)\" -I$(top_srcdir)/libchess \

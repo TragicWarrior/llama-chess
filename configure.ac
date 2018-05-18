@@ -7,7 +7,7 @@ AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_USE_SYSTEM_EXTENSIONS()
 AM_CONFIG_HEADER([config.h])
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION([0.18.1])
+AM_GNU_GETTEXT_VERSION([0.19.8])
 
 case "$target_os" in
     darwin*)
