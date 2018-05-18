@@ -21,7 +21,7 @@
 
 static const struct custom_key_s {
     int mode;
-    char *name;
+    const char *name;
     key_func *func;
     int r;
 } config_keys[] = {

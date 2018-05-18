@@ -152,7 +152,7 @@ void update_cursor(GAME, int);
 void invalid_move(int n, int e, const char *m);
 void update_status_window(GAME g);
 void update_all(GAME g);
-void update_status_notify(GAME g, char *fmt, ...);
+void update_status_notify(GAME g, const char *fmt, ...);
 void update_tag_window(TAG **tags);
 void update_all(GAME g);
 void edit_tags(GAME g, BOARD b, int edit);

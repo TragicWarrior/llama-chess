@@ -74,7 +74,7 @@ typedef struct {
 typedef struct tags {
     char *name;		// Tag name.
     char *value;	// Tag value.
-} TAG;
+} __attribute__ ((packed)) TAG;
 
 /*
  * Move history.
@@ -449,6 +449,6 @@ void pgn_find_valid_moves(GAME g, BOARD b, int rank, int file);
 /*
  * Returns the version string of the library.
  */
-char *pgn_version(void);
+const char *pgn_version(void);
 
 #endif

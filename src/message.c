@@ -79,17 +79,17 @@ static void wordwrap_lines (wchar_t ***olines, int *nlines, int *width)
 	    /* Its a very long line without any unicode space. Create a
 	     * new message line. */
 	    if (!buf) {
-	        wchar_t *p, c, *bp;
-		size_t len;
+	        wchar_t *t, c, *bp;
+		size_t l;
 
-		p = lines[i]+MSG_WIDTH;
-		c = *p;
-		*p++ = 0;
-		len = wcslen (p)+2;
+		t = lines[i]+MSG_WIDTH;
+		c = *t;
+		*t++ = 0;
+		l = wcslen (t)+2;
 		buf = Malloc (len*sizeof(wchar_t));
 		bp = buf;
 		*bp++ = c;
-		wmemcpy (bp, p, len-1);
+		wmemcpy (bp, t, l-1);
 	    }
 	}
     }

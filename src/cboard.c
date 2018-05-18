@@ -456,7 +456,7 @@ void view_annotation(HISTORY *h)
 		'n', 0, "%s", _("No comment text for this move"));
 }
 
-int do_game_write(char *filename, char *mode, int start, int end)
+int do_game_write(char *filename, const char *mode, int start, int end)
 {
     int i;
     struct userdata_s *d;
@@ -499,7 +499,7 @@ struct save_game_s {
 
 void do_save_game_overwrite_confirm(WIN *win)
 {
-    char *mode = "w";
+    const char *mode = "w";
     struct save_game_s *s = win->data;
     wchar_t str[] =  { win->c, 0 };
 
@@ -1340,7 +1340,7 @@ static void update_clock(GAME g, struct itimerval it)
 
 	if (d->wclock.tc[d->wclock.tcn][1] &&
 		d->wclock.elapsed.tv_sec >= d->wclock.tc[d->wclock.tcn][1]) {
-	    pgn_tag_add(&g->tag, "Result", "0-1");
+	    pgn_tag_add(&g->tag, (char *)"Result", (char *)"0-1");
 	    gameover(g);
 	}
     }
@@ -1355,7 +1355,7 @@ static void update_clock(GAME g, struct itimerval it)
 
 	if (d->bclock.tc[d->bclock.tcn][1] &&
 		d->bclock.elapsed.tv_sec >= d->bclock.tc[d->bclock.tcn][1]) {
-	    pgn_tag_add(&g->tag, "Result", "1-0");
+	    pgn_tag_add(&g->tag, (char *)"Result", (char *)"1-0");
 	    gameover(g);
 	}
     }
@@ -1541,7 +1541,7 @@ static void move_to_engine(GAME g)
 	return;
 
     str = Malloc(MAX_SAN_MOVE_LEN + 1);
-    snprintf(str, MAX_SAN_MOVE_LEN + 1, "%c%i%c%i",
+    snprintf(str, MAX_SAN_MOVE_LEN + 1, "%c%u%c%u",
 	     _("abcdefgh")[d->sp.scol - 1],
 	     d->sp.srow, _("abcdefgh")[d->sp.col - 1], d->sp.row);
 
@@ -1572,13 +1572,13 @@ static char *clock_to_char(long n)
 static char *timeval_to_char(struct timeval t, long limit)
 {
     static char buf[9];
-    int h = 0, m = 0, s = 0;
+    unsigned h = 0, m = 0, s = 0;
     int n = limit ? labs(limit - t.tv_sec) : 0;
 
     h = n / 3600;
     m = (n % 3600) / 60;
     s = (n % 3600) % 60;
-    snprintf(buf, sizeof(buf), "%.2i:%.2i:%.2i", h, m, s);
+    snprintf(buf, sizeof(buf), "%.2u:%.2u:%.2u", h, m, s);
     return buf;
 }
 
@@ -1592,12 +1592,13 @@ static char *time_control_status(struct clock_s *clk)
 	snprintf(buf, sizeof(buf), " M%.2i/%s", abs(clk->tc[clk->tcn][0] - clk->move),
 		clock_to_char(clk->tc[clk->tcn + 1][1]));
     else if (!clk->incr)
-	return "";
+	return (char *)"";
 
     if (clk->incr) {
-        char buf[16];
-	strncat(buf, " I", sizeof(buf)-1);
-	strncat(buf, itoa(clk->incr, buf), sizeof(buf)-1);
+        char tbuf[16];
+
+	strncat(tbuf, " I", sizeof(tbuf)-1);
+	strncat(tbuf, itoa(clk->incr, buf), sizeof(tbuf)-1);
     }
 
     return buf;
@@ -2114,7 +2115,7 @@ cleanup:
  * Updates the notification line in the status window then refreshes the
  * status window.
  */
-void update_status_notify(GAME g, char *fmt, ...)
+void update_status_notify(GAME g, const char *fmt, ...)
 {
     va_list ap;
 #ifdef HAVE_VASPRINTF
@@ -3183,9 +3184,9 @@ void do_edit_exit()
     char *fen = pgn_game_to_fen(gp, d->b);
 
     config.details--;
-    pgn_tag_add(&gp->tag, "FEN", fen);
+    pgn_tag_add(&gp->tag, (char *)"FEN", fen);
     free (fen);
-    pgn_tag_add(&gp->tag, "SetUp", "1");
+    pgn_tag_add(&gp->tag, (char *)"SetUp", (char *)"1");
     pgn_tag_sort(gp->tag);
     pgn_board_update(gp, d->b, gp->hindex);
     d->mode = MODE_PLAY;
@@ -4223,7 +4224,7 @@ void do_game_save(WIN *win)
 	    if (d->mode == MODE_EDIT) {
 	        char *fen = pgn_game_to_fen(game[i], d->b);
 
-		pgn_tag_add(&game[i]->tag, "FEN", fen);
+		pgn_tag_add(&game[i]->tag, (char *)"FEN", fen);
 		free (fen);
 	    }
 	}
@@ -4234,7 +4235,7 @@ void do_game_save(WIN *win)
 	if (d->mode == MODE_EDIT) {
 	    char *fen = pgn_game_to_fen(game[n], d->b);
 
-	    pgn_tag_add(&game[n]->tag, "FEN", fen);
+	    pgn_tag_add(&game[n]->tag, (char *)"FEN", fen);
 	    free (fen);
 	}
     }
@@ -4716,7 +4717,7 @@ static void do_perl_finalize(WIN *win)
     if (n != E_PGN_ERR)
 	d->oldfen = strdup(g->tag[n]->value);
 
-    pgn_tag_add(&g->tag, "FEN", result);
+    pgn_tag_add(&g->tag, (char *)"FEN", result);
     update_status_notify(g, "%s", ANY_KEY_STR);
     update_all(g);
 
@@ -5005,7 +5006,7 @@ void game_loop()
 	    pgn_board_init_fen(gp, d->b, d->perlfen);
 	    gp->flags = d->perlflags;
 	    free(d->perlfen);
-	    pgn_tag_add(&gp->tag, "FEN", d->oldfen);
+	    pgn_tag_add(&gp->tag, (char *)"FEN", d->oldfen);
 	    free(d->oldfen);
 	    d->perlfen = d->oldfen = NULL;
 	    update_all(gp);
@@ -5405,8 +5406,8 @@ int main(int argc, char *argv[])
      * This fixes window resizing in an xterm.
      */
     if (getenv("DISPLAY") != NULL) {
-	putenv("LINES=");
-	putenv("COLUMNS=");
+	putenv((char *)"LINES=");
+	putenv((char *)"COLUMNS=");
     }
 
     if (initscr() == NULL)

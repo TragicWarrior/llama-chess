@@ -381,7 +381,7 @@ done:
 static struct known_key_s
 {
     wint_t c;
-    char *name;
+    const char *name;
 } known_keys[] = {
     { KEY_UP, "up" },
     { KEY_DOWN, "down" },
@@ -842,5 +842,5 @@ void parse_rcfile(const char *filename)
     }
 
     if (config.enginecmdblacktag)
-	pgn_tag_add(&config.tag, "Black", config.engine_cmd);
+	pgn_tag_add(&config.tag, (char *)"Black", config.engine_cmd);
 }

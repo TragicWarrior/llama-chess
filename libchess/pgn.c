@@ -82,7 +82,7 @@ static int Ungetc(int c, FILE *fp)
     return ungetc(c, fp);
 }
 
-char *pgn_version()
+const char *pgn_version()
 {
     return "libchess " PACKAGE_VERSION;
 }
@@ -821,26 +821,26 @@ static void set_default_tags(GAME g)
     strftime(tbuf, sizeof(tbuf), PGN_TIME_FORMAT, tp);
 
     /* The standard seven tag roster (in order of appearance). */
-    if (pgn_tag_add(&g->tag, "Event", "?") != E_PGN_OK)
+    if (pgn_tag_add(&g->tag, (char *)"Event", (char *)"?") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
     gethostname (host, sizeof(host)-1);
-    if (pgn_tag_add(&g->tag, "Site", host) != E_PGN_OK)
+    if (pgn_tag_add(&g->tag, (char *)"Site", host) != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Date", tbuf) != E_PGN_OK)
+    if (pgn_tag_add(&g->tag, (char *)"Date", tbuf) != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Round", "-") != E_PGN_OK)
+    if (pgn_tag_add(&g->tag, (char *)"Round", (char *)"-") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "White", pw->pw_gecos) != E_PGN_OK)
+    if (pgn_tag_add(&g->tag, (char *)"White", pw->pw_gecos) != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Black", "?") != E_PGN_OK)
+    if (pgn_tag_add(&g->tag, (char *)"Black", (char *)"?") != E_PGN_OK)
 	warn("pgn_tag_add()");
 
-    if (pgn_tag_add(&g->tag, "Result", "*") != E_PGN_OK)
+    if (pgn_tag_add(&g->tag, (char *)"Result", (char *)"*") != E_PGN_OK)
 	warn("pgn_tag_add()");
 }
 
@@ -1230,7 +1230,7 @@ static int eog_text(GAME g, FILE *fp)
      * a draw.
      */
     if (g->tag[6]->value[0] == '*' && strcmp("1/2-1/2", buf) == 0) {
-	if (pgn_tag_add(&g->tag, "Result", buf) != E_PGN_OK)
+	if (pgn_tag_add(&g->tag, (char *)"Result", buf) != E_PGN_OK)
 	    warn("pgn_tag_add()");
     }
 
@@ -1798,8 +1798,8 @@ static int read_file(FILE *fp)
 	    memcpy(old, pgn_board, sizeof(BOARD));
 
 	    if (move_text(game[gindex], fp)) {
-		if (pgn_tag_add(&game[gindex]->tag, "Result", "*") ==
-			E_PGN_ERR) {
+		if (pgn_tag_add(&game[gindex]->tag, (char *)"Result",
+                                (char *)"*") == E_PGN_ERR) {
 		    warn("pgn_tag_add()");
 		    pgn_ret = E_PGN_ERR;
 		}
@@ -1966,7 +1966,7 @@ static void write_comments_and_nag(FILE *fp, HISTORY *h, int *len)
 
     if (h->comment) {
 	Fputc('\n', fp, len);
-	putstring(fp, " {", len);
+	putstring(fp, (char *)" {", len);
 	putstring(fp, h->comment, len);
 	Fputc('}', fp, len);
     }
@@ -2012,7 +2012,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 	    int oldturn = pgn_write_turn;
 
 	    ravlevel++;
-	    putstring(fp, " (", len);
+	    putstring(fp, (char *)" (", len);
 
 	    /*
 	     * If it's WHITE's turn the move number will be added above after
@@ -2020,14 +2020,14 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 	     */
 	    if (pgn_write_turn == BLACK) {
 	      putstring(fp, itoa(m, tmp), len);
-		putstring(fp, "...", len);
+		putstring(fp, (char *)"...", len);
 	    }
 
 	    hp = h[i]->rav;
 	    write_all_move_text(fp, hp, m, len);
 	    m = oldm;
 	    pgn_write_turn = oldturn;
-	    putstring(fp, ")", len);
+	    putstring(fp, (char *)")", len);
 	    ravlevel--;
 
 	    if (ravlevel && h[i + 1])
@@ -2038,7 +2038,7 @@ static void write_all_move_text(FILE *fp, HISTORY **h, int m, int *len)
 
 	    if (pgn_write_turn == WHITE && h[i + 1]) {
 	        putstring(fp, itoa(m, tmp), len);
-		putstring(fp, "...", len);
+		putstring(fp, (char *)"...", len);
 	    }
 	}
 
@@ -2224,7 +2224,7 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 
 	    if (append && access(filename, R_OK) == 0) {
 #ifdef HAVE_MKSTEMP
-                mode_t mode;
+                mode_t tmode;
 #endif
 
 		free (cmd);
@@ -2233,9 +2233,9 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 		    goto fail;
 
 #ifdef HAVE_MKSTEMP
-                mode = umask(600);
+                tmode = umask(600);
                 fd = mkstemp (tmp);
-                umask(mode);
+                umask(tmode);
                 if (fd == -1)
                     goto fail;
 #else
@@ -2260,10 +2260,10 @@ pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result)
 
 	    if (m) {
 #ifdef HAVE_MKSTEMP
-                mode_t mode = umask (600);
+                mode_t tmode = umask (600);
 
                 fd = mkstemp (tmp);
-                umask (mode);
+                umask (tmode);
                 if (fd == -1)
                     goto fail;
 #else
@@ -2581,13 +2581,13 @@ pgn_error_t pgn_write(PGN_FILE *pgn, GAME g)
     ravlevel = pgn_mpl = 0;
 
     if (pgn_history_total(g->hp) && pgn_write_turn == BLACK)
-	putstring(pgn->fp, "1...", &len);
+	putstring(pgn->fp, (char *)"1...", &len);
 
     write_all_move_text(pgn->fp, g->hp, 1, &len);
 
     Fputc(' ', pgn->fp, &len);
     putstring(pgn->fp, g->tag[6]->value, &len);
-    putstring(pgn->fp, "\n\n", &len);
+    putstring(pgn->fp, (char *)"\n\n", &len);
 
     if (!pgn_config.reduced)
 	CLEAR_FLAG(g->flags, GF_PERROR);

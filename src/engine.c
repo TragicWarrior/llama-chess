@@ -554,7 +554,7 @@ void send_engine_command(GAME g)
     }
 }
 
-void add_engine_command(GAME g, int s, char *fmt, ...)
+void add_engine_command(GAME g, int s, const char *fmt, ...)
 {
     va_list ap;
     int i = 0;

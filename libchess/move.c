@@ -731,6 +731,7 @@ static int check_self_test(GAME g, BOARD b, int p, int sfile, int srank,
     int nkfile, nkrank, nokfile, nokrank;
     int go;
 
+    nkrank = nkfile = 0;
     g->validate = 0;
     g->check_testing = 1;
     memcpy(tmpb, b, sizeof(BOARD));
@@ -978,8 +979,8 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 		g->check = CHECK_MATE;
 
 		if (!g->validate) {
-		    pgn_tag_add(&g->tag, "Result",
-			    (g->turn == WHITE) ? "1-0" : "0-1");
+		    pgn_tag_add(&g->tag, (char *)"Result",
+			    (g->turn == WHITE) ? (char *)"1-0" : (char *)"0-1");
 		    SET_FLAG(g->flags, GF_GAMEOVER);
 		}
 		break;
@@ -1008,7 +1009,7 @@ static int finalize_move(GAME g, BOARD b, int promo, int sfile, int srank,
 
 	if (g->ply >= 50) {
 	    if (g->tag[6]->value[0] == '*') {
-		pgn_tag_add(&g->tag, "Result", "1/2-1/2");
+		pgn_tag_add(&g->tag, (char *)"Result", (char *)"1/2-1/2");
 		SET_FLAG(g->flags, GF_GAMEOVER);
 	    }
 	}

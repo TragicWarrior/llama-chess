@@ -193,7 +193,8 @@ wchar_t *str_etc(const char *str, int maxlen, int rev)
     return buf;
 }
 
-char **split_str(char *str, char *delim, int *n, int *width, int force_trim)
+char **split_str(char *str, const char *delim, int *n, int *width,
+                 int force_trim)
 {
     char *tmp;
     int total = 0;

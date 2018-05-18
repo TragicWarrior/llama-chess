@@ -33,7 +33,7 @@ FILE *open_file(const char *filename);
 char *pathfix(const char *);
 char *trim_multi(char *);
 wchar_t *str_etc(const char *str, int maxlen, int rev);
-char **split_str(char *str, char *delim, int *n, int *w, int force_trim);
+char **split_str(char *str, const char *delim, int *n, int *w, int force_trim);
 wchar_t *str_to_wchar_len (const char *str, int maxlen);
 wchar_t *str_to_wchar (const char *p);
 char *wchar_to_str (const wchar_t *str);

@@ -63,7 +63,7 @@ void set_engine_defaults(GAME, wchar_t **);
 void stop_engine(GAME);
 void append_enginebuf(GAME, char *);
 void send_engine_command(GAME g);
-void add_engine_command(GAME g, int s, char *fmt, ...);
+void add_engine_command(GAME g, int s, const char *fmt, ...);
 void parse_engine_output(GAME g, char *str);
 int init_chess_engine(GAME g);
 

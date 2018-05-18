@@ -221,7 +221,7 @@ static void edit_tag_add_fen(struct menu_input_s *m)
     struct userdata_s *d = gp->data;
     char *fen = pgn_game_to_fen(gp, d->b);
 
-    pgn_tag_add(&t, "FEN", fen);
+    pgn_tag_add(&t, (char *)"FEN", fen);
     free (fen);
     m->data = t;
 }
@@ -251,9 +251,9 @@ static void edit_tag_add_finalize(WIN *w)
 
     if (!value || !*value) {
 	if (strcasecmp(name, "Round") == 0)
-	    value = "-";
+	    value = (char *)"-";
 	else if (strcasecmp(name, "Result") == 0)
-	    value = "*";
+	    value = (char *)"*";
 	else if (strcasecmp(name, "Date") == 0) {
 	    time(&now);
 	    tm = localtime(&now);
@@ -261,7 +261,7 @@ static void edit_tag_add_finalize(WIN *w)
 	    value = buf;
 	}
 	else
-	    value = "?";
+	    value = (char *)"?";
     }
 
     tmp = trim_multi(value);
