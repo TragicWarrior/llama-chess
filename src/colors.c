@@ -33,10 +33,10 @@ static int next_cp;
  */
 static chtype find_cp(short fg, short bg, attr_t attrs)
 {
-    int i;
+    short i;
     short xfg, xbg;
 
-    for (i = 1; i < COLOR_PAIRS; i++) {
+    for (i = 1; i < next_cp; i++) {
 	pair_content(i, &xfg, &xbg);
 
 	if (xfg == fg && xbg == bg)
