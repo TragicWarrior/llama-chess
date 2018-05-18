@@ -93,70 +93,73 @@
 #define ANY_KEY_SCROLL_STR      _("[ press any key to continue (UP/DN to scroll) ]")
 #define ERROR_STR               _("[ ERROR ]")
 
-struct clock_s {
-    struct timeval elapsed;
-    unsigned short move;	/* move count */
-    int tc[MAX_TC][2];		/* 0 = move count, 1 = time (in seconds) */
-    int tcn;
-    int incr;
+struct clock_s
+{
+  struct timeval elapsed;
+  unsigned short move;		/* move count */
+  int tc[MAX_TC][2];		/* 0 = move count, 1 = time (in seconds) */
+  int tcn;
+  int incr;
 };
 
 /*
  * Attached to game[n].data.
  */
-struct userdata_s {
-    BOARD b;
-    struct engine_s *engine;
-    unsigned short flags;
-    char c_row;
-    char c_col;
-    char pm_frfr[6]; // Previous move
-    char pm_row;
-    char pm_col;
-    char ospm_row;
-    char ospm_col;
-    char pm_undo;
-    char paused;
-    unsigned n;
-    unsigned char mode;
-    char rotate; // Rotation control board
-    int go_move; // Movement function result 'do_play_go'
-    int play_mode;
-    struct clock_s wclock;
-    struct clock_s bclock;
-    struct timeval elapsed;
+struct userdata_s
+{
+  BOARD b;
+  struct engine_s *engine;
+  unsigned short flags;
+  char c_row;
+  char c_col;
+  char pm_frfr[6];		// Previous move
+  char pm_row;
+  char pm_col;
+  char ospm_row;
+  char ospm_col;
+  char pm_undo;
+  char paused;
+  unsigned n;
+  unsigned char mode;
+  char rotate;			// Rotation control board
+  int go_move;			// Movement function result 'do_play_go'
+  int play_mode;
+  struct clock_s wclock;
+  struct clock_s bclock;
+  struct timeval elapsed;
 
-    // The selected piece.
-    struct {
-	unsigned char icon;
-	char scol;
-	char srow;
-	char col;
-	char row;
-    } sp;
+  // The selected piece.
+  struct
+  {
+    unsigned char icon;
+    char scol;
+    char srow;
+    char col;
+    char row;
+  } sp;
 
-    void *data; // For the history menu
+  void *data;			// For the history menu
 
 #ifdef WITH_LIBPERL
-    char *perlfen;
-    char *oldfen;
-    unsigned short perlflags;
+  char *perlfen;
+  char *oldfen;
+  unsigned short perlflags;
 #endif
 };
 
 /* A pointer to the game in focus. */
 GAME gp;
 
-void gameover(GAME);
-void update_cursor(GAME, int);
-void invalid_move(int n, int e, const char *m);
-void update_status_window(GAME g);
-void update_all(GAME g);
-void update_status_notify(GAME g, const char *fmt, ...);
-void update_tag_window(TAG **tags);
-void update_all(GAME g);
-void edit_tags(GAME g, BOARD b, int edit);
-void add_custom_tags(TAG ***t);
-wchar_t *translate_tag_name(const char *);
+void gameover (GAME);
+void update_cursor (GAME, int);
+void invalid_move (int n, int e, const char *m);
+void update_status_window (GAME g);
+void update_all (GAME g);
+void update_status_notify (GAME g, const char *fmt, ...);
+void update_tag_window (TAG ** tags);
+void update_all (GAME g);
+void edit_tags (GAME g, BOARD b, int edit);
+void add_custom_tags (TAG *** t);
+wchar_t *translate_tag_name (const char *);
 
 #endif

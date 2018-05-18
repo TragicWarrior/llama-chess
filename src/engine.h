@@ -28,43 +28,48 @@
 
 #define RETURN(d)	{d->engine->status = ENGINE_READY; return;}
 
-enum {
-    ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
+enum
+{
+  ENGINE_OFFLINE = -1, ENGINE_READY, ENGINE_THINKING, ENGINE_INITIALIZING
 };
 
-enum {
-    HUMAN, ENGINE
+enum
+{
+  HUMAN, ENGINE
 };
 
-enum {
-    ENGINE_IN_FD,
-    ENGINE_OUT_FD,
+enum
+{
+  ENGINE_IN_FD,
+  ENGINE_OUT_FD,
 };
 
-struct queue_s {
-    char *line;
-    int status;
+struct queue_s
+{
+  char *line;
+  int status;
 };
 
-struct engine_s {
-    int fd[2];
-    pid_t pid;
-    int status;
-    struct queue_s **queue;
-    char **enginebuf;
-    char *iobuf;
-    int len;
+struct engine_s
+{
+  int fd[2];
+  pid_t pid;
+  int status;
+  struct queue_s **queue;
+  char **enginebuf;
+  char *iobuf;
+  int len;
 };
 
-int send_signal_to_engine(pid_t, int);
-int send_to_engine(GAME g, int, const char *format, ...);
-int start_chess_engine(GAME);
-void set_engine_defaults(GAME, wchar_t **);
-void stop_engine(GAME);
-void append_enginebuf(GAME, char *);
-void send_engine_command(GAME g);
-void add_engine_command(GAME g, int s, const char *fmt, ...);
-void parse_engine_output(GAME g, char *str);
-int init_chess_engine(GAME g);
+int send_signal_to_engine (pid_t, int);
+int send_to_engine (GAME g, int, const char *format, ...);
+int start_chess_engine (GAME);
+void set_engine_defaults (GAME, wchar_t **);
+void stop_engine (GAME);
+void append_enginebuf (GAME, char *);
+void send_engine_command (GAME g);
+void add_engine_command (GAME g, int s, const char *fmt, ...);
+void parse_engine_output (GAME g, char *str);
+int init_chess_engine (GAME g);
 
 #endif

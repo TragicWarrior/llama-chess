@@ -23,14 +23,15 @@
 #define PGN_DUMP(fmt, args...)	if (dumptofile) DUMP_F("libchess.debug", fmt, ## args)
 #endif
 
-struct {
-    int mpl;
-    int stop;
-    int reduced;
-    int fmd;
-    long progress;
-    pgn_progress pfunc;
-    int strict_castling;
+struct
+{
+  int mpl;
+  int stop;
+  int reduced;
+  int fmd;
+  long progress;
+  pgn_progress pfunc;
+  int strict_castling;
 } pgn_config;
 
 int parsing_file;

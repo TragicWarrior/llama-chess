@@ -31,35 +31,36 @@ typedef struct window_s WIN;
 typedef int (window_func) (WIN *);
 typedef void (window_exit_func) (WIN *);
 
-struct window_s {
-    WINDOW *w;
-    PANEL *p;
-    int rows;
-    int cols;
-    int posy;
-    int posx;
-    char *title;
-    /*
-     * Function that is called when a key is pressed from game_loop(). This is
-     * the only place where a key is gotten from. This is for the top window
-     * (LIFO). When the function returns -1, the window is destroyed and the
-     * top becomes top - 1.
-     */
-    window_func *func;
-    window_exit_func *efunc;
-    void *data;
-    wint_t c;
-    int keep;
-    int freedata; // Whether or not to free() .data when destroying
+struct window_s
+{
+  WINDOW *w;
+  PANEL *p;
+  int rows;
+  int cols;
+  int posy;
+  int posx;
+  char *title;
+  /*
+   * Function that is called when a key is pressed from game_loop(). This is
+   * the only place where a key is gotten from. This is for the top window
+   * (LIFO). When the function returns -1, the window is destroyed and the
+   * top becomes top - 1.
+   */
+  window_func *func;
+  window_exit_func *efunc;
+  void *data;
+  wint_t c;
+  int keep;
+  int freedata;			// Whether or not to free() .data when destroying
 };
 
 WIN **wins;
 wint_t pushkey;
 
-WIN *window_create(const char *title, int h, int w, int y, int x, window_func,
-	void *data, window_exit_func);
-void window_destroy(WIN *);
-void window_draw_title(WINDOW *, const char *, int, chtype, chtype);
-void window_draw_prompt(WINDOW *, int, int, const char *, chtype);
+WIN *window_create (const char *title, int h, int w, int y, int x,
+		    window_func, void *data, window_exit_func);
+void window_destroy (WIN *);
+void window_draw_title (WINDOW *, const char *, int, chtype, chtype);
+void window_draw_prompt (WINDOW *, int, int, const char *, chtype);
 
 #endif

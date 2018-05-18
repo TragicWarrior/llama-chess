@@ -34,69 +34,74 @@
 #endif
 
 // See init_color_pairs() in colors.c.
-enum {
-    CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,
-    CONF_BCOORDS, CONF_BMOVESW, CONF_BMOVESB, CONF_BCOUNT, CONF_BDWINDOW,
-    CONF_TWINDOW, CONF_TTITLE, CONF_TBORDER,
-    CONF_SWINDOW, CONF_STITLE, CONF_SBORDER, CONF_SNOTIFY, CONF_SENGINE,
-    CONF_HWINDOW, CONF_HTITLE, CONF_HBORDER,
-    CONF_MWINDOW, CONF_MTITLE, CONF_MBORDER, CONF_MPROMPT,
-    CONF_IWINDOW, CONF_ITITLE, CONF_IBORDER, CONF_IPROMPT, CONF_MENU,
-    CONF_MENUS, CONF_MENUH, CONF_HISTORY_MENU_LG, CONF_BCASTLING,
-    CONF_BENPASSANT, CONF_BATTACK, CONF_BPREVMOVE, CONF_MAX_COLORS
+enum
+{
+  CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,
+  CONF_BCOORDS, CONF_BMOVESW, CONF_BMOVESB, CONF_BCOUNT, CONF_BDWINDOW,
+  CONF_TWINDOW, CONF_TTITLE, CONF_TBORDER,
+  CONF_SWINDOW, CONF_STITLE, CONF_SBORDER, CONF_SNOTIFY, CONF_SENGINE,
+  CONF_HWINDOW, CONF_HTITLE, CONF_HBORDER,
+  CONF_MWINDOW, CONF_MTITLE, CONF_MBORDER, CONF_MPROMPT,
+  CONF_IWINDOW, CONF_ITITLE, CONF_IBORDER, CONF_IPROMPT, CONF_MENU,
+  CONF_MENUS, CONF_MENUH, CONF_HISTORY_MENU_LG, CONF_BCASTLING,
+  CONF_BENPASSANT, CONF_BATTACK, CONF_BPREVMOVE, CONF_MAX_COLORS
 };
 
-struct color_s {
-    short fg;		// Foreground color.
-    short bg;		// Background color.
-    int attrs;		// Attributes for a color terminal.
-    int nattrs;		// Attributes for a non-color terminal.
+struct color_s
+{
+  short fg;			// Foreground color.
+  short bg;			// Background color.
+  int attrs;			// Attributes for a color terminal.
+  int nattrs;			// Attributes for a non-color terminal.
 };
 
-enum {
-    KEY_DEFAULT,
-    KEY_REPEAT,
-    KEY_SET
+enum
+{
+  KEY_DEFAULT,
+  KEY_REPEAT,
+  KEY_SET
 };
 
-struct config_key_s {
-    wint_t c;
-    int type;
-    wchar_t *str;
+struct config_key_s
+{
+  wint_t c;
+  int type;
+  wchar_t *str;
 };
 
-struct {
-    int jumpcount;	// KEY_UP and KEY_DOWN in history mode.
-    int linegraphics;	// Board line graphics.
-    int saveprompt;	// Prompt to save modified games on quit.
-    int deleteprompt;	// Prompt when deleting a game.
-    int clevel;		// Compression level for compressed files.
-    int validmoves;	// Display valid squares a selected piece can move to.
-    struct passwd *pwd;	// Used throughout (tags/home directory).
-    char *nagfile;	// The pathname to the NAG data file.
-    char *configfile;	// The pathname to the configuration file (default or
-    			// from the command line).
-    char *ccfile;	// The pathname to the Country Code data file.
-    char *savedirectory; // Directory where saved games are stored.
-    char *datadir;	// ~/.cboard
-    char *engine_cmd;	// Alternate chess engine command.
-    int engine_protocol; // XBoard protocol: 1 or 2
-    struct color_s color[CONF_MAX_COLORS]; // Color configuration.
-    TAG **tag;		// Custom PGN tags.
-    char *pattern;	// Filename filter in the file browser.
-    wchar_t **einit;	/* Strings to send to the chess engine upon each reset
-                         * or new game.
-			 */
-    struct config_key_s **keys; // Custom commands to send to the engine.
-    int details;	// Board details.
-    int showattacks;    // When board details is enabled.
-    char coordsyleft;
-    char fmpolyglot;	// first move with polyglot
-    char boardleft;
-    char exitdialogbox;
-    char enginecmdblacktag;
-    int utf8_pieces;    // For the board only.
-    char bprevmove;
+struct
+{
+  int jumpcount;		// KEY_UP and KEY_DOWN in history mode.
+  int linegraphics;		// Board line graphics.
+  int saveprompt;		// Prompt to save modified games on quit.
+  int deleteprompt;		// Prompt when deleting a game.
+  int clevel;			// Compression level for compressed files.
+  int validmoves;		// Display valid squares a selected piece can move to.
+  struct passwd *pwd;		// Used throughout (tags/home directory).
+  char *nagfile;		// The pathname to the NAG data file.
+  char *configfile;		// The pathname to the configuration file (default or
+  // from the command line).
+  char *ccfile;			// The pathname to the Country Code data file.
+  char *savedirectory;		// Directory where saved games are stored.
+  char *datadir;		// ~/.cboard
+  char *engine_cmd;		// Alternate chess engine command.
+  int engine_protocol;		// XBoard protocol: 1 or 2
+  struct color_s color[CONF_MAX_COLORS];	// Color configuration.
+  TAG **tag;			// Custom PGN tags.
+  char *pattern;		// Filename filter in the file browser.
+  wchar_t **einit;		/* Strings to send to the chess engine upon each reset
+				 * or new game.
+				 */
+  struct config_key_s **keys;	// Custom commands to send to the engine.
+  int details;			// Board details.
+  int showattacks;		// When board details is enabled.
+  char coordsyleft;
+  char fmpolyglot;		// first move with polyglot
+  char boardleft;
+  char exitdialogbox;
+  char enginecmdblacktag;
+  int utf8_pieces;		// For the board only.
+  char bprevmove;
 } config;
 
 #endif

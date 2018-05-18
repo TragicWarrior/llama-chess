@@ -19,9 +19,10 @@
 #ifndef COLORS_H
 #define COLORS_H
 
-enum {
-    A_FG_B_BG, A_FG_B_FG, A_BG_B_BG, B_FG_A_BG, B_BG_B_FG, A_BG_A_FG,
-    A_BG_B_FG, B_BG_A_FG
+enum
+{
+  A_FG_B_BG, A_FG_B_FG, A_BG_B_BG, B_FG_A_BG, B_BG_B_FG, A_BG_A_FG,
+  A_BG_B_FG, B_BG_A_FG
 };
 
 #define CP_BOARD_COORDS	((COLORS) ? \
@@ -188,8 +189,8 @@ enum {
 	COLOR_PAIR(41) | config.color[CONF_BPREVMOVE].attrs : \
 	config.color[CONF_BPREVMOVE].nattrs)
 
-void init_color_pairs();
-void set_default_colors();
-chtype mix_cp(chtype a, chtype b, attr_t, int which);
+void init_color_pairs ();
+void set_default_colors ();
+chtype mix_cp (chtype a, chtype b, attr_t, int which);
 
 #endif

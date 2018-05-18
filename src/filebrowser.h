@@ -20,15 +20,16 @@
 #ifndef FILEBROWSER_H
 #define FILEBROWSER_H
 
-struct file_s {
-    char *path;
-    char *name;
-    char *st;
+struct file_s
+{
+  char *path;
+  char *name;
+  char *st;
 };
 
 struct file_s **files;
 char *oldwd;
 
-void file_browser(void *arg);
+void file_browser (void *arg);
 
 #endif

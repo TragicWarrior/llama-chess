@@ -40,12 +40,14 @@
 #define TOGGLE_FLAG(var, f)	(var ^= (f))
 #define TEST_FLAG(var, f)	(var & f)
 
-enum {
-    OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING
+enum
+{
+  OPEN_SQUARE, PAWN, BISHOP, ROOK, KNIGHT, QUEEN, KING
 };
 
-enum {
-    WHITE, BLACK
+enum
+{
+  WHITE, BLACK
 };
 
 /* Game flags. */
@@ -61,19 +63,21 @@ enum {
 /*
  * The chess board.
  */
-typedef struct {
-    unsigned char icon;		// The piece.
-    unsigned char valid: 1, 	// != 0 if this square is a valid move for the
-    				// selected piece.
-		  enpassant: 1;
+typedef struct
+{
+  unsigned char icon;		// The piece.
+  unsigned char valid:1,	/* != 0 if this square is a valid move for the
+				  selected piece. */
+  enpassant:1;
 } BOARD[8][8];
 
 /*
  * PGN Roster tags.
  */
-typedef struct tags {
-    char *name;		// Tag name.
-    char *value;	// Tag value.
+typedef struct tags
+{
+  char *name;			// Tag name.
+  char *value;			// Tag value.
 } __attribute__ ((packed)) TAG;
 
 /*
@@ -83,56 +87,59 @@ typedef struct tags {
  * Recursive Annotated Variations. The depth of recursion is kept track of in
  * g.ravlevel.
  */
-typedef struct history {
-    char *move;				// The SAN move text.
-    char *comment;			// Annotation for this move.
-    unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph.
-    char *fen;				// Of the current board.
-    struct history **rav;		// Variation of the current move.
+typedef struct history
+{
+  char *move;				// The SAN move text.
+  char *comment;			// Annotation for this move.
+  unsigned char nag[MAX_PGN_NAG];	// Numeric Annotation Glyph.
+  char *fen;				// Of the current board.
+  struct history **rav;			// Variation of the current move.
 } HISTORY;
 
 /*
  * Keeps game state history for the root move.
  */
-typedef struct {
-    char *fen;		// Game board state.
-    unsigned short flags;
-    unsigned short hindex;
-    HISTORY **hp;	// Pointer to the root move.
+typedef struct
+{
+  char *fen;			// Game board state.
+  unsigned short flags;
+  unsigned short hindex;
+  HISTORY **hp;			// Pointer to the root move.
 } RAV;
 
 /*
  * This is an array of 'games' structures. One for each game in a file, or
  * the current game.
  */
-typedef struct game_s {
-    TAG **tag;			// Roster tags.
-    HISTORY **history;		// Move history for this game.
-    HISTORY **hp; 		// History pointer pointing to the location
-    				// in *history used mainly for RAV.
-    RAV *rav;			// Saved game states for the root move of RAV.
-    int ravlevel;		// An index to *rav.
-    unsigned short hindex;	// Current move in *hp.
-    unsigned short flags;	// Game flags.
-    unsigned short oflags;	// Game flags for the previous move.
-    unsigned char side: 1,      // This playing side. BLACK or WHITE.
-                  turn: 1;      // BLACK or WHITE.
-    unsigned short ply;         // Move count.
-    void *data;			/* User data associated with this game. Must
+typedef struct game_s
+{
+  TAG **tag;			// Roster tags.
+  HISTORY **history;		// Move history for this game.
+  HISTORY **hp;			/* History pointer pointing to the location
+				   in *history used mainly for RAV. */
+  RAV *rav;			// Saved game states for the root move of RAV.
+  int ravlevel;			// An index to *rav.
+  unsigned short hindex;	// Current move in *hp.
+  unsigned short flags;		// Game flags.
+  unsigned short oflags;	// Game flags for the previous move.
+  unsigned char side:1,		// This playing side. BLACK or WHITE.
+    turn:1;			// BLACK or WHITE.
+  unsigned short ply;		// Move count.
+  void *data;			/* User data associated with this game. Must
 				 * be freed by the user. */
-    // internal validation state
-    int validate;
-    int done_fen_tag;
-    int pgn_fen_tag;
-    int capture;
-    int castle;
-    int check;
-    int check_testing;
-    int kfile;
-    int krank;
-    int okfile;
-    int okrank;
-    int validate_find;
+  // internal validation state
+  int validate;
+  int done_fen_tag;
+  int pgn_fen_tag;
+  int capture;
+  int castle;
+  int check;
+  int check_testing;
+  int kfile;
+  int krank;
+  int okfile;
+  int okrank;
+  int validate_find;
 } *GAME;
 
 /*
@@ -148,95 +155,98 @@ int gindex, gtotal;
 /*
  * Library configuration flags. These will affect all games.
  */
-typedef enum {
-    /*
-     * When pgn_write() is called to write a game, write reduced PGN format.
-     * This will only write the seven tag roster and move text skipping any
-     * annotation. The type for this flag is an int.
-     */
-    PGN_REDUCED,
+typedef enum
+{
+  /*
+   * When pgn_write() is called to write a game, write reduced PGN format.
+   * This will only write the seven tag roster and move text skipping any
+   * annotation. The type for this flag is an int.
+   */
+  PGN_REDUCED,
 
-    /*
-     * The number of full moves to write per line. If 0 then pgn_write() will
-     * write as many as possible within 80 columns. The type for this flag
-     * is an int.
-     */
-    PGN_MPL,
+  /*
+   * The number of full moves to write per line. If 0 then pgn_write() will
+   * write as many as possible within 80 columns. The type for this flag
+   * is an int.
+   */
+  PGN_MPL,
 
-    /*
-     * Normally when a parse error occurs in a game the game is flagged with
-     * GF_PERROR and the rest of the game is discarded and processing of the
-     * next game is done. When set and a parse error occurs the rest of the
-     * entire file will be discarded. The type for this flag is an int.
-     */
-    PGN_STOP_ON_ERROR,
+  /*
+   * Normally when a parse error occurs in a game the game is flagged with
+   * GF_PERROR and the rest of the game is discarded and processing of the
+   * next game is done. When set and a parse error occurs the rest of the
+   * entire file will be discarded. The type for this flag is an int.
+   */
+  PGN_STOP_ON_ERROR,
 
 #ifdef DEBUG
-    /*
-     * If the following is set to a value > 0 and DEBUG was defined
-     * at compile time then debugging output will be written to
-     * "libchess.debug" in the current directory.
-     */
-    PGN_DEBUG,
+  /*
+   * If the following is set to a value > 0 and DEBUG was defined
+   * at compile time then debugging output will be written to
+   * "libchess.debug" in the current directory.
+   */
+  PGN_DEBUG,
 #endif
 
-    /*
-     * After PGN_PROGRESS amount of bytes have been read from a file, call
-     * PGN_PROGRESS_FUNC. The type for PGN_PROGRESS is a long.
-     * PGN_PROGRESS_FUNC is of type pgn_progress.
-     */
-    PGN_PROGRESS,
-    PGN_PROGRESS_FUNC,
+  /*
+   * After PGN_PROGRESS amount of bytes have been read from a file, call
+   * PGN_PROGRESS_FUNC. The type for PGN_PROGRESS is a long.
+   * PGN_PROGRESS_FUNC is of type pgn_progress.
+   */
+  PGN_PROGRESS,
+  PGN_PROGRESS_FUNC,
 
-    /*
-     * If set to 1 and an opponent can attack a castling square the castling
-     * move will not be a valid one.
-     */
-    PGN_STRICT_CASTLING,
+  /*
+   * If set to 1 and an opponent can attack a castling square the castling
+   * move will not be a valid one.
+   */
+  PGN_STRICT_CASTLING,
 } pgn_config_flag;
 
 /*
  * Errors returned from the following functions.
  */
-typedef enum {
-    E_PGN_ERR = -1,
-    E_PGN_OK,
-    E_PGN_PARSE,
-    E_PGN_AMBIGUOUS,
-    E_PGN_INVALID
+typedef enum
+{
+  E_PGN_ERR = -1,
+  E_PGN_OK,
+  E_PGN_PARSE,
+  E_PGN_AMBIGUOUS,
+  E_PGN_INVALID
 } pgn_error_t;
 
-typedef struct {
-    FILE *fp;
-    char *filename;
-    char *tmpfile;	/* For appending. */
-    int pipe;
+typedef struct
+{
+  FILE *fp;
+  char *filename;
+  char *tmpfile;		/* For appending. */
+  int pipe;
 } PGN_FILE;
 
 /*
  * The prototype of the PGN_PROGRESS_FUNC function pointer.
  */
-typedef void (*pgn_progress)(long size, long offset);
+typedef void (*pgn_progress) (long size, long offset);
 
 /*
  * Sets config flag 'f' to the next argument. Returns E_PGN_OK on success or
  * E_PGN_ERR if 'f' is an invalid flag or E_PGN_INVALID if 'val' is an invalid
  * flag value.
  */
-pgn_error_t pgn_config_set(pgn_config_flag f, ...);
+pgn_error_t pgn_config_set (pgn_config_flag f, ...);
 
 /*
  * Gets the value of config flag 'f'. The next argument should be a pointer of
  * the config type which is set to the value of 'f'. Returns E_PGN_ERR if 'f'
  * is an invalid flag or E_PGN_OK on success.
  */
-pgn_error_t pgn_config_get(pgn_config_flag f, ...);
+pgn_error_t pgn_config_get (pgn_config_flag f, ...);
 
 /*
  * Returns E_PGN_OK if 'filename' is a recognized compressed filetype or
  * E_PGN_ERR if not.
  */
-pgn_error_t pgn_is_compressed(const char *filename);
+pgn_error_t pgn_is_compressed (const char *filename);
 
 /*
  * Opens a file 'filename' with the given 'mode'. 'mode' should be "r" for
@@ -247,13 +257,14 @@ pgn_error_t pgn_is_compressed(const char *filename);
  * errno will be set to the error or E_PGN_INVALID if 'mode' is an invalid
  * mode or if 'filename' is not a regular file.
  */
-pgn_error_t pgn_open(const char *filename, const char *mode, PGN_FILE **result);
+pgn_error_t pgn_open (const char *filename, const char *mode,
+		      PGN_FILE ** result);
 
 /*
  * Closes and free's a PGN file handle. Returns E_PGN_OK on success,
  * E_PGN_INVALID if 'pgn' is NULL, or E_PGN_ERR if rename() failed.
  */
-pgn_error_t pgn_close(PGN_FILE *pgn);
+pgn_error_t pgn_close (PGN_FILE * pgn);
 
 /*
  * Parses a PGN_FILE which was opened with pgn_open(). If 'pgn' is NULL then a
@@ -264,31 +275,31 @@ pgn_error_t pgn_close(PGN_FILE *pgn);
  * total number of games in the file. The file should be closed with
  * pgn_close() after processing.
  */
-pgn_error_t pgn_parse(PGN_FILE *pgn);
+pgn_error_t pgn_parse (PGN_FILE * pgn);
 
 /*
  * Allocates a new game and increments 'gtotal'. 'gindex' is then set to the
  * new game. Returns E_PGN_ERR if there was a memory allocation error or
  * E_PGN_OK on success.
  */
-pgn_error_t pgn_new_game();
+pgn_error_t pgn_new_game ();
 
 /*
  * Writes a PGN formatted game 'g' to a file which was opened with pgn_open().
  * See 'pgn_config_flag' for output options. Returns E_PGN_ERR if there was a
  * memory allocation or write error and E_PGN_OK on success.
  */
-pgn_error_t pgn_write(PGN_FILE *pgn, GAME g);
+pgn_error_t pgn_write (PGN_FILE * pgn, GAME g);
 
 /*
  * Frees all games in the global 'game' array. Returns nothing.
  */
-void pgn_free_all(void);
+void pgn_free_all (void);
 
 /*
  * Frees a single game 'g'. Returns nothing.
  */
-void pgn_free(GAME g);
+void pgn_free (GAME g);
 
 /*
  * Adds a tag 'name' with value 'value' to the pointer to array of TAG
@@ -297,29 +308,29 @@ void pgn_free(GAME g);
  * Returns E_PGN_ERR if there was a memory allocation error or E_PGN_OK on
  * success.
  */
-pgn_error_t pgn_tag_add(TAG ***dst, char *name, char *value);
+pgn_error_t pgn_tag_add (TAG *** dst, char *name, char *value);
 
 /*
  * Returns the total number of tags in 't' or 0 if 't' is NULL.
  */
-int pgn_tag_total(TAG **t);
+int pgn_tag_total (TAG ** t);
 
 /*
  * Finds a tag 'name' in the structure array 't'. Returns the location in the
  * array of the found tag or E_PGN_ERR if the tag could not be found.
  */
-pgn_error_t pgn_tag_find(TAG **t, const char *name);
+pgn_error_t pgn_tag_find (TAG ** t, const char *name);
 
 /*
  * Sorts a tag array. The first seven tags are in order of the PGN standard so
  * don't sort'em. Returns nothing.
  */
-void pgn_tag_sort(TAG **t);
+void pgn_tag_sort (TAG ** t);
 
 /*
  * Frees a TAG array. Returns nothing.
  */
-void pgn_tag_free(TAG **);
+void pgn_tag_free (TAG **);
 
 /*
  * It initializes the board (b) to the FEN tag (if found) and sets the
@@ -330,18 +341,18 @@ void pgn_tag_free(TAG **);
  * if there was no FEN tag or there was a SetUp tag with a value of 0. Returns
  * E_PGN_OK on success.
  */
-pgn_error_t pgn_board_init_fen(GAME g, BOARD b, char *fen);
+pgn_error_t pgn_board_init_fen (GAME g, BOARD b, char *fen);
 
 /*
  * Creates a FEN tag from the current game 'g', history move (g.hindex) and
  * board 'b'. Returns a FEN tag.
  */
-char *pgn_game_to_fen(GAME g, BOARD b);
+char *pgn_game_to_fen (GAME g, BOARD b);
 
 /*
  * Resets or initializes a new game board 'b'. Returns nothing.
  */
-void pgn_board_init(BOARD b);
+void pgn_board_init (BOARD b);
 
 /*
  * Valididate move 'm' against the game state 'g' and game board 'b' and
@@ -351,23 +362,23 @@ void pgn_board_init(BOARD b);
  * E_PGN_AMBIGUOUS if the move is invalid with ambiguities or E_PGN_OK if
  * successful.
  */
-pgn_error_t pgn_parse_move(GAME g, BOARD b, char **m, char **frfr);
+pgn_error_t pgn_parse_move (GAME g, BOARD b, char **m, char **frfr);
 
 /*
  * Like pgn_parse_move() but don't modify game flags in 'g' or board 'b'.
  */
-pgn_error_t pgn_validate_move(GAME g, BOARD b, char **m, char **frfr);
+pgn_error_t pgn_validate_move (GAME g, BOARD b, char **m, char **frfr);
 
 /*
  * Returns the total number of moves in 'h' or 0 if there are none.
  */
-int pgn_history_total(HISTORY **h);
+int pgn_history_total (HISTORY ** h);
 
 /*
  * Returns the history ply 'n' from 'h'. If 'n' is out of range then NULL is
  * returned.
  */
-HISTORY *pgn_history_by_n(HISTORY **h, int n);
+HISTORY *pgn_history_by_n (HISTORY ** h, int n);
 
 /*
  * Appends move 'm' to game 'g' history pointer and creates a FEN tag for the
@@ -378,13 +389,13 @@ HISTORY *pgn_history_by_n(HISTORY **h, int n);
  * RAV then g->history will be updated. Returns E_PGN_ERR if realloc() failed
  * or E_PGN_OK on success.
  */
-pgn_error_t pgn_history_add(GAME g, BOARD b, const char *m);
+pgn_error_t pgn_history_add (GAME g, BOARD b, const char *m);
 
 /*
  * Deallocates all of the history data from position 'start' in the array 'h'.
  * Returns nothing.
  */
-void pgn_history_free(HISTORY **h, int start);
+void pgn_history_free (HISTORY ** h, int start);
 
 /*
  * Resets the game 'g' using board 'b' up to history move (g.hindex) 'n'.
@@ -392,63 +403,63 @@ void pgn_history_free(HISTORY **h, int start);
  * parsing of it failed. Or returns E_PGN_INVALID if somehow the move failed
  * validation while resetting.
  */
-pgn_error_t pgn_board_update(GAME g, BOARD b, int n);
+pgn_error_t pgn_board_update (GAME g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the next 'n'th history move.
  * Returns nothing.
  */
-void pgn_history_prev(GAME g, BOARD b, int n);
+void pgn_history_prev (GAME g, BOARD b, int n);
 
 /*
  * Updates the game 'g' using board 'b' to the previous 'n'th history move.
  * Returns nothing.
  */
-void pgn_history_next(GAME g, BOARD b, int n);
+void pgn_history_next (GAME g, BOARD b, int n);
 
 /*
  * Converts the character piece 'p' to an integer. Returns the integer
  * associated with 'p' or E_PGN_ERR if 'p' is invalid.
  */
-int pgn_piece_to_int(int p);
+int pgn_piece_to_int (int p);
 
 /*
  * Converts the integer piece 'n' to a character whose turn is 'turn'. WHITE
  * piece are uppercase and BLACK pieces are lowercase. Returns the character
  * associated with 'n' or E_PGN_ERR if 'n' is an invalid piece.
  */
-pgn_error_t pgn_int_to_piece(char turn, int n);
+pgn_error_t pgn_int_to_piece (char turn, int n);
 
 /*
  * Toggles g->turn. Returns nothing.
  */
-void pgn_switch_turn(GAME);
+void pgn_switch_turn (GAME);
 
 /*
  * Toggles g->side and switches the White and Black roster tags. Returns
  * nothing.
  */
-void pgn_switch_side(GAME g, int t);
+void pgn_switch_side (GAME g, int t);
 
 /*
  * Clears the enpassant flag for all positions on board 'b'. Returns nothing.
  */
-void pgn_reset_enpassant(BOARD b);
+void pgn_reset_enpassant (BOARD b);
 
 /*
  * Clears the valid move flag for all positions on board 'b'. Returns nothing.
  */
-void pgn_reset_valid_moves(BOARD b);
+void pgn_reset_valid_moves (BOARD b);
 
 /*
  * Sets valid moves (b.valid) from game 'g' using board 'b'. The valid moves
  * are for the piece on the board 'b' at 'rank' and 'file'. Returns nothing.
  */
-void pgn_find_valid_moves(GAME g, BOARD b, int rank, int file);
+void pgn_find_valid_moves (GAME g, BOARD b, int rank, int file);
 
 /*
  * Returns the version string of the library.
  */
-const char *pgn_version(void);
+const char *pgn_version (void);
 
 #endif

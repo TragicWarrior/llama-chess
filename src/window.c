@@ -32,126 +32,137 @@
  * structure. The 'func' parameter is a function pointer that is called from
  * game_loop(). 'efunc' is called just before the window is destroyed.
  */
-WIN *window_create(const char *title, int h, int w, int y, int x,
-	window_func func, void *data, window_exit_func efunc)
+WIN *
+window_create (const char *title, int h, int w, int y, int x,
+	       window_func func, void *data, window_exit_func efunc)
 {
-    int i = 0;
+  int i = 0;
 
-    if (wins)
-	for (i = 0; wins[i]; i++);
-
-    wins = Realloc(wins, (i + 2) * sizeof(WIN *));
-    wins[i] = Calloc(1, sizeof(WIN));
-    wins[i]->w = newwin(h, w, y, x);
-    wins[i]->p = new_panel(wins[i]->w);
-    wins[i]->data = data;
-    wins[i]->rows = h;
-    wins[i]->cols = w;
-    wins[i]->func = func;
-    wins[i]->efunc = efunc;
-    wins[i]->title = (title) ? strdup(title) : NULL;
-    wins[i+1] = NULL;
-    return wins[i];
-}
-
-void window_destroy(WIN *win)
-{
-    int i, n;
-    WIN **new = NULL;
-
-    if (!wins)
-	return;
-
+  if (wins)
     for (i = 0; wins[i]; i++);
 
-    while (i > 0 && wins[--i]->keep) {
-	if (win && memcmp(win, wins[i], sizeof(WIN)) == 0)
-	    win = NULL;
+  wins = Realloc (wins, (i + 2) * sizeof (WIN *));
+  wins[i] = Calloc (1, sizeof (WIN));
+  wins[i]->w = newwin (h, w, y, x);
+  wins[i]->p = new_panel (wins[i]->w);
+  wins[i]->data = data;
+  wins[i]->rows = h;
+  wins[i]->cols = w;
+  wins[i]->func = func;
+  wins[i]->efunc = efunc;
+  wins[i]->title = (title) ? strdup (title) : NULL;
+  wins[i + 1] = NULL;
+  return wins[i];
+}
 
-	free(wins[i]->title);
-	if (wins[i]->p)
-	    del_panel(wins[i]->p);
+void
+window_destroy (WIN * win)
+{
+  int i, n;
+  WIN **new = NULL;
 
-	delwin(wins[i]->w);
+  if (!wins)
+    return;
 
-	if (wins[i]->freedata && wins[i]->data)
-	    free(wins[i]->data);
+  for (i = 0; wins[i]; i++);
 
-	free(wins[i]);
-	wins[i] = NULL;
+  while (i > 0 && wins[--i]->keep)
+    {
+      if (win && memcmp (win, wins[i], sizeof (WIN)) == 0)
+	win = NULL;
+
+      free (wins[i]->title);
+      if (wins[i]->p)
+	del_panel (wins[i]->p);
+
+      delwin (wins[i]->w);
+
+      if (wins[i]->freedata && wins[i]->data)
+	free (wins[i]->data);
+
+      free (wins[i]);
+      wins[i] = NULL;
     }
 
-    for (i = n = 0; wins[i]; i++) {
-	if (win && !win->keep && memcmp(win, wins[i], sizeof(WIN)) == 0) {
-	    if (win->p)
-		del_panel(win->p);
+  for (i = n = 0; wins[i]; i++)
+    {
+      if (win && !win->keep && memcmp (win, wins[i], sizeof (WIN)) == 0)
+	{
+	  if (win->p)
+	    del_panel (win->p);
 
-	    free(win->title);
-	    delwin(win->w);
-	    free(win);
-            win = NULL;
-	    continue;
+	  free (win->title);
+	  delwin (win->w);
+	  free (win);
+	  win = NULL;
+	  continue;
 	}
 
-	if (win && win->keep && memcmp(win, wins[i], sizeof(WIN)) == 0) {
-	    del_panel(win->p);
-	    win->p = NULL;
+      if (win && win->keep && memcmp (win, wins[i], sizeof (WIN)) == 0)
+	{
+	  del_panel (win->p);
+	  win->p = NULL;
 	}
 
-	new = Realloc(new, (n + 2) * sizeof(WIN *));
-	new[n++] = wins[i];
+      new = Realloc (new, (n + 2) * sizeof (WIN *));
+      new[n++] = wins[i];
     }
 
-    free(wins);
-    wins = NULL;
+  free (wins);
+  wins = NULL;
 
-    if (new) {
-        new[n] = NULL;
-        wins = new;
+  if (new)
+    {
+      new[n] = NULL;
+      wins = new;
     }
 }
 
-void window_draw_title(WINDOW *win, const char *title, int width, chtype attr,
-	chtype battr)
+void
+window_draw_title (WINDOW * win, const char *title, int width, chtype attr,
+		   chtype battr)
 {
-    int i;
+  int i;
 
-    if (title) {
-	wchar_t *p;
+  if (title)
+    {
+      wchar_t *p;
 
-	wattron(win, attr);
+      wattron (win, attr);
 
-	for (i = 1; i < width - 1; i++)
-	    mvwaddch(win, 1, i, ' ');
+      for (i = 1; i < width - 1; i++)
+	mvwaddch (win, 1, i, ' ');
 
-	if (mblen (title, strlen(title)) > width) {
-	    p = str_etc(title, width - 2, 1);
+      if (mblen (title, strlen (title)) > width)
+	{
+	  p = str_etc (title, width - 2, 1);
 	}
-	else
-	  p = str_to_wchar (title);
+      else
+	p = str_to_wchar (title);
 
-	mvwaddwstr(win, 1, CENTERX(width, p), p);
-	wattroff(win, attr);
-	free (p);
+      mvwaddwstr (win, 1, CENTERX (width, p), p);
+      wattroff (win, attr);
+      free (p);
     }
 
-    wattron(win, battr);
-    box(win, ACS_VLINE, ACS_HLINE);
-    wattroff(win, battr);
+  wattron (win, battr);
+  box (win, ACS_VLINE, ACS_HLINE);
+  wattroff (win, battr);
 }
 
-void window_draw_prompt(WINDOW *win, int y, int width, const char *str,
-	chtype attr)
+void
+window_draw_prompt (WINDOW * win, int y, int width, const char *str,
+		    chtype attr)
 {
-    int i;
+  int i;
 
-    wattron(win, attr);
+  wattron (win, attr);
 
-    for (i = 1; i < width - 1; i++)
-	mvwaddch(win, y, i, ' ');
+  for (i = 1; i < width - 1; i++)
+    mvwaddch (win, y, i, ' ');
 
-    wchar_t *promptw = str_to_wchar (str);
-    mvwprintw(win, y, CENTERX(width, promptw), "%ls", promptw);
-    free (promptw);
-    wattroff(win, attr);
+  wchar_t *promptw = str_to_wchar (str);
+  mvwprintw (win, y, CENTERX (width, promptw), "%ls", promptw);
+  free (promptw);
+  wattroff (win, attr);
 }

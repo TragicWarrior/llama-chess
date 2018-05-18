@@ -21,21 +21,22 @@
 
 #include <wchar.h>
 
-void *Malloc(size_t size);
-void *Realloc(void *ptr, size_t size);
-void *Calloc(size_t n, size_t size);
-char *trim(char *str);
-char *rtrim(char *str);
-char *itoa(long n, char *buf);
-int integer_len(long n);
-int isinteger(const char *str);
-FILE *open_file(const char *filename);
-char *pathfix(const char *);
-char *trim_multi(char *);
-wchar_t *str_etc(const char *str, int maxlen, int rev);
-char **split_str(char *str, const char *delim, int *n, int *w, int force_trim);
+void *Malloc (size_t size);
+void *Realloc (void *ptr, size_t size);
+void *Calloc (size_t n, size_t size);
+char *trim (char *str);
+char *rtrim (char *str);
+char *itoa (long n, char *buf);
+int integer_len (long n);
+int isinteger (const char *str);
+FILE *open_file (const char *filename);
+char *pathfix (const char *);
+char *trim_multi (char *);
+wchar_t *str_etc (const char *str, int maxlen, int rev);
+char **split_str (char *str, const char *delim, int *n, int *w,
+		  int force_trim);
 wchar_t *str_to_wchar_len (const char *str, int maxlen);
 wchar_t *str_to_wchar (const char *p);
-char *wchar_to_str (const wchar_t *str);
+char *wchar_to_str (const wchar_t * str);
 
 #endif

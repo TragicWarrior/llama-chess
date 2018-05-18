@@ -26,54 +26,60 @@
 
 #include "chess.h"
 
-void write_debug_output(const char *filename, const char *format, ...)
+void
+write_debug_output (const char *filename, const char *format, ...)
 {
-    FILE *fp = stderr;
-    va_list ap;
-    char *buf;
+  FILE *fp = stderr;
+  va_list ap;
+  char *buf;
 
-    va_start(ap, format);
-    vasprintf(&buf, format, ap);
-    va_end(ap);
+  va_start (ap, format);
+  vasprintf (&buf, format, ap);
+  va_end (ap);
 
-    if (filename) {
-	if ((fp = fopen(filename, "a")) == NULL)
-	    return;
+  if (filename)
+    {
+      if ((fp = fopen (filename, "a")) == NULL)
+	return;
     }
 
-    fprintf(fp, "%s", buf);
-    fflush(fp);
+  fprintf (fp, "%s", buf);
+  fflush (fp);
 
-    if (filename)
-	fclose(fp);
+  if (filename)
+    fclose (fp);
 
-    free(buf);
-    return;
+  free (buf);
+  return;
 }
 
-char *debug_board(BOARD b)
+char *
+debug_board (BOARD b)
 {
-    static char buf[129];
-    char *p = buf;
-    int row, col;
+  static char buf[129];
+  char *p = buf;
+  int row, col;
 
-    for (row = 0; row < 8; row++) {
-	for (col = 0; col < 8; col++) {
-	    *p++ = (b[row][col].enpassant) ? 'x' : b[row][col].icon;
+  for (row = 0; row < 8; row++)
+    {
+      for (col = 0; col < 8; col++)
+	{
+	  *p++ = (b[row][col].enpassant) ? 'x' : b[row][col].icon;
 
-	    if (col < 7)
-		*p++ = ' ';
+	  if (col < 7)
+	    *p++ = ' ';
 	}
 
-	*p++ = '\n';
-	*p = 0;
+      *p++ = '\n';
+      *p = 0;
     }
 
-    *p = 0;
-    return buf;
+  *p = 0;
+  return buf;
 }
 
-void dump_board(const char *file, BOARD b)
+void
+dump_board (const char *file, BOARD b)
 {
-    write_debug_output(file, "%s", debug_board(b));
+  write_debug_output (file, "%s", debug_board (b));
 }

@@ -22,34 +22,39 @@
 #define CTRL_KEY(x)		((x) & 0x1f)
 #define KEY_ESCAPE	CTRL_KEY('[')
 
-enum {
-    MODE_HISTORY, MODE_PLAY, MODE_EDIT
+enum
+{
+  MODE_HISTORY, MODE_PLAY, MODE_EDIT
 };
 
-enum {
-    PLAY_HE, PLAY_EH
+enum
+{
+  PLAY_HE, PLAY_EH
 };
 
-enum {
-    CURSOR_POSITION, SP_POSITION, SPS_POSITION
+enum
+{
+  CURSOR_POSITION, SP_POSITION, SPS_POSITION
 };
 
-typedef void (key_func)(void);
+typedef void (key_func) (void);
 
-struct key_s {
-    key_func *f;
-    wint_t c;
-    wchar_t *key;
-    wchar_t *d;
-    int r;
+struct key_s
+{
+  key_func *f;
+  wint_t c;
+  wchar_t *key;
+  wchar_t *d;
+  int r;
 };
 
-struct macro_s {
-    wint_t c;
-    wint_t *keys;
-    int n;
-    int total;
-    int mode;
+struct macro_s
+{
+  wint_t c;
+  wint_t *keys;
+  int n;
+  int total;
+  int mode;
 } **macros;
 
 int *macro_depth;
