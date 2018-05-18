@@ -1,6 +1,6 @@
 /* vim:tw=78:ts=8:sw=4:set ft=c:  */
 /*
-    Copyright (C) 2002-2015 Ben Kibbey <bjk@luxsci.net>
+    Copyright (C) 2002-2018 Ben Kibbey <bjk@luxsci.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@
 #include <debug.h>
 #endif
 
-#define COPYRIGHT	        "Copyright (C) 2002-2015 " PACKAGE_BUGREPORT
+#define COPYRIGHT	        "Copyright (C) 2002-2018 " PACKAGE_BUGREPORT
 #define LINE_GRAPHIC(c) 	((!config.linegraphics) ? ' ' : c)
 #define ROWTOMATRIX(r)  	((8 - r) * 2 + 2 - 1)
 #define COLTOMATRIX(c)  	((c == 1) ? 1 : c * 4 - 3)
