@@ -73,5 +73,7 @@ WIN *construct_menu (int rows, int cols, int y, int x, const char *title,
 		     int name_only, menu_items_fn * func,
 		     struct menu_key_s **keys, void *data,
 		     menu_print_func * pfunc, window_exit_func * efunc);
+void redraw_menu (WIN *);
+void menu_resize_window (WIN *);
 
 #endif

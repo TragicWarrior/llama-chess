@@ -27,6 +27,10 @@
 #include "misc.h"
 #include "window.h"
 
+void input_resize_window (WIN *);
+void message_resize_window (WIN *);
+void menu_resize_window (WIN *);
+
 /*
  * Creates a new window on the 'wins' stack. Returns the newly create window
  * structure. The 'func' parameter is a function pointer that is called from
@@ -165,4 +169,28 @@ window_draw_prompt (WINDOW * win, int y, int width, const char *str,
   mvwprintw (win, y, CENTERX (width, promptw), "%ls", promptw);
   free (promptw);
   wattroff (win, attr);
+}
+
+void
+window_resize_all ()
+{
+  int i;
+
+  if (!wins)
+    return;
+
+  for (i = 0; wins[i]; i++)
+    {
+      WIN *w = wins[i];
+
+      if (w->type == WINDOW_TYPE_OTHER)
+        continue;
+
+      if (w->type == WINDOW_TYPE_MESSAGE)
+        message_resize_window (w);
+      else if (w->type == WINDOW_TYPE_INPUT)
+        input_resize_window (w);
+      else if (w->type == WINDOW_TYPE_MENU)
+        menu_resize_window (w);
+    }
 }

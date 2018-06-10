@@ -48,5 +48,6 @@ WIN *construct_message (const char *, const char *, int, int, const char *,
 			int, const char *, ...);
 struct message_s *update_message (struct message_s *, char *, char *,
 				  char *fmt, ...);
+void message_resize_window (WIN *);
 
 #endif

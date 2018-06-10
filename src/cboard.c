@@ -110,6 +110,8 @@ static PANEL *loadingp;
 static WINDOW *enginew;
 static PANEL *enginep;
 
+static WIN *history_menu_win;
+
 static char gameexp[255];
 static char moveexp[255];
 static struct itimerval clock_timer;
@@ -2467,6 +2469,24 @@ draw_window_decor ()
 		     CP_HISTORY_TITLE, CP_HISTORY_BORDER);
 }
 
+static void
+resize_history_menu ()
+{
+  struct menu_input_s *m;
+
+  if (!history_menu_win)
+    return;
+
+  history_menu_win->rows = MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES;
+  history_menu_win->cols = TAG_WIDTH;
+  history_menu_win->posy = 0;
+  history_menu_win->posx = config.boardleft ? BOARD_WIDTH : 0;
+  m = history_menu_win->data;
+  m->ystatic = history_menu_win->posy;
+  m->xstatic = history_menu_win->posx;
+  redraw_menu (history_menu_win);
+}
+
 void
 do_window_resize ()
 {
@@ -2479,6 +2499,8 @@ do_window_resize ()
   wresize (historyw, HISTORY_HEIGHT, HISTORY_WIDTH);
   wresize (statusw, STATUS_HEIGHT, STATUS_WIDTH);
   wresize (tagw, TAG_HEIGHT, TAG_WIDTH);
+  resize_history_menu ();
+
   clear ();
   wclear (boardw);
   wclear (historyw);
@@ -3821,6 +3843,7 @@ void
 history_menu_quit (struct menu_input_s *m)
 {
   pushkey = -1;
+  history_menu_win = NULL;
 }
 
 void
@@ -4030,10 +4053,11 @@ history_menu (GAME g)
   add_menu_key (&keys, CTRL_KEY ('a'), history_menu_annotate);
   add_menu_key (&keys, CTRL_KEY ('d'), history_menu_details);
   add_menu_key (&keys, '\n', history_menu_view_annotation);
-  construct_menu (MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES,
-		  TAG_WIDTH, 0, config.boardleft ? BOARD_WIDTH : 0,
-		  _("Move History Tree"), 1, get_history_items, keys, g,
-		  history_menu_print, history_menu_exit);
+  history_menu_win = construct_menu (MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB :
+                                     LINES, TAG_WIDTH, 0, config.boardleft ?
+                                     BOARD_WIDTH : 0, _("Move History Tree"),
+                                     1, get_history_items, keys, g,
+                                     history_menu_print, history_menu_exit);
 }
 
 void
@@ -5542,7 +5566,15 @@ game_loop ()
 	      else
 		{
 		  if (wget_wch (wp, &input_c) == ERR || input_c == KEY_RESIZE)
-		    continue;
+                    {
+                      if (input_c == KEY_RESIZE)
+                        {
+                          window_resize_all ();
+                          resize_history_menu ();
+                          update_all (gp);
+                        }
+                      continue;
+                    }
 		}
 	    }
 	  else

@@ -215,8 +215,8 @@ fix_menu_vals (WIN * win)
   window_draw_prompt (win->w, win->rows - 2, win->cols, buf, CP_INPUT_PROMPT);
 }
 
-static void
-draw_menu (WIN * win)
+void
+redraw_menu (WIN * win)
 {
   int i;
   int y = 0;
@@ -224,6 +224,8 @@ draw_menu (WIN * win)
 
   if (!m->items)
     return;
+
+  fix_menu_vals (win);
 
   for (i = m->top, y = 2; m->items[i] && y < win->rows - 2; i++, y++)
     {
@@ -324,8 +326,7 @@ display_menu (WIN * win)
 
 end:
   set_menu_vars (win->c, win->rows - 4, m->total - 1, &m->selected, &m->top);
-  fix_menu_vals (win);
-  draw_menu (win);
+  redraw_menu (win);
 
   if (m->draw_exit_func)
     (*m->draw_exit_func) (m);
@@ -378,6 +379,7 @@ construct_menu (int rows, int cols, int y, int x, const char *title,
   win = window_create (title, (rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols,
 		       (y >= 0) ? y : 0, (x >= 0) ? x : 0, display_menu, m,
 		       efunc);
+  win->type = WINDOW_TYPE_MENU;
   m = win->data;
   m->ystatic = y;
   m->xstatic = x;
@@ -419,4 +421,9 @@ add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func)
   keys[n++]->func = func;
   keys[n] = NULL;
   *dst = keys;
+}
+
+void
+menu_resize_window (WIN *w)
+{
 }

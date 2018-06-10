@@ -353,9 +353,9 @@ construct_input (const char *title, const char *init, int lines, int reset,
   in->arg = arg;
   in->c = key;
   in->lines = (lines) ? lines : 1;
-  win =
-    window_create (title, in->h, in->w, CALCPOSY (in->h), CALCPOSX (in->w),
-		   get_input, in, id->efunc);
+  win = window_create (title, in->h, in->w, CALCPOSY (in->h), CALCPOSX (in->w),
+                       get_input, in, id->efunc);
+  win->type = WINDOW_TYPE_INPUT;
   in = win->data;
   in->hist = history;
   in->data = id;
@@ -444,4 +444,9 @@ construct_input (const char *title, const char *init, int lines, int reset,
   wbkgd (win->w, CP_INPUT_WINDOW);
   (*win->func) (win);
   return win;
+}
+
+void
+input_resize_window (WIN *w)
+{
 }

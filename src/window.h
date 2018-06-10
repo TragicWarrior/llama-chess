@@ -31,6 +31,13 @@ typedef struct window_s WIN;
 typedef int (window_func) (WIN *);
 typedef void (window_exit_func) (WIN *);
 
+typedef enum {
+    WINDOW_TYPE_OTHER,
+    WINDOW_TYPE_MENU,
+    WINDOW_TYPE_MESSAGE,
+    WINDOW_TYPE_INPUT
+} window_type;
+
 struct window_s
 {
   WINDOW *w;
@@ -52,6 +59,7 @@ struct window_s
   wint_t c;
   int keep;
   int freedata;			// Whether or not to free() .data when destroying
+  window_type type;		// The type of window this belongs to.
 };
 
 WIN **wins;
@@ -62,5 +70,6 @@ WIN *window_create (const char *title, int h, int w, int y, int x,
 void window_destroy (WIN *);
 void window_draw_title (WINDOW *, const char *, int, chtype, chtype);
 void window_draw_prompt (WINDOW *, int, int, const char *, chtype);
+void window_resize_all ();
 
 #endif

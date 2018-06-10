@@ -75,5 +75,6 @@ WIN *construct_input (const char *title, const char *init, int lines,
 		      int reset, const char *extra_help, input_func * func,
 		      void *arg, wint_t key, struct input_data_s *id,
 		      int history, int type, ...);
+void input_resize_window (WIN *);
 
 #endif

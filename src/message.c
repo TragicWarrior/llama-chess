@@ -307,8 +307,14 @@ construct_message (const char *title, const char *prompt, int center,
   win = window_create (title, m->h, m->w, CALCPOSY (m->h), CALCPOSX (m->w),
 		       display_message, m, efunc);
 
+  win->type = WINDOW_TYPE_MESSAGE;
   win->freedata = freedata;
   wbkgd (win->w, CP_MESSAGE_WINDOW);
   (*win->func) (win);
   return win;
+}
+
+void
+message_resize_window (WIN *w)
+{
 }
