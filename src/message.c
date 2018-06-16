@@ -268,6 +268,11 @@ display_message (WIN * win)
   return 1;
 }
 
+static void
+message_resize_func (WIN *w)
+{
+}
+
 /*
  * The force_trim parameter will trim whitespace reguardless if there is more
  * than one line or not (help text vs. tag viewing).
@@ -276,7 +281,8 @@ WIN *
 construct_message (const char *title, const char *prompt, int center,
 		   int force_trim, const char *extra_help,
 		   message_func * func, void *arg, window_exit_func * efunc,
-		   wint_t ckey, int freedata, const char *fmt, ...)
+		   wint_t ckey, int freedata, window_resize_func *rfunc,
+                   const char *fmt, ...)
 {
   wchar_t **lines = NULL;
   va_list ap;
@@ -305,16 +311,11 @@ construct_message (const char *title, const char *prompt, int center,
     m->extra = strdup (extra_help);
 
   win = window_create (title, m->h, m->w, CALCPOSY (m->h), CALCPOSX (m->w),
-		       display_message, m, efunc);
+		       display_message, m, efunc,
+                       rfunc ? rfunc : message_resize_func);
 
-  win->type = WINDOW_TYPE_MESSAGE;
   win->freedata = freedata;
   wbkgd (win->w, CP_MESSAGE_WINDOW);
   (*win->func) (win);
   return win;
-}
-
-void
-message_resize_window (WIN *w)
-{
 }

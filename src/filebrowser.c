@@ -328,7 +328,7 @@ file_browser_expression (struct menu_input_s *m)
   in = Calloc (1, sizeof (struct input_data_s));
   in->efunc = do_file_browser_expression_finalize;
   construct_input (_("Filename Expression"), config.pattern, 1, 1, NULL, NULL,
-		   NULL, 0, in, -1, -1);
+		   NULL, 0, in, -1, NULL, -1);
 }
 
 static void
@@ -388,6 +388,6 @@ file_browser (void *arg)
   add_menu_key (&keys, CTRL_KEY ('e'), file_browser_expression);
   add_menu_key (&keys, KEY_ESCAPE, file_browser_abort);
   construct_menu (LINES - 4, 0, -1, -1, NULL, 0, get_file_items, keys, in,
-		  file_browser_print, file_browser_finalize);
+		  file_browser_print, file_browser_finalize, NULL);
   return;
 }

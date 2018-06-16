@@ -72,8 +72,8 @@ void add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func);
 WIN *construct_menu (int rows, int cols, int y, int x, const char *title,
 		     int name_only, menu_items_fn * func,
 		     struct menu_key_s **keys, void *data,
-		     menu_print_func * pfunc, window_exit_func * efunc);
+		     menu_print_func * pfunc, window_exit_func * efunc,
+                     window_resize_func *rfunc);
 void redraw_menu (WIN *);
-void menu_resize_window (WIN *);
 
 #endif

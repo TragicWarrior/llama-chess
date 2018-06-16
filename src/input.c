@@ -295,6 +295,11 @@ done:
   return 0;
 }
 
+static void
+input_resize_func (WIN *w)
+{
+}
+
 /*
  * This function prompts for input. The init argument is the initial value.
  * The lines argument is how many lines the field is. If zero, then it is
@@ -322,8 +327,8 @@ done:
 WIN *
 construct_input (const char *title, const char *init, int lines, int reset,
 		 const char *extra_help, input_func * func, void *arg,
-		 wint_t key, struct input_data_s * id, int history, int type,
-		 ...)
+		 wint_t key, struct input_data_s * id, int history,
+                 window_resize_func rfunc, int type, ...)
 {
   WIN *win;
   struct input_s *in;
@@ -354,8 +359,8 @@ construct_input (const char *title, const char *init, int lines, int reset,
   in->c = key;
   in->lines = (lines) ? lines : 1;
   win = window_create (title, in->h, in->w, CALCPOSY (in->h), CALCPOSX (in->w),
-                       get_input, in, id->efunc);
-  win->type = WINDOW_TYPE_INPUT;
+                       get_input, in, id->efunc,
+                       rfunc ? rfunc : input_resize_func);
   in = win->data;
   in->hist = history;
   in->data = id;
@@ -444,9 +449,4 @@ construct_input (const char *title, const char *init, int lines, int reset,
   wbkgd (win->w, CP_INPUT_WINDOW);
   (*win->func) (win);
   return win;
-}
-
-void
-input_resize_window (WIN *w)
-{
 }

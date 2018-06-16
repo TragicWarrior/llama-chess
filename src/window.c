@@ -27,10 +27,6 @@
 #include "misc.h"
 #include "window.h"
 
-void input_resize_window (WIN *);
-void message_resize_window (WIN *);
-void menu_resize_window (WIN *);
-
 /*
  * Creates a new window on the 'wins' stack. Returns the newly create window
  * structure. The 'func' parameter is a function pointer that is called from
@@ -38,7 +34,8 @@ void menu_resize_window (WIN *);
  */
 WIN *
 window_create (const char *title, int h, int w, int y, int x,
-	       window_func func, void *data, window_exit_func efunc)
+	       window_func func, void *data, window_exit_func efunc,
+               window_resize_func rfunc)
 {
   int i = 0;
 
@@ -54,6 +51,7 @@ window_create (const char *title, int h, int w, int y, int x,
   wins[i]->cols = w;
   wins[i]->func = func;
   wins[i]->efunc = efunc;
+  wins[i]->rfunc = rfunc;
   wins[i]->title = (title) ? strdup (title) : NULL;
   wins[i + 1] = NULL;
   return wins[i];
@@ -183,14 +181,7 @@ window_resize_all ()
     {
       WIN *w = wins[i];
 
-      if (w->type == WINDOW_TYPE_OTHER)
-        continue;
-
-      if (w->type == WINDOW_TYPE_MESSAGE)
-        message_resize_window (w);
-      else if (w->type == WINDOW_TYPE_INPUT)
-        input_resize_window (w);
-      else if (w->type == WINDOW_TYPE_MENU)
-        menu_resize_window (w);
+      if (w->rfunc)
+        w->rfunc (w);
     }
 }

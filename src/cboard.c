@@ -110,8 +110,6 @@ static PANEL *loadingp;
 static WINDOW *enginew;
 static PANEL *enginep;
 
-static WIN *history_menu_win;
-
 static char gameexp[255];
 static char moveexp[255];
 static struct itimerval clock_timer;
@@ -417,7 +415,7 @@ edit_nag (void *arg)
   add_menu_key (&keys, CTRL_KEY ('x'), edit_nag_save);
   add_menu_key (&keys, KEY_F (1), edit_nag_help);
   construct_menu (0, 0, -1, -1, _("Numeric Annotation Glyphs"), 1,
-		  get_nag_items, keys, arg, nag_print, NULL);
+		  get_nag_items, keys, arg, nag_print, NULL, NULL);
   return;
 }
 
@@ -483,11 +481,11 @@ view_annotation (HISTORY * h)
 		       (nag) ? _("Any other key to continue") : ANY_KEY_STR,
 		       0, 1, (nag) ? _("Press 'n' to view NAG") : NULL,
 		       (nag) ? view_nag : NULL, (nag) ? h : NULL, NULL,
-		       (nag) ? 'n' : 0, 0, "%s", h->comment);
+		       (nag) ? 'n' : 0, 0, NULL, "%s", h->comment);
   else
     construct_message (buf, _("Any other key to continue"), 0, 1,
 		       _("Press 'n' to view NAG"), view_nag, h, NULL, 'n', 0,
-		       "%s", _("No comment text for this move"));
+		       NULL, "%s", _("No comment text for this move"));
 }
 
 int
@@ -619,7 +617,7 @@ save_pgn (char *filename, int saveindex)
       s->start = saveindex;
       s->end = end;
       construct_message (NULL, _("What would you like to do?"), 0, 1, NULL,
-			 NULL, s, do_save_game_overwrite_confirm, 0, 0,
+			 NULL, s, do_save_game_overwrite_confirm, 0, 0, NULL,
 			 "%s \"%s\"\nPress \"%ls\" to append to this file, \"%ls\" to overwrite or any other key to cancel.",
 			 _("File exists:"), filename, append_wchar,
 			 overwrite_wchar);
@@ -1742,7 +1740,7 @@ move_to_engine (GAME g)
     {
       construct_message (_("Select Pawn Promotion Piece"), _("R/N/B/Q"), 1, 1,
 			 NULL, NULL, str, do_promotion_piece_finalize, 0, 0,
-			 "%s",
+                         NULL, "%s",
 			 _("R = Rook, N = Knight, B = Bishop, Q = Queen"));
       return;
     }
@@ -2470,21 +2468,21 @@ draw_window_decor ()
 }
 
 static void
-resize_history_menu ()
+resize_history_menu (WIN *w)
 {
   struct menu_input_s *m;
 
-  if (!history_menu_win)
+  if (!w)
     return;
 
-  history_menu_win->rows = MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES;
-  history_menu_win->cols = TAG_WIDTH;
-  history_menu_win->posy = 0;
-  history_menu_win->posx = config.boardleft ? BOARD_WIDTH : 0;
-  m = history_menu_win->data;
-  m->ystatic = history_menu_win->posy;
-  m->xstatic = history_menu_win->posx;
-  redraw_menu (history_menu_win);
+  w->rows = MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES;
+  w->cols = TAG_WIDTH;
+  w->posy = 0;
+  w->posx = config.boardleft ? BOARD_WIDTH : 0;
+  m = w->data;
+  m->ystatic = w->posy;
+  m->xstatic = w->posx;
+  redraw_menu (w);
 }
 
 void
@@ -2499,7 +2497,7 @@ do_window_resize ()
   wresize (historyw, HISTORY_HEIGHT, HISTORY_WIDTH);
   wresize (statusw, STATUS_HEIGHT, STATUS_WIDTH);
   wresize (tagw, TAG_HEIGHT, TAG_WIDTH);
-  resize_history_menu ();
+  //resize_history_menu ();
 
   clear ();
   wclear (boardw);
@@ -2885,7 +2883,7 @@ do_play_set_clock ()
 		   _
 		   ("Format: [W | B] [+]T[+I] | ++I | M/T [M/T [...] [SD/T]] [+I]\n"
 		    "T = time (hms), I = increment, M = moves per, SD = sudden death\ne.g., 30m or 4m+12s or 35/90m SD/30m"),
-		   NULL, NULL, 0, in, INPUT_HIST_CLOCK, -1);
+		   NULL, NULL, 0, in, INPUT_HIST_CLOCK, NULL, -1);
 }
 
 void
@@ -2943,7 +2941,7 @@ do_play_send_command ()
   in = Calloc (1, sizeof (struct input_data_s));
   in->efunc = do_engine_command_finalize;
   construct_input (_("Engine Command"), NULL, 1, 1, NULL, NULL, NULL, 0, in,
-		   INPUT_HIST_ENGINE, -1);
+		   INPUT_HIST_ENGINE, NULL, -1);
 }
 
 /*
@@ -3365,7 +3363,7 @@ do_global_help ()
 
   construct_message (_("Global Game Keys (* = can take a repeat count)"),
 		     ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL, buf, do_more_help,
-		     0, 1, "%ls", buf);
+		     0, 1, NULL, "%ls", buf);
 }
 
 void
@@ -3396,7 +3394,7 @@ do_more_help (WIN * win)
   if (win->c == KEY_F (1) || win->c == CTRL_KEY ('g'))
     construct_message (_("Command Key Index"),
 		       _("p/h/e/g or any other key to quit"), 0, 0,
-		       NULL, NULL, NULL, do_main_help, 0, 0, "%s",
+		       NULL, NULL, NULL, do_main_help, 0, 0, NULL, "%s",
 		       _("p - play mode keys\n"
 			 "h - history mode keys\n"
 			 "e - board edit mode keys\n"
@@ -3410,7 +3408,7 @@ do_play_help ()
 
   construct_message (_("Play Mode Keys (* = can take a repeat count)"),
 		     ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL,
-		     buf, do_more_help, 0, 1, "%ls", buf);
+		     buf, do_more_help, 0, 1, NULL, "%ls", buf);
 }
 
 void
@@ -3540,7 +3538,7 @@ do_edit_insert ()
 
   construct_message (_("Insert Piece"),
 		     _("P=pawn, R=rook, N=knight, B=bishop, "), 0, 0, NULL,
-		     NULL, d->b, do_edit_insert_finalize, 0, 0, "%s",
+		     NULL, d->b, do_edit_insert_finalize, 0, 0, NULL, "%s",
 		     _("Type the piece letter to insert. Lowercase "));
 }
 
@@ -3563,7 +3561,7 @@ do_edit_help ()
 
   construct_message (_("Edit Mode Keys (* = can take a repeat count)"),
 		     ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL, buf, do_more_help,
-		     0, 1, "%ls", buf);
+		     0, 1, NULL, "%ls", buf);
 }
 
 void
@@ -3843,7 +3841,6 @@ void
 history_menu_quit (struct menu_input_s *m)
 {
   pushkey = -1;
-  history_menu_win = NULL;
 }
 
 void
@@ -3934,7 +3931,7 @@ do_annotate_move (HISTORY * hp)
   in->efunc = do_annotate_finalize;
   construct_input (buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0,
 		   _("Type CTRL-t to edit NAG"), edit_nag, NULL,
-		   CTRL_KEY ('T'), in, -1, -1);
+		   CTRL_KEY ('T'), in, -1, NULL, -1);
 }
 
 void
@@ -3979,7 +3976,7 @@ history_menu_annotate (struct menu_input_s *m)
   in->efunc = history_menu_annotate_finalize;
   construct_input (buf, hp->comment, MAX_PGN_LINE_LEN / INPUT_WIDTH, 0,
 		   _("Type CTRL-t to edit NAG"), edit_nag, NULL,
-		   CTRL_KEY ('T'), in, -1, -1);
+		   CTRL_KEY ('T'), in, -1, NULL, -1);
 }
 
 void
@@ -4053,11 +4050,10 @@ history_menu (GAME g)
   add_menu_key (&keys, CTRL_KEY ('a'), history_menu_annotate);
   add_menu_key (&keys, CTRL_KEY ('d'), history_menu_details);
   add_menu_key (&keys, '\n', history_menu_view_annotation);
-  history_menu_win = construct_menu (MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB :
-                                     LINES, TAG_WIDTH, 0, config.boardleft ?
-                                     BOARD_WIDTH : 0, _("Move History Tree"),
-                                     1, get_history_items, keys, g,
-                                     history_menu_print, history_menu_exit);
+  construct_menu (MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES, TAG_WIDTH,
+                  0, config.boardleft ?  BOARD_WIDTH : 0,
+                  _("Move History Tree"), 1, get_history_items, keys, g,
+                  history_menu_print, history_menu_exit, resize_history_menu);
 }
 
 void
@@ -4167,7 +4163,7 @@ do_history_toggle ()
       if (!pushkey)
 	construct_message (NULL, _("What would you like to do?"), 0, 1,
 			   NULL, NULL, NULL, do_history_mode_confirm, 0, 0,
-			   _
+			   NULL, _
 			   ("The current move is not the final move of this round. Press \"%ls\" to resume a game from the current move and discard future moves or any other key to cancel."),
 			   resume_wchar);
       return;
@@ -4211,7 +4207,7 @@ do_history_help ()
 
   construct_message (_("History Mode Keys (* = can take a repeat count)"),
 		     ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL,
-		     buf, do_more_help, 0, 1, "%ls", buf);
+		     buf, do_more_help, 0, 1, NULL, "%ls", buf);
 }
 
 void
@@ -4232,7 +4228,7 @@ do_history_find (int which)
   if (!*moveexp || which == 0)
     {
       construct_input (_("Find Move Text Expression"), NULL, 1, 0, NULL, NULL,
-		       NULL, 0, in, INPUT_HIST_MOVE_EXP, -1);
+		       NULL, 0, in, INPUT_HIST_MOVE_EXP, NULL, -1);
       return;
     }
 
@@ -4293,7 +4289,7 @@ do_history_jump ()
       in->efunc = do_move_jump;
 
       construct_input (_("Jump to Move Number"), NULL, 1, 1, NULL,
-		       NULL, NULL, 0, in, -1, 0);
+		       NULL, NULL, 0, in, -1, NULL, 0);
       return;
     }
 
@@ -4534,7 +4530,7 @@ do_game_delete ()
       p = Malloc (sizeof (int));
       *p = n;
       construct_message (NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, p,
-			 do_game_delete_confirm, 0, 0, tmp);
+			 do_game_delete_confirm, 0, 0, NULL, "%s", tmp);
       return;
     }
 
@@ -4770,7 +4766,7 @@ do_get_game_save_input (int n)
 
   construct_input (_("Save Game Filename"), loadfile, 1, 1,
 		   _("Type TAB for file browser"), file_browser, NULL, '\t',
-		   in, INPUT_HIST_FILE, -1);
+		   in, INPUT_HIST_FILE, NULL, -1);
 }
 
 void
@@ -4863,7 +4859,7 @@ global_find (int which)
     {
       construct_input (_("Find Game by Tag Expression"), NULL, 1, 0,
 		       _("[name expression:]value expression"), NULL, NULL, 0,
-		       in, INPUT_HIST_GAME_EXP, -1);
+		       in, INPUT_HIST_GAME_EXP, NULL, -1);
       return;
     }
 
@@ -4903,7 +4899,7 @@ do_global_game_jump ()
       in = Calloc (1, sizeof (struct input_data_s));
       in->efunc = do_game_jump;
       construct_input (_("Jump to Game Number"), NULL, 1, 1, NULL, NULL, NULL,
-		       0, in, -1, 0);
+		       0, in, -1, NULL, 0);
       return;
     }
 
@@ -4982,7 +4978,7 @@ do_global_resume_game ()
   in->efunc = do_load_file;
   construct_input (_("Load Filename"), NULL, 1, 1,
 		   _("Type TAB for file browser"), file_browser, NULL, '\t',
-		   in, INPUT_HIST_FILE, -1);
+		   in, INPUT_HIST_FILE, NULL, -1);
 }
 
 void
@@ -4992,7 +4988,7 @@ do_global_save_game ()
     {
       construct_message (NULL, _("What would you like to do?"), 0, 1,
 			 NULL, NULL, NULL, do_game_save_multi_confirm, 0, 0,
-			 _
+                         NULL, _
 			 ("There is more than one game loaded. Press \"%ls\" to save the current game, \"%ls\" to save all games or any other key to cancel."),
 			 current_wchar, all_wchar);
       return;
@@ -5050,7 +5046,7 @@ void
 do_global_new_all ()
 {
   construct_message (NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, NULL,
-		     do_new_game_from_scratch, 0, 0, "%s",
+		     do_new_game_from_scratch, 0, 0, NULL, "%s",
 		     _("Really start a new game from scratch?"));
 }
 
@@ -5070,7 +5066,7 @@ do_global_quit ()
 {
   if (config.exitdialogbox)
     construct_message (NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, NULL,
-		       do_quit, 0, 0, _("Want to Quit?"));
+		       do_quit, 0, 0, NULL, "%s", _("Want to Quit?"));
   else
     quit = 1;
 }
@@ -5299,7 +5295,7 @@ do_global_perl ()
   in->data = gp;
   in->efunc = do_perl_finalize;
   construct_input (_("PERL Subroutine Filter"), NULL, 1, 0, NULL, NULL, NULL,
-		   0, in, INPUT_HIST_PERL, -1);
+		   0, in, INPUT_HIST_PERL, NULL, -1);
 }
 #endif
 
@@ -5570,7 +5566,6 @@ game_loop ()
                       if (input_c == KEY_RESIZE)
                         {
                           window_resize_all ();
-                          resize_history_menu ();
                           update_all (gp);
                         }
                       continue;

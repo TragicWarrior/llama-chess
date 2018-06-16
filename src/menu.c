@@ -366,11 +366,17 @@ done:
   return 0;
 }
 
+static void
+menu_resize_func (WIN *w)
+{
+}
+
 WIN *
 construct_menu (int rows, int cols, int y, int x, const char *title,
 		int name_only, menu_items_fn * func,
 		struct menu_key_s ** keys, void *data,
-		menu_print_func * pfunc, window_exit_func * efunc)
+		menu_print_func * pfunc, window_exit_func * efunc,
+                window_resize_func *rfunc)
 {
   WIN *win;
   struct menu_input_s *m;
@@ -378,8 +384,7 @@ construct_menu (int rows, int cols, int y, int x, const char *title,
   m = Calloc (1, sizeof (struct menu_input_s));
   win = window_create (title, (rows <= 0) ? 1 : rows, (cols <= 0) ? 1 : cols,
 		       (y >= 0) ? y : 0, (x >= 0) ? x : 0, display_menu, m,
-		       efunc);
-  win->type = WINDOW_TYPE_MENU;
+		       efunc, rfunc ? rfunc : menu_resize_func);
   m = win->data;
   m->ystatic = y;
   m->xstatic = x;
@@ -421,9 +426,4 @@ add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func)
   keys[n++]->func = func;
   keys[n] = NULL;
   *dst = keys;
-}
-
-void
-menu_resize_window (WIN *w)
-{
 }

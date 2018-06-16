@@ -180,7 +180,7 @@ country_codes (void *arg)
   add_menu_key (&keys, KEY_ESCAPE, do_cc_abort);
   add_menu_key (&keys, '\n', do_cc_save);
   construct_menu (0, 0, -1, -1, _("Country Codes"), 0, get_cc_items, keys,
-		  arg, cc_print, do_cc_finalize);
+		  arg, cc_print, do_cc_finalize, NULL);
   return;
 }
 
@@ -365,7 +365,7 @@ edit_tag_value (struct menu_input_s *m)
   free (wc);
   set_menu_stuff (t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
   construct_input (buf, init, lines, 0, eprompt, func, arg, key, in, -1,
-		   type);
+		   NULL, type);
 }
 
 static void
@@ -401,7 +401,7 @@ edit_tag_add_name_finalize (WIN * w)
   free (wc);
   set_menu_stuff (t, name, &init, &type, &lines, &func, &key, &eprompt, &arg);
   construct_input (buf, init, lines, 0, eprompt, func, arg, key, inv, -1,
-		   type);
+		   NULL, type);
 }
 
 static void
@@ -412,7 +412,7 @@ edit_tag_add (struct menu_input_s *m)
   in->data = m;
   in->efunc = edit_tag_add_name_finalize;
   construct_input (_("New Tag Name"), NULL, 1, 1, NULL, NULL, NULL, 0, in, -1,
-		   FIELD_TYPE_PGN_TAG_NAME);
+                   NULL, FIELD_TYPE_PGN_TAG_NAME);
 }
 
 static void
@@ -518,7 +518,7 @@ view_tag_value (struct menu_input_s *m)
   snprintf (buf, sizeof (buf), "%s \"%ls\"", _("Viewing Tag"), wc);
   free (wc);
   construct_message (buf, ANY_KEY_STR, 0, 1, NULL,
-		     NULL, NULL, NULL, 0, 0, item->value);
+		     NULL, NULL, NULL, 0, 0, NULL, "%s", item->value);
 }
 
 static void
@@ -591,5 +591,5 @@ edit_tags (GAME g, BOARD b, int edit)
   construct_menu (0, 0, -1, -1,
 		  (edit) ? _("Editing Roster Tags") :
 		  _("Viewing Roster Tags"), 0, get_tag_items, keys, data,
-		  tag_print, NULL);
+		  tag_print, NULL, NULL);
 }
