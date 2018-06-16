@@ -39,5 +39,6 @@ wchar_t *str_to_wchar_len (const char *str, int maxlen);
 wchar_t *str_to_wchar (const char *p);
 char *wchar_to_str (const wchar_t * str);
 size_t wcharv_length (wchar_t **);
+char *string_replace (const char *hay, const char *s, const char *r);
 
 #endif

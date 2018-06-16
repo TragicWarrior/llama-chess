@@ -299,3 +299,37 @@ wcharv_length (wchar_t **s)
   for (n = 0; s && s[n]; n++);
   return n;
 }
+
+/* Replace the first occurence of 's' with 'r' in 'h'. */
+char *
+string_replace (const char *hay, const char *n, const char *r)
+{
+  char *buf, *b;
+  const char *hp = hay;
+
+  if (!strstr (hay, n))
+    return strdup (hay);
+
+  buf = malloc (strlen (hay) + strlen (r) + 1);
+  b = buf;
+  for (hp = hay; hp && *hp; hp++)
+    {
+      if (!strncmp (hp, n, strlen (n)))
+        {
+          const char *rp;
+
+          for (rp = r; *rp; rp++)
+            *b++ = *rp;
+
+          hp += strlen (n);
+          while (*hp)
+            *b++ = *hp++;
+          break;
+        }
+
+      *b++ = *hp;
+    }
+
+  *b = 0;
+  return buf;
+}

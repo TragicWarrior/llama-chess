@@ -176,7 +176,9 @@ a quirk when using polyglot(1).
 .TP
 .I turn_cmd <command> [<args>] [...]
 A command to be run when it is a human turn when playing a against a chess
-engine.
+engine. The first occurrence of an
+.B %m
+in the command will be expanded to the SAN move text of the previous move.
 
 .TP
 .I bind <mode> <key> <command> [<description>]

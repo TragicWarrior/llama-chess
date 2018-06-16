@@ -503,12 +503,12 @@ parse_xboard_line (GAME g, char *str)
 
       free (frfr);
       pgn_history_add (g, d->b, buf);
-      free (buf);
       SET_FLAG (d->flags, CF_MODIFIED);
       pgn_switch_turn (g);
 
       if (TEST_FLAG (d->flags, CF_ENGINE_LOOP))
 	{
+          free (buf);
 	  update_cursor (g, g->hindex);
 
 	  if (TEST_FLAG (g->flags, GF_GAMEOVER))
@@ -523,6 +523,7 @@ parse_xboard_line (GAME g, char *str)
 
       if (TEST_FLAG (gp->flags, GF_GAMEOVER))
 	{
+          free (buf);
 	  gameover (g);
 	  return;
 	}
@@ -531,20 +532,27 @@ parse_xboard_line (GAME g, char *str)
         {
           if (config.turn_cmd)
             {
+              char *cmd = string_replace (config.turn_cmd, "%m", buf);
+
               switch (fork ())
                 {
                 case 0:
-                  system (config.turn_cmd);
+                  system (cmd);
                   _exit (0);
                 case -1:
+                  break;
                 default:
                   break;
                 }
+
+              free (cmd);
             }
 
+          free (buf);
           RETURN (d);
         }
 
+      free (buf);
       d->engine->status = ENGINE_THINKING;
     }
 
