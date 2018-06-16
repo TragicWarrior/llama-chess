@@ -5972,6 +5972,7 @@ main (int argc, char *argv[])
   signal (SIGINT, catch_signal);
   signal (SIGALRM, catch_signal);
   signal (SIGTERM, catch_signal);
+  signal (SIGCHLD, SIG_IGN);
 
   srandom (getpid ());
 
