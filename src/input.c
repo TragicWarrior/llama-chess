@@ -298,6 +298,7 @@ done:
 static void
 input_resize_func (WIN *w)
 {
+  move_panel (w->p, CALCPOSY (w->rows), CALCPOSX (w->cols));
 }
 
 /*

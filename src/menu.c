@@ -369,6 +369,14 @@ done:
 static void
 menu_resize_func (WIN *w)
 {
+  struct menu_input_s *m = w->data;
+
+  w->rows = m->total >= LINES - 5 ? LINES - 1 : m->total + 5;
+  w->cols = w->cols > COLS - 2 ? COLS - 2 : w->cols;
+  wresize (w->w, w->rows, w->cols);
+  move_panel (w->p, CALCPOSY (w->rows), CALCPOSX (w->cols));
+  wclear (w->w);
+  redraw_menu (w);
 }
 
 WIN *

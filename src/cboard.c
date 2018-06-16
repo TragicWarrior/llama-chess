@@ -2468,7 +2468,7 @@ draw_window_decor ()
 }
 
 static void
-resize_history_menu (WIN *w)
+history_menu_resize (WIN *w)
 {
   struct menu_input_s *m;
 
@@ -4053,7 +4053,7 @@ history_menu (GAME g)
   construct_menu (MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES, TAG_WIDTH,
                   0, config.boardleft ?  BOARD_WIDTH : 0,
                   _("Move History Tree"), 1, get_history_items, keys, g,
-                  history_menu_print, history_menu_exit, resize_history_menu);
+                  history_menu_print, history_menu_exit, history_menu_resize);
 }
 
 void
