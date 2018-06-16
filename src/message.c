@@ -334,7 +334,7 @@ construct_message (const char *title, const char *prompt, int center,
     m->extra = strdup (extra_help);
 
   win = window_create (title, m->h, m->w, CALCPOSY (m->h), CALCPOSX (m->w),
-		       display_message, m, efunc ? efunc : message_free,
+		       display_message, m, efunc,
                        rfunc ? rfunc : message_resize_func);
 
   win->freedata = freedata;
