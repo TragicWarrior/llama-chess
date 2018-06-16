@@ -1,4 +1,4 @@
-.\" Copyright (C) 2002-2013  Ben Kibbey <bjk@luxsci.net>
+.\" Copyright (C) 2002-2018  Ben Kibbey <bjk@luxsci.net>
 .\" 
 .\" This program is free software; you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 \\$2 \(laURL: \\$1 \(ra\\$3
 ..
 .if \n[.g] .mso www.tmac
-.TH CBOARD 6 "Dec 12 2014" "@VERSION@" "Curses Chess Board"
+.TH CBOARD 6 "Jun 16 2018" "@VERSION@" "Curses Chess Board"
 
 .SH NAME
 .B cboard
@@ -172,6 +172,11 @@ or reset. Can be specified more than once.
 .I fm_polyglot <bool>
 Send the "go" command to the chess engine during the first move. Fixes
 a quirk when using polyglot(1).
+
+.TP
+.I turn_cmd <command> [<args>] [...]
+A command to be run when it is a human turn when playing a against a chess
+engine.
 
 .TP
 .I bind <mode> <key> <command> [<description>]

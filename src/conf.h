@@ -102,6 +102,7 @@ struct
   char enginecmdblacktag;
   int utf8_pieces;		// For the board only.
   char bprevmove;
+  char *turn_cmd;		// Command to be run when its human turn.
 } config;
 
 #endif

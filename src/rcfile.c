@@ -830,6 +830,8 @@ parse_rcfile (const char *filename)
 	}
       else if (strcmp (var, "utf8_pieces") == 0)
 	config.utf8_pieces = on_or_off (filename, lines, val);
+      else if (strcmp (var, "turn_cmd") == 0)
+        config.turn_cmd = strdup (val);
       else if (strcmp (var, "color_board_window") == 0)
 	parse_color (filename, lines, val, &config.color[CONF_BDWINDOW]);
       else if (strcmp (var, "color_board_selected") == 0)

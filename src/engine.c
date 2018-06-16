@@ -528,7 +528,22 @@ parse_xboard_line (GAME g, char *str)
 	}
 
       if (g->side == g->turn)
-	RETURN (d);
+        {
+          if (config.turn_cmd)
+            {
+              switch (fork ())
+                {
+                case 0:
+                  system (config.turn_cmd);
+                  _exit (0);
+                case -1:
+                default:
+                  break;
+                }
+            }
+
+          RETURN (d);
+        }
 
       d->engine->status = ENGINE_THINKING;
     }

@@ -95,6 +95,10 @@
 # Whether to enable UTF-8 board pieces.
 #utf8_pieces on
 
+# Command to be run when it is a human turn. Only effective for human/engine
+# play.
+#turn_cmd = paplay /path/to/some/sound.wav
+
 # Below are color and attribute settings. These parameters may contain up to
 # four values. The first and second are the foreground and background color
 # names which must be one of: black, white, red, magenta, yellow, blue, cyan,
