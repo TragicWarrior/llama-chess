@@ -290,3 +290,12 @@ wchar_to_str (const wchar_t * str)
   s[len] = 0;
   return s;
 }
+
+size_t
+wcharv_length (wchar_t **s)
+{
+  size_t n = 0;
+
+  for (n = 0; s && s[n]; n++);
+  return n;
+}

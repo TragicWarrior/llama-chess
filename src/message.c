@@ -189,12 +189,29 @@ build_message_lines (const char *title, const char *prompt,
   *str = lines;
 }
 
+static void
+message_free (WIN *w)
+{
+  struct message_s *m = w->data;
+  int i;
+  void *p;
+
+  for (i = 0; m->lines[i]; i++)
+    free (m->lines[i]);
+
+  free (m->lines);
+  free (m->prompt);
+  free (m->extra);
+  p = m->arg;
+  free (m);
+  w->data = p;
+}
+
 static int
 display_message (WIN * win)
 {
   struct message_s *m = win->data;
   int i;
-  void *p = NULL;
   int n_lines = 0;
   int r = 0;
 
@@ -212,8 +229,7 @@ display_message (WIN * win)
       mvwprintw (win->w, (win->title) ? 2 + r : 1 + r,
 		 (m->center || (!i && !m->lines[i + 1])) ?
 		 CENTERX (m->w, m->lines[i]) : 1, "%ls", m->lines[i]);
-      r++;
-      if (r >= LINES - 5)
+      if (++r >= LINES - 5)
 	break;
     }
 
@@ -253,15 +269,10 @@ display_message (WIN * win)
 	  return display_message (win);
 	}
 
-      for (i = 0; m->lines[i]; i++)
-	free (m->lines[i]);
+      if (win->c == KEY_RESIZE)
+        return 1;
 
-      free (m->lines);
-      free (m->prompt);
-      free (m->extra);
-      p = m->arg;
-      free (m);
-      win->data = p;
+      message_free (win);
       return 0;
     }
 
@@ -271,6 +282,18 @@ display_message (WIN * win)
 static void
 message_resize_func (WIN *w)
 {
+  struct message_s *m = w->data;
+  size_t rows = wcharv_length (m->lines);
+
+  if (m->offset && rows >= LINES - 5)
+    m->offset--;
+
+  m->h = w->rows = rows >= LINES - 5 ? LINES - 1 : rows + 5;
+  m->w = w->cols = w->cols > COLS - 2 ? COLS - 2 : w->cols;
+  wresize (w->w, w->rows, w->cols);
+  move_panel (w->p, CALCPOSY (w->rows), CALCPOSX (w->cols));
+  wclear (w->w);
+  w->func (w);
 }
 
 /*
@@ -311,7 +334,7 @@ construct_message (const char *title, const char *prompt, int center,
     m->extra = strdup (extra_help);
 
   win = window_create (title, m->h, m->w, CALCPOSY (m->h), CALCPOSX (m->w),
-		       display_message, m, efunc,
+		       display_message, m, efunc ? efunc : message_free,
                        rfunc ? rfunc : message_resize_func);
 
   win->freedata = freedata;

@@ -5054,8 +5054,9 @@ void
 do_quit (WIN * win)
 {
   wchar_t str[] = { win->c, 0 };
+  int n = wcscmp (str, yes_wchar);
 
-  if (wcscmp (str, yes_wchar))
+  if (n)
     return;
 
   quit = 1;
@@ -5565,6 +5566,9 @@ game_loop ()
                     {
                       if (input_c == KEY_RESIZE)
                         {
+                          if (win)
+                            win->c = input_c;
+
                           window_resize_all ();
                           update_all (gp);
                         }

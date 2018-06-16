@@ -70,7 +70,7 @@ window_destroy (WIN * win)
 
   while (i > 0 && wins[--i]->keep)
     {
-      if (win && memcmp (win, wins[i], sizeof (WIN)) == 0)
+      if (win && win == wins[i])
 	win = NULL;
 
       free (wins[i]->title);
@@ -88,7 +88,7 @@ window_destroy (WIN * win)
 
   for (i = n = 0; wins[i]; i++)
     {
-      if (win && !win->keep && memcmp (win, wins[i], sizeof (WIN)) == 0)
+      if (win && !win->keep && win == wins[i])
 	{
 	  if (win->p)
 	    del_panel (win->p);
@@ -100,7 +100,7 @@ window_destroy (WIN * win)
 	  continue;
 	}
 
-      if (win && win->keep && memcmp (win, wins[i], sizeof (WIN)) == 0)
+      if (win && win->keep && win == wins[i])
 	{
 	  del_panel (win->p);
 	  win->p = NULL;
@@ -181,7 +181,7 @@ window_resize_all ()
     {
       WIN *w = wins[i];
 
-      if (w->rfunc)
+      if (!w->keep && w->rfunc)
         w->rfunc (w);
     }
 }
