@@ -1543,16 +1543,12 @@ other:
     {
       if (!VALIDCOL (*tmp))
 	return E_PGN_PARSE;
-
       col = *tmp++ - 'a';
 
       if (!VALIDROW (*tmp))
 	return E_PGN_PARSE;
+      row = 8 - atoi (tmp++);
 
-      if (!VALIDRANK (*tmp))
-	return E_PGN_ERR;
-
-      row = RANKTOBOARD (*tmp++);
       b[row][col].enpassant = 1;
       SET_FLAG (*flags, GF_ENPASSANT);
     }
