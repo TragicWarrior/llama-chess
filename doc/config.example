@@ -21,8 +21,8 @@
 # Can be used more than once to specify as many commands as needed.
 #engine_init	depth 3
 
-# Send the "go" command to the chess engine during the first move.
-# This fixes a quirk when interfacing with polyglot(1). 
+# Send the needed commands: "go" and "white" or "black", due to a quirk when
+# using polyglot as the chess engine.
 #fm_polyglot off
 
 # The number of moves to jump when browsing move history and pressing the UP

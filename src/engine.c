@@ -258,6 +258,17 @@ init_chess_engine (GAME g)
   tmp = pgn_game_to_fen (g, d->b);
   add_engine_command (g, ENGINE_READY, "setboard %s\n", tmp);
   free (tmp);
+
+  if (config.fmpolyglot && !TEST_FLAG (d->flags, CF_HUMAN) )
+    {
+      add_engine_command (g, ENGINE_READY, "%s\n",
+                          g->side == WHITE ? "white" : "black");
+      if (g->turn == WHITE && g->side == BLACK)
+        add_engine_command (g, ENGINE_READY, "%s\n", "go");
+      else if (g->turn == BLACK && g->side == WHITE)
+        add_engine_command (g, ENGINE_READY, "%s\n", "go");
+    }
+
   return 0;
 }
 

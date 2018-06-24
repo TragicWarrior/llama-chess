@@ -170,8 +170,15 @@ or reset. Can be specified more than once.
 
 .TP
 .I fm_polyglot <bool>
-Send the "go" command to the chess engine during the first move. Fixes
-a quirk when using polyglot(1).
+Send the needed commands:
+.B go
+and
+.B white
+or
+.B black
+, due to a quirk when using
+.BR polyglot (6)
+as the chess engine.
 
 .TP
 .I turn_cmd <command> [<args>] [...]

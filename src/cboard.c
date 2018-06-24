@@ -3166,14 +3166,6 @@ do_play_commit ()
   if (d->rotate && d->sp.icon)
     rotate_position (&d->sp.srow, &d->sp.scol);
 
-  // Envia comando 'go' a Polyglot en el primer movimiento  debido a que
-  // polyglot no envia el movimiento y cboard se queda esperando.
-  // Send command 'go' to the first movement Polyglot  because cboard
-  // waits to send polyglot movement and this does not make.
-  if (config.fmpolyglot &&
-      ((gp->side == WHITE && !gp->hindex) || fm_loaded_file))
-    add_engine_command (gp, ENGINE_THINKING, "go\n");
-
   d->go_move = 0;
   fm_loaded_file = FALSE;
   d->pm_undo = FALSE;
