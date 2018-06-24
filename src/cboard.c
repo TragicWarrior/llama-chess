@@ -1355,15 +1355,11 @@ update_board_window (GAME g)
 			{
 			  if (config.details && !can_attack
 			      && castling_state (g, d->b,
-						 (d->rotate) ? INV_INT (brow +
-									1) -
-						 1 : brow,
-						 (d->rotate) ? INV_INT (bcol +
-									1) -
-						 1 : bcol, p, 0))
-			    attrs =
-			      mix_cp (CP_BOARD_CASTLING, attrs,
-				      ATTRS (CP_BOARD_CASTLING), A_FG_B_BG);
+                                                 (d->rotate) ? INV_INT0 (brow + 1) - 1 : brow,
+						 (d->rotate) ? INV_INT0 (bcol + 1) - 1 : bcol,
+                                                 p, 0))
+			    attrs = mix_cp (CP_BOARD_CASTLING, attrs,
+                                            ATTRS (CP_BOARD_CASTLING), A_FG_B_BG);
 			}
 		      else
 			{
@@ -1826,9 +1822,8 @@ update_status_window (GAME g)
   buf = Malloc (len);
   y = 2;
 
-  wchar_t *loadfilew = loadfile[0] ? str_etc (loadfile, w,
-					      1) :
-    str_to_wchar (_("not available"));
+  wchar_t *loadfilew = loadfile[0]
+    ? str_etc (loadfile, w, 1) : str_to_wchar (_("not available"));
   mvwprintw (statusw, y++, 1, "%*s %-*ls", 7, _("File:"), w, loadfilew);
   free (loadfilew);
   snprintf (buf, len, "%i %s %i", gindex + 1, _("of"), gtotal);
