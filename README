@@ -25,18 +25,16 @@ will "filter" the current game through a PERL subroutine defined in
 generated FEN tag of the current game. The subroutine should return a FEN tag
 after processing.
 
-The latest version can be found at http://c-board.sourceforge.net/. If you
-find a bug or have a patch to fix one or a feature request you can use the
-Sourceforge Ticket system at http://sourceforge.net/p/c-board/tickets/ or send
-me an email.
+The latest version can be found at https://gitlab.com/bjk/cboard/wikis. If
+you find a bug or have a patch to fix one or a feature request you can use the
+issue tracking system at https://gitlab.com/bjk/cboard/issues or send me an
+email.
 
 There is also a public GIT repository available. Anonymous checkouts can be
 done by doing:
 
-    git clone git://repo.or.cz/cboard.git
-
-The gitweb interface can be viewed at http://repo.or.cz/w/cboard.git.
+    git clone https://gitlab.com/bjk/cboard.git
 
 Ben Kibbey <bjk@luxsci.net>
 Jabber: bjk@jabber.org
-http://c-board.sourceforge.net/
+https://gitlab.com/bjk/cboard/wikis

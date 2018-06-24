@@ -69,6 +69,7 @@
 #include <debug.h>
 #endif
 
+#define CBOARD_URL		"https://gitlab.com/bjk/cboard/wikis"
 #define COPYRIGHT	        "Copyright (C) 2002-2018 " PACKAGE_BUGREPORT
 #define LINE_GRAPHIC(c) 	((!config.linegraphics) ? ' ' : c)
 #define ROWTOMATRIX(r)  	((8 - r) * 2 + 2 - 1)
@@ -4779,9 +4780,9 @@ void
 do_global_about ()
 {
   cmessage (_("ABOUT"), ANY_KEY_STR,
-	    _("%s\nUsing %s with %i colors and %i color pairs\n%s"),
+	    _("%s\nUsing %s with %i colors and %i color pairs\n%s\n%s"),
 	    PACKAGE_STRING, curses_version (), COLORS, COLOR_PAIRS,
-	    COPYRIGHT);
+	    COPYRIGHT, CBOARD_URL);
 }
 
 void
@@ -5927,8 +5928,8 @@ main (int argc, char *argv[])
 	  validate_only = 1;
 	  break;
 	case 'v':
-	  printf ("%s (%s)\n%s\n", PACKAGE_STRING, curses_version (),
-		  COPYRIGHT);
+	  printf ("%s (%s)\n%s\n%s\n", PACKAGE_STRING, curses_version (),
+		  COPYRIGHT, CBOARD_URL);
 	  exit (EXIT_SUCCESS);
 	case 'p':
 	  filetype = FILE_PGN;

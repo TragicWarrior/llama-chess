@@ -4,8 +4,8 @@ Priority: extra
 Maintainer: Ben Kibbey <bjk@luxsci.net>
 Build-Depends: debhelper (>= 8.0.0), autotools-dev, libncurses5-dev
 Standards-Version: 3.9.4
-Homepage: http://c-board.sourceforge.net/
-Vcs-Git: git://repo.or.cz/cboard.git
+Homepage: https://gitlab.com/bjk/cboard/wikis
+Vcs-Git: https://gitlab.com/bjk/cboard.git
 
 Package: cboard
 Architecture: any
