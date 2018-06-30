@@ -489,22 +489,20 @@ static struct known_key_s
 };
 
 static wint_t
-parse_key (const char *filename, int lines, wchar_t ** key)
+parse_key (const char *filename, int lines, int word, wchar_t ** key)
 {
   wchar_t *p = key ? *key : NULL;
   wchar_t *orig = key ? *key : NULL;
   wint_t c = 0;
+  int quote = 0;
 
   if (!key || !wcslen (*key))
     return 0;
 
-  if (*p == '\"')
+  if (*p == '\"' && !isspace (*(p+1)))
     {
-      if (orig[wcslen (orig) - 1] != '\"')
-	errx (EXIT_FAILURE, _("%s(%i): unbalanced quotes"), filename, lines);
-
+      quote = 1;
       p++;
-      orig[wcslen (orig) - 1] = 0;
     }
 
   if (*p == '<')
@@ -560,6 +558,16 @@ parse_key (const char *filename, int lines, wchar_t ** key)
   else
     c = *p++;
 
+  if (quote && *p != '\"')
+    errx (EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
+          lines, orig);
+  else if (quote)
+    p++;
+
+  if (word && *p && !isspace (*p))
+    errx (EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
+          lines, orig);
+
   orig += wcslen (orig) - wcslen (p);
   *key = orig;
   return c;
@@ -595,7 +603,7 @@ parse_key_binding (const char *filename, int lines, char *val)
 	  lines, mode);
 
   p = key;
-  c = parse_key (filename, lines, &p);
+  c = parse_key (filename, lines, 1, &p);
 
   if (m != -1)
     {
@@ -642,6 +650,51 @@ parse_key_binding (const char *filename, int lines, char *val)
   free (str);
 }
 
+static wchar_t *
+parse_macro_desc (const char *filename, int lines, wchar_t **val)
+{
+  int quote = 0;
+  wchar_t *p;
+  wchar_t *buf = Malloc (256 * sizeof (wchar_t));
+  wchar_t *b = buf;
+
+  if (!buf)
+    return NULL;
+
+  for (p = *val; p && *p; p++)
+    {
+      if (*p == '\"')
+        {
+          if (quote)
+            {
+              p++;
+              break;
+            }
+
+          quote = 1;
+          continue;
+        }
+      else if (isspace (*p) && !quote)
+        break;
+
+      *b++ = *p;
+    }
+
+  if (!isspace (*p) || !*(p+1))
+    {
+      fprintf(stderr, _ ("%s(%i): parse error\n"), filename, lines);
+      free (buf);
+      return NULL;
+    }
+
+  while (isspace (*p))
+    p++;
+
+  *val = p;
+  *b = 0;
+  return buf;
+}
+
 static void
 parse_macro (const char *filename, int lines, char *val)
 {
@@ -671,7 +724,7 @@ parse_macro (const char *filename, int lines, char *val)
 	  lines, mode);
 
   p = key;
-  c = parse_key (filename, lines, &p);
+  c = parse_key (filename, lines, 1, &p);
 
   if (macros)
     for (i = 0; macros[i]; i++);
@@ -682,7 +735,11 @@ parse_macro (const char *filename, int lines, char *val)
   macros[i]->mode = m;
   p = keys;
 
-  while ((c = parse_key (filename, lines, &p)) != 0)
+  macros[i]->desc = parse_macro_desc (filename, lines, &p);
+  if (!macros[i]->desc)
+    exit (EXIT_FAILURE);
+
+  while ((c = parse_key (filename, lines, 0, &p)) != 0)
     {
       macros[i]->keys = Realloc (macros[i]->keys, (macros[i]->total + 2) *
 				 sizeof (wint_t));

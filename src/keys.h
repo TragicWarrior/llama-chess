@@ -52,6 +52,7 @@ struct macro_s
 {
   wint_t c;
   wint_t *keys;
+  wchar_t *desc;
   int n;
   int total;
   int mode;
