@@ -598,6 +598,8 @@ parse_key_binding (const char *filename, int lines, char *val)
     m = MODE_PLAY;
   else if (strcasecmp (mode, "edit") == 0)
     m = MODE_EDIT;
+  else if (strcasecmp (mode, "any") == 0)
+    m = MODE_ANY;
   else
     errx (EXIT_FAILURE, _("%s(%i): invalid game mode \"%s\""), filename,
 	  lines, mode);
