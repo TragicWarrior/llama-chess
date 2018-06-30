@@ -48,6 +48,8 @@
 #include "filebrowser.h"
 #include "common.h"
 #include "conf.h"
+#include "keys.h"
+#include "rcfile.h"
 
 static void
 free_file_browser ()
@@ -383,7 +385,8 @@ file_browser (void *arg)
 
   in->arg = strdup (path);
   add_menu_key (&keys, '\n', file_browser_select);
-  add_menu_key (&keys, KEY_F (1), file_browser_help);
+  add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
+                file_browser_help);
   add_menu_key (&keys, '~', file_browser_home);
   add_menu_key (&keys, CTRL_KEY ('e'), file_browser_expression);
   add_menu_key (&keys, KEY_ESCAPE, file_browser_abort);

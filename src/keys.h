@@ -77,7 +77,6 @@ key_func do_history_rav_next;
 key_func do_history_rav_prev;
 key_func do_history_menu;
 key_func do_history_toggle;
-key_func do_history_help;
 
 struct key_s **edit_keys;
 key_func do_edit_select;
@@ -88,7 +87,6 @@ key_func do_edit_insert;
 key_func do_edit_toggle_castle;
 key_func do_edit_enpassant;
 key_func do_edit_switch_turn;
-key_func do_edit_help;
 key_func do_edit_exit;
 
 struct key_s **play_keys;
@@ -103,7 +101,6 @@ key_func do_play_send_command;
 key_func do_play_toggle_eh_mode;
 key_func do_play_toggle_engine;
 key_func do_play_toggle_human;
-key_func do_play_help;
 key_func do_play_toggle_pause;
 key_func do_play_history_mode;
 key_func do_play_edit_mode;

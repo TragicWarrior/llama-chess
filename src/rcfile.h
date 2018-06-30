@@ -38,7 +38,6 @@ static const struct custom_key_s
   {MODE_PLAY, "toggle_play_eh", do_play_toggle_eh_mode, 0},
   {MODE_PLAY, "toggle_engine", do_play_toggle_engine, 0},
   {MODE_PLAY, "toggle_human", do_play_toggle_human, 0},
-  {MODE_PLAY, "help", do_play_help, 0},
   {MODE_PLAY, "toggle_pause", do_play_toggle_pause, 0},
   {MODE_PLAY, "history_mode", do_play_history_mode, 0},
   {MODE_PLAY, "edit_mode", do_play_edit_mode, 0},
@@ -58,7 +57,6 @@ static const struct custom_key_s
   {MODE_HISTORY, "rav_prev", do_history_rav_prev, 0},
   {MODE_HISTORY, "menu", do_history_menu, 0},
   {MODE_HISTORY, "toggle", do_history_toggle, 0},
-  {MODE_HISTORY, "help", do_history_help, 0},
   {MODE_EDIT, "select", do_edit_select, 0},
   {MODE_EDIT, "commit", do_edit_commit, 0},
   {MODE_EDIT, "cancel_selected", do_edit_cancel_selected, 0},
@@ -67,7 +65,6 @@ static const struct custom_key_s
   {MODE_EDIT, "toggle_castle", do_edit_toggle_castle, 0},
   {MODE_EDIT, "enpassant", do_edit_enpassant, 0},
   {MODE_EDIT, "switch_turn", do_edit_switch_turn, 0},
-  {MODE_EDIT, "help", do_edit_help, 0},
   {MODE_EDIT, "exit", do_edit_exit, 0},
   {MODE_ANY, "tag_edit", do_global_tag_edit, 0},
   {MODE_ANY, "tag_view", do_global_tag_view, 0},
@@ -100,5 +97,7 @@ void set_config_defaults ();
 void parse_rcfile (const char *filename);
 void add_key_binding (struct key_s ***, key_func *, wint_t c, char *, int);
 void set_default_keys ();
+const wchar_t *key_lookup (struct key_s **keys, key_func f);
+wint_t keycode_lookup (struct key_s **keys, key_func f);
 
 #endif

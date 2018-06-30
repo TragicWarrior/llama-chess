@@ -211,6 +211,9 @@ static const bool cb[8][8] = {
 
 static void free_userdata_once (GAME g);
 static void do_more_help (WIN *);
+static void do_play_help ();
+static void do_history_help ();
+static void do_edit_help ();
 
 void
 coordofmove (GAME g, char *move, char *prow, char *pcol)
@@ -414,7 +417,8 @@ edit_nag (void *arg)
 
   add_menu_key (&keys, ' ', edit_nag_toggle_item);
   add_menu_key (&keys, CTRL_KEY ('x'), edit_nag_save);
-  add_menu_key (&keys, KEY_F (1), edit_nag_help);
+  add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
+                edit_nag_help);
   construct_menu (0, 0, -1, -1, _("Numeric Annotation Glyphs"), 1,
 		  get_nag_items, keys, arg, nag_print, NULL, NULL);
   return;
@@ -1979,7 +1983,13 @@ update_status_window (GAME g)
 //      mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
 
   if (!status.notify)
-    status.notify = str_to_wchar (_("Type F1 for help"));
+    {
+      char tbuf[255];
+
+      snprintf (tbuf, sizeof (tbuf), _("Type %ls for help"),
+                key_lookup (global_keys, do_global_help));
+      status.notify = str_to_wchar (tbuf);
+    }
 
   wattron (stdscr, CP_STATUS_NOTIFY);
   for (i = (config.boardleft) ? BOARD_WIDTH : 0;
@@ -3255,45 +3265,109 @@ do_play_select ()
   start_clock (gp);
 }
 
+static void
+build_help_line_once (wchar_t *buf, wchar_t **pp, struct key_s *k, int t,
+                      int nlen)
+{
+  wchar_t *p = *pp, *wc;
+  int n;
+
+  if (k->key)
+    n = wcslen (k->key);
+  else
+    n = 1;
+
+  while (n++ <= nlen)
+    *p++ = ' ';
+
+  *p = 0;
+
+  if (k->key)
+    {
+      wcsncat (buf, k->key, t - 1);
+      p = buf + wcslen (buf);
+    }
+  else
+    *p++ = k->c;
+
+  *p++ = ' ';
+  *p++ = '-';
+  *p++ = ' ';
+  *p = 0;
+
+  if (k->d)
+    wcsncat (buf, k->d, t - 1);
+
+  if (k->r)
+    {
+      wc = str_to_wchar ("*");
+      wcsncat (buf, wc, t - 1);
+      free (wc);
+    }
+
+  wc = str_to_wchar ("\n");
+  wcscat (buf, wc);
+  free (wc);
+  *pp = buf + wcslen (buf);
+}
+
+static void
+calc_help_len (struct key_s *k, int *t, int *nlen, int *len)
+{
+  if (!k->d)
+    return;
+
+  if (k->key)
+    {
+      if (wcslen (k->key) > *nlen)
+        {
+          *nlen = wcslen (k->key);
+          *t += *nlen;
+        }
+      else
+        (*t)++;
+    }
+  else
+    (*t)++;
+
+  if (k->d)
+    {
+      if (wcslen (k->d) > *len)
+        *len = wcslen (k->d);
+    }
+
+  *t += *len;
+  *t += k->r;
+}
+
 static wchar_t *
 build_help (struct key_s **keys)
 {
-  int i, nlen = 1, len, t, n;
-  wchar_t *buf = NULL, *wc = NULL;
+  int i, nlen = 1, len, t;
+  wchar_t *buf = NULL;
   wchar_t *p;
+  wchar_t *more_help = str_to_wchar (_("more help"));
+  const wchar_t *more_help_key = key_lookup (global_keys, do_global_help);
+  struct key_s k;
 
   if (!keys)
-    return NULL;
-
-  for (i = len = t = 0; keys[i]; i++)
     {
-      if (!keys[i]->d)
-	continue;
-
-      if (keys[i]->key)
-	{
-	  if (wcslen (keys[i]->key) > nlen)
-	    {
-	      nlen = wcslen (keys[i]->key);
-	      t += nlen;
-	    }
-	  else
-	    t++;
-	}
-      else
-	t++;
-
-      if (keys[i]->d)
-	{
-	  if (wcslen (keys[i]->d) > len)
-	    len = wcslen (keys[i]->d);
-	}
-
-      t += len;
-      t += keys[i]->r;
+      free (more_help);
+      return NULL;
     }
 
-  t += 4 + i + 1;
+  for (i = t = len = 0; keys[i]; i++)
+    {
+      calc_help_len (keys[i], &t, &nlen, &len);
+    }
+
+  k.d = more_help;
+  k.r = 0;
+  k.c = 0;
+  k.key = (wchar_t *)more_help_key;
+  calc_help_len (&k, &t, &nlen, &len);
+
+  t += 4 + i + 1 + 1; // +1 for more_help
   buf = Malloc ((t + 1) * sizeof (wchar_t));
   p = buf;
 
@@ -3302,53 +3376,40 @@ build_help (struct key_s **keys)
       if (!keys[i]->d)
 	continue;
 
-      if (keys[i]->key)
-	n = wcslen (keys[i]->key);
-      else
-	n = 1;
-
-      while (n++ <= nlen)
-	*p++ = ' ';
-
-      *p = 0;
-
-      if (keys[i]->key)
-	{
-	  wcsncat (buf, keys[i]->key, t - 1);
-	  p = buf + wcslen (buf);
-	}
-      else
-	*p++ = keys[i]->c;
-
-      *p++ = ' ';
-      *p++ = '-';
-      *p++ = ' ';
-      *p = 0;
-
-      if (keys[i]->d)
-	wcsncat (buf, keys[i]->d, t - 1);
-
-      if (keys[i]->r)
-	{
-	  wc = str_to_wchar ("*");
-	  wcsncat (buf, wc, t - 1);
-	  free (wc);
-	}
-
-      wc = str_to_wchar ("\n");
-      wcscat (buf, wc);
-      free (wc);
-      p = buf + wcslen (buf);
+      build_help_line_once (buf, &p, keys[i], t, nlen);
     }
 
+  build_help_line_once (buf, &p, &k, t, nlen);
+  free (more_help);
   return buf;
 }
 
 void
 do_global_help ()
 {
-  wchar_t *buf = build_help (global_keys);
+  struct userdata_s *d = gp->data;
+  wchar_t *buf;
 
+  if (!d->global_help)
+    {
+      switch (d->mode)
+        {
+        case MODE_PLAY:
+          do_play_help ();
+          return;
+        case MODE_EDIT:
+          do_edit_help ();
+          return;
+        case MODE_HISTORY:
+          do_history_help ();
+          return;
+        default:
+          break;
+        }
+    }
+
+  d->global_help = 0;
+  buf = build_help (global_keys);
   construct_message (_("Global Game Keys (* = can take a repeat count)"),
 		     ANY_KEY_SCROLL_STR, 0, 0, NULL, NULL, buf, do_more_help,
 		     0, 1, NULL, "%ls", buf);
@@ -3357,6 +3418,8 @@ do_global_help ()
 void
 do_main_help (WIN * win)
 {
+  struct userdata_s *d = gp->data;
+
   switch (win->c)
     {
     case 'p':
@@ -3369,6 +3432,7 @@ do_main_help (WIN * win)
       do_edit_help ();
       break;
     case 'g':
+      d->global_help = 1;
       do_global_help ();
       break;
     default:
@@ -3379,17 +3443,23 @@ do_main_help (WIN * win)
 static void
 do_more_help (WIN * win)
 {
-  if (win->c == KEY_F (1) || win->c == CTRL_KEY ('g'))
-    construct_message (_("Command Key Index"),
-		       _("p/h/e/g or any other key to quit"), 0, 0,
-		       NULL, NULL, NULL, do_main_help, 0, 0, NULL, "%s",
-		       _("p - play mode keys\n"
-			 "h - history mode keys\n"
-			 "e - board edit mode keys\n"
-			 "g - global game keys"));
+  int i;
+
+  for (i = 0; global_keys[i]; i++)
+    {
+      if (global_keys[i]->f == do_global_help
+          && global_keys[i]->c == win->c)
+        construct_message (_("Command Key Index"),
+                           _("p/h/e/g or any other key to quit"), 0, 0,
+                           NULL, NULL, NULL, do_main_help, 0, 0, NULL, "%s",
+                           _(" p - play mode keys\n"
+                             " h - history mode keys\n"
+                             " e - board edit mode keys\n"
+                             " g - global game keys"));
+    }
 }
 
-void
+static void
 do_play_help ()
 {
   wchar_t *buf = build_help (play_keys);
@@ -3542,7 +3612,7 @@ do_edit_enpassant ()
     }
 }
 
-void
+static void
 do_edit_help ()
 {
   wchar_t *buf = build_help (edit_keys);
@@ -4034,7 +4104,8 @@ history_menu (GAME g)
   add_menu_key (&keys, 'M', history_menu_quit);
   add_menu_key (&keys, KEY_UP, history_menu_prev);
   add_menu_key (&keys, KEY_DOWN, history_menu_next);
-  add_menu_key (&keys, KEY_F (1), history_menu_help);
+  add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
+                history_menu_help);
   add_menu_key (&keys, CTRL_KEY ('a'), history_menu_annotate);
   add_menu_key (&keys, CTRL_KEY ('d'), history_menu_details);
   add_menu_key (&keys, '\n', history_menu_view_annotation);
@@ -4188,7 +4259,7 @@ do_history_annotate ()
   do_annotate_move (gp->hp[n]);
 }
 
-void
+static void
 do_history_help ()
 {
   wchar_t *buf = build_help (history_keys);
@@ -5385,7 +5456,8 @@ game_loop ()
   if (d->mode == MODE_HISTORY)
     pgn_board_update (gp, d->b, pgn_history_total (gp->hp));
 
-  update_status_notify (gp, "%s", _("Type F1 for help"));
+  update_status_notify (gp, _("Type %ls for help"),
+                        key_lookup (global_keys, do_global_help));
   movestep = 2;
   flushinp ();
   update_all (gp);

@@ -278,9 +278,6 @@ set_default_keys ()
 		   _("previous variation of the previous move"), 0);
   add_key_binding (&history_keys, do_history_menu, 'M',
 		   _("move history tree"), 0);
-  add_key_binding (&history_keys, do_history_help, KEY_F (1), _("more help"),
-		   0);
-  add_key_binding (&history_keys, do_history_help, CTRL_KEY ('g'), NULL, 0);
   add_key_binding (&history_keys, do_history_toggle, 'h',
 		   _("exit history mode"), 0);
 
@@ -298,8 +295,6 @@ set_default_keys ()
   add_key_binding (&edit_keys, do_edit_enpassant, 'p',
 		   _("toggle enpassant square"), 0);
   add_key_binding (&edit_keys, do_edit_switch_turn, 'w', _("toggle turn"), 0);
-  add_key_binding (&edit_keys, do_edit_help, KEY_F (1), _("more help"), 0);
-  add_key_binding (&edit_keys, do_edit_help, CTRL_KEY ('g'), NULL, 0);
   add_key_binding (&edit_keys, do_edit_exit, 'e', _("exit edit mode"), 0);
 
   add_key_binding (&play_keys, do_play_select, ' ',
@@ -327,8 +322,6 @@ set_default_keys ()
 		   _("enter history mode"), 0);
   add_key_binding (&play_keys, do_play_edit_mode, 'e', _("enter edit mode"),
 		   0);
-  add_key_binding (&play_keys, do_play_help, KEY_F (1), _("more help"), 0);
-  add_key_binding (&play_keys, do_play_help, CTRL_KEY ('g'), NULL, 0);
   add_key_binding (&play_keys, do_play_toggle_strict_castling,
 		   CTRL_KEY ('p'), _("toggle strict castling"), 0);
 
@@ -372,8 +365,7 @@ set_default_keys ()
 		   _("version information"), 0);
   add_key_binding (&global_keys, do_global_redraw, CTRL_KEY ('L'),
 		   _("redraw the screen"), 0);
-  add_key_binding (&global_keys, NULL, KEY_F (1), _("more help"), 0);
-  add_key_binding (&global_keys, NULL, CTRL_KEY ('g'), NULL, 0);
+  add_key_binding (&global_keys, do_global_help, KEY_F (1), NULL, 0);
   add_key_binding (&global_keys, do_global_quit, 'Q', _("quit"), 0);
 }
 
@@ -1025,4 +1017,34 @@ parse_rcfile (const char *filename)
 
   if (config.enginecmdblacktag)
     pgn_tag_add (&config.tag, (char *) "Black", config.engine_cmd);
+}
+
+static struct key_s *
+find_key (struct key_s **keys, key_func f)
+{
+  int i;
+
+  for (i = 0; keys[i]; i++)
+    {
+      if (keys[i]->f == f)
+        return keys[i];
+    }
+
+  return NULL;
+}
+
+const wchar_t *
+key_lookup (struct key_s **keys, key_func f)
+{
+  struct key_s *k = find_key (keys, f);
+
+  return k ? k->key : NULL;
+}
+
+wint_t
+keycode_lookup (struct key_s **keys, key_func f)
+{
+  struct key_s *k = find_key (keys, f);
+
+  return k ? k->c : 0;
 }

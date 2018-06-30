@@ -195,10 +195,11 @@
 #bind play	"|"		send_command
 #bind play	"E"		toggle_engine
 #bind play	"H"		toggle_human
-#bind play	"<F1>"		help
 #bind play	"p"		toggle_pause
 #bind play	"h"		history_mode
 #bind play	"e"		edit_mode
+#bind play	"<^p>"		toggle_strict_castling
+
 #
 # History mode keys.
 #    Mode       Key             Command
@@ -216,7 +217,6 @@
 #bind history	"-"		rav_prev
 #bind history	"M"		menu
 #bind history	"h"		toggle
-#bind history	"<f1>"		help
 #bind_history   "r"             rotate_board
 
 # Board editing keys.
@@ -229,8 +229,31 @@
 #bind edit	"c"		toggle_castle
 #bind edit	"p"		enpassant
 #bind edit	"w"		switch_turn
-#bind edit	"<f1>"		help
 #bind edit	"e"		exit
+
+# Global keys available anywhere.
+#    Mode       Key             Command
+#bind any	"<^t>"		tag_edit
+#bind any	"t"		tag_view
+#bind any	"?"		find_new
+#bind any	"}"		find_next
+#bind any	"{"		find_previous
+#bind any	"<^n>"		new_game
+#bind any	"<^k>"		new_all
+#bind any	"<^i>"		copy_game
+#bind any	">"		next_game
+#bind any	"<"		prev_game
+#bind any	"j"		game_jump
+#bind any	"X"		toggle_delete
+#bind any	"<^x>"		delete_game
+#bind any	"<^r>"		resume_game
+#bind any	"s"		save_game
+#bind any	"<^d>"		toggle_board_details
+#bind any	"W"		toggle_engine_window
+#bind any	"<^o>"		perl
+#bind any	"<^L>"		redraw
+#bind any	"<F1>"		help
+#bind any	"Q"		quit
 
 # Macros should be defined AFTER all key bindings. The bound key "presses" a
 # series of keys in the specified game mode. The "any" game mode can be used

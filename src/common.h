@@ -108,6 +108,7 @@ struct clock_s
 struct userdata_s
 {
   BOARD b;
+  int global_help;
   struct engine_s *engine;
   unsigned short flags;
   char c_row;

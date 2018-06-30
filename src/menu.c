@@ -36,6 +36,8 @@
 #include "misc.h"
 #include "window.h"
 #include "menu.h"
+#include "keys.h"
+#include "rcfile.h"
 
 static void
 set_menu_vars (int c, int rows, int items, int *item, int *top)
@@ -141,8 +143,9 @@ fix_menu_vals (WIN * win)
 
   for (i = 0; m->items[i]; i++);
   m->total = i;
-  snprintf (buf, sizeof (buf), _("Item %i %s %i  %s"), m->selected + 1,
-	    _("of"), m->total, _("Type F1 for help"));
+  snprintf (buf, sizeof (buf), _("Item %i %s %i  Type %ls for help"),
+            m->selected + 1, _("of"), m->total,
+            key_lookup (global_keys, do_global_help));
 
   if (!m->cstatic)
     {
