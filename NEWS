@@ -1,3 +1,33 @@
+CBoard version 0.7.4
+--------------------
+The project has moved to https://gitlab.com/bjk/cboard/wikis. Downloads can
+still be found at https://sourceforge.net/projects/c-board/files but the
+project issues and wiki/homepage are now at GitLab.
+
+Added ability to resize/reposition message, input (buggy) and menu windows
+with the terminal.
+
+Added configuration paramter "turn_cmd" which is run when it is a human turn.
+
+Fixed showing the enpassant square in history mode.
+
+Fixed castling details when viewing the big board rotated.
+
+Fixed startup crash in a recent version of ncurses.
+
+The "macro" configuration parameter now requires a description field which is
+also now shown in the help.
+
+You can now rebind global keys using the "any" mode to the "bind" parameter.
+
+Added bindings "toggle_strict_castling" and "perl" which were previously
+hardcoded.
+
+Removed the "play_help", "history_help", and "edit_help" commands. These are
+replaced with the global "help" key binding and still defaults to F1 although
+the undocumented CTRL-g binding has been removed.
+
+
 CBoard version 0.7.3
 --------------------
 Fixed a few bugs found by Coverity.
