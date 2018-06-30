@@ -3343,12 +3343,13 @@ calc_help_len (struct key_s *k, int *t, int *nlen, int *len)
 static wchar_t *
 build_help (struct key_s **keys)
 {
-  int i, nlen = 1, len, t;
+  int i, m = 0, nlen = 1, len, t;
   wchar_t *buf = NULL;
   wchar_t *p;
   wchar_t *more_help = str_to_wchar (_("more help"));
   const wchar_t *more_help_key = key_lookup (global_keys, do_global_help);
   struct key_s k;
+  int mode = MODE_ANY;
 
   if (!keys)
     {
@@ -3357,17 +3358,38 @@ build_help (struct key_s **keys)
     }
 
   for (i = t = len = 0; keys[i]; i++)
+    calc_help_len (keys[i], &t, &nlen, &len);
+
+  if (macros)
     {
-      calc_help_len (keys[i], &t, &nlen, &len);
+      if (keys == play_keys)
+        mode = MODE_PLAY;
+      else if (keys == history_keys)
+        mode = MODE_HISTORY;
+      else if (keys == edit_keys)
+        mode = MODE_EDIT;
+      else
+        mode = MODE_ANY;
+
+      for (m = 0; macros[m]; m++)
+        {
+          if (macros[m]->mode == mode)
+            {
+              k.d = macros[m]->desc;
+              k.r = k.c = 0;
+              k.key = str_to_wchar (fancy_key_name (macros[m]->c));
+              calc_help_len (&k, &t, &nlen, &len);
+              free (k.key);
+            }
+        }
     }
 
   k.d = more_help;
-  k.r = 0;
-  k.c = 0;
+  k.r = k.c = 0;
   k.key = (wchar_t *)more_help_key;
   calc_help_len (&k, &t, &nlen, &len);
 
-  t += 4 + i + 1 + 1; // +1 for more_help
+  t += 4 + i + 1 + m + 1; // +1 for more_help
   buf = Malloc ((t + 1) * sizeof (wchar_t));
   p = buf;
 
@@ -3379,6 +3401,24 @@ build_help (struct key_s **keys)
       build_help_line_once (buf, &p, keys[i], t, nlen);
     }
 
+  if (macros)
+    {
+      for (m = 0; macros[m]; m++)
+        {
+          if (macros[m]->mode == mode)
+            {
+              k.d = macros[m]->desc;
+              k.r = k.c = 0;
+              k.key = str_to_wchar (fancy_key_name (macros[m]->c));
+              build_help_line_once (buf, &p, &k, t, nlen);
+              free (k.key);
+            }
+        }
+    }
+
+  k.d = more_help;
+  k.r = k.c = 0;
+  k.key = (wchar_t *)more_help_key;
   build_help_line_once (buf, &p, &k, t, nlen);
   free (more_help);
   return buf;

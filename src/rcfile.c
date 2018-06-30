@@ -172,7 +172,7 @@ copydatafile (const char *dst, const char *src)
   fclose (ofp);
 }
 
-static char *
+char *
 fancy_key_name (wint_t c)
 {
   static char buf[64] = { 0 };
