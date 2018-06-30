@@ -17,7 +17,7 @@
 \\$2 \(laURL: \\$1 \(ra\\$3
 ..
 .if \n[.g] .mso www.tmac
-.TH CBOARD 6 "Jun 16 2018" "@VERSION@" "Curses Chess Board"
+.TH CBOARD 6 "Jun 30 2018" "@VERSION@" "Curses Chess Board"
 
 .SH NAME
 .B cboard
@@ -228,7 +228,7 @@ the repeat amount of times. If
 will be sent without modification.
 
 .TP
-.I macro <mode> <key> <key_sequence>
+.I macro <mode> <key> <description> <key_sequence>
 A 
 .I macro 
 behaves like pressing a series of keys automatically without
@@ -250,7 +250,8 @@ or
 .B any
 \&. When 
 .B any
-, global keys may be accessed.
+, global keys may be accessed. Note that the description must be enclosed in
+double quotes when if it contains whitespace.
 
 .TP
 .I jump_count <integer>
@@ -271,7 +272,7 @@ Enable or disable board line graphics. The default is off.
 .I board_details <bool>
 When enabled, castling availability, the en passasnt square and
 attacking pieces will be shown on the board. This can be toggled with
-the `^d' key.
+the `^d' key by default.
 
 .TP
 .I save_directory <path>
