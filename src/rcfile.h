@@ -42,6 +42,7 @@ static const struct custom_key_s
   {MODE_PLAY, "toggle_pause", do_play_toggle_pause, 0},
   {MODE_PLAY, "history_mode", do_play_history_mode, 0},
   {MODE_PLAY, "edit_mode", do_play_edit_mode, 0},
+  {MODE_PLAY, "toggle_strict_castling", do_play_toggle_strict_castling, 0},
   {MODE_HISTORY, "jump_next", do_history_jump_next, 1},
   {MODE_HISTORY, "jump_prev", do_history_jump_prev, 1},
   {MODE_HISTORY, "next", do_history_next, 1},

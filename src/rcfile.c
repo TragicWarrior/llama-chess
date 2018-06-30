@@ -329,6 +329,8 @@ set_default_keys ()
 		   0);
   add_key_binding (&play_keys, do_play_help, KEY_F (1), _("more help"), 0);
   add_key_binding (&play_keys, do_play_help, CTRL_KEY ('g'), NULL, 0);
+  add_key_binding (&play_keys, do_play_toggle_strict_castling,
+		   CTRL_KEY ('p'), _("toggle strict castling"), 0);
 
   add_key_binding (&global_keys, do_global_tag_edit, CTRL_KEY ('t'),
 		   _("edit roster tags"), 0);
@@ -360,8 +362,6 @@ set_default_keys ()
   add_key_binding (&global_keys, do_global_save_game, 's', _("save game"), 0);
   add_key_binding (&global_keys, do_global_toggle_board_details,
 		   CTRL_KEY ('d'), _("toggle board details"), 0);
-  add_key_binding (&global_keys, do_global_toggle_strict_castling,
-		   CTRL_KEY ('p'), _("toggle strict castling"), 0);
   add_key_binding (&global_keys, do_global_toggle_engine_window, 'W',
 		   _("toggle chess engine IO window"), 0);
 #ifdef WITH_LIBPERL

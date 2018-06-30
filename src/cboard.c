@@ -5090,7 +5090,7 @@ do_global_toggle_board_details ()
 }
 
 void
-do_global_toggle_strict_castling ()
+do_play_toggle_strict_castling ()
 {
   do_toggle_strict_castling ();
 }

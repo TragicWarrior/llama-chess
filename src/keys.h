@@ -107,6 +107,7 @@ key_func do_play_help;
 key_func do_play_toggle_pause;
 key_func do_play_history_mode;
 key_func do_play_edit_mode;
+key_func do_play_toggle_strict_castling;
 
 struct key_s **global_keys;
 key_func do_global_tag_edit;
@@ -128,7 +129,6 @@ key_func do_global_about;
 key_func do_global_quit;
 key_func do_global_toggle_engine_window;
 key_func do_global_toggle_board_details;
-key_func do_global_toggle_strict_castling;
 key_func do_global_redraw;
 key_func do_global_help;
 #ifdef WITH_LIBPERL
