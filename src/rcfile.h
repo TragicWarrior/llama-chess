@@ -90,6 +90,9 @@ static const struct custom_key_s
   {MODE_ANY, "toggle_board_details", do_global_toggle_board_details, 0},
   {MODE_ANY, "redraw", do_global_redraw, 0},
   {MODE_ANY, "help", do_global_help, 0},
+#ifdef WITH_LIBPERL
+  {MODE_ANY, "perl", do_global_perl, 0},
+#endif
   {-1, NULL, NULL, 0}
 };
 
