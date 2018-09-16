@@ -86,6 +86,7 @@ struct
   char *datadir;		// ~/.cboard
   char *engine_cmd;		// Alternate chess engine command.
   int engine_protocol;		// XBoard protocol: 1 or 2
+  int engine_timeout;		// seconds to wait for the engine to spawn
   struct color_s color[CONF_MAX_COLORS];	// Color configuration.
   TAG **tag;			// Custom PGN tags.
   char *pattern;		// Filename filter in the file browser.

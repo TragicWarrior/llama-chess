@@ -279,6 +279,7 @@ exec_chess_engine (GAME g, char **args)
   pid_t pid;
   int from[2], to[2];
   struct userdata_s *d = g->data;
+  int tries = config.engine_timeout;
 #ifndef UNIX98
   char pty[FILENAME_MAX];
 
@@ -335,15 +336,13 @@ exec_chess_engine (GAME g, char **args)
       break;
     }
 
-  /*
-   * FIXME shouldn't block here. When theres a high load average, the engine
-   * process will fail to start. Better to handle this in game_loop() and
-   * give up after a timer expires.
-   */
-  sleep (1);
-
-  if (send_signal_to_engine (pid, 0))
-    return -2;
+  while (tries--)
+    {
+      if (send_signal_to_engine (pid, 0) && !tries)
+        return -2;
+      else
+        break;
+    }
 
   close (to[0]);
   close (from[1]);

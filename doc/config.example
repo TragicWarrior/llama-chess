@@ -21,6 +21,10 @@
 # Can be used more than once to specify as many commands as needed.
 #engine_init	depth 3
 
+# The time in seconds to wait for the chess engine to launch before returning
+# an error.
+#engine_timeout	10
+
 # Send the needed commands: "go" and "white" or "black", due to a quirk when
 # using polyglot as the chess engine.
 #fm_polyglot off

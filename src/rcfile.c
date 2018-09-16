@@ -391,6 +391,7 @@ set_config_defaults ()
   config.enginecmdblacktag = TRUE;
   config.bprevmove = TRUE;
   config.utf8_pieces = 1;
+  config.engine_timeout = 10;
 
   set_default_colors ();
 
@@ -879,6 +880,8 @@ parse_rcfile (const char *filename)
 	  if (config.engine_protocol != 1 && config.engine_protocol != 2)
 	    errx (EXIT_FAILURE, _("%s(%i): invalid value"), filename, lines);
 	}
+      else if (strcmp (var, "engine_timeout") == 0)
+	config.engine_timeout = atoi (val);
       else if (strcmp (var, "utf8_pieces") == 0)
 	config.utf8_pieces = on_or_off (filename, lines, val);
       else if (strcmp (var, "turn_cmd") == 0)
