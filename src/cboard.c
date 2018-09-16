@@ -5895,8 +5895,11 @@ signal_save_pgn (int sig)
 }
 
 void
-catch_signal (int which)
+catch_signal (int which, siginfo_t *info, void *ctx)
 {
+  (void)info;
+  (void)ctx;
+
   switch (which)
     {
     case SIGALRM:
@@ -5968,6 +5971,7 @@ main (int argc, char *argv[])
   int i = 0;
   PGN_FILE *pgn;
   int utf8_pieces = -1;
+  struct sigaction sigact;
 
   setlocale (LC_ALL, "");
   bindtextdomain ("cboard", LOCALE_DIR);
@@ -6066,12 +6070,15 @@ main (int argc, char *argv[])
   if (i)
     pgn_config_set (PGN_STOP_ON_ERROR, 1);
 
-  signal (SIGPIPE, catch_signal);
-  signal (SIGCONT, catch_signal);
-  signal (SIGSTOP, catch_signal);
-  signal (SIGINT, catch_signal);
-  signal (SIGALRM, catch_signal);
-  signal (SIGTERM, catch_signal);
+  memset (&sigact, 0, sizeof (sigact));
+  sigact.sa_flags = SA_SIGINFO;
+  sigact.sa_sigaction = catch_signal;
+  sigaction (SIGPIPE, &sigact, NULL);
+  sigaction (SIGCONT, &sigact, NULL);
+  sigaction (SIGSTOP, &sigact, NULL);
+  sigaction (SIGINT, &sigact, NULL);
+  sigaction (SIGALRM, &sigact, NULL);
+  sigaction (SIGTERM, &sigact, NULL);
   signal (SIGCHLD, SIG_IGN);
 
   srandom (getpid ());
