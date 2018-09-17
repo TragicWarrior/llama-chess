@@ -842,8 +842,8 @@ piece_can_attack (GAME g, int rank, int file)
 
       if (e != E_PGN_OK && pgn_piece_to_int (d->sp.icon) == PAWN)
 	{
-	  int n = (d->sp.srow == 7 && rank == 5) ? 6 :
-	    (d->sp.srow == 2 && rank == 4) ? 3 : 0;
+	  int n = (d->sp.srow == 7 && islower (d->sp.icon) && rank == 5) ? 6 :
+	    (d->sp.srow == 2 && isupper (d->sp.icon) && rank == 4) ? 3 : 0;
 
 	  if (n && (file == d->c_col - 1 || file == d->c_col + 1))
 	    {
