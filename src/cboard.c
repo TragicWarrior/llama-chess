@@ -3635,9 +3635,10 @@ do_edit_insert ()
   struct userdata_s *d = gp->data;
 
   construct_message (_("Insert Piece"),
-		     _("P=pawn, R=rook, N=knight, B=bishop, "), 0, 0, NULL,
-		     NULL, d->b, do_edit_insert_finalize, 0, 0, NULL, "%s",
-		     _("Type the piece letter to insert. Lowercase "));
+		     _("P=pawn, R=rook, N=knight, B=bishop, Q=queen, K=king"),
+                     0, 0, NULL, NULL, d->b, do_edit_insert_finalize, 0, 0,
+                     NULL, "%s",
+		     _("Type the piece letter to insert. Lowercase for a black piece, uppercase for a white piece."));
 }
 
 void
