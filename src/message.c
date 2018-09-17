@@ -248,17 +248,15 @@ display_message (WIN * win)
 
   if (win->c != 0)
     {
-      if (win->c == KEY_DOWN || win->c == 'k' || win->c == KEY_UP
-	  || win->c == 'j')
+      if (win->c == KEY_DOWN || win->c == KEY_UP)
 	{
 	  int n = 3;
 
 	  n += m->extra ? 1 : 0;
 
 	  if ((n_lines + n) - m->offset >= LINES - 2)
-	    m->offset = win->c == KEY_DOWN || win->c == 'k'
-	      ? m->offset + 1 : m->offset - 1;
-	  else if (win->c == KEY_UP || win->c == 'j')
+	    m->offset = win->c == KEY_DOWN ? m->offset + 1 : m->offset - 1;
+	  else if (win->c == KEY_UP)
 	    m->offset--;
 
 	  if (m->offset < 0)
