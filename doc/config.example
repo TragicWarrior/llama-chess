@@ -245,6 +245,7 @@
 #bind any	"<^n>"		new_game
 #bind any	"<^k>"		new_all
 #bind any	"<^i>"		copy_game
+#bind any	"<^f>"		copy_game_fen
 #bind any	">"		next_game
 #bind any	"<"		prev_game
 #bind any	"j"		game_jump

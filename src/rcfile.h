@@ -74,6 +74,7 @@ static const struct custom_key_s
   {MODE_ANY, "new_game", do_global_new_game, 0},
   {MODE_ANY, "new_all", do_global_new_all, 0},
   {MODE_ANY, "copy_game", do_global_copy_game, 0},
+  {MODE_ANY, "copy_game_fen", do_global_copy_game_fen, 0},
   {MODE_ANY, "next_game", do_global_next_game, 1},
   {MODE_ANY, "prev_game", do_global_prev_game, 1},
   {MODE_ANY, "game_jump", do_global_game_jump, 1},

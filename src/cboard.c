@@ -5107,11 +5107,12 @@ do_global_new_game ()
 }
 
 void
-do_global_copy_game ()
+copy_game_common (int fen)
 {
   int g = gindex;
   int i, n;
-  struct userdata_s *d;
+  struct userdata_s *d = gp->data;
+  char *fentag = fen ? pgn_game_to_fen (gp, d->b) : NULL;
 
   do_global_new_game ();
   d = gp->data;
@@ -5120,29 +5121,51 @@ do_global_copy_game ()
   for (i = 0; i < n; i++)
     pgn_tag_add (&gp->tag, game[g]->tag[i]->name, game[g]->tag[i]->value);
 
-  pgn_board_init_fen (gp, d->b, NULL);
-  n = pgn_history_total (game[g]->history);
-
-  // FIXME RAV
-  for (i = 0; i < n; i++)
+  if (fentag)
     {
-      char *frfr = NULL;
-      char *move = strdup (game[g]->history[i]->move);
+      pgn_tag_add (&gp->tag, (char *) "SetUp", (char *) "1");
+      pgn_tag_add (&gp->tag, (char *) "FEN", fentag);
+      free (fentag);
+      pgn_tag_sort (gp->tag);
+    }
+  else
+    {
+      pgn_board_init_fen (gp, d->b, NULL);
+      n = pgn_history_total (game[g]->history);
 
-      if (pgn_parse_move (gp, d->b, &move, &frfr) != E_PGN_OK)
-	{
-	  free (move);
-	  SET_FLAG (gp->flags, GF_PERROR);
-	  return;
-	}
+      // FIXME RAV
+      for (i = 0; i < n; i++)
+        {
+          char *frfr = NULL;
+          char *move = strdup (game[g]->history[i]->move);
 
-      pgn_history_add (gp, d->b, move);
-      free (move);
-      free (frfr);
-      pgn_switch_turn (gp);
+          if (pgn_parse_move (gp, d->b, &move, &frfr) != E_PGN_OK)
+            {
+              free (move);
+              SET_FLAG (gp->flags, GF_PERROR);
+              return;
+            }
+
+          pgn_history_add (gp, d->b, move);
+          free (move);
+          free (frfr);
+          pgn_switch_turn (gp);
+        }
     }
 
   pgn_board_update (gp, d->b, pgn_history_total (gp->hp));
+}
+
+void
+do_global_copy_game ()
+{
+  copy_game_common (0);
+}
+
+void
+do_global_copy_game_fen ()
+{
+  copy_game_common (1);
 }
 
 void

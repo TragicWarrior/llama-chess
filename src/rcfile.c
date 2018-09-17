@@ -341,6 +341,8 @@ set_default_keys ()
 		   _("new game from scratch"), 0);
   add_key_binding (&global_keys, do_global_copy_game, CTRL_KEY ('i'),
 		   _("copy current game"), 0);
+  add_key_binding (&global_keys, do_global_copy_game_fen, CTRL_KEY ('f'),
+		   _("copy current game as FEN tag"), 0);
   add_key_binding (&global_keys, do_global_next_game, '>', _("next game"), 1);
   add_key_binding (&global_keys, do_global_prev_game, '<', _("previous game"),
 		   1);

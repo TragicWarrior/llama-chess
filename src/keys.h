@@ -115,6 +115,7 @@ key_func do_global_find_prev;
 key_func do_global_new_game;
 key_func do_global_new_all;
 key_func do_global_copy_game;
+key_func do_global_copy_game_fen;
 key_func do_global_next_game;
 key_func do_global_prev_game;
 key_func do_global_game_jump;
