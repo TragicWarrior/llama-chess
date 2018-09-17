@@ -3648,8 +3648,11 @@ do_edit_enpassant ()
 
   if (d->c_row == 6 || d->c_row == 3)
     {
+      int n = d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].enpassant;
+
       pgn_reset_enpassant (d->b);
-      d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].enpassant = 1;
+      if (!n)
+        d->b[RANKTOBOARD (d->c_row)][FILETOBOARD (d->c_col)].enpassant = 1;
     }
 }
 
