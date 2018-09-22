@@ -692,6 +692,34 @@ parse_macro_desc (const char *filename, int lines, wchar_t **val)
   return buf;
 }
 
+static const wchar_t *
+command_name (struct key_s *k)
+{
+  int i;
+
+  for (i = 0; config_keys[i].name; i++)
+    {
+      if (config_keys[i].func == k->f)
+        return str_to_wchar (config_keys[i].name);
+    }
+
+  return NULL;
+}
+
+static const wchar_t *
+macro_name (wint_t c, int mode)
+{
+  int i;
+
+  for (i = 0; macros[i]; i++)
+    {
+      if (macros[i]->c == c && macros[i]->mode == mode)
+        return macros[i]->desc;
+    }
+
+  return NULL;
+}
+
 static void
 parse_macro (const char *filename, int lines, char *val)
 {
@@ -703,6 +731,7 @@ parse_macro (const char *filename, int lines, char *val)
   int i = 0;
   wchar_t *p;
   const char *dupmode = NULL;
+  struct key_s *keydef = NULL;
 
   n = sscanf (val, "%s %ls %2047lc", mode, key, keys);
 
@@ -736,20 +765,29 @@ parse_macro (const char *filename, int lines, char *val)
           break;
         }
 
-      dupmode = key_lookup_by_keycode (global_keys, c) ? "any" : NULL;
-      if (dupmode)
-        break;
+      keydef = key_lookup_by_keycode (global_keys, c);
+      if (keydef)
+        {
+          dupmode = "any";
+          break;
+        }
 
       switch (m)
         {
         case MODE_PLAY:
-          dupmode = key_lookup_by_keycode (play_keys, c) ? "play" : NULL;
+          keydef = key_lookup_by_keycode (play_keys, c);
+          if (keydef)
+            dupmode = "play";
           break;
         case MODE_HISTORY:
-          dupmode = key_lookup_by_keycode (history_keys, c) ? "history" : NULL;
+          keydef = key_lookup_by_keycode (history_keys, c);
+          if (keydef)
+            dupmode = "history";
           break;
         case MODE_EDIT:
-          dupmode = key_lookup_by_keycode (edit_keys, c) ? "edit" : NULL;
+          keydef = key_lookup_by_keycode (edit_keys, c);
+          if (keydef)
+            dupmode = "edit";
           break;
         default:
           break;
@@ -761,8 +799,9 @@ parse_macro (const char *filename, int lines, char *val)
 
   if (dupmode)
     errx (EXIT_FAILURE,
-          _("%s(%i): macro definition in mode \"%s\" conflicts with existing key in mode \"%s\""),
-          filename, lines, mode, dupmode);
+          _("%s(%i): macro definition in mode \"%s\" conflicts with existing key in mode \"%s\" (command=%ls)"),
+          filename, lines, mode, dupmode,
+          keydef ? command_name (keydef) : macro_name (c, m));
 
   macros = Realloc (macros, (i + 2) * sizeof (struct macro_s *));
   macros[i] = Calloc (1, sizeof (struct macro_s));
