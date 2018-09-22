@@ -5677,7 +5677,10 @@ game_loop ()
 	      if (macros && macro_match >= 0)
 		{
 		  if (macros[macro_match]->n >= macros[macro_match]->total)
-		    reset_macros ();
+                    {
+                      reset_macros ();
+                      goto refresh;
+                    }
 		  else
 		    {
 		      input_c = macros[macro_match]->keys[macros[macro_match]->n++];
