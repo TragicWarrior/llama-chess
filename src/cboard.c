@@ -818,7 +818,7 @@ piece_can_attack (GAME g, int rank, int file)
       row = d->c_row;
     }
 
-  m = malloc (MAX_SAN_MOVE_LEN + 1);
+  m = Malloc (MAX_SAN_MOVE_LEN + 1);
   m[0] = INTTOFILE (file);
   m[1] = INTTORANK (rank);
   m[2] = INTTOFILE (col);
@@ -853,7 +853,7 @@ piece_can_attack (GAME g, int rank, int file)
 		pgn_int_to_piece (WHITE, OPEN_SQUARE);
 	      b[RANKTOBOARD (row)][FILETOBOARD (col)].icon = p;
 	      b[RANKTOBOARD (n)][FILETOBOARD (d->sp.scol)].enpassant = 1;
-	      m = malloc (MAX_SAN_MOVE_LEN + 1);
+	      m = Malloc (MAX_SAN_MOVE_LEN + 1);
 	      m[0] = INTTOFILE (file);
 	      m[1] = INTTORANK (rank);
 	      m[2] = INTTOFILE (col);
@@ -5451,13 +5451,11 @@ again:
 
 	  if (!macro_depth_n && macro_match > -1)
 	    {
-	      macro_depth =
-		realloc (macro_depth, (macro_depth_n + 1) * sizeof (int));
+	      macro_depth = Realloc (macro_depth, (macro_depth_n + 1) * sizeof (int));
 	      macro_depth[macro_depth_n++] = macro_match;
 	    }
 
-	  macro_depth =
-	    realloc (macro_depth, (macro_depth_n + 1) * sizeof (int));
+	  macro_depth = Realloc (macro_depth, (macro_depth_n + 1) * sizeof (int));
 	  macro_depth[macro_depth_n++] = i;
 	  macro_match = i;
 	  goto again;
@@ -5682,8 +5680,7 @@ game_loop ()
 		    reset_macros ();
 		  else
 		    {
-		      input_c =
-			macros[macro_match]->keys[macros[macro_match]->n++];
+		      input_c = macros[macro_match]->keys[macros[macro_match]->n++];
 		      find_macro (d);
 		    }
 		}

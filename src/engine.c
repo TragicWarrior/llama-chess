@@ -205,7 +205,7 @@ parseargs (char *str)
   if (!str)
     return NULL;
 
-  if (!(pptr = malloc (sizeof (char *))))
+  if (!(pptr = Malloc (sizeof (char *))))
     return NULL;
 
   for (i = 0, s = str; *s; lastchar = *s++)
@@ -219,7 +219,7 @@ parseargs (char *str)
       if (*s == ' ' && !quote)
 	{
 	  arg[i] = 0;
-	  pptr = realloc (pptr, (n + 2) * sizeof (char *));
+	  pptr = Realloc (pptr, (n + 2) * sizeof (char *));
 	  pptr[n++] = strdup (arg);
 	  arg[0] = i = 0;
 	  continue;
@@ -235,7 +235,7 @@ parseargs (char *str)
 
   if (arg[0])
     {
-      pptr = realloc (pptr, (n + 2) * sizeof (char *));
+      pptr = Realloc (pptr, (n + 2) * sizeof (char *));
       pptr[n++] = strdup (arg);
     }
 

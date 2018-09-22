@@ -61,7 +61,7 @@ add_input_history (int which, const char *str)
   if (input_history[which])
     for (p = input_history[which]->head; p->next; p = p->next);
 
-  new = calloc (1, sizeof (struct input_history_s));
+  new = Calloc (1, sizeof (struct input_history_s));
   if (!new)
     {
       fprintf (stderr, "Out of core!\n");
