@@ -101,5 +101,6 @@ void set_default_keys ();
 const wchar_t *key_lookup (struct key_s **keys, key_func f);
 wint_t keycode_lookup (struct key_s **keys, key_func f);
 char *fancy_key_name (wint_t c);
+struct key_s * key_lookup_by_keycode (struct key_s **keys, wint_t c);
 
 #endif

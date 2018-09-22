@@ -702,6 +702,7 @@ parse_macro (const char *filename, int lines, char *val)
   wint_t c;
   int i = 0;
   wchar_t *p;
+  const char *dupmode = NULL;
 
   n = sscanf (val, "%s %ls %2047lc", mode, key, keys);
 
@@ -725,6 +726,43 @@ parse_macro (const char *filename, int lines, char *val)
 
   if (macros)
     for (i = 0; macros[i]; i++);
+
+  for (n = 0; n < i; n++)
+    {
+      if (macros[n]->c == c && (macros[n]->mode == m || m == MODE_ANY
+                                || macros[n]->mode == MODE_ANY))
+        {
+          dupmode = macros[n]->mode == m ? mode : "any";
+          break;
+        }
+
+      dupmode = key_lookup_by_keycode (global_keys, c) ? "any" : NULL;
+      if (dupmode)
+        break;
+
+      switch (m)
+        {
+        case MODE_PLAY:
+          dupmode = key_lookup_by_keycode (play_keys, c) ? "play" : NULL;
+          break;
+        case MODE_HISTORY:
+          dupmode = key_lookup_by_keycode (history_keys, c) ? "history" : NULL;
+          break;
+        case MODE_EDIT:
+          dupmode = key_lookup_by_keycode (edit_keys, c) ? "edit" : NULL;
+          break;
+        default:
+          break;
+        }
+
+      if (dupmode)
+        break;
+    }
+
+  if (dupmode)
+    errx (EXIT_FAILURE,
+          _("%s(%i): macro definition in mode \"%s\" conflicts with existing key in mode \"%s\""),
+          filename, lines, mode, dupmode);
 
   macros = Realloc (macros, (i + 2) * sizeof (struct macro_s *));
   macros[i] = Calloc (1, sizeof (struct macro_s));
@@ -1052,4 +1090,18 @@ keycode_lookup (struct key_s **keys, key_func f)
   struct key_s *k = find_key (keys, f);
 
   return k ? k->c : 0;
+}
+
+struct key_s *
+key_lookup_by_keycode (struct key_s **keys, wint_t c)
+{
+  int i;
+
+  for (i = 0; keys[i]; i++)
+    {
+      if (keys[i]->c == c)
+        return keys[i];
+    }
+
+  return NULL;
 }
