@@ -1,2 +1,2 @@
 ?package(cboard):needs="text" section="Games/Board"\
-  title="CBoard" command="/usr/bin/cboard"
+  title="CBoard" command="/usr/games/cboard"
