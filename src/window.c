@@ -27,6 +27,9 @@
 #include "misc.h"
 #include "window.h"
 
+WIN **wins;
+wint_t pushkey;
+
 /*
  * Creates a new window on the 'wins' stack. Returns the newly create window
  * structure. The 'func' parameter is a function pointer that is called from

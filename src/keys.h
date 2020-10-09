@@ -56,12 +56,13 @@ struct macro_s
   int n;
   int total;
   int mode;
-} **macros;
+};
 
-int *macro_depth;
-int macro_depth_n;
+extern struct macro_s **macros;
+extern int *macro_depth;
+extern int macro_depth_n;
 
-struct key_s **history_keys;
+extern struct key_s **history_keys;
 key_func do_history_jump_next;
 key_func do_history_jump_prev;
 key_func do_history_next;
@@ -78,7 +79,7 @@ key_func do_history_rav_prev;
 key_func do_history_menu;
 key_func do_history_toggle;
 
-struct key_s **edit_keys;
+extern struct key_s **edit_keys;
 key_func do_edit_select;
 key_func do_edit_commit;
 key_func do_edit_cancel_selected;
@@ -89,7 +90,7 @@ key_func do_edit_enpassant;
 key_func do_edit_switch_turn;
 key_func do_edit_exit;
 
-struct key_s **play_keys;
+extern struct key_s **play_keys;
 key_func do_play_select;
 key_func do_play_commit;
 key_func do_play_cancel_selected;
@@ -106,7 +107,7 @@ key_func do_play_history_mode;
 key_func do_play_edit_mode;
 key_func do_play_toggle_strict_castling;
 
-struct key_s **global_keys;
+extern struct key_s **global_keys;
 key_func do_global_tag_edit;
 key_func do_global_tag_view;
 key_func do_global_find_new;

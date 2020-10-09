@@ -59,6 +59,11 @@ static long pgn_fsize;
 static int pgn_rav;
 static RAV *pgn_rav_p;
 
+GAME *game;
+int gindex, gtotal;
+struct pgn_config_s pgn_config;
+int parsing_file;
+
 #ifdef __linux__
 extern char *strptime (const char *, const char *, struct tm *);
 #endif

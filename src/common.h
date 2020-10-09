@@ -149,7 +149,7 @@ struct userdata_s
 };
 
 /* A pointer to the game in focus. */
-GAME gp;
+extern GAME gp;
 
 void gameover (GAME);
 void update_cursor (GAME, int);

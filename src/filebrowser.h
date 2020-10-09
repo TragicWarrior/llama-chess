@@ -27,8 +27,8 @@ struct file_s
   char *st;
 };
 
-struct file_s **files;
-char *oldwd;
+extern struct file_s **files;
+extern char *oldwd;
 
 void file_browser (void *arg);
 

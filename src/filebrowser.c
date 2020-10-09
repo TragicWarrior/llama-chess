@@ -51,6 +51,9 @@
 #include "keys.h"
 #include "rcfile.h"
 
+struct file_s **files;
+char *oldwd;
+
 static void
 free_file_browser ()
 {

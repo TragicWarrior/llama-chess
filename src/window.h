@@ -56,8 +56,8 @@ struct window_s
   int freedata;			// Whether or not to free() .data when destroying
 };
 
-WIN **wins;
-wint_t pushkey;
+extern WIN **wins;
+extern wint_t pushkey;
 
 WIN *window_create (const char *title, int h, int w, int y, int x,
 		    window_func, void *data, window_exit_func,

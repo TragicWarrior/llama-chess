@@ -41,6 +41,15 @@
 #include "rcfile.h"
 #include "common.h"
 
+struct config_s config;
+int *macro_depth;
+int macro_depth_n;
+struct key_s **history_keys;
+struct key_s **edit_keys;
+struct key_s **play_keys;
+struct key_s **global_keys;
+struct macro_s **macros;
+
 static int
 attributes (const char *filename, int line, char *str)
 {

@@ -145,12 +145,12 @@ typedef struct game_s
 /*
  * Global GAME array. pgn_new_game() appends to this array.
  */
-GAME *game;
+extern GAME *game;
 
 /*
  * 'gindex' and 'gtotal' are the current and total number of games in 'game'.
  */
-int gindex, gtotal;
+extern int gindex, gtotal;
 
 /*
  * Library configuration flags. These will affect all games.

@@ -215,6 +215,8 @@ static void do_play_help ();
 static void do_history_help ();
 static void do_edit_help ();
 
+GAME gp;
+
 void
 coordofmove (GAME g, char *move, char *prow, char *pcol)
 {

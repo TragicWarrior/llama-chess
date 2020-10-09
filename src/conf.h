@@ -69,7 +69,7 @@ struct config_key_s
   wchar_t *str;
 };
 
-struct
+struct config_s
 {
   int jumpcount;		// KEY_UP and KEY_DOWN in history mode.
   int linegraphics;		// Board line graphics.
@@ -104,6 +104,8 @@ struct
   int utf8_pieces;		// For the board only.
   char bprevmove;
   char *turn_cmd;		// Command to be run when its human turn.
-} config;
+};
+
+extern struct config_s config;
 
 #endif
