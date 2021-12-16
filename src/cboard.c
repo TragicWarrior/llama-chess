@@ -923,7 +923,7 @@ print_piece (WINDOW * w, int l, int c, char p)
     }
 
   for (y = 0; y < 3; y++)
-    mvwprintw (w, l + y, c, f_pieces[0]);
+    mvwprintw (w, l + y, c, "%s", f_pieces[0]);
 }
 
 void
@@ -2285,7 +2285,8 @@ find_game_exp (char *str, int which, int count)
   int found = 0;
   int incr = (which == 0) ? -(1) : 1;
 
-  strncpy (buf, str, sizeof (buf) - 1);
+  strncpy (buf, str, sizeof (buf));
+  buf[sizeof (buf)-1] = 0;
   tmp = buf;
 
   if (strstr (tmp, ":") != NULL)
