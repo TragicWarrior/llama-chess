@@ -686,7 +686,7 @@ parse_macro_desc (const char *filename, int lines, wchar_t **val)
       *b++ = *p;
     }
 
-  if (!isspace (*p) || !*(p+1))
+  if (!p || !isspace (*p) || !*(p+1))
     {
       fprintf(stderr, _ ("%s(%i): parse error\n"), filename, lines);
       free (buf);

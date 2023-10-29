@@ -392,7 +392,9 @@ get_nag_items (WIN * win)
 	items[i]->selected = 0;
     }
 
-  items[i] = NULL;
+  if (items)
+    items[i] = NULL;
+
   m->nofree = 1;
   m->items = items;
   return items;
@@ -451,7 +453,7 @@ view_nag (void *arg)
 
       if (h->nag[i] >= nag_total)
 	strncat (line, itoa (h->nag[i], buf2), sizeof (line) - 1);
-      else
+      else if (nags)
 	strncat (line, nags[h->nag[i]], sizeof (line) - 1);
 
       strncat (line, "\n", sizeof (line) - 1);
@@ -2064,7 +2066,7 @@ append_enginebuf (GAME g, char *line)
   if (d->engine->enginebuf)
     for (i = 0; d->engine->enginebuf[i]; i++);
 
-  if (i >= LINES - 3)
+  if (d->engine->enginebuf && i >= LINES - 3)
     {
       free (d->engine->enginebuf[0]);
 

@@ -112,7 +112,9 @@ get_cc_items (WIN * win)
       items[i]->selected = 0;
     }
 
-  items[i] = NULL;
+  if (items)
+    items[i] = NULL;
+
   m->total = i;
   m->items = items;
   m->nofree = 1;
@@ -226,7 +228,9 @@ get_tag_items (WIN * win)
       items[i]->selected = 0;
     }
 
-  items[i] = NULL;
+  if (items)
+    items[i] = NULL;
+
   m->total = i;
   m->items = items;
   m->nofree = 1;
