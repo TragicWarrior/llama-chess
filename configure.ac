@@ -155,6 +155,7 @@ if test "x$have_ptmx" = "xyes"; then
     AC_LANG([C])
     AC_RUN_IFELSE([AC_LANG_SOURCE([[\
 		   #include <stdio.h>
+		   #include <stdlib.h>
 		   #include <sys/types.h>
 		   #include <sys/stat.h>
 		   #include <fcntl.h>
