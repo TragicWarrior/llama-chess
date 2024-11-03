@@ -3,9 +3,9 @@ AC_PREREQ(2.60)
 AC_INIT(cboard, 0.7.6-dev, [Ben Kibbey <bjk@luxsci.net>])
 AC_CONFIG_AUX_DIR(build)
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
+AM_INIT_AUTOMAKE([subdir-objects foreign dist-bzip2 no-dist-gzip])
 AC_USE_SYSTEM_EXTENSIONS()
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.19.8])
 
@@ -34,8 +34,8 @@ AX_WITH_CURSES_PANEL
 AX_WITH_CURSES_MENU
 AX_WITH_CURSES_FORM
 
-AC_ARG_WITH(libperl, AC_HELP_STRING([--with-libperl], [PERL support.]),
-    want_libperl=yes, want_libperl=no)
+AC_ARG_WITH(libperl, AS_HELP_STRING([--with-libperl], [PERL support.]),
+    [want_libperl=yes], [want_libperl=no])
 
 AC_MSG_CHECKING([if PERL support is wanted])
 AC_MSG_RESULT($want_libperl)
@@ -63,7 +63,6 @@ AM_CONDITIONAL([WITH_LIBPERL], [test "$have_libperl" = "yes"])
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT
-AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h paths.h sys/socket.h limits.h sys/time.h unistd.h \
 		  stdlib.h string.h strings.h wchar.h getopt.h sys/param.h \
                   regex.h stdarg.h paths.h])
@@ -108,7 +107,6 @@ AC_HEADER_STDBOOL
 AC_C_CONST
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
-AC_HEADER_TIME
 AC_STRUCT_TM
 
 dnl Checks for library functions.
@@ -119,7 +117,6 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_SELECT_ARGTYPES
-AC_TYPE_SIGNAL
 AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([bzero dup2 getcwd gethostbyname memset mkdir mkfifo regcomp \
@@ -139,7 +136,7 @@ AC_DEFUN([AC_DEBUG],
     AM_CONDITIONAL([WITH_DEBUG], [test "$ac_cv_sys_debug" = "yes"])
 ])
 
-AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debugging.]),
+AC_ARG_ENABLE(debug, AS_HELP_STRING([--enable-debug], [Enable debugging.]),
     AC_DEBUG([$enableval]), AC_DEBUG)
 
 AC_MSG_CHECKING([for Unix98 pty support])
