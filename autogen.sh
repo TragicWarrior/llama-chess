@@ -27,7 +27,7 @@ echo Running autoreconf...
 autoreconf --force --install
 
 # For the Debian package build
-test -d debian && {
+test -f /etc/debian_version && test -d debian && {
 	# link these in Debian builds
 	rm -f config.sub config.guess
 	ln -s /usr/share/misc/config.sub .
