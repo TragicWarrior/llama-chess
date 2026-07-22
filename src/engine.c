@@ -54,6 +54,7 @@
 #include "window.h"
 #include "message.h"
 #include "engine.h"
+#include "ui_screen.h"
 
 int
 send_signal_to_engine (pid_t pid, int sig)
@@ -413,8 +414,7 @@ start_chess_engine (GAME g)
 
   d->engine->status = ENGINE_INITIALIZING;
   update_status_window (g);
-  update_panels ();
-  doupdate ();
+  cboard_ui_refresh ();
 
   switch (exec_chess_engine (g, args))
     {

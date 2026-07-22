@@ -43,10 +43,24 @@ if(NOT CURSES_FOUND)
   find_package(Curses REQUIRED)
 endif()
 
-# Panel / menu / form companion libraries (wide variants preferred).
-find_library(PANEL_LIBRARY NAMES panelw panel REQUIRED)
+# Menu / form companion libraries (wide variants preferred).
+# Panel is no longer required: chrome/modals use VDK widgets.
 find_library(MENU_LIBRARY NAMES menuw menu REQUIRED)
 find_library(FORM_LIBRARY NAMES formw form REQUIRED)
+
+# ---------------------------------------------------------------------------
+# libviper / VDK (sibling source tree by default, same pattern as vwm)
+# ---------------------------------------------------------------------------
+set(LIBVIPER_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../libviper"
+    CACHE PATH "Path to the libviper source tree (contains vdk/, vkmio/, libvdk.so)")
+get_filename_component(LIBVIPER_SOURCE_DIR "${LIBVIPER_SOURCE_DIR}" ABSOLUTE)
+if(NOT EXISTS "${LIBVIPER_SOURCE_DIR}/libvdk.so")
+  message(FATAL_ERROR
+    "libvdk.so not found at ${LIBVIPER_SOURCE_DIR}/libvdk.so.\n"
+    "Build libviper first (cmake . && make in its checkout), or pass "
+    "-DLIBVIPER_SOURCE_DIR=<path> to point at your libviper checkout.")
+endif()
+set(VDK_LIBRARY "${LIBVIPER_SOURCE_DIR}/libvdk.so")
 
 # ---------------------------------------------------------------------------
 # Header checks
@@ -335,9 +349,9 @@ endif()
 message(STATUS "")
 message(STATUS "CBoard ${PROJECT_VERSION}")
 message(STATUS "  Curses:     ${CURSES_LIBRARIES}")
-message(STATUS "  Panel:      ${PANEL_LIBRARY}")
 message(STATUS "  Menu:       ${MENU_LIBRARY}")
 message(STATUS "  Form:       ${FORM_LIBRARY}")
+message(STATUS "  VDK:        ${VDK_LIBRARY}")
 message(STATUS "  PERL:       ${WITH_LIBPERL}")
 message(STATUS "  Debug:      ${ENABLE_DEBUG}")
 message(STATUS "  NLS:        ${CBOARD_HAS_NLS}")

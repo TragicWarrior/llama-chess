@@ -7,9 +7,14 @@ Requirements
 * A C compiler (GCC or Clang)
 * CMake 3.16 or newer
 * NCurses (wide-character build preferred: ncursesw)
-* Curses panel, menu and form libraries
+* Curses menu and form libraries
+* libviper / VDK (libvdk) — sibling checkout at ../libviper by default
 * gettext / libintl (optional, for translations)
 * libperl (optional, for the PERL plugin)
+
+Build libviper first (once):
+
+    cd ../libviper && cmake . && make
 
 Basic build
 -----------
@@ -17,6 +22,10 @@ Basic build
     cmake -S . -B build
     cmake --build build
     sudo cmake --install build
+
+If libviper is not a sibling of cboard:
+
+    cmake -S . -B build -DLIBVIPER_SOURCE_DIR=/path/to/libviper
 
 Or with a custom prefix:
 

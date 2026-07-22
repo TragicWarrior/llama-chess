@@ -14,6 +14,8 @@ set(CBOARD_SOURCES
   colors.h
   window.c
   window.h
+  ui_screen.c
+  ui_screen.h
   conf.h
   common.h
   menu.c
@@ -37,6 +39,11 @@ target_include_directories(cboard
     ${CMAKE_SOURCE_DIR}/libchess
     ${CURSES_INCLUDE_DIRS}
 )
+# VDK headers: SYSTEM so toolkit warnings don't drown ours.
+target_include_directories(cboard SYSTEM PRIVATE
+  ${LIBVIPER_SOURCE_DIR}/vdk
+  ${LIBVIPER_SOURCE_DIR}/vkmio
+)
 
 target_compile_definitions(cboard
   PRIVATE
@@ -53,9 +60,15 @@ target_link_libraries(cboard
   PRIVATE
     chess
     ${CURSES_LIBRARIES}
-    ${PANEL_LIBRARY}
     ${MENU_LIBRARY}
     ${FORM_LIBRARY}
+    "${VDK_LIBRARY}"
+)
+
+# Ensure the build tree finds sibling libvdk.so without install.
+set_target_properties(cboard PROPERTIES
+  BUILD_RPATH "${LIBVIPER_SOURCE_DIR}"
+  INSTALL_RPATH_USE_LINK_PATH TRUE
 )
 
 if(CBOARD_HAS_NLS AND Intl_FOUND)

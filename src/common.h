@@ -39,15 +39,7 @@
 #error "SysV or X/Open-compatible Curses header file required"
 #endif
 
-#if defined(HAVE_NCURSESW_PANEL_H)
-#include <ncursesw/panel.h>
-#elif defined(HAVE_NCURSES_PANEL_H)
-#include <ncurses/panel.h>
-#elif defined(HAVE_PANEL_H)
-#include <panel.h>
-#else
-#error "SysV-compatible Curses Panel header file required"
-#endif
+/* ncurses PANEL is no longer used; VDK (libvdk) composites widgets. */
 
 #if defined(HAVE_NCURSESW_MENU_H)
 #include <ncursesw/menu.h>

@@ -40,6 +40,7 @@
 #include "misc.h"
 #include "window.h"
 #include "message.h"
+#include "ui_screen.h"
 
 static void
 wordwrap_lines (wchar_t *** olines, int *nlines, int *width)
@@ -297,8 +298,10 @@ message_resize_func (WIN *w)
 
   m->h = w->rows = rows >= LINES - 5 ? LINES - 1 : rows + 5;
   m->w = w->cols = w->cols > COLS - 2 ? COLS - 2 : w->cols;
-  wresize (w->w, w->rows, w->cols);
-  move_panel (w->p, CALCPOSY (w->rows), CALCPOSX (w->cols));
+  w->posy = CALCPOSY (w->rows);
+  w->posx = CALCPOSX (w->cols);
+  w->w = cboard_ui_widget_resize (w->vk, w->rows, w->cols);
+  cboard_ui_widget_move (w->vk, w->posy, w->posx);
   wclear (w->w);
   w->func (w);
 }

@@ -26,6 +26,7 @@
 #include "common.h"
 #include "misc.h"
 #include "window.h"
+#include "ui_screen.h"
 
 WIN **wins;
 wint_t pushkey;
@@ -47,17 +48,37 @@ window_create (const char *title, int h, int w, int y, int x,
 
   wins = Realloc (wins, (i + 2) * sizeof (WIN *));
   wins[i] = Calloc (1, sizeof (WIN));
-  wins[i]->w = newwin (h, w, y, x);
-  wins[i]->p = new_panel (wins[i]->w);
+  wins[i]->vk = cboard_ui_widget_new (h, w, y, x);
+  wins[i]->w = cboard_ui_widget_canvas (wins[i]->vk);
   wins[i]->data = data;
   wins[i]->rows = h;
   wins[i]->cols = w;
+  wins[i]->posy = y;
+  wins[i]->posx = x;
   wins[i]->func = func;
   wins[i]->efunc = efunc;
   wins[i]->rfunc = rfunc;
   wins[i]->title = (title) ? strdup (title) : NULL;
   wins[i + 1] = NULL;
   return wins[i];
+}
+
+static void
+window_free_one (WIN * win)
+{
+  if (!win)
+    return;
+
+  free (win->title);
+  if (win->vk)
+    cboard_ui_widget_destroy (win->vk);
+  win->vk = NULL;
+  win->w = NULL;
+
+  if (win->freedata && win->data)
+    free (win->data);
+
+  free (win);
 }
 
 void
@@ -76,16 +97,7 @@ window_destroy (WIN * win)
       if (win && win == wins[i])
 	win = NULL;
 
-      free (wins[i]->title);
-      if (wins[i]->p)
-	del_panel (wins[i]->p);
-
-      delwin (wins[i]->w);
-
-      if (wins[i]->freedata && wins[i]->data)
-	free (wins[i]->data);
-
-      free (wins[i]);
+      window_free_one (wins[i]);
       wins[i] = NULL;
     }
 
@@ -93,20 +105,18 @@ window_destroy (WIN * win)
     {
       if (win && !win->keep && win == wins[i])
 	{
-	  if (win->p)
-	    del_panel (win->p);
-
-	  free (win->title);
-	  delwin (win->w);
-	  free (win);
+	  window_free_one (win);
 	  win = NULL;
 	  continue;
 	}
 
       if (win && win->keep && win == wins[i])
 	{
-	  del_panel (win->p);
-	  win->p = NULL;
+	  /* Detach from paint order but keep WIN until keep is cleared. */
+	  if (win->vk)
+	    {
+	      cboard_ui_widget_hide (win->vk);
+	    }
 	}
 
       new = Realloc (new, (n + 2) * sizeof (WIN *));

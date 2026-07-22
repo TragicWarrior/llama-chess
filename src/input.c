@@ -40,6 +40,7 @@
 #include "common.h"
 #include "keys.h"
 #include "rcfile.h"
+#include "ui_screen.h"
 
 static struct input_history_s
 {
@@ -305,7 +306,9 @@ done:
 static void
 input_resize_func (WIN *w)
 {
-  move_panel (w->p, CALCPOSY (w->rows), CALCPOSX (w->cols));
+  w->posy = CALCPOSY (w->rows);
+  w->posx = CALCPOSX (w->cols);
+  cboard_ui_widget_move (w->vk, w->posy, w->posx);
 }
 
 /*

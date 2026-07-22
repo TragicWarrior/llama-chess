@@ -35,7 +35,8 @@ typedef void (window_resize_func) (WIN *);
 struct window_s
 {
   WINDOW *w;
-  PANEL *p;
+  /* VDK canvas widget (opaque cboard_widget_t *); replaces ncurses PANEL. */
+  void *vk;
   int rows;
   int cols;
   int posy;
@@ -44,7 +45,7 @@ struct window_s
   /*
    * Function that is called when a key is pressed from game_loop(). This is
    * the only place where a key is gotten from. This is for the top window
-   * (LIFO). When the function returns -1, the window is destroyed and the
+   * (LIFO). When the function returns 0, the window is destroyed and the
    * top becomes top - 1.
    */
   window_func *func;

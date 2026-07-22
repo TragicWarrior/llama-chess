@@ -11,8 +11,10 @@ NCurses to be installed to make porting to other operating systems
 easier. There are known issues with Sun/Solaris and NetBSD, although
 CBoard has been tested to work well on OpenBSD, FreeBSD and Linux.
 
-Build with CMake (see INSTALL for details):
+Build with CMake (see INSTALL for details). Requires a built sibling
+libviper (VDK) checkout:
 
+     (cd ../libviper && cmake . && make)
      cmake -S . -B build && cmake --build build
      sudo cmake --install build
 

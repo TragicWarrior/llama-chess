@@ -64,6 +64,7 @@
 #include "keys.h"
 #include "rcfile.h"
 #include "filebrowser.h"
+#include "ui_screen.h"
 
 #ifdef DEBUG
 #include <debug.h>
@@ -99,17 +100,17 @@ enum
 };
 
 static WINDOW *boardw;
-static PANEL *boardp;
+static cboard_widget_t *board_vk;
 static WINDOW *tagw;
-static PANEL *tagp;
+static cboard_widget_t *tag_vk;
 static WINDOW *statusw;
-static PANEL *statusp;
+static cboard_widget_t *status_vk;
 static WINDOW *historyw;
-static PANEL *historyp;
+static cboard_widget_t *history_vk;
 static WINDOW *loadingw;
-static PANEL *loadingp;
+static cboard_widget_t *loading_vk;
 static WINDOW *enginew;
-static PANEL *enginep;
+static cboard_widget_t *engine_vk;
 
 static char gameexp[255];
 static char moveexp[255];
@@ -2090,6 +2091,9 @@ update_engine_window (GAME g)
   int i;
   struct userdata_s *d = g->data;
 
+  if (!enginew)
+    return;
+
   wmove (enginew, 0, 0);
   wclrtobot (enginew);
 
@@ -2120,8 +2124,7 @@ update_all (GAME g)
   update_history_window (g);
   update_tag_window (g->tag);
   update_engine_window (g);
-  update_panels ();
-  doupdate ();
+  cboard_ui_refresh ();
 }
 
 static void
@@ -2459,14 +2462,16 @@ rav_next_prev (GAME g, BOARD b, int n)
 static void
 draw_window_decor ()
 {
-  move_panel (boardp, 0, (config.boardleft) ? 0 : COLS - BOARD_WIDTH);
-  move_panel (historyp, LINES - HISTORY_HEIGHT,
-	      (config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH : 0 :
-	      (MEGA_BOARD) ? 0 : COLS - HISTORY_WIDTH);
-  move_panel (statusp, 0, (config.boardleft) ? BOARD_WIDTH : 0);
-  move_panel (tagp, STATUS_HEIGHT + 1,
-	      (config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH :
-	      HISTORY_WIDTH : 0);
+  cboard_ui_widget_move (board_vk, 0,
+			 (config.boardleft) ? 0 : COLS - BOARD_WIDTH);
+  cboard_ui_widget_move (history_vk, LINES - HISTORY_HEIGHT,
+			 (config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH : 0 :
+			 (MEGA_BOARD) ? 0 : COLS - HISTORY_WIDTH);
+  cboard_ui_widget_move (status_vk, 0,
+			 (config.boardleft) ? BOARD_WIDTH : 0);
+  cboard_ui_widget_move (tag_vk, STATUS_HEIGHT + 1,
+			 (config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH :
+			 HISTORY_WIDTH : 0);
 
   wbkgd (boardw, CP_BOARD_WINDOW);
   wbkgd (statusw, CP_STATUS_WINDOW);
@@ -2504,24 +2509,37 @@ do_window_resize ()
   if (LINES < 23 || COLS < 74)
     return;
 
-  resizeterm (LINES, COLS);
-  endwin ();
-  wresize (boardw, BOARD_HEIGHT, BOARD_WIDTH);
-  wresize (historyw, HISTORY_HEIGHT, HISTORY_WIDTH);
-  wresize (statusw, STATUS_HEIGHT, STATUS_WIDTH);
-  wresize (tagw, TAG_HEIGHT, TAG_WIDTH);
-  //resize_history_menu ();
+  cboard_ui_resize ();
+  boardw = cboard_ui_widget_resize (board_vk, BOARD_HEIGHT, BOARD_WIDTH);
+  historyw =
+    cboard_ui_widget_resize (history_vk, HISTORY_HEIGHT, HISTORY_WIDTH);
+  statusw = cboard_ui_widget_resize (status_vk, STATUS_HEIGHT, STATUS_WIDTH);
+  tagw = cboard_ui_widget_resize (tag_vk, TAG_HEIGHT, TAG_WIDTH);
 
-  clear ();
-  wclear (boardw);
-  wclear (historyw);
-  wclear (tagw);
-  wclear (statusw);
-  wclear (loadingw);
-  wclear (enginew);
+  if (loading_vk)
+    loadingw = cboard_ui_widget_canvas (loading_vk);
+  if (engine_vk)
+    {
+      enginew = cboard_ui_widget_resize (engine_vk, LINES, COLS);
+      cboard_ui_widget_move (engine_vk, 0, 0);
+    }
+
+  if (boardw)
+    wclear (boardw);
+  if (historyw)
+    wclear (historyw);
+  if (tagw)
+    wclear (tagw);
+  if (statusw)
+    wclear (statusw);
+  if (loadingw)
+    wclear (loadingw);
+  if (enginew)
+    wclear (enginew);
   draw_window_decor ();
   update_all (gp);
-  keypad (boardw, TRUE);
+  if (boardw)
+    keypad (boardw, TRUE);
   curs_set (0);
   cbreak ();
   noecho ();
@@ -2593,8 +2611,7 @@ update_clocks ()
   if (update)
     {
       update_status_window (gp);
-      update_panels ();
-      doupdate ();
+      cboard_ui_refresh ();
     }
 }
 
@@ -4470,13 +4487,16 @@ update_loading_window (int n)
 {
   char buf[16];
 
-  if (!loadingw)
+  if (!loading_vk)
     {
-      loadingw = newwin (3, COLS / 2, CALCPOSY (3), CALCPOSX (COLS / 2));
-      loadingp = new_panel (loadingw);
+      loading_vk =
+	cboard_ui_widget_new (3, COLS / 2, CALCPOSY (3),
+			      CALCPOSX (COLS / 2));
+      loadingw = cboard_ui_widget_canvas (loading_vk);
       wbkgd (loadingw, CP_MESSAGE_WINDOW);
     }
 
+  cboard_ui_widget_raise (loading_vk);
   wmove (loadingw, 0, 0);
   wclrtobot (loadingw);
   wattron (loadingw, CP_MESSAGE_BORDER);
@@ -4485,8 +4505,7 @@ update_loading_window (int n)
   mvwprintw (loadingw, 1, CENTER_INT ((COLS / 2), 11 +
 				      strlen (itoa (gtotal, buf))),
 	     _("Loading... %i%% (%i games)"), n, gtotal);
-  update_panels ();
-  doupdate ();
+  cboard_ui_refresh ();
 }
 
 static void
@@ -4762,18 +4781,16 @@ do_load_file (WIN * win)
 
   if (pgn_parse (pgn) == E_PGN_ERR)
     {
-      del_panel (loadingp);
-      delwin (loadingw);
+      cboard_ui_widget_destroy (loading_vk);
+      loading_vk = NULL;
       loadingw = NULL;
-      loadingp = NULL;
       init_userdata ();
       goto done;
     }
 
-  del_panel (loadingp);
-  delwin (loadingw);
+  cboard_ui_widget_destroy (loading_vk);
+  loading_vk = NULL;
   loadingw = NULL;
-  loadingp = NULL;
   init_userdata ();
   strncpy (loadfile, tmp, sizeof (loadfile));
   loadfile[sizeof (loadfile) - 1] = 0;
@@ -5208,23 +5225,23 @@ do_global_quit ()
 void
 do_global_toggle_engine_window ()
 {
-  if (!enginew)
+  if (!engine_vk)
     {
-      enginew = newwin (LINES, COLS, 0, 0);
-      enginep = new_panel (enginew);
+      engine_vk = cboard_ui_widget_new (LINES, COLS, 0, 0);
+      enginew = cboard_ui_widget_canvas (engine_vk);
       window_draw_title (enginew, _("Engine IO Window"), COLS,
 			 CP_MESSAGE_TITLE, CP_MESSAGE_BORDER);
-      hide_panel (enginep);
+      cboard_ui_widget_hide (engine_vk);
     }
 
-  if (panel_hidden (enginep))
+  if (cboard_ui_widget_hidden (engine_vk))
     {
       update_engine_window (gp);
-      top_panel (enginep);
+      cboard_ui_widget_raise (engine_vk);
     }
   else
     {
-      hide_panel (enginep);
+      cboard_ui_widget_hide (engine_vk);
     }
 }
 
@@ -5653,7 +5670,7 @@ game_loop ()
       /*
        * This is needed to detect terminal resizing.
        */
-      doupdate ();
+      cboard_ui_refresh ();
       if (LINES != LINES_OLD || COLS != COLS_OLD)
 	{
 	  COLS_OLD = COLS;
@@ -5885,22 +5902,28 @@ cleanup_all ()
 
   if (curses_initialized)
     {
-      del_panel (boardp);
-      del_panel (historyp);
-      del_panel (statusp);
-      del_panel (tagp);
-      delwin (boardw);
-      delwin (historyw);
-      delwin (statusw);
-      delwin (tagw);
+      cboard_ui_widget_destroy (board_vk);
+      cboard_ui_widget_destroy (history_vk);
+      cboard_ui_widget_destroy (status_vk);
+      cboard_ui_widget_destroy (tag_vk);
+      board_vk = history_vk = status_vk = tag_vk = NULL;
+      boardw = historyw = statusw = tagw = NULL;
 
-      if (enginew)
+      if (engine_vk)
 	{
-	  del_panel (enginep);
-	  delwin (enginew);
+	  cboard_ui_widget_destroy (engine_vk);
+	  engine_vk = NULL;
+	  enginew = NULL;
 	}
 
-      endwin ();
+      if (loading_vk)
+	{
+	  cboard_ui_widget_destroy (loading_vk);
+	  loading_vk = NULL;
+	  loadingw = NULL;
+	}
+
+      cboard_ui_shutdown ();
     }
 
 #ifdef WITH_LIBPERL
@@ -6193,40 +6216,37 @@ main (int argc, char *argv[])
       putenv ((char *) "COLUMNS=");
     }
 
-  if (initscr () == NULL)
-    errx (EXIT_FAILURE, "%s", _("Could not initialize curses."));
-  else
-    curses_initialized = 1;
+  cboard_ui_init ();
+  curses_initialized = 1;
 
   if (LINES < 23 || COLS < 74)
     {
-      endwin ();
+      cboard_ui_shutdown ();
+      curses_initialized = 0;
       errx (EXIT_FAILURE, _("Need at least an 74x23 terminal."));
     }
 
   COLS_OLD = COLS;
   LINES_OLD = LINES;
 
-  if (has_colors () == TRUE && start_color () == OK)
+  if (has_colors () == TRUE)
     init_color_pairs ();
 
-  boardw = newwin (BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);
-  boardp = new_panel (boardw);
-  historyw = newwin (HISTORY_HEIGHT, HISTORY_WIDTH, LINES - HISTORY_HEIGHT,
-		     COLS - HISTORY_WIDTH);
-  historyp = new_panel (historyw);
-  statusw = newwin (STATUS_HEIGHT, STATUS_WIDTH, 0, 0);
-  statusp = new_panel (statusw);
-  tagw = newwin (TAG_HEIGHT, TAG_WIDTH, STATUS_HEIGHT + 1, 0);
-  tagp = new_panel (tagw);
+  board_vk =
+    cboard_ui_widget_new (BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);
+  boardw = cboard_ui_widget_canvas (board_vk);
+  history_vk =
+    cboard_ui_widget_new (HISTORY_HEIGHT, HISTORY_WIDTH,
+			  LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
+  historyw = cboard_ui_widget_canvas (history_vk);
+  status_vk = cboard_ui_widget_new (STATUS_HEIGHT, STATUS_WIDTH, 0, 0);
+  statusw = cboard_ui_widget_canvas (status_vk);
+  tag_vk = cboard_ui_widget_new (TAG_HEIGHT, TAG_WIDTH, STATUS_HEIGHT + 1, 0);
+  tagw = cboard_ui_widget_canvas (tag_vk);
   keypad (boardw, TRUE);
-//  leaveok(boardw, TRUE);
   leaveok (tagw, TRUE);
   leaveok (statusw, TRUE);
   leaveok (historyw, TRUE);
-  curs_set (0);
-  cbreak ();
-  noecho ();
   draw_window_decor ();
   game_loop ();
   cleanup_all ();

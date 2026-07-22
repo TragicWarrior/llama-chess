@@ -38,6 +38,7 @@
 #include "menu.h"
 #include "keys.h"
 #include "rcfile.h"
+#include "ui_screen.h"
 
 static void
 set_menu_vars (int c, int rows, int items, int *item, int *top)
@@ -206,10 +207,11 @@ fix_menu_vals (WIN * win)
   if (win->cols > MAX_MENU_WIDTH)
     win->cols = MAX_MENU_WIDTH;
 
-  wresize (win->w, win->rows, win->cols);
-  replace_panel (win->p, win->w);
-  move_panel (win->p, (m->ystatic == -1) ? CALCPOSY (win->rows) : m->ystatic,
-	      (m->xstatic == -1) ? CALCPOSX (win->cols) : m->xstatic);
+  win->posy = (m->ystatic == -1) ? CALCPOSY (win->rows) : m->ystatic;
+  win->posx = (m->xstatic == -1) ? CALCPOSX (win->cols) : m->xstatic;
+  win->w = cboard_ui_widget_resize (win->vk, win->rows, win->cols);
+  cboard_ui_widget_move (win->vk, win->posy, win->posx);
+  cboard_ui_widget_raise (win->vk);
   keypad (win->w, TRUE);
   wmove (win->w, 0, 0);
   wclrtobot (win->w);
@@ -376,8 +378,10 @@ menu_resize_func (WIN *w)
 
   w->rows = m->total >= LINES - 5 ? LINES - 1 : m->total + 5;
   w->cols = w->cols > COLS - 2 ? COLS - 2 : w->cols;
-  wresize (w->w, w->rows, w->cols);
-  move_panel (w->p, CALCPOSY (w->rows), CALCPOSX (w->cols));
+  w->posy = CALCPOSY (w->rows);
+  w->posx = CALCPOSX (w->cols);
+  w->w = cboard_ui_widget_resize (w->vk, w->rows, w->cols);
+  cboard_ui_widget_move (w->vk, w->posy, w->posx);
   wclear (w->w);
   redraw_menu (w);
 }
