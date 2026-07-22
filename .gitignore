@@ -1,0 +1,34 @@
+# CMake
+/build*/
+/cmake-build*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+Makefile
+*_autogen/
+compile_commands.json
+CMakeUserPresets.json
+
+# Generated config / man page (out-of-tree builds preferred)
+/config.h
+/doc/cboard.6
+
+# Objects / binaries
+*.o
+*.a
+*.so
+*.so.*
+src/cboard
+libchess/libchess.a
+
+# Gettext build products
+po/*.gmo
+po/stamp-po
+po/POTFILES
+
+# Editor / OS junk
+*~
+*.swp
+.DS_Store

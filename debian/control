@@ -1,10 +1,10 @@
 Source: cboard
 Section: games
-Priority: extra
+Priority: optional
 Maintainer: Ben Kibbey <bjk@luxsci.net>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev, libncurses5-dev,
- libperl-dev
-Standards-Version: 3.9.4
+Build-Depends: debhelper-compat (= 13), cmake, libncurses-dev,
+ libperl-dev, gettext, pkg-config
+Standards-Version: 4.6.2
 Homepage: https://gitlab.com/bjk/cboard/wikis
 Vcs-Git: https://gitlab.com/bjk/cboard.git
 

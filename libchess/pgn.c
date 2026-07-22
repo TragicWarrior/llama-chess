@@ -2511,7 +2511,13 @@ done:
 	  goto fail;
 	}
 
-      asprintf (&p, "%s/%s", buf, filename);
+      if (asprintf (&p, "%s/%s", buf, filename) < 0)
+	{
+	  if (pgn->tmpfile)
+	    free (pgn->tmpfile);
+
+	  goto fail;
+	}
       pgn->filename = p;
     }
   else

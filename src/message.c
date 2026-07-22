@@ -127,11 +127,20 @@ build_message_lines (const char *title, const char *prompt,
   wchar_t *wc, *wc_tmp, *wc_line, wc_delim[] = { '\n', 0 };
 
 #ifdef HAVE_VASPRINTF
-  vasprintf (&line, fmt, ap);
+  if (vasprintf (&line, fmt, ap) < 0)
+    line = NULL;
 #else
   line = Malloc (LINE_MAX);
   vsnprintf (line, LINE_MAX, fmt, ap);
 #endif
+
+  if (!line)
+    {
+      *h = 0;
+      *w = 0;
+      *str = NULL;
+      return;
+    }
 
   wc = str_to_wchar (line);
   free (line);

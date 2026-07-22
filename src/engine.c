@@ -547,7 +547,8 @@ parse_xboard_line (GAME g, char *str)
               switch (fork ())
                 {
                 case 0:
-                  system (cmd);
+                  if (system (cmd) == -1)
+                    _exit (127);
                   _exit (0);
                 case -1:
                   break;
@@ -663,12 +664,15 @@ add_engine_command (GAME g, int s, const char *fmt, ...)
   q = Realloc (q, (i + 2) * sizeof (struct queue_s *));
   va_start (ap, fmt);
 #ifdef HAVE_VASPRINTF
-  vasprintf (&line, fmt, ap);
+  if (vasprintf (&line, fmt, ap) < 0)
+    line = NULL;
 #else
   line = Malloc (LINE_MAX + 1);
   vsnprintf (line, LINE_MAX, fmt, ap);
 #endif
   va_end (ap);
+  if (!line)
+    err (EXIT_FAILURE, "vasprintf");
   q[i] = Malloc (sizeof (struct queue_s));
   q[i]->line = line;
   q[i++]->status = (s == -1) ? d->engine->status : s;

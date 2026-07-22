@@ -2401,13 +2401,15 @@ update_status_notify (GAME g, const char *fmt, ...)
 
   va_start (ap, fmt);
 #ifdef HAVE_VASPRINTF
-  vasprintf (&line, fmt, ap);
+  if (vasprintf (&line, fmt, ap) < 0)
+    line = NULL;
 #else
   vsnprintf (line, sizeof (line), fmt, ap);
 #endif
   va_end (ap);
 
-  status.notify = str_to_wchar (line);
+  if (line)
+    status.notify = str_to_wchar (line);
 
 #ifdef HAVE_VASPRINTF
   free (line);
@@ -5914,7 +5916,11 @@ signal_save_pgn (int sig)
   char *p = config.savedirectory ? config.savedirectory : config.datadir;
 
   time (&now);
-  asprintf (&buf, "%s/signal-%i-%li.pgn", p, sig, now);
+  if (asprintf (&buf, "%s/signal-%i-%li.pgn", p, sig, now) < 0)
+    {
+      quit = 1;
+      return;
+    }
 
   if (do_game_write (buf, "w", 0, gtotal))
     {
@@ -5995,8 +6001,6 @@ main (int argc, char *argv[])
 {
   int opt;
   struct stat st;
-  char buf[FILENAME_MAX];
-  char datadir[FILENAME_MAX];
   int ret = EXIT_SUCCESS;
   int validate_only = 0, validate_and_write = 0;
   int write_custom_tags = 0;
@@ -6017,30 +6021,28 @@ main (int argc, char *argv[])
   if ((config.pwd = getpwuid (getuid ())) == NULL)
     err (EXIT_FAILURE, "getpwuid()");
 
-  snprintf (datadir, sizeof (datadir), "%s/.cboard", config.pwd->pw_dir);
-  config.datadir = strdup (datadir);
-  snprintf (buf, sizeof (buf), "%s/cc.data", datadir);
-  config.ccfile = strdup (buf);
-  snprintf (buf, sizeof (buf), "%s/nag.data", datadir);
-  config.nagfile = strdup (buf);
-  snprintf (buf, sizeof (buf), "%s/config", datadir);
-  config.configfile = strdup (buf);
+  if (asprintf (&config.datadir, "%s/.cboard", config.pwd->pw_dir) < 0
+      || asprintf (&config.ccfile, "%s/cc.data", config.datadir) < 0
+      || asprintf (&config.nagfile, "%s/nag.data", config.datadir) < 0
+      || asprintf (&config.configfile, "%s/config", config.datadir) < 0)
+    err (EXIT_FAILURE, "asprintf");
 
-  if (stat (datadir, &st) == -1)
+  if (stat (config.datadir, &st) == -1)
     {
       if (errno == ENOENT)
 	{
-	  if (mkdir (datadir, 0755) == -1)
-	    err (EXIT_FAILURE, "%s", datadir);
+	  if (mkdir (config.datadir, 0755) == -1)
+	    err (EXIT_FAILURE, "%s", config.datadir);
 	}
       else
-	err (EXIT_FAILURE, "%s", datadir);
+	err (EXIT_FAILURE, "%s", config.datadir);
 
-      stat (datadir, &st);
+      if (stat (config.datadir, &st) == -1)
+	err (EXIT_FAILURE, "%s", config.datadir);
     }
 
   if (!S_ISDIR (st.st_mode))
-    errx (EXIT_FAILURE, "%s: %s", datadir, _("Not a directory."));
+    errx (EXIT_FAILURE, "%s: %s", config.datadir, _("Not a directory."));
 
   set_defaults ();
 

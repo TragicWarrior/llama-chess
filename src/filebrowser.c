@@ -378,11 +378,15 @@ file_browser (void *arg)
       if (access (path, R_OK) == -1)
 	{
 	  cmessage (ERROR_STR, ANY_KEY_STR, "%s: %s", path, strerror (errno));
-	  getcwd (path, sizeof (path));
+	  if (getcwd (path, sizeof (path)) == NULL)
+	    path[0] = '\0';
 	}
     }
   else if (!oldwd)
-    getcwd (path, sizeof (path) - 1);
+    {
+      if (getcwd (path, sizeof (path) - 1) == NULL)
+	path[0] = '\0';
+    }
   else
     strncpy (path, oldwd, sizeof (path) - 1);
 
