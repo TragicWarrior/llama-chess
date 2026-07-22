@@ -2129,6 +2129,19 @@ update_all (GAME g)
   update_engine_window (g);
   cboard_menubar_refresh ();
   cboard_ui_refresh ();
+  /*
+   * Board/status canvases were written above and are dirty.  Clear the
+   * touch flags so a later wget_wch on any of them (or a regression that
+   * reads keys from boardw again) cannot wrefresh the board over a menu.
+   */
+  if (boardw)
+    untouchwin (boardw);
+  if (statusw)
+    untouchwin (statusw);
+  if (historyw)
+    untouchwin (historyw);
+  if (tagw)
+    untouchwin (tagw);
 }
 
 static void
@@ -5690,6 +5703,13 @@ game_loop ()
       /*
        * Finds the top level window in the window stack so we know what
        * window the wget_wch()'ed key belongs to.
+       *
+       * When no modal is up, read keys from stdscr — never from boardw.
+       * wget_wch() auto-wrefresh()'es a dirty WINDOW before blocking, and
+       * boardw is the VDK board canvas (mvwin'd to the board geometry).
+       * That direct paint lands on the physical terminal on top of the
+       * VDK composite, so an open menubar dropdown appears briefly then
+       * is covered by the board (~one input-timeout later).
        */
       if (wins)
 	{
@@ -5699,7 +5719,11 @@ game_loop ()
 	  wtimeout (wp, WINDOW_TIMEOUT);
 	}
       else
-	wp = boardw;
+	{
+	  wp = stdscr;
+	  keypad (stdscr, TRUE);
+	  wtimeout (stdscr, WINDOW_TIMEOUT);
+	}
 
       if (!i && pushkey)
 	input_c = pushkey;

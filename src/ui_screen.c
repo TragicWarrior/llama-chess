@@ -101,6 +101,28 @@ raise_widget (vk_widget_t *w)
   vk_widget_show (w);
 }
 
+/*
+ * wgetch/wget_wch auto-wrefresh a dirty WINDOW before reading.  VDK widget
+ * canvases are real newwin()s that have been mvwin()'d to their screen
+ * positions, so that auto-refresh paints one layer straight onto the
+ * physical terminal — on top of the already-composited stdscr, and over any
+ * menubar dropdown that overlaps it.  After a composite the canvases are
+ * already represented on stdscr; mark them clean so the next input wait
+ * does not re-blit them.
+ */
+static void
+untouch_canvas (vk_widget_t *w)
+{
+  WINDOW *canvas;
+
+  if (w == NULL)
+    return;
+
+  canvas = vk_widget_get_canvas (w);
+  if (canvas != NULL)
+    untouchwin (canvas);
+}
+
 void
 cboard_ui_refresh (void)
 {
@@ -141,6 +163,11 @@ cboard_ui_refresh (void)
       overwrite (surface, stdscr);
       wrefresh (stdscr);
     }
+
+  /* 4) Prevent per-widget auto-wrefresh from burying the composite. */
+  for (i = 0; i < front_count; i++)
+    untouch_canvas (front_stack[i]);
+  untouchwin (stdscr);
 }
 
 void
