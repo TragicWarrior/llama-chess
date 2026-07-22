@@ -33,7 +33,7 @@
 #include <sys/param.h>
 #endif
 
-// See init_color_pairs() in colors.c.
+/* Logical color slots (fg/bg/attrs). Pairs come from vdk_color_pair(). */
 enum
 {
   CONF_BWHITE, CONF_BBLACK, CONF_BSELECTED, CONF_BCURSOR, CONF_BGRAPHICS,

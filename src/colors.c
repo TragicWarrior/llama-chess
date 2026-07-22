@@ -30,7 +30,7 @@
 
 /*
  * Mixes two color pairs' fg and bg colors determined by 'which'.
- * Uses VDK's pair matrix so board overlays stay consistent with widgets.
+ * Resolves the result via VDK's pair matrix (same as CP_* macros).
  */
 chtype
 mix_cp (chtype a, chtype b, attr_t attrs, int which)
@@ -80,17 +80,6 @@ mix_cp (chtype a, chtype b, attr_t attrs, int which)
     }
 
   return COLOR_PAIR (vdk_color_pair (fg, bg)) | attrs;
-}
-
-/*
- * VDK already registered the 8x8 (and optional extended) pair matrix in
- * vdk_color_init().  Static CP_* macros resolve through vdk_color_pair() so
- * this is a no-op kept for call-site compatibility.
- */
-void
-init_color_pairs (void)
-{
-  /* Intentionally empty: do not call init_pair() on VDK's pair range. */
 }
 
 void

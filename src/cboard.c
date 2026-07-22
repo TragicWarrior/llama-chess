@@ -6227,8 +6227,7 @@ main (int argc, char *argv[])
   COLS_OLD = COLS;
   LINES_OLD = LINES;
 
-  if (has_colors () == TRUE)
-    init_color_pairs ();
+  /* Color pairs come from vdk_color_init() in cboard_ui_init(). */
 
   board_vk =
     cboard_ui_widget_new (BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);

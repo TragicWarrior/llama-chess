@@ -20,10 +20,9 @@
 #define COLORS_H
 
 /*
- * Color pairs for the board and chrome use VDK's vdk_color_pair() so they
- * share the same pair table as VDK widgets.  Do not call init_pair() on the
- * low pair numbers (1-63): that is VDK's 8x8 matrix.  Overwriting it made
- * dialog borders resolve to the wrong colors (e.g. cyan appeared orange).
+ * All color pairs go through VDK (vdk_color_init / vdk_color_pair).
+ * cboard only stores logical fg/bg/attrs in config.color[]; it does not
+ * own an init_pair table of its own.
  */
 #include <vdk.h>
 
@@ -91,7 +90,6 @@ enum
 #define CP_BOARD_B_B	CP_MIX (CONF_BBLACK, CONF_BBLACK, CONF_BBLACK)
 #define CP_BOARD_B_W	CP_MIX (CONF_BWHITE, CONF_BBLACK, CONF_BWHITE)
 
-void init_color_pairs (void);
 void set_default_colors (void);
 chtype mix_cp (chtype a, chtype b, attr_t attrs, int which);
 
