@@ -21,6 +21,10 @@
 
 static vk_screen_t *screen;
 
+#define FRONT_MAX 8
+static vk_widget_t *front_stack[FRONT_MAX];
+static int front_count;
+
 void
 cboard_ui_init (void)
 {
@@ -36,6 +40,7 @@ cboard_ui_init (void)
   cbreak ();
   noecho ();
   keypad (stdscr, TRUE);
+  front_count = 0;
 }
 
 void
@@ -44,15 +49,98 @@ cboard_ui_shutdown (void)
   if (screen == NULL)
     return;
 
+  front_count = 0;
   vk_screen_destroy (screen);
   screen = NULL;
 }
 
 void
+cboard_ui_front_clear (void)
+{
+  front_count = 0;
+}
+
+void
+cboard_ui_front_push (cboard_widget_t *widget)
+{
+  vk_widget_t *w = (vk_widget_t *) widget;
+  int i;
+
+  if (w == NULL)
+    return;
+
+  /* Avoid duplicates; keep latest push as topmost. */
+  for (i = 0; i < front_count; i++)
+    {
+      if (front_stack[i] == w)
+	{
+	  int j;
+
+	  for (j = i; j < front_count - 1; j++)
+	    front_stack[j] = front_stack[j + 1];
+	  front_count--;
+	  break;
+	}
+    }
+
+  if (front_count >= FRONT_MAX)
+    return;
+
+  front_stack[front_count++] = w;
+}
+
+static void
+raise_widget (vk_widget_t *w)
+{
+  if (w == NULL || screen == NULL)
+    return;
+
+  /* Detach first (ignore not-found) so we never leave duplicates. */
+  (void) vk_screen_detach_widget (screen, 0, w);
+  vk_screen_attach_widget (screen, 0, w);
+  vk_widget_show (w);
+}
+
+void
 cboard_ui_refresh (void)
 {
-  if (screen)
-    vk_screen_refresh (screen);
+  int i;
+  WINDOW *surface = NULL;
+
+  if (screen == NULL)
+    return;
+
+  /* 1) Put front-stack widgets last in the surface paint list. */
+  for (i = 0; i < front_count; i++)
+    raise_widget (front_stack[i]);
+
+  /* 2) Full composite (wallpaper + all widgets → stdscr). */
+  vk_screen_refresh (screen);
+
+  /*
+   * 3) Draw front widgets again on top of the surface, then push to stdscr.
+   *    This guarantees menubar/dropdowns cannot stay under the board even if
+   *    attach order was wrong or something re-attached chrome mid-frame.
+   */
+  for (i = 0; i < front_count; i++)
+    {
+      vk_widget_t *w = front_stack[i];
+      WINDOW *ws;
+
+      if (w == NULL || !(vk_widget_get_state (w) & VK_STATE_VISIBLE))
+	continue;
+      ws = vk_widget_get_surface (w);
+      if (ws == NULL)
+	continue;
+      surface = ws;
+      vk_widget_draw (w);
+    }
+
+  if (surface != NULL)
+    {
+      overwrite (surface, stdscr);
+      wrefresh (stdscr);
+    }
 }
 
 void
@@ -81,6 +169,8 @@ cboard_ui_widget_new (int height, int width, int y, int x)
     return NULL;
 
   vk_widget_move (w, x, y);
+  /* Drop any stale attach then attach once. */
+  (void) vk_screen_detach_widget (screen, 0, w);
   vk_screen_attach_widget (screen, 0, w);
   return (cboard_widget_t *) w;
 }
@@ -94,7 +184,9 @@ cboard_ui_widget_attach (cboard_widget_t *widget, int y, int x)
     return;
 
   vk_widget_move (w, x, y);
+  (void) vk_screen_detach_widget (screen, 0, w);
   vk_screen_attach_widget (screen, 0, w);
+  vk_widget_show (w);
 }
 
 static void
@@ -110,9 +202,23 @@ void
 cboard_ui_widget_destroy (cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
+  int i;
 
   if (w == NULL)
     return;
+
+  for (i = 0; i < front_count; i++)
+    {
+      if (front_stack[i] == w)
+	{
+	  int j;
+
+	  for (j = i; j < front_count - 1; j++)
+	    front_stack[j] = front_stack[j + 1];
+	  front_count--;
+	  break;
+	}
+    }
 
   detach_widget (w);
   vk_widget_destroy (w);
@@ -122,9 +228,23 @@ void
 cboard_ui_window_destroy (cboard_widget_t *widget)
 {
   vk_window_t *w = (vk_window_t *) widget;
+  int i;
 
   if (w == NULL)
     return;
+
+  for (i = 0; i < front_count; i++)
+    {
+      if (front_stack[i] == VK_WIDGET (w))
+	{
+	  int j;
+
+	  for (j = i; j < front_count - 1; j++)
+	    front_stack[j] = front_stack[j + 1];
+	  front_count--;
+	  break;
+	}
+    }
 
   detach_widget (VK_WIDGET (w));
   vk_window_destroy (w);
@@ -224,15 +344,7 @@ cboard_ui_widget_hidden (cboard_widget_t *widget)
 void
 cboard_ui_widget_raise (cboard_widget_t *widget)
 {
-  vk_widget_t *w = (vk_widget_t *) widget;
-
-  if (w == NULL || screen == NULL)
-    return;
-
-  /* Detach + re-attach puts the widget last in paint order (on top). */
-  vk_screen_detach_widget (screen, 0, w);
-  vk_screen_attach_widget (screen, 0, w);
-  vk_widget_show (w);
+  raise_widget ((vk_widget_t *) widget);
 }
 
 void

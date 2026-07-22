@@ -38,6 +38,15 @@ int cboard_ui_widget_hidden (cboard_widget_t *w);
 void cboard_ui_widget_raise (cboard_widget_t *w);
 void cboard_ui_push_key (cboard_widget_t *w, int key);
 
+/*
+ * Overlay stack: widgets that must paint above chrome (menubar, dropdowns).
+ * Cleared at the start of each refresh; push in bottom-to-top order.
+ * cboard_ui_refresh() raises them, composites the screen, then redraws
+ * them once more so they cannot be occluded by board/status.
+ */
+void cboard_ui_front_clear (void);
+void cboard_ui_front_push (cboard_widget_t *w);
+
 int cboard_ui_active (void);
 
 #endif

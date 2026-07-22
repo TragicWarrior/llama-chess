@@ -328,9 +328,9 @@ open_dropdown (int idx)
   dropdown = win;
   dropdown_idx = idx;
 
-  /* Paint order is attach order; keep bar then dropdown on top of chrome. */
-  cboard_ui_widget_raise ((cboard_widget_t *) menubar);
-  cboard_ui_widget_raise ((cboard_widget_t *) dropdown);
+  cboard_ui_front_clear ();
+  cboard_ui_front_push ((cboard_widget_t *) menubar);
+  cboard_ui_front_push ((cboard_widget_t *) dropdown);
   cboard_ui_refresh ();
 }
 
@@ -419,13 +419,14 @@ cboard_menubar_refresh (void)
     }
 
   /*
-   * Chrome (board/status/…) is attached after the menubar at startup and is
-   * repainted every update_all().  Re-raise so the bar and open dropdown
-   * stay above the board in the screen paint list (later = on top).
+   * Register menubar (and open dropdown) as the front layer.  refresh()
+   * raises them and redraws them after the full composite so the board
+   * cannot occlude the menus.
    */
-  cboard_ui_widget_raise ((cboard_widget_t *) menubar);
+  cboard_ui_front_clear ();
+  cboard_ui_front_push ((cboard_widget_t *) menubar);
   if (dropdown)
-    cboard_ui_widget_raise ((cboard_widget_t *) dropdown);
+    cboard_ui_front_push ((cboard_widget_t *) dropdown);
 }
 
 int
@@ -445,9 +446,10 @@ menubar_activate (void)
   if (vk_menubar_get_curr (menubar) < 0)
     vk_menubar_set_curr (menubar, 0);
   vk_menubar_update (menubar);
-  cboard_ui_widget_raise ((cboard_widget_t *) menubar);
+  cboard_ui_front_clear ();
+  cboard_ui_front_push ((cboard_widget_t *) menubar);
   if (dropdown)
-    cboard_ui_widget_raise ((cboard_widget_t *) dropdown);
+    cboard_ui_front_push ((cboard_widget_t *) dropdown);
   cboard_ui_refresh ();
 }
 
