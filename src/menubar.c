@@ -321,14 +321,17 @@ open_dropdown (int idx)
 
   cboard_ui_widget_attach ((cboard_widget_t *) win,
 			   CBOARD_MENUBAR_H, bar_x + item_x);
-  cboard_ui_widget_raise ((cboard_widget_t *) win);
 
   vk_listbox_update (lb);
   vk_window_update (win);
-  cboard_ui_refresh ();
 
   dropdown = win;
   dropdown_idx = idx;
+
+  /* Paint order is attach order; keep bar then dropdown on top of chrome. */
+  cboard_ui_widget_raise ((cboard_widget_t *) menubar);
+  cboard_ui_widget_raise ((cboard_widget_t *) dropdown);
+  cboard_ui_refresh ();
 }
 
 static int
@@ -401,18 +404,28 @@ cboard_menubar_resize (void)
 void
 cboard_menubar_refresh (void)
 {
-  if (menubar)
-    {
-      vk_menubar_update (menubar);
-      if (dropdown)
-	{
-	  vk_listbox_t *lb = VK_LISTBOX (vk_window_get_child (dropdown));
+  if (!menubar)
+    return;
 
-	  if (lb)
-	    vk_listbox_update (lb);
-	  vk_window_update (dropdown);
-	}
+  vk_menubar_update (menubar);
+
+  if (dropdown)
+    {
+      vk_listbox_t *lb = VK_LISTBOX (vk_window_get_child (dropdown));
+
+      if (lb)
+	vk_listbox_update (lb);
+      vk_window_update (dropdown);
     }
+
+  /*
+   * Chrome (board/status/…) is attached after the menubar at startup and is
+   * repainted every update_all().  Re-raise so the bar and open dropdown
+   * stay above the board in the screen paint list (later = on top).
+   */
+  cboard_ui_widget_raise ((cboard_widget_t *) menubar);
+  if (dropdown)
+    cboard_ui_widget_raise ((cboard_widget_t *) dropdown);
 }
 
 int
@@ -433,6 +446,8 @@ menubar_activate (void)
     vk_menubar_set_curr (menubar, 0);
   vk_menubar_update (menubar);
   cboard_ui_widget_raise ((cboard_widget_t *) menubar);
+  if (dropdown)
+    cboard_ui_widget_raise ((cboard_widget_t *) dropdown);
   cboard_ui_refresh ();
 }
 
