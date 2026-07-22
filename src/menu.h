@@ -42,6 +42,9 @@ struct menu_key_s
   void *data;
 };
 
+/* Kept for API compatibility; listbox uses formatted text instead of
+ * canvas print callbacks.  Callers may still pass a print_func; it is
+ * ignored for painting but stored for callers that inspect the field. */
 typedef void (menu_print_func) (WIN *);
 typedef struct menu_item_s **(menu_items_fn) (WIN *);
 
@@ -50,7 +53,7 @@ struct menu_input_s
   int update;
   int selected;
   int nofree;
-  int top;
+  int top;			/* scroll offset (synced from listbox) */
   int total;
   menu_items_fn *func;
   menu_key *draw_exit_func;
@@ -66,6 +69,9 @@ struct menu_input_s
   int cstatic;
   int ystatic;
   int xstatic;
+  /* VDK listbox (child of win->vk window); not destroyed separately. */
+  void *listbox;
+  void *status_label;
 };
 
 void add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func);
@@ -75,7 +81,7 @@ WIN *construct_menu (int rows, int cols, int y, int x, const char *title,
 		     int name_only, menu_items_fn * func,
 		     struct menu_key_s **keys, void *data,
 		     menu_print_func * pfunc, window_exit_func * efunc,
-                     window_resize_func *rfunc);
+		     window_resize_func * rfunc);
 void redraw_menu (WIN *);
 
 #endif
