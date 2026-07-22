@@ -219,9 +219,16 @@ file_browser (void *arg)
       return;
     }
 
-  vk_filedialog_set_colors (fd, COLOR_WHITE, COLOR_BLUE);
-  vk_filedialog_set_highlight (fd, COLOR_BLUE, COLOR_WHITE);
-  vk_filedialog_set_button_colors (fd, COLOR_BLACK, COLOR_CYAN);
+  /* Match menu/input: black body, cyan accents. */
+  vk_filedialog_set_colors (fd,
+			    config.color[CONF_MENU].fg,
+			    config.color[CONF_MENU].bg);
+  vk_filedialog_set_highlight (fd,
+			       config.color[CONF_MENUS].fg,
+			       config.color[CONF_MENUS].bg);
+  vk_filedialog_set_button_colors (fd,
+				   config.color[CONF_IBORDER].fg,
+				   config.color[CONF_MENU].bg);
   if (config.pattern && config.pattern[0]
       && config.pattern[0] != '*')
     {

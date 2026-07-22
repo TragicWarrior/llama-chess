@@ -460,9 +460,14 @@ construct_message (const char *title, const char *prompt, int center,
   else
     vk_window_set_title (vkw, " Message ");
 
+  /* Match classic cboard message chrome: black body, cyan border. */
   vk_window_set_border_style (vkw, VK_BORDER_SINGLE);
-  vk_window_set_border_colors (vkw, COLOR_WHITE, COLOR_BLUE);
-  vk_widget_set_colors (VK_WIDGET (vkw), COLOR_WHITE, COLOR_BLUE);
+  vk_window_set_border_colors (vkw,
+			       config.color[CONF_MBORDER].fg,
+			       config.color[CONF_MBORDER].bg);
+  vk_widget_set_colors (VK_WIDGET (vkw),
+			config.color[CONF_MWINDOW].fg,
+			config.color[CONF_MWINDOW].bg);
 
   inner_w = m->w - 2;
   inner_h = m->h - 3;
@@ -474,7 +479,9 @@ construct_message (const char *title, const char *prompt, int center,
   tb = vk_textbox_create (inner_w, inner_h);
   vk_textbox_set_word_wrap (tb, true);
   vk_textbox_set_text (tb, m->body ? m->body : "");
-  vk_widget_set_colors (VK_WIDGET (tb), COLOR_WHITE, COLOR_BLUE);
+  vk_widget_set_colors (VK_WIDGET (tb),
+			config.color[CONF_MWINDOW].fg,
+			config.color[CONF_MWINDOW].bg);
   vk_widget_set_expand (VK_WIDGET (tb));
   vk_window_set_child (vkw, VK_WIDGET (tb));
   m->tb = tb;
