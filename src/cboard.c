@@ -2617,6 +2617,8 @@ update_clocks ()
   if (update)
     {
       update_status_window (gp);
+      /* Keep menubar/dropdown registered as the front layer before composite. */
+      cboard_menubar_refresh ();
       cboard_ui_refresh ();
     }
 }
@@ -5673,9 +5675,11 @@ game_loop ()
       d = gp->data;
 
       /*
-       * This is needed to detect terminal resizing.
+       * Do not full-refresh here: a composite every timeout (~70ms) repaints
+       * the board and races the menubar dropdown (which would appear briefly
+       * on top then get covered).  KEY_RESIZE from wget_wch is enough to
+       * notice geometry changes.
        */
-      cboard_ui_refresh ();
       if (LINES != LINES_OLD || COLS != COLS_OLD)
 	{
 	  COLS_OLD = COLS;
