@@ -76,4 +76,7 @@ WIN *construct_input (const char *title, const char *init, int lines,
 		      void *arg, wint_t key, struct input_data_s *id,
 		      int history, window_resize_func, int type, ...);
 
+/* Update the live input buffer (and VDK field, if any). */
+void input_set_buf (struct input_s *in, const char *text);
+
 #endif

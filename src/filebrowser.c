@@ -28,353 +28,165 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <time.h>
 #include <pwd.h>
 
-#ifdef HAVE_GLOB_H
-#include <glob.h>
-#endif
-
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
+#include <vdk.h>
 
 #include "misc.h"
 #include "common.h"
 #include "window.h"
 #include "message.h"
-#include "menu.h"
 #include "input.h"
 #include "filebrowser.h"
-#include "common.h"
 #include "conf.h"
-#include "keys.h"
-#include "rcfile.h"
+#include "ui_screen.h"
 
-struct file_s **files;
+struct file_s **files;		/* kept for ABI with older code paths */
 char *oldwd;
 
-static void
-free_file_browser ()
+struct fb_state_s
 {
-  int i;
+  struct input_s *in;		/* parent input dialog state */
+  vk_filedialog_t *fd;
+  int done;
+  int accepted;
+};
 
-  if (!files)
+static void
+fb_apply_selection (struct fb_state_s *st)
+{
+  const char *path;
+  const char *selected;
+  char fullpath[FILENAME_MAX];
+  size_t len;
+
+  if (!st || !st->fd || !st->in)
     return;
 
-  for (i = 0; files[i]; i++)
-    {
-      free (files[i]->name);
-      free (files[i]->path);
-      free (files[i]->st);
-      free (files[i]);
-    }
+  path = vk_filedialog_get_path (st->fd);
+  selected = vk_filedialog_get_selected (st->fd);
+  if (!path || !selected || !selected[0])
+    return;
 
-  free (files);
-  files = NULL;
-}
+  len = strlen (selected);
+  if (selected[len - 1] == '/' || strcmp (selected, "..") == 0)
+    return;
 
-static struct menu_item_s **
-get_file_items (WIN * win)
-{
-  struct menu_input_s *m = win->data;
-  struct input_s *in = m->data;
-  char *path = in->arg;
-  struct menu_item_s **items = m->items;
-  char *p;
-  char pattern[255];
-  int i, n = 0;
-  struct stat st;
-  int which = 2;
-  int len;
-  int x = GLOB_ERR;
-#ifdef HAVE_GLOB_NOMATCH
-  int ret;
-#endif
-  glob_t g;
+  if (strcmp (path, "/") == 0)
+    snprintf (fullpath, sizeof (fullpath), "/%s", selected);
+  else
+    snprintf (fullpath, sizeof (fullpath), "%s/%s", path, selected);
 
-  /*
-   * First find hidden directories in the working directory. Then non-hidden
-   * directories, then apply the config.pattern to regular files.
-   */
-  snprintf (pattern, sizeof (pattern), "%s/.?*", path);
-
-  if (items)
-    {
-      for (i = 0; items[i]; i++)
-	free (items[i]);
-    }
-
-  free (items);
-  items = m->items = NULL;
-  free_file_browser ();
-  m->nofree = 1;
-
-new_glob:
-#ifdef HAVE_GLOB_NOMATCH
-  if ((ret = glob (pattern, x, NULL, &g)) != 0 && ret != GLOB_NOMATCH)
-    {
-#else
-  if (glob (pattern, x, NULL, &g) != 0)
-    {
-#endif
-      cmessage (ERROR_STR, ANY_KEY_STR, "glob() failed:\n%s", pattern);
-      return NULL;
-    }
-
-  for (i = 0; i < g.gl_pathc; i++)
-    {
-      struct tm *tp;
-      char tbuf[16];
-      char sbuf[64];
-
-      if (stat (g.gl_pathv[i], &st) == -1)
-	continue;
-
-      if ((p = strrchr (g.gl_pathv[i], '/')) != NULL)
-	p++;
-      else
-	p = g.gl_pathv[i];
-
-      if (which)
-	{
-	  if (!S_ISDIR (st.st_mode))
-	    continue;
-
-	  if (p[0] == '.' && p[1] == 0)
-	    continue;
-	}
-      else
-	{
-	  if (S_ISDIR (st.st_mode))
-	    continue;
-	}
-
-      files = Realloc (files, (n + 2) * sizeof (struct file_s *));
-      files[n] = Malloc (sizeof (struct file_s));
-      files[n]->path = strdup (g.gl_pathv[i]);
-      len = strlen (p) + 2;
-      files[n]->name = Malloc (len);
-      strcpy (files[n]->name, p);
-
-      if (S_ISDIR (st.st_mode))
-	{
-	  files[n]->name[len - 2] = '/';
-	  files[n]->name[len - 1] = 0;
-	  p = files[n]->path + strlen (files[n]->path) - 1;
-
-	  if (*p == '.' && *(p - 1) == '.' && *(p - 2) == '/')
-	    {
-	      p -= 2;
-	      *p = 0;
-
-	      if (strlen (files[n]->path))
-		{
-		  while (*p != '/')
-		    p--;
-
-		  *p = 0;
-		}
-
-	      if (!strlen (files[n]->path))
-		{
-		  p = files[n]->path;
-		  *p++ = '/';
-		  *p = 0;
-		}
-	    }
-	}
-
-      tp = localtime (&st.st_mtime);
-      strftime (tbuf, sizeof (tbuf), "%b %d %T", tp);
-      snprintf (sbuf, sizeof (sbuf), "%s %6i", tbuf, (int) st.st_size);
-      files[n]->st = strdup (sbuf);
-      n++;
-    }
-
-  which--;
-  files[n] = NULL;
-
-  if (which > 0)
-    {
-      snprintf (pattern, sizeof (pattern), "%s/*", path);
-      globfree (&g);
-      goto new_glob;
-    }
-  else if (which == 0)
-    {
-      snprintf (pattern, sizeof (pattern), "%s/%s", path, config.pattern);
-      globfree (&g);
-      goto new_glob;
-    }
-
-  globfree (&g);
-
-  for (i = 0; files[i]; i++)
-    {
-      items = Realloc (items, (i + 2) * sizeof (struct menu_item_s *));
-      items[i] = Malloc (sizeof (struct menu_item_s));
-      items[i]->name = files[i]->name;
-      items[i]->value = files[i]->st;
-      items[i]->selected = 0;
-    }
-
-  free (win->title);
-  win->title = strdup (path);
-  items[i] = NULL;
-  m->items = items;
-  return items;
-}
-
-static void
-file_browser_help (struct menu_input_s *m)
-{
-  message (_("File Browser Keys"), ANY_KEY_STR, "%s",
-	   _("    UP/DOWN - previous/next menu item\n"
-	     "   HOME/END - first/last menu item\n"
-	     "  PGDN/PGUP - next/previous page\n"
-	     "  a-zA-Z0-9 - jump to item\n"
-	     "      ENTER - select item\n"
-	     "          ~ - change to home directory\n"
-	     "     CTRL-e - change filename expression\n"
-	     "     ESCAPE - abort"));
-}
-
-static void
-file_browser_select (struct menu_input_s *m)
-{
-  struct input_s *in = m->data;
-  char *path = in->arg;
-  struct stat st;
-
-  if (stat (files[m->selected]->path, &st) == -1)
-    {
-      message (ERROR_STR, ANY_KEY_STR, "%s", strerror (errno));
-      return;
-    }
-
-  if (S_ISDIR (st.st_mode))
-    {
-      if (access (files[m->selected]->path, R_OK) != 0)
-	{
-	  cmessage (files[m->selected]->path, ANY_KEY_STR, "%s",
-		    strerror (errno));
-	  return;
-	}
-
-      free (path);
-      path = strdup (files[m->selected]->path);
-      in->arg = path;
-      m->selected = 0;
-
-      if (oldwd)
-	free (oldwd);
-
-      oldwd = strdup (path);
-      return;
-    }
-
-  strncpy (in->buf, files[m->selected]->path, sizeof (in->buf) - 1);
-  in->buf[sizeof (in->buf) - 1] = 0;
-  set_field_buffer (in->fields[0], 0, in->buf);
-  pushkey = -1;
-}
-
-static void
-file_browser_finalize (WIN * win)
-{
-  struct input_s *in = win->data;
-
-  free (in->arg);
-  free_file_browser ();
-}
-
-static void
-file_browser_home (struct menu_input_s *m)
-{
-  struct input_s *in = m->data;
-  char *path = in->arg;
-  struct passwd *pw;
-
-  free (path);
-  pw = getpwuid (getuid ());
-  path = strdup (pw->pw_dir);
-  in->arg = path;
-  m->selected = 0;
+  input_set_buf (st->in, fullpath);
 
   if (oldwd)
     free (oldwd);
-
   oldwd = strdup (path);
 }
 
 static void
-do_file_browser_expression_finalize (WIN * win)
+fb_free (WIN * win)
 {
-  struct input_data_s *in = win->data;
+  struct fb_state_s *st = win->data;
 
-  if (!in->str)
-    return;
-
-  if (config.pattern)
-    free (config.pattern);
-
-  config.pattern = strdup (in->str);
-  free (in->str);
-  free (in);
-  pushkey = REFRESH_MENU;
-}
-
-static void
-file_browser_expression (struct menu_input_s *m)
-{
-  struct input_data_s *in;
-
-  in = Calloc (1, sizeof (struct input_data_s));
-  in->efunc = do_file_browser_expression_finalize;
-  construct_input (_("Filename Expression"), config.pattern, 1, 1, NULL, NULL,
-		   NULL, 0, in, -1, NULL, -1);
-}
-
-static void
-file_browser_abort (struct menu_input_s *m)
-{
-  pushkey = -1;
-}
-
-static void
-file_browser_print (WIN * win)
-{
-  int i, len = 0;
-  struct menu_input_s *m = win->data;
-
-  for (i = 0; m->items[i]; i++)
+  if (st)
     {
-      int n = strlen (m->items[i]->value);
+      st->fd = NULL;		/* destroyed with WIN via WIN_VK_FILEDIALOG */
+      free (st);
+    }
+  win->data = NULL;
+}
 
-      if (len < n)
-	len = n;
+static int
+fb_display (WIN * win)
+{
+  struct fb_state_s *st = win->data;
+  int key = (int) win->c;
+
+  if (!st || !st->fd)
+    return 0;
+
+  if (key == KEY_ESCAPE)
+    {
+      fb_free (win);
+      return 0;
     }
 
-  mvwprintw (win->w, m->print_line, 1, "%*s %-*s", len, m->item->value,
-	     win->cols - len - 3, m->item->name);
+  if (key == KEY_RESIZE)
+    {
+      vk_filedialog_update (st->fd);
+      cboard_ui_refresh ();
+      return 1;
+    }
+
+  /* Drive built-in filedialog kmio (list, path, OK/Cancel). */
+  cboard_ui_push_key ((cboard_widget_t *) st->fd, key);
+  vk_filedialog_update (st->fd);
+  cboard_ui_refresh ();
+
+  if (key == '\n' || key == KEY_ENTER)
+    {
+      const char *selected = vk_filedialog_get_selected (st->fd);
+
+      if (selected && selected[0]
+	  && selected[strlen (selected) - 1] != '/'
+	  && strcmp (selected, "..") != 0)
+	{
+	  fb_apply_selection (st);
+	  fb_free (win);
+	  return 0;
+	}
+    }
+
+  return 1;
 }
 
+static void
+fb_resize (WIN * w)
+{
+  int nh = LINES - 4;
+  int nw = COLS - 4;
+
+  if (nh < 12)
+    nh = 12;
+  if (nw < 40)
+    nw = 40;
+  w->rows = nh;
+  w->cols = nw;
+  w->posy = CALCPOSY (nh);
+  w->posx = CALCPOSX (nw);
+  if (w->vk)
+    {
+      w->w = cboard_ui_widget_resize (w->vk, nh, nw);
+      cboard_ui_widget_move (w->vk, w->posy, w->posx);
+      vk_filedialog_update ((vk_filedialog_t *) w->vk);
+      cboard_ui_refresh ();
+    }
+}
+
+/*
+ * Open a VDK file dialog as a modal over the current input field.
+ * On accept, the selected path is written into the parent input buffer.
+ */
 void
 file_browser (void *arg)
 {
-  struct menu_key_s **keys = NULL;
   struct input_s *in = arg;
-  char *p;
+  struct fb_state_s *st;
+  vk_filedialog_t *fd;
+  WIN *win;
   char path[FILENAME_MAX] = { 0 };
+  char *p;
+  int h, w, y, x;
+
+  if (!in)
+    return;
 
   if (!oldwd && config.savedirectory)
     {
       if ((p = pathfix (config.savedirectory)) == NULL)
 	return;
-
       strncpy (path, p, sizeof (path) - 1);
-
       if (access (path, R_OK) == -1)
 	{
 	  cmessage (ERROR_STR, ANY_KEY_STR, "%s: %s", path, strerror (errno));
@@ -390,14 +202,50 @@ file_browser (void *arg)
   else
     strncpy (path, oldwd, sizeof (path) - 1);
 
-  in->arg = strdup (path);
-  add_menu_key (&keys, '\n', file_browser_select);
-  add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
-                file_browser_help);
-  add_menu_key (&keys, '~', file_browser_home);
-  add_menu_key (&keys, CTRL_KEY ('e'), file_browser_expression);
-  add_menu_key (&keys, KEY_ESCAPE, file_browser_abort);
-  construct_menu (LINES - 4, 0, -1, -1, NULL, 0, get_file_items, keys, in,
-		  file_browser_print, file_browser_finalize, NULL);
-  return;
+  h = LINES - 4;
+  w = COLS - 4;
+  if (h < 12)
+    h = 12;
+  if (w < 40)
+    w = 40;
+  y = CALCPOSY (h);
+  x = CALCPOSX (w);
+
+  fd = vk_filedialog_create (w, h, VK_BORDER_SINGLE, false);
+  if (!fd)
+    {
+      cmessage (ERROR_STR, ANY_KEY_STR, "%s",
+		_("Could not create file dialog"));
+      return;
+    }
+
+  vk_filedialog_set_colors (fd, COLOR_WHITE, COLOR_BLUE);
+  vk_filedialog_set_highlight (fd, COLOR_BLUE, COLOR_WHITE);
+  vk_filedialog_set_button_colors (fd, COLOR_BLACK, COLOR_CYAN);
+  if (config.pattern && config.pattern[0]
+      && config.pattern[0] != '*')
+    {
+      /* pattern is a glob like "*.pgn"; filedialog wants extensions w/o dots */
+      const char *pat = config.pattern;
+      const char *dot = strrchr (pat, '.');
+
+      if (dot && dot[1])
+	vk_filedialog_set_filter (fd, dot + 1);
+    }
+  if (path[0])
+    vk_filedialog_set_path (fd, path);
+  vk_filedialog_update (fd);
+
+  cboard_ui_widget_attach ((cboard_widget_t *) fd, y, x);
+  cboard_ui_widget_raise ((cboard_widget_t *) fd);
+
+  st = Calloc (1, sizeof (struct fb_state_s));
+  st->in = in;
+  st->fd = fd;
+
+  win = window_adopt (_("File Browser"), (void *) fd, WIN_VK_FILEDIALOG,
+		      h, w, y, x, fb_display, st, NULL, fb_resize);
+  if (win->w)
+    keypad (win->w, TRUE);
+  cboard_ui_refresh ();
 }

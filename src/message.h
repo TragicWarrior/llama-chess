@@ -28,25 +28,8 @@
 
 typedef void *(message_func) (void *);
 
-struct message_s
-{
-  int w;
-  int h;
-  char *title;
-  char *prompt;
-  char *extra;
-  wchar_t **lines;
-  int center;
-  wint_t c;
-  message_func *func;
-  void *arg;
-  int offset;
-};
-
 WIN *construct_message (const char *, const char *, int, int, const char *,
 			message_func *, void *, window_exit_func *, wint_t,
                         int, window_resize_func *, const char *, ...);
-struct message_s *update_message (struct message_s *, char *, char *,
-				  char *fmt, ...);
 
 #endif

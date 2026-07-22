@@ -34,6 +34,8 @@
 #include <limits.h>
 #endif
 
+#include <vdk.h>
+
 #include "common.h"
 #include "conf.h"
 #include "colors.h"
@@ -41,6 +43,21 @@
 #include "window.h"
 #include "message.h"
 #include "ui_screen.h"
+
+struct message_s
+{
+  int w;
+  int h;
+  char *title;
+  char *prompt;
+  char *extra;
+  char *body;			/* UTF-8 body for textbox */
+  vk_textbox_t *tb;
+  int center;
+  wint_t c;
+  message_func *func;
+  void *arg;
+};
 
 static void
 wordwrap_lines (wchar_t *** olines, int *nlines, int *width)
@@ -83,8 +100,6 @@ wordwrap_lines (wchar_t *** olines, int *nlines, int *width)
 		}
 	    }
 
-	  /* Its a very long line without any unicode space. Create a
-	   * new message line. */
 	  if (!buf)
 	    {
 	      wchar_t *t, c, *bp;
@@ -115,6 +130,58 @@ wordwrap_lines (wchar_t *** olines, int *nlines, int *width)
     }
 }
 
+static char *
+lines_to_body (wchar_t ** lines, const char *prompt, const char *extra)
+{
+  size_t len = 0;
+  int i;
+  char *body, *p;
+
+  for (i = 0; lines && lines[i]; i++)
+    {
+      char *s = wchar_to_str (lines[i]);
+
+      len += strlen (s) + 1;
+      free (s);
+    }
+
+  if (extra)
+    len += strlen (extra) + 1;
+  if (prompt)
+    len += strlen (prompt) + 1;
+
+  body = Calloc (1, len + 2);
+  p = body;
+
+  for (i = 0; lines && lines[i]; i++)
+    {
+      char *s = wchar_to_str (lines[i]);
+
+      if (i)
+	*p++ = '\n';
+      strcpy (p, s);
+      p += strlen (s);
+      free (s);
+    }
+
+  if (extra)
+    {
+      if (body[0])
+	*p++ = '\n';
+      strcpy (p, extra);
+      p += strlen (extra);
+    }
+
+  if (prompt)
+    {
+      if (body[0])
+	*p++ = '\n';
+      strcpy (p, prompt);
+    }
+
+  return body;
+}
+
 static void
 build_message_lines (const char *title, const char *prompt,
 		     int force_trim, const char *extra, int *h,
@@ -126,6 +193,8 @@ build_message_lines (const char *title, const char *prompt,
   int width = 0, height = 0, len;
   int total = 0;
   wchar_t *wc, *wc_tmp, *wc_line, wc_delim[] = { '\n', 0 };
+
+  (void) force_trim;
 
 #ifdef HAVE_VASPRINTF
   if (vasprintf (&line, fmt, ap) < 0)
@@ -185,70 +254,52 @@ build_message_lines (const char *title, const char *prompt,
     }
 
   height = total;
-
   if (extra)
     height++;
-
+  if (prompt)
+    height++;
   if (title)
     height++;
 
-  height += 4;			// 1 padding, 2 box, 1 prompt
-  width += 4;			// 2 padding, 2 box
+  height += 4;			/* padding + borders + title bar */
+  width += 4;
   *h = height;
   *w = width;
   *str = lines;
 }
 
 static void
-message_free (WIN *w)
+message_free (WIN * w)
 {
   struct message_s *m = w->data;
-  int i;
   void *p;
 
-  for (i = 0; m->lines[i]; i++)
-    free (m->lines[i]);
-
-  free (m->lines);
+  free (m->body);
   free (m->prompt);
   free (m->extra);
+  free (m->title);
+  /* textbox is owned by the window child and destroyed with the window. */
+  m->tb = NULL;
   p = m->arg;
   free (m);
   w->data = p;
+}
+
+static void
+message_paint (struct message_s *m)
+{
+  if (m->tb)
+    {
+      vk_textbox_update (m->tb);
+      vk_widget_draw (VK_WIDGET (m->tb));
+    }
+  cboard_ui_refresh ();
 }
 
 static int
 display_message (WIN * win)
 {
   struct message_s *m = win->data;
-  int i;
-  int n_lines = 0;
-  int r = 0;
-
-  keypad (win->w, TRUE);
-  window_draw_title (win->w, win->title, m->w, CP_MESSAGE_TITLE,
-		     CP_MESSAGE_BORDER);
-
-  for (i = 0; m->lines[i]; i++)
-    {
-      n_lines++;
-
-      if (m->offset && i < m->offset)
-	continue;
-
-      mvwprintw (win->w, (win->title) ? 2 + r : 1 + r,
-		 (m->center || (!i && !m->lines[i + 1])) ?
-		 CENTERX (m->w, m->lines[i]) : 1, "%ls", m->lines[i]);
-      if (++r >= LINES - 5)
-	break;
-    }
-
-  if (m->extra)
-    window_draw_prompt (win->w, (m->prompt) ? m->h - 3 : m->h - 2, m->w,
-			m->extra, CP_MESSAGE_PROMPT);
-
-  if (m->prompt)
-    window_draw_prompt (win->w, m->h - 2, m->w, m->prompt, CP_MESSAGE_PROMPT);
 
   if (m->func && win->c == m->c)
     {
@@ -258,27 +309,52 @@ display_message (WIN * win)
 
   if (win->c != 0)
     {
-      if (win->c == KEY_DOWN || win->c == KEY_UP)
+      if (win->c == KEY_DOWN || win->c == KEY_NPAGE)
 	{
-	  int n = 3;
-
-	  n += m->extra ? 1 : 0;
-
-	  if ((n_lines + n) - m->offset >= LINES - 2)
-	    m->offset = win->c == KEY_DOWN ? m->offset + 1 : m->offset - 1;
-	  else if (win->c == KEY_UP)
-	    m->offset--;
-
-	  if (m->offset < 0)
-	    m->offset = 0;
-
-	  werase (win->w);
+	  if (m->tb)
+	    {
+	      if (win->c == KEY_NPAGE)
+		vk_textbox_scroll_pgdn (m->tb);
+	      else
+		vk_textbox_scroll_down (m->tb);
+	      message_paint (m);
+	    }
 	  win->c = 0;
-	  return display_message (win);
+	  return 1;
+	}
+
+      if (win->c == KEY_UP || win->c == KEY_PPAGE)
+	{
+	  if (m->tb)
+	    {
+	      if (win->c == KEY_PPAGE)
+		vk_textbox_scroll_pgup (m->tb);
+	      else
+		vk_textbox_scroll_up (m->tb);
+	      message_paint (m);
+	    }
+	  win->c = 0;
+	  return 1;
+	}
+
+      if (win->c == KEY_HOME && m->tb)
+	{
+	  vk_textbox_scroll_home (m->tb);
+	  message_paint (m);
+	  win->c = 0;
+	  return 1;
+	}
+
+      if (win->c == KEY_END && m->tb)
+	{
+	  vk_textbox_scroll_end (m->tb);
+	  message_paint (m);
+	  win->c = 0;
+	  return 1;
 	}
 
       if (win->c == KEY_RESIZE)
-        return 1;
+	return 1;
 
       message_free (win);
       return 0;
@@ -288,22 +364,36 @@ display_message (WIN * win)
 }
 
 static void
-message_resize_func (WIN *w)
+message_resize_func (WIN * w)
 {
   struct message_s *m = w->data;
-  size_t rows = wcharv_length (m->lines);
+  int inner_w, inner_h;
 
-  if (m->offset && rows >= LINES - 5)
-    m->offset--;
-
-  m->h = w->rows = rows >= LINES - 5 ? LINES - 1 : rows + 5;
-  m->w = w->cols = w->cols > COLS - 2 ? COLS - 2 : w->cols;
+  m->h = w->rows = m->h >= LINES - 2 ? LINES - 2 : m->h;
+  m->w = w->cols = m->w > COLS - 2 ? COLS - 2 : m->w;
   w->posy = CALCPOSY (w->rows);
   w->posx = CALCPOSX (w->cols);
-  w->w = cboard_ui_widget_resize (w->vk, w->rows, w->cols);
-  cboard_ui_widget_move (w->vk, w->posy, w->posx);
-  wclear (w->w);
-  w->func (w);
+
+  if (w->vk)
+    {
+      w->w = cboard_ui_widget_resize (w->vk, w->rows, w->cols);
+      cboard_ui_widget_move (w->vk, w->posy, w->posx);
+    }
+
+  if (m->tb)
+    {
+      inner_w = w->cols - 2;
+      inner_h = w->rows - 3;
+      if (inner_w < 1)
+	inner_w = 1;
+      if (inner_h < 1)
+	inner_h = 1;
+      vk_widget_resize (VK_WIDGET (m->tb), inner_w, inner_h);
+      vk_textbox_update (m->tb);
+      vk_window_update (VK_WINDOW (w->vk));
+    }
+
+  message_paint (m);
 }
 
 /*
@@ -314,14 +404,19 @@ WIN *
 construct_message (const char *title, const char *prompt, int center,
 		   int force_trim, const char *extra_help,
 		   message_func * func, void *arg, window_exit_func * efunc,
-		   wint_t ckey, int freedata, window_resize_func *rfunc,
-                   const char *fmt, ...)
+		   wint_t ckey, int freedata, window_resize_func * rfunc,
+		   const char *fmt, ...)
 {
   wchar_t **lines = NULL;
   va_list ap;
   struct message_s *m = NULL;
   WIN *win = NULL;
-  int h, w;
+  vk_window_t *vkw;
+  vk_textbox_t *tb;
+  int h, w, i;
+  int y, x;
+  int inner_w, inner_h;
+  char titlebuf[256];
 
   va_start (ap, fmt);
   build_message_lines (title, prompt, force_trim, extra_help, &h, &w, &lines,
@@ -329,26 +424,74 @@ construct_message (const char *title, const char *prompt, int center,
   va_end (ap);
 
   m = Calloc (1, sizeof (struct message_s));
-  m->lines = lines;
-  m->w = w;
+  m->w = w > COLS - 2 ? COLS - 2 : w;
   m->h = h > LINES - 2 ? LINES - 2 : h;
   m->center = center;
   m->c = ckey;
   m->func = func;
   m->arg = arg;
+  m->body = lines_to_body (lines, prompt, extra_help);
 
   if (prompt)
     m->prompt = strdup (prompt);
-
   if (extra_help)
     m->extra = strdup (extra_help);
+  if (title)
+    m->title = strdup (title);
 
-  win = window_create (title, m->h, m->w, CALCPOSY (m->h), CALCPOSX (m->w),
-		       display_message, m, efunc,
-                       rfunc ? rfunc : message_resize_func);
+  for (i = 0; lines && lines[i]; i++)
+    free (lines[i]);
+  free (lines);
 
+  if (m->w < 20)
+    m->w = 20;
+  if (m->h < 6)
+    m->h = 6;
+
+  y = CALCPOSY (m->h);
+  x = CALCPOSX (m->w);
+
+  vkw = vk_window_create (m->w, m->h);
+  if (title)
+    {
+      snprintf (titlebuf, sizeof (titlebuf), " %s ", title);
+      vk_window_set_title (vkw, titlebuf);
+    }
+  else
+    vk_window_set_title (vkw, " Message ");
+
+  vk_window_set_border_style (vkw, VK_BORDER_SINGLE);
+  vk_window_set_border_colors (vkw, COLOR_WHITE, COLOR_BLUE);
+  vk_widget_set_colors (VK_WIDGET (vkw), COLOR_WHITE, COLOR_BLUE);
+
+  inner_w = m->w - 2;
+  inner_h = m->h - 3;
+  if (inner_w < 1)
+    inner_w = 1;
+  if (inner_h < 1)
+    inner_h = 1;
+
+  tb = vk_textbox_create (inner_w, inner_h);
+  vk_textbox_set_word_wrap (tb, true);
+  vk_textbox_set_text (tb, m->body ? m->body : "");
+  vk_widget_set_colors (VK_WIDGET (tb), COLOR_WHITE, COLOR_BLUE);
+  vk_widget_set_expand (VK_WIDGET (tb));
+  vk_window_set_child (vkw, VK_WIDGET (tb));
+  m->tb = tb;
+
+  vk_textbox_update (tb);
+  vk_window_update (vkw);
+
+  cboard_ui_widget_attach ((cboard_widget_t *) vkw, y, x);
+  cboard_ui_widget_raise ((cboard_widget_t *) vkw);
+
+  win = window_adopt (title, (void *) vkw, WIN_VK_WINDOW, m->h, m->w, y, x,
+		      display_message, m, efunc,
+		      rfunc ? rfunc : message_resize_func);
   win->freedata = freedata;
-  wbkgd (win->w, CP_MESSAGE_WINDOW);
-  (*win->func) (win);
+  if (win->w)
+    keypad (win->w, TRUE);
+
+  message_paint (m);
   return win;
 }

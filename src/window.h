@@ -32,11 +32,21 @@ typedef int (window_func) (WIN *);
 typedef void (window_exit_func) (WIN *);
 typedef void (window_resize_func) (WIN *);
 
+/* How to free win->vk when the WIN is destroyed. */
+enum
+{
+  WIN_VK_PLAIN = 0,		/* bare canvas widget */
+  WIN_VK_WINDOW,		/* vk_window_t */
+  WIN_VK_POPUP,			/* vk_popup_t */
+  WIN_VK_FILEDIALOG		/* vk_filedialog_t */
+};
+
 struct window_s
 {
   WINDOW *w;
-  /* VDK canvas widget (opaque cboard_widget_t *); replaces ncurses PANEL. */
+  /* VDK widget (opaque cboard_widget_t *); replaces ncurses PANEL. */
   void *vk;
+  int vk_kind;
   int rows;
   int cols;
   int posy;
@@ -63,6 +73,10 @@ extern wint_t pushkey;
 WIN *window_create (const char *title, int h, int w, int y, int x,
 		    window_func, void *data, window_exit_func,
                     window_resize_func);
+/* Adopt a pre-built VDK widget already attached (or about to be). */
+WIN *window_adopt (const char *title, void *vk, int vk_kind,
+		   int h, int w, int y, int x, window_func, void *data,
+		   window_exit_func, window_resize_func);
 void window_destroy (WIN *);
 void window_draw_title (WINDOW *, const char *, int, chtype, chtype);
 void window_draw_prompt (WINDOW *, int, int, const char *, chtype);

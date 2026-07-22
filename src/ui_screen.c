@@ -86,6 +86,27 @@ cboard_ui_widget_new (int height, int width, int y, int x)
 }
 
 void
+cboard_ui_widget_attach (cboard_widget_t *widget, int y, int x)
+{
+  vk_widget_t *w = (vk_widget_t *) widget;
+
+  if (w == NULL || screen == NULL)
+    return;
+
+  vk_widget_move (w, x, y);
+  vk_screen_attach_widget (screen, 0, w);
+}
+
+static void
+detach_widget (vk_widget_t *w)
+{
+  if (w == NULL || screen == NULL)
+    return;
+
+  vk_screen_detach_widget (screen, 0, w);
+}
+
+void
 cboard_ui_widget_destroy (cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
@@ -93,10 +114,44 @@ cboard_ui_widget_destroy (cboard_widget_t *widget)
   if (w == NULL)
     return;
 
-  if (screen)
-    vk_screen_detach_widget (screen, 0, w);
-
+  detach_widget (w);
   vk_widget_destroy (w);
+}
+
+void
+cboard_ui_window_destroy (cboard_widget_t *widget)
+{
+  vk_window_t *w = (vk_window_t *) widget;
+
+  if (w == NULL)
+    return;
+
+  detach_widget (VK_WIDGET (w));
+  vk_window_destroy (w);
+}
+
+void
+cboard_ui_popup_destroy (cboard_widget_t *widget)
+{
+  vk_popup_t *p = (vk_popup_t *) widget;
+
+  if (p == NULL)
+    return;
+
+  detach_widget (VK_WIDGET (p));
+  vk_popup_destroy (p);
+}
+
+void
+cboard_ui_filedialog_destroy (cboard_widget_t *widget)
+{
+  vk_filedialog_t *d = (vk_filedialog_t *) widget;
+
+  if (d == NULL)
+    return;
+
+  detach_widget (VK_WIDGET (d));
+  vk_filedialog_destroy (d);
 }
 
 WINDOW *
@@ -178,4 +233,15 @@ cboard_ui_widget_raise (cboard_widget_t *widget)
   vk_screen_detach_widget (screen, 0, w);
   vk_screen_attach_widget (screen, 0, w);
   vk_widget_show (w);
+}
+
+void
+cboard_ui_push_key (cboard_widget_t *widget, int key)
+{
+  vk_widget_t *w = (vk_widget_t *) widget;
+
+  if (w == NULL)
+    return;
+
+  vk_object_push_keystroke (VK_OBJECT (w), key);
 }

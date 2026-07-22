@@ -25,10 +25,13 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <wctype.h>
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
+
+#include <vdk.h>
 
 #include "common.h"
 #include "conf.h"
@@ -37,7 +40,6 @@
 #include "misc.h"
 #include "message.h"
 #include "input.h"
-#include "common.h"
 #include "keys.h"
 #include "rcfile.h"
 #include "ui_screen.h"
@@ -49,6 +51,14 @@ static struct input_history_s
   struct input_history_s *prev;
   struct input_history_s *head;
 } *input_history[INPUT_HIST_MAX];
+
+/* Extended state for VDK single-line input. */
+struct vdk_input_s
+{
+  struct input_s base;		/* must be first — win->data cast to input_s */
+  vk_input_t *field;
+  int (*char_ok) (int c);
+};
 
 static void
 add_input_history (int which, const char *str)
@@ -63,12 +73,6 @@ add_input_history (int which, const char *str)
     for (p = input_history[which]->head; p->next; p = p->next);
 
   new = Calloc (1, sizeof (struct input_history_s));
-  if (!new)
-    {
-      fprintf (stderr, "Out of core!\n");
-      exit (EXIT_FAILURE);
-    }
-
   new->str = strdup (str);
   new->prev = p;
 
@@ -83,211 +87,83 @@ add_input_history (int which, const char *str)
   input_history[which] = p ? p->next : new;
 }
 
-static bool
-validate_pgn_tag_name (int c, const void *arg)
+static int
+char_ok_any (int c)
 {
-  if (!isalnum (c) && c != '_')
-    return FALSE;
-
-  return TRUE;
-}
-
-static bool
-validate_pgn_date (int c, const void *arg)
-{
-  if (!isdigit (c) && c != '.' && c != '?')
-    return FALSE;
-
-  return TRUE;
-}
-
-static bool
-validate_pgn_round (int c, const void *arg)
-{
-  if (!isdigit (c) && c != '.' && c != '-' && c != '?')
-    return FALSE;
-
-  return TRUE;
-}
-
-static bool
-validate_pgn_result (int c, const void *arg)
-{
-  if (c != '1' && c != '0' && c != '2' && c != '*' && c != '/' && c != '-')
-    return FALSE;
-
-  return TRUE;
+  (void) c;
+  return 1;
 }
 
 static int
-get_input (WIN * win)
+char_ok_tag_name (int c)
 {
-  struct input_s *in = win->data;
-  char *tmp;
+  return isalnum (c) || c == '_';
+}
+
+static int
+char_ok_pgn_date (int c)
+{
+  return isdigit (c) || c == '.' || c == '?';
+}
+
+static int
+char_ok_pgn_round (int c)
+{
+  return isdigit (c) || c == '.' || c == '-' || c == '?';
+}
+
+static int
+char_ok_pgn_result (int c)
+{
+  return c == '1' || c == '0' || c == '2' || c == '*' || c == '/' || c == '-';
+}
+
+static int
+char_ok_alnum (int c)
+{
+  return isalnum (c);
+}
+
+static int
+char_ok_alpha (int c)
+{
+  return isalpha (c);
+}
+
+static int
+char_ok_integer (int c)
+{
+  return isdigit (c) || c == '-' || c == '+';
+}
+
+static void
+input_finish (WIN * win, struct vdk_input_s *vin, const char *tmp)
+{
+  struct input_s *in = &vin->base;
   struct input_data_s *data = in->data;
-  int i, n;
-  char *prompt = _("Type %ls for help");
-  char buf[255];
-  char str[MB_CUR_MAX];
+  int i;
 
-  snprintf (buf, sizeof (buf), prompt, key_lookup (global_keys, do_global_help));
-  curs_set (1);
-  window_draw_title (win->w, win->title, in->w, CP_INPUT_TITLE,
-		     CP_INPUT_BORDER);
-
-  if (in->extra)
-    {
-      for (i = 0; in->extra[i]; i++)
-	window_draw_prompt (win->w, in->lines + 2 + i, in->w, in->extra[i],
-			    CP_INPUT_PROMPT);
-
-      window_draw_prompt (win->w, in->lines + 2 + i, in->w, buf,
-			  CP_INPUT_PROMPT);
-    }
-  else
-    window_draw_prompt (win->w, in->lines + 2, in->w, buf, CP_INPUT_PROMPT);
-
-  if (in->func && in->c && win->c == in->c)
-    {
-      (*in->func) (in);
-      return 1;
-    }
-
-  if (win->c == keycode_lookup (global_keys, do_global_help))
-    {
-      message (_("Line Editing Keys"), ANY_KEY_STR,
-	       "%s",
-	       _("UP/DOWN/LEFT/RIGHT - position cursor (multiline)\n"
-		 "         UP/CTRL-P - previous input history\n"
-		 "       DOWN/CTRL-N - next input history\n"
-		 "       HOME/CTRL-A - move cursor to the beginning of line\n"
-		 "        END/CTRL-E - move cursor to the end of line\n"
-		 "          CTRL-B/W - move cursor to previous/next word\n"
-		 "            CTRL-X - delete word under cursor\n"
-		 "            CTRL-K - delete from cursor to end of line\n"
-		 "            CTRL-U - clear entire input field\n"
-		 "         BACKSPACE - delete previous character\n"
-		 "            ESCAPE - quit without changes\n"
-		 "             ENTER - quit with changes"));
-      goto ok;
-    }
-
-  switch (win->c)
-    {
-    case CTRL_KEY ('X'):
-      form_driver (in->f, REQ_DEL_WORD);
-      break;
-    case CTRL_KEY ('B'):
-      form_driver (in->f, REQ_PREV_WORD);
-      break;
-    case CTRL_KEY ('W'):
-      form_driver (in->f, REQ_NEXT_WORD);
-      break;
-    case KEY_HOME:
-    case CTRL_KEY ('A'):
-      form_driver (in->f, REQ_BEG_LINE);
-      break;
-    case KEY_END:
-    case CTRL_KEY ('E'):
-      form_driver (in->f, REQ_END_LINE);
-      break;
-    case CTRL_KEY ('K'):
-      form_driver (in->f, REQ_CLR_EOL);
-      break;
-    case CTRL_KEY ('U'):
-      form_driver (in->f, REQ_CLR_FIELD);
-      break;
-    case KEY_LEFT:
-      form_driver (in->f, REQ_LEFT_CHAR);
-      break;
-    case KEY_RIGHT:
-      form_driver (in->f, REQ_RIGHT_CHAR);
-      break;
-    case CTRL_KEY ('P'):
-    case KEY_UP:
-      if (in->hist >= 0 && input_history[in->hist] && in->lines == 1)
-	{
-	  set_field_buffer (in->fields[0], 0, input_history[in->hist]->str);
-	  form_driver (in->f, REQ_END_LINE);
-
-	  if (!input_history[in->hist]->prev)
-	    input_history[in->hist] = input_history[in->hist]->head;
-	  else
-	    input_history[in->hist] = input_history[in->hist]->prev;
-
-	  break;
-	}
-
-      form_driver (in->f, REQ_UP_CHAR);
-      break;
-    case CTRL_KEY ('N'):
-    case KEY_DOWN:
-      if (in->hist >= 0 && input_history[in->hist] && in->lines == 1)
-	{
-	  if (!input_history[in->hist]->next)
-	    {
-	      set_field_buffer (in->fields[0], 0, NULL);
-	      form_driver (in->f, REQ_CLR_FIELD);
-	      break;
-	    }
-
-	  input_history[in->hist] = input_history[in->hist]->next;
-	  set_field_buffer (in->fields[0], 0, input_history[in->hist]->str);
-	  form_driver (in->f, REQ_END_LINE);
-	  break;
-	}
-
-      form_driver (in->f, REQ_DOWN_CHAR);
-      break;
-    case '\010':
-    case KEY_BACKSPACE:
-      form_driver (in->f, REQ_DEL_PREV);
-      break;
-    case '\n':
-      tmp = field_buffer (in->fields[0], 0);
-      goto done;
-    case KEY_ESCAPE:
-      if (in->reset)
-	tmp = NULL;
-      else
-	tmp = (in->buf[0]) ? in->buf : NULL;
-      goto done;
-    default:
-      n = wctomb (str, win->c);
-      for (i = 0; n != -1 && i < n; i++)
-	form_driver (in->f, (unsigned char) str[i]);
-      break;
-    }
-
-ok:
-  form_driver (in->f, REQ_VALIDATION);
-  return 1;
-
-done:
   if (tmp)
     {
-      tmp = trim (tmp);
+      char *t = strdup (tmp);
 
-      if (tmp[0])
+      t = trim (t);
+      if (t[0])
 	{
-	  strncpy (in->buf, tmp, sizeof (in->buf) - 1);
+	  strncpy (in->buf, t, sizeof (in->buf) - 1);
 	  in->buf[sizeof (in->buf) - 1] = 0;
 	}
       else
 	in->buf[0] = 0;
+      free (t);
     }
   else
     in->buf[0] = 0;
-
-  unpost_form (in->f);
-  free_form (in->f);
-  free_field (in->fields[0]);
 
   if (in->extra)
     {
       for (i = 0; in->extra[i]; i++)
 	free (in->extra[i]);
-
       free (in->extra);
     }
 
@@ -297,167 +173,369 @@ done:
     add_input_history (in->hist, in->buf);
 
   win->data = data;
-  free_fieldtype (in->ft);
-  free (in);
+  /* field is owned by the window child tree. */
+  vin->field = NULL;
+  free (vin);
   curs_set (0);
-  return 0;
+}
+
+static int
+get_input_vdk (WIN * win)
+{
+  struct vdk_input_s *vin = win->data;
+  struct input_s *in = &vin->base;
+  const char *text;
+  char *prompt = _("Type %ls for help");
+  char buf[255];
+  char str[MB_CUR_MAX + 1];
+  int i, n;
+
+  snprintf (buf, sizeof (buf), prompt,
+	    key_lookup (global_keys, do_global_help));
+  curs_set (1);
+
+  if (in->func && in->c && win->c == in->c)
+    {
+      (*in->func) (in);
+      if (vin->field)
+	{
+	  vk_input_update (vin->field);
+	  vk_window_update (VK_WINDOW (win->vk));
+	  cboard_ui_refresh ();
+	}
+      return 1;
+    }
+
+  if (win->c == keycode_lookup (global_keys, do_global_help))
+    {
+      message (_("Line Editing Keys"), ANY_KEY_STR,
+	       "%s",
+	       _("         LEFT/RIGHT - position cursor\n"
+		 "         UP/CTRL-P - previous input history\n"
+		 "       DOWN/CTRL-N - next input history\n"
+		 "       HOME/CTRL-A - beginning of line\n"
+		 "        END/CTRL-E - end of line\n"
+		 "            CTRL-U - clear entire input field\n"
+		 "         BACKSPACE - delete previous character\n"
+		 "            ESCAPE - quit without changes\n"
+		 "             ENTER - quit with changes"));
+      return 1;
+    }
+
+  switch (win->c)
+    {
+    case KEY_HOME:
+    case CTRL_KEY ('A'):
+      vk_input_home (vin->field);
+      break;
+    case KEY_END:
+    case CTRL_KEY ('E'):
+      vk_input_end (vin->field);
+      break;
+    case CTRL_KEY ('U'):
+      vk_input_clear (vin->field);
+      break;
+    case KEY_LEFT:
+      vk_input_move_cursor (vin->field, -1);
+      break;
+    case KEY_RIGHT:
+      vk_input_move_cursor (vin->field, 1);
+      break;
+    case CTRL_KEY ('P'):
+    case KEY_UP:
+      if (in->hist >= 0 && input_history[in->hist])
+	{
+	  vk_input_set_text (vin->field, input_history[in->hist]->str);
+	  vk_input_end (vin->field);
+	  if (!input_history[in->hist]->prev)
+	    input_history[in->hist] = input_history[in->hist]->head;
+	  else
+	    input_history[in->hist] = input_history[in->hist]->prev;
+	}
+      break;
+    case CTRL_KEY ('N'):
+    case KEY_DOWN:
+      if (in->hist >= 0 && input_history[in->hist])
+	{
+	  if (!input_history[in->hist]->next)
+	    {
+	      vk_input_clear (vin->field);
+	      break;
+	    }
+	  input_history[in->hist] = input_history[in->hist]->next;
+	  vk_input_set_text (vin->field, input_history[in->hist]->str);
+	  vk_input_end (vin->field);
+	}
+      break;
+    case '\010':
+    case KEY_BACKSPACE:
+    case 127:
+      vk_input_backspace (vin->field);
+      break;
+    case '\n':
+    case KEY_ENTER:
+      text = vk_input_get_text (vin->field);
+      input_finish (win, vin, text);
+      return 0;
+    case KEY_ESCAPE:
+      if (in->reset)
+	input_finish (win, vin, NULL);
+      else
+	input_finish (win, vin, in->buf[0] ? in->buf : NULL);
+      return 0;
+    case KEY_RESIZE:
+      return 1;
+    default:
+      if (!win->c)
+	break;
+      n = wctomb (str, win->c);
+      if (n <= 0)
+	break;
+      for (i = 0; i < n; i++)
+	{
+	  unsigned char ch = (unsigned char) str[i];
+
+	  if (vin->char_ok && !vin->char_ok (ch))
+	    continue;
+	  vk_input_insert_char (vin->field, ch);
+	}
+      break;
+    }
+
+  vk_input_update (vin->field);
+  if (win->vk)
+    vk_window_update (VK_WINDOW (win->vk));
+  cboard_ui_refresh ();
+  return 1;
 }
 
 static void
-input_resize_func (WIN *w)
+input_resize_func (WIN * w)
 {
   w->posy = CALCPOSY (w->rows);
   w->posx = CALCPOSX (w->cols);
-  cboard_ui_widget_move (w->vk, w->posy, w->posx);
+  if (w->vk)
+    {
+      w->w = cboard_ui_widget_resize (w->vk, w->rows, w->cols);
+      cboard_ui_widget_move (w->vk, w->posy, w->posx);
+      if (w->vk_kind == WIN_VK_WINDOW)
+	vk_window_update (VK_WINDOW (w->vk));
+      cboard_ui_refresh ();
+    }
+}
+
+void
+input_set_buf (struct input_s *in, const char *text)
+{
+  struct vdk_input_s *vin;
+
+  if (!in)
+    return;
+
+  if (text)
+    {
+      strncpy (in->buf, text, sizeof (in->buf) - 1);
+      in->buf[sizeof (in->buf) - 1] = 0;
+    }
+  else
+    in->buf[0] = 0;
+
+  /* vin is the container of base when constructed via construct_input. */
+  vin = (struct vdk_input_s *) in;
+  if (vin->field)
+    {
+      vk_input_set_text (vin->field, in->buf);
+      vk_input_update (vin->field);
+    }
 }
 
 /*
- * This function prompts for input. The init argument is the initial value.
- * The lines argument is how many lines the field is. If zero, then it is
- * dynamically determined based on the init argument or INPUT_WIDTH if init is
- * NULL.
- *
- * The reset argument is whether pressing ESC returns the initial value or
- * NULL.
- *
- * The extra_help argument is an extra line of help prompt normally used with
- * the custom_func argument. The custom_func argument is a pointer to a
- * function of type void which takes one pointer-to-void argument. This
- * function is called when the ckey argument is pressed.
- *
- * The efunc parameter is the function that is ran when the window is done
- * getting input or NULL. This function is ran just before the window is
- * destroyed.
- *
- * The type argument is the type of validation for the input defined in
- * common.h. Remaining arguments are values for the type argument. See
- * field_type(3X) for validation types.
- *
- * FIXME form validation is buggy (integers).
+ * Inputs use VDK vk_input (single-line field with long max length).
  */
 WIN *
 construct_input (const char *title, const char *init, int lines, int reset,
 		 const char *extra_help, input_func * func, void *arg,
 		 wint_t key, struct input_data_s * id, int history,
-                 window_resize_func rfunc, int type, ...)
+		 window_resize_func rfunc, int type, ...)
 {
-  WIN *win;
+  struct vdk_input_s *vin;
   struct input_s *in;
-  int l = (lines > 0) ? lines : 1;
-  va_list ap;
-  FIELDTYPE *ft = NULL;
+  WIN *win;
+  vk_window_t *vkw;
+  vk_input_t *field;
+  vk_box_t *vbox = NULL;
   int eh = 0;
+  int h, w;
+  int y, x;
+  char titlebuf[256];
+  va_list ap;
+  int (*char_ok) (int) = char_ok_any;
 
-  l += 2;
-  in = Calloc (1, sizeof (struct input_s));
+  (void) lines;			/* multi-line uses same single-line field for now */
+
+  va_start (ap, type);
+  switch (type)
+    {
+    case FIELD_TYPE_PGN_ROUND:
+      char_ok = char_ok_pgn_round;
+      break;
+    case FIELD_TYPE_PGN_RESULT:
+      char_ok = char_ok_pgn_result;
+      break;
+    case FIELD_TYPE_PGN_DATE:
+      char_ok = char_ok_pgn_date;
+      break;
+    case FIELD_TYPE_PGN_TAG_NAME:
+      char_ok = char_ok_tag_name;
+      break;
+    case FIELD_TYPE_ALNUM:
+      (void) va_arg (ap, int);
+      char_ok = char_ok_alnum;
+      break;
+    case FIELD_TYPE_ALPHA:
+      (void) va_arg (ap, int);
+      char_ok = char_ok_alpha;
+      break;
+    case FIELD_TYPE_INTEGER:
+      (void) va_arg (ap, int);
+      (void) va_arg (ap, long);
+      (void) va_arg (ap, long);
+      char_ok = char_ok_integer;
+      break;
+    case FIELD_TYPE_NUMERIC:
+      (void) va_arg (ap, int);
+      (void) va_arg (ap, double);
+      (void) va_arg (ap, double);
+      char_ok = char_ok_integer;
+      break;
+    case FIELD_TYPE_ENUM:
+      (void) va_arg (ap, char **);
+      (void) va_arg (ap, int);
+      (void) va_arg (ap, int);
+      break;
+    case FIELD_TYPE_REGEXP:
+      (void) va_arg (ap, char *);
+      break;
+#ifdef HAVE_TYPE_IPV4
+    case FIELD_TYPE_IPV4:
+      break;
+#endif
+    default:
+      break;
+    }
+  va_end (ap);
+
+  vin = Calloc (1, sizeof (struct vdk_input_s));
+  in = &vin->base;
+  vin->char_ok = char_ok;
   in->w = INPUT_WIDTH;
+  in->func = func;
+  in->arg = arg;
+  in->c = key;
+  in->lines = 1;
+  in->hist = history;
+  in->data = id;
+  in->reset = reset;
 
   if (extra_help)
     {
       char *tmp = strdup (extra_help);
 
       in->extra = split_str (tmp, "\n", &eh, &in->w, 0);
-      l += eh;
       free (tmp);
     }
-
-  if (title)
-    l++;
-
-  in->h = l + 1;
-  in->func = func;
-  in->arg = arg;
-  in->c = key;
-  in->lines = (lines) ? lines : 1;
-  win = window_create (title, in->h, in->w, CALCPOSY (in->h), CALCPOSX (in->w),
-                       get_input, in, id->efunc,
-                       rfunc ? rfunc : input_resize_func);
-  in = win->data;
-  in->hist = history;
-  in->data = id;
-  in->reset = reset;
-  in->fields[0] = new_field (in->lines, in->w - 2, 0, 0, 0, 0);
-  va_start (ap, type);
-
-  switch (type)
-    {
-    case FIELD_TYPE_PGN_ROUND:
-      ft = new_fieldtype (NULL, validate_pgn_round);
-      set_field_type (in->fields[0], ft);
-      break;
-    case FIELD_TYPE_PGN_RESULT:
-      ft = new_fieldtype (NULL, validate_pgn_result);
-      set_field_type (in->fields[0], ft);
-      break;
-    case FIELD_TYPE_PGN_DATE:
-      ft = new_fieldtype (NULL, validate_pgn_date);
-      set_field_type (in->fields[0], ft);
-      break;
-    case FIELD_TYPE_PGN_TAG_NAME:
-      ft = new_fieldtype (NULL, validate_pgn_tag_name);
-      set_field_type (in->fields[0], ft);
-      break;
-    case FIELD_TYPE_ALNUM:
-      set_field_type (in->fields[0], TYPE_ALNUM, va_arg (ap, int));
-      break;
-    case FIELD_TYPE_ALPHA:
-      set_field_type (in->fields[0], TYPE_ALPHA, va_arg (ap, int));
-      break;
-    case FIELD_TYPE_ENUM:
-      set_field_type (in->fields[0], TYPE_ENUM, va_arg (ap, char **),
-		      va_arg (ap, int), va_arg (ap, int));
-      break;
-    case FIELD_TYPE_INTEGER:
-      set_field_type (in->fields[0], TYPE_INTEGER, va_arg (ap, int),
-		      va_arg (ap, long), va_arg (ap, long));
-      break;
-    case FIELD_TYPE_NUMERIC:
-      set_field_type (in->fields[0], TYPE_NUMERIC, va_arg (ap, int),
-		      va_arg (ap, double), va_arg (ap, double));
-      break;
-    case FIELD_TYPE_REGEXP:
-      set_field_type (in->fields[0], TYPE_REGEXP, va_arg (ap, char *));
-      break;
-/* Solaris 5.9 */
-#ifdef HAVE_TYPE_IPV4
-    case FIELD_TYPE_IPV4:
-      set_field_type (in->fields[0], TYPE_IPV4);
-      break;
-#endif
-    default:
-      set_field_type (in->fields[0], NULL);
-      break;
-    }
-
-  va_end (ap);
 
   if (init)
     {
       strncpy (in->buf, init, sizeof (in->buf) - 1);
       in->buf[sizeof (in->buf) - 1] = 0;
-      set_field_buffer (in->fields[0], 0, init);
     }
 
-  in->ft = ft;
+  /* title + border + input(3) + help lines */
+  h = 2 + 3 + (eh ? eh : 1) + 1;
+  w = in->w;
+  if (w < 24)
+    w = 24;
+  if (w > COLS - 2)
+    w = COLS - 2;
+  in->h = h;
+  in->w = w;
 
-  if (in->lines == 1)
-    field_opts_off (in->fields[0], O_STATIC);
+  y = CALCPOSY (h);
+  x = CALCPOSX (w);
 
+  vkw = vk_window_create (w, h);
+  if (title)
+    {
+      snprintf (titlebuf, sizeof (titlebuf), " %s ", title);
+      vk_window_set_title (vkw, titlebuf);
+    }
+  else
+    vk_window_set_title (vkw, " Input ");
+
+  vk_window_set_border_style (vkw, VK_BORDER_SINGLE);
+  vk_window_set_border_colors (vkw, COLOR_BLACK, COLOR_CYAN);
+  vk_widget_set_colors (VK_WIDGET (vkw), COLOR_BLACK, COLOR_CYAN);
+
+  field = vk_input_create (w - 2);
+  vk_input_set_border_style (field, VK_BORDER_SINGLE);
+  vk_input_set_max_length (field, (int) sizeof (in->buf) - 1);
+  vk_input_show_cursor (field, true);
   if (in->buf[0])
-    set_field_buffer (in->fields[0], 0, in->buf);
+    vk_input_set_text (field, in->buf);
+  vk_widget_set_colors (VK_WIDGET (field), COLOR_WHITE, COLOR_BLUE);
+  vin->field = field;
 
-  field_opts_off (in->fields[0], O_BLANK | O_AUTOSKIP);
-  in->fields[1] = NULL;
-  in->f = new_form (in->fields);
-  form_opts_off (in->f, O_BS_OVERLOAD);
-  set_form_win (in->f, win->w);
-  in->sw = derwin (win->w, in->lines, in->w - 2, 2, 1);
-  set_form_sub (in->f, in->sw);
-  post_form (in->f);
-  form_driver (in->f, REQ_END_FIELD);
-  keypad (win->w, TRUE);
+  if (eh > 0)
+    {
+      int slots = 1 + eh;
+      int si;
+
+      vbox = vk_box_create (w - 2, h - 2, VK_BOX_VERTICAL, slots);
+      vk_widget_set_colors (VK_WIDGET (vbox), COLOR_BLACK, COLOR_CYAN);
+      vk_box_set_widget (vbox, 0, VK_WIDGET (field));
+      for (si = 0; si < eh; si++)
+	{
+	  vk_label_t *lab = vk_label_create (w - 2);
+
+	  vk_label_set_text (lab, in->extra[si]);
+	  vk_widget_set_colors (VK_WIDGET (lab), COLOR_BLACK, COLOR_CYAN);
+	  vk_label_update (lab);
+	  vk_box_set_widget (vbox, si + 1, VK_WIDGET (lab));
+	}
+      vk_window_set_child (vkw, VK_WIDGET (vbox));
+      vk_box_update (vbox);
+    }
+  else
+    {
+      vk_label_t *lab = vk_label_create (w - 2);
+      char helpbuf[255];
+
+      vbox = vk_box_create (w - 2, h - 2, VK_BOX_VERTICAL, 2);
+      vk_widget_set_colors (VK_WIDGET (vbox), COLOR_BLACK, COLOR_CYAN);
+      vk_box_set_widget (vbox, 0, VK_WIDGET (field));
+      snprintf (helpbuf, sizeof (helpbuf), _("Type %ls for help"),
+		key_lookup (global_keys, do_global_help));
+      vk_label_set_text (lab, helpbuf);
+      vk_widget_set_colors (VK_WIDGET (lab), COLOR_BLACK, COLOR_CYAN);
+      vk_label_update (lab);
+      vk_box_set_widget (vbox, 1, VK_WIDGET (lab));
+      vk_window_set_child (vkw, VK_WIDGET (vbox));
+      vk_box_update (vbox);
+    }
+
+  vk_input_update (field);
+  vk_window_update (vkw);
+
+  cboard_ui_widget_attach ((cboard_widget_t *) vkw, y, x);
+  cboard_ui_widget_raise ((cboard_widget_t *) vkw);
+
+  win = window_adopt (title, (void *) vkw, WIN_VK_WINDOW, h, w, y, x,
+		      get_input_vdk, vin, id->efunc,
+		      rfunc ? rfunc : input_resize_func);
+  if (win->w)
+    keypad (win->w, TRUE);
   curs_set (1);
-  wbkgd (win->w, CP_INPUT_WINDOW);
-  (*win->func) (win);
+  cboard_ui_refresh ();
   return win;
 }

@@ -20,7 +20,13 @@ void cboard_ui_resize (void);
 
 /* Geometry uses ncurses-style (height, width, y, x). */
 cboard_widget_t *cboard_ui_widget_new (int height, int width, int y, int x);
+/* Attach an already-built VDK widget (window/popup/filedialog/etc.). */
+void cboard_ui_widget_attach (cboard_widget_t *w, int y, int x);
 void cboard_ui_widget_destroy (cboard_widget_t *w);
+/* Destroy a typed composite (window/popup/filedialog) after detach. */
+void cboard_ui_window_destroy (cboard_widget_t *w);
+void cboard_ui_popup_destroy (cboard_widget_t *w);
+void cboard_ui_filedialog_destroy (cboard_widget_t *w);
 WINDOW *cboard_ui_widget_canvas (cboard_widget_t *w);
 void cboard_ui_widget_move (cboard_widget_t *w, int y, int x);
 /* Resize may recreate the canvas; returns the new canvas. */
@@ -30,6 +36,7 @@ void cboard_ui_widget_hide (cboard_widget_t *w);
 int cboard_ui_widget_hidden (cboard_widget_t *w);
 /* Raise to top of paint order (detach + re-attach). */
 void cboard_ui_widget_raise (cboard_widget_t *w);
+void cboard_ui_push_key (cboard_widget_t *w, int key);
 
 int cboard_ui_active (void);
 

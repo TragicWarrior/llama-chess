@@ -36,10 +36,10 @@ wint_t pushkey;
  * structure. The 'func' parameter is a function pointer that is called from
  * game_loop(). 'efunc' is called just before the window is destroyed.
  */
-WIN *
-window_create (const char *title, int h, int w, int y, int x,
-	       window_func func, void *data, window_exit_func efunc,
-               window_resize_func rfunc)
+static WIN *
+window_push (const char *title, void *vk, int vk_kind, int h, int w,
+	     int y, int x, window_func func, void *data,
+	     window_exit_func efunc, window_resize_func rfunc)
 {
   int i = 0;
 
@@ -48,8 +48,9 @@ window_create (const char *title, int h, int w, int y, int x,
 
   wins = Realloc (wins, (i + 2) * sizeof (WIN *));
   wins[i] = Calloc (1, sizeof (WIN));
-  wins[i]->vk = cboard_ui_widget_new (h, w, y, x);
-  wins[i]->w = cboard_ui_widget_canvas (wins[i]->vk);
+  wins[i]->vk = vk;
+  wins[i]->vk_kind = vk_kind;
+  wins[i]->w = cboard_ui_widget_canvas (vk);
   wins[i]->data = data;
   wins[i]->rows = h;
   wins[i]->cols = w;
@@ -63,6 +64,53 @@ window_create (const char *title, int h, int w, int y, int x,
   return wins[i];
 }
 
+WIN *
+window_create (const char *title, int h, int w, int y, int x,
+	       window_func func, void *data, window_exit_func efunc,
+               window_resize_func rfunc)
+{
+  void *vk = cboard_ui_widget_new (h, w, y, x);
+
+  return window_push (title, vk, WIN_VK_PLAIN, h, w, y, x, func, data,
+		      efunc, rfunc);
+}
+
+WIN *
+window_adopt (const char *title, void *vk, int vk_kind, int h, int w,
+	      int y, int x, window_func func, void *data,
+	      window_exit_func efunc, window_resize_func rfunc)
+{
+  return window_push (title, vk, vk_kind, h, w, y, x, func, data, efunc,
+		      rfunc);
+}
+
+static void
+window_free_vk (WIN * win)
+{
+  if (!win || !win->vk)
+    return;
+
+  switch (win->vk_kind)
+    {
+    case WIN_VK_WINDOW:
+      cboard_ui_window_destroy (win->vk);
+      break;
+    case WIN_VK_POPUP:
+      cboard_ui_popup_destroy (win->vk);
+      break;
+    case WIN_VK_FILEDIALOG:
+      cboard_ui_filedialog_destroy (win->vk);
+      break;
+    case WIN_VK_PLAIN:
+    default:
+      cboard_ui_widget_destroy (win->vk);
+      break;
+    }
+
+  win->vk = NULL;
+  win->w = NULL;
+}
+
 static void
 window_free_one (WIN * win)
 {
@@ -70,10 +118,7 @@ window_free_one (WIN * win)
     return;
 
   free (win->title);
-  if (win->vk)
-    cboard_ui_widget_destroy (win->vk);
-  win->vk = NULL;
-  win->w = NULL;
+  window_free_vk (win);
 
   if (win->freedata && win->data)
     free (win->data);
