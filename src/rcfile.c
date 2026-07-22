@@ -372,17 +372,15 @@ set_default_keys ()
   add_key_binding (&global_keys, do_global_perl, CTRL_KEY ('O'),
 		   _("Call PERL subroutine"), 0);
 #endif
-  /* About: letter key (F10 used to be About; now free for Help). */
+  /* About: letter key. F10 opens the menubar (see menubar.c). */
   add_key_binding (&global_keys, do_global_about, 'a',
 		   _("version information"), 0);
   add_key_binding (&global_keys, do_global_redraw, CTRL_KEY ('L'),
 		   _("redraw the screen"), 0);
   /*
-   * Help: F1 is often intercepted by the terminal. Prefer F10 as the
-   * primary binding (shown in "Type … for help" prompts), keep Ctrl-H
-   * and F1 as alternatives.
+   * Help: F1 is often intercepted by the terminal; F10 is the menubar.
+   * Prefer Ctrl-H (shown in prompts); keep F1 as an alternative.
    */
-  add_key_binding (&global_keys, do_global_help, KEY_F (10), NULL, 0);
   add_key_binding (&global_keys, do_global_help, CTRL_KEY ('h'), NULL, 0);
   add_key_binding (&global_keys, do_global_help, KEY_F (1), NULL, 0);
   add_key_binding (&global_keys, do_global_quit, 'Q', _("quit"), 0);

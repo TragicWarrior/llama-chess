@@ -65,6 +65,7 @@
 #include "rcfile.h"
 #include "filebrowser.h"
 #include "ui_screen.h"
+#include "menubar.h"
 
 #ifdef DEBUG
 #include <debug.h>
@@ -76,21 +77,24 @@
 #define ROWTOMATRIX(r)  	((8 - r) * 2 + 2 - 1)
 #define COLTOMATRIX(c)  	((c == 1) ? 1 : c * 4 - 3)
 #define STATUS_HEIGHT		12
-#define MEGA_BOARD		(LINES >= 50 && COLS >= 144)
+/* Leave row 0 for the menubar; all chrome is laid out below it. */
+#define UI_TOP			CBOARD_MENUBAR_H
+#define WORK_LINES		(LINES - UI_TOP)
+#define MEGA_BOARD		(WORK_LINES >= 49 && COLS >= 144)
 #define BOARD_HEIGHT_MB		50
 #define BOARD_WIDTH_MB		98
 #define STATUS_WIDTH_MB		(COLS - BOARD_WIDTH_MB)
 #define TAG_HEIGHT_MB		31
 #define TAG_WIDTH_MB		(COLS - BOARD_WIDTH_MB)
-#define HISTORY_HEIGHT_MB	(LINES - (STATUS_HEIGHT + TAG_HEIGHT_MB + 1))
+#define HISTORY_HEIGHT_MB	(WORK_LINES - (STATUS_HEIGHT + TAG_HEIGHT_MB + 1))
 #define HISTORY_WIDTH_MB	(COLS - BOARD_WIDTH_MB)
-#define BIG_BOARD		(LINES >= 40 && COLS >= 112)
+#define BIG_BOARD		(WORK_LINES >= 39 && COLS >= 112)
 #define BOARD_HEIGHT		((MEGA_BOARD) ? BOARD_HEIGHT_MB : (BIG_BOARD) ? 34 : 18)
 #define BOARD_WIDTH		((MEGA_BOARD) ? BOARD_WIDTH_MB : (BIG_BOARD) ? 66 : 34)
 #define STATUS_WIDTH		((MEGA_BOARD) ? STATUS_WIDTH_MB : COLS - BOARD_WIDTH)
-#define TAG_HEIGHT		((MEGA_BOARD) ? TAG_HEIGHT_MB : LINES - STATUS_HEIGHT - 1)
+#define TAG_HEIGHT		((MEGA_BOARD) ? TAG_HEIGHT_MB : WORK_LINES - STATUS_HEIGHT - 1)
 #define TAG_WIDTH		((MEGA_BOARD) ? TAG_WIDTH_MB : COLS - BOARD_WIDTH)
-#define HISTORY_HEIGHT		((MEGA_BOARD) ? HISTORY_HEIGHT_MB : LINES - BOARD_HEIGHT)
+#define HISTORY_HEIGHT		((MEGA_BOARD) ? HISTORY_HEIGHT_MB : WORK_LINES - BOARD_HEIGHT)
 #define HISTORY_WIDTH		((MEGA_BOARD) ? HISTORY_WIDTH_MB : COLS - STATUS_WIDTH)
 #define MAX_VALUE_WIDTH	        (COLS - 8)
 
@@ -2123,6 +2127,7 @@ update_all (GAME g)
   update_history_window (g);
   update_tag_window (g->tag);
   update_engine_window (g);
+  cboard_menubar_refresh ();
   cboard_ui_refresh ();
 }
 
@@ -2461,14 +2466,14 @@ rav_next_prev (GAME g, BOARD b, int n)
 static void
 draw_window_decor ()
 {
-  cboard_ui_widget_move (board_vk, 0,
+  cboard_ui_widget_move (board_vk, UI_TOP,
 			 (config.boardleft) ? 0 : COLS - BOARD_WIDTH);
   cboard_ui_widget_move (history_vk, LINES - HISTORY_HEIGHT,
 			 (config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH : 0 :
 			 (MEGA_BOARD) ? 0 : COLS - HISTORY_WIDTH);
-  cboard_ui_widget_move (status_vk, 0,
+  cboard_ui_widget_move (status_vk, UI_TOP,
 			 (config.boardleft) ? BOARD_WIDTH : 0);
-  cboard_ui_widget_move (tag_vk, STATUS_HEIGHT + 1,
+  cboard_ui_widget_move (tag_vk, UI_TOP + STATUS_HEIGHT + 1,
 			 (config.boardleft) ? (MEGA_BOARD) ? BOARD_WIDTH :
 			 HISTORY_WIDTH : 0);
 
@@ -2492,9 +2497,9 @@ history_menu_resize (WIN *w)
   if (!w)
     return;
 
-  w->rows = MEGA_BOARD ? LINES - HISTORY_HEIGHT_MB : LINES;
+  w->rows = MEGA_BOARD ? WORK_LINES - HISTORY_HEIGHT_MB : WORK_LINES;
   w->cols = TAG_WIDTH;
-  w->posy = 0;
+  w->posy = UI_TOP;
   w->posx = config.boardleft ? BOARD_WIDTH : 0;
   m = w->data;
   m->ystatic = w->posy;
@@ -2505,10 +2510,11 @@ history_menu_resize (WIN *w)
 void
 do_window_resize ()
 {
-  if (LINES < 23 || COLS < 74)
+  if (LINES < 24 || COLS < 74)
     return;
 
   cboard_ui_resize ();
+  cboard_menubar_resize ();
   boardw = cboard_ui_widget_resize (board_vk, BOARD_HEIGHT, BOARD_WIDTH);
   historyw =
     cboard_ui_widget_resize (history_vk, HISTORY_HEIGHT, HISTORY_WIDTH);
@@ -2536,6 +2542,7 @@ do_window_resize ()
   if (enginew)
     wclear (enginew);
   draw_window_decor ();
+  cboard_menubar_refresh ();
   update_all (gp);
   if (boardw)
     keypad (boardw, TRUE);
@@ -5755,6 +5762,14 @@ game_loop ()
 
 	      continue;
 	    }
+
+	  /* F10 menubar (and keys while the bar/dropdown is active). */
+	  if (cboard_menubar_key (input_c))
+	    {
+	      if (macro_match == -1)
+		keycount = 0;
+	      goto refresh;
+	    }
 	}
 
       if (!keycount && status.notify)
@@ -5900,6 +5915,7 @@ cleanup_all ()
 
   if (curses_initialized)
     {
+      cboard_menubar_shutdown ();
       cboard_ui_widget_destroy (board_vk);
       cboard_ui_widget_destroy (history_vk);
       cboard_ui_widget_destroy (status_vk);
@@ -6217,11 +6233,11 @@ main (int argc, char *argv[])
   cboard_ui_init ();
   curses_initialized = 1;
 
-  if (LINES < 23 || COLS < 74)
+  if (LINES < 24 || COLS < 74)
     {
       cboard_ui_shutdown ();
       curses_initialized = 0;
-      errx (EXIT_FAILURE, _("Need at least an 74x23 terminal."));
+      errx (EXIT_FAILURE, _("Need at least an 74x24 terminal."));
     }
 
   COLS_OLD = COLS;
@@ -6229,22 +6245,29 @@ main (int argc, char *argv[])
 
   /* Color pairs come from vdk_color_init() in cboard_ui_init(). */
 
+  cboard_menubar_init ();
+
   board_vk =
-    cboard_ui_widget_new (BOARD_HEIGHT, BOARD_WIDTH, 0, COLS - BOARD_WIDTH);
+    cboard_ui_widget_new (BOARD_HEIGHT, BOARD_WIDTH, UI_TOP,
+			  COLS - BOARD_WIDTH);
   boardw = cboard_ui_widget_canvas (board_vk);
   history_vk =
     cboard_ui_widget_new (HISTORY_HEIGHT, HISTORY_WIDTH,
 			  LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
   historyw = cboard_ui_widget_canvas (history_vk);
-  status_vk = cboard_ui_widget_new (STATUS_HEIGHT, STATUS_WIDTH, 0, 0);
+  status_vk =
+    cboard_ui_widget_new (STATUS_HEIGHT, STATUS_WIDTH, UI_TOP, 0);
   statusw = cboard_ui_widget_canvas (status_vk);
-  tag_vk = cboard_ui_widget_new (TAG_HEIGHT, TAG_WIDTH, STATUS_HEIGHT + 1, 0);
+  tag_vk =
+    cboard_ui_widget_new (TAG_HEIGHT, TAG_WIDTH, UI_TOP + STATUS_HEIGHT + 1,
+			  0);
   tagw = cboard_ui_widget_canvas (tag_vk);
   keypad (boardw, TRUE);
   leaveok (tagw, TRUE);
   leaveok (statusw, TRUE);
   leaveok (historyw, TRUE);
   draw_window_decor ();
+  cboard_menubar_refresh ();
   game_loop ();
   cleanup_all ();
   free (w_pawn_wchar);

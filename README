@@ -18,9 +18,9 @@ libviper (VDK) checkout:
      cmake -S . -B build && cmake --build build
      sudo cmake --install build
 
-After installing, type "cboard -h" for command-line options or just "cboard"
-then press F10 (or Ctrl-H; F1 if your terminal does not capture it) for help
-on in-game command keys. Press "a" for About.
+After installing, type "cboard -h" for command-line options or just "cboard".
+Press F10 for the top menu bar (File, Game, Play, …). Help is Ctrl-H
+(or F1 if your terminal does not capture it). Press "a" for About.
 
 If you want PERL support you'll need to have libperl installed and pass
 -DWITH_LIBPERL=ON to cmake. When compiled with PERL support, pressing ^O

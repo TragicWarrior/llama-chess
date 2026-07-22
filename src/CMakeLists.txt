@@ -20,6 +20,8 @@ set(CBOARD_SOURCES
   common.h
   menu.c
   menu.h
+  menubar.c
+  menubar.h
   tags.c
   keys.h
   filebrowser.c
