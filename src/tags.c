@@ -179,8 +179,7 @@ country_codes (void *arg)
 	return;
     }
 
-  add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
-                do_cc_help);
+  add_menu_help_key (&keys, do_cc_help);
   add_menu_key (&keys, KEY_ESCAPE, do_cc_abort);
   add_menu_key (&keys, '\n', do_cc_save);
   construct_menu (0, 0, -1, -1, _("Country Codes"), 0, get_cc_items, keys,
@@ -584,16 +583,14 @@ edit_tags (GAME g, BOARD b, int edit)
       add_menu_key (&keys, CTRL_KEY ('t'), edit_tag_add_custom);
       add_menu_key (&keys, CTRL_KEY ('x'), edit_tag_save);
       add_menu_key (&keys, KEY_ESCAPE, edit_tag_abort);
-      add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
-                    edit_tag_help);
+      add_menu_help_key (&keys, edit_tag_help);
     }
   else
     {
       add_menu_key (&keys, '\n', view_tag_value);
       data = gp->tag;
       add_menu_key (&keys, KEY_ESCAPE, view_tag_quit);
-      add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
-                    view_tag_help);
+      add_menu_help_key (&keys, view_tag_help);
     }
 
   construct_menu (0, 0, -1, -1,

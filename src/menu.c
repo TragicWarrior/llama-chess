@@ -442,3 +442,18 @@ add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func)
   keys[n] = NULL;
   *dst = keys;
 }
+
+void
+add_menu_help_key (struct menu_key_s ***dst, menu_key func)
+{
+  int i;
+
+  if (!global_keys)
+    return;
+
+  for (i = 0; global_keys[i]; i++)
+    {
+      if (global_keys[i]->f == do_global_help)
+	add_menu_key (dst, global_keys[i]->c, func);
+    }
+}

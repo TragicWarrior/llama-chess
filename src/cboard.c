@@ -422,8 +422,7 @@ edit_nag (void *arg)
 
   add_menu_key (&keys, ' ', edit_nag_toggle_item);
   add_menu_key (&keys, CTRL_KEY ('x'), edit_nag_save);
-  add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
-                edit_nag_help);
+  add_menu_help_key (&keys, edit_nag_help);
   construct_menu (0, 0, -1, -1, _("Numeric Annotation Glyphs"), 1,
 		  get_nag_items, keys, arg, nag_print, NULL, NULL);
   return;
@@ -4172,8 +4171,7 @@ history_menu (GAME g)
   add_menu_key (&keys, 'M', history_menu_quit);
   add_menu_key (&keys, KEY_UP, history_menu_prev);
   add_menu_key (&keys, KEY_DOWN, history_menu_next);
-  add_menu_key (&keys, keycode_lookup (global_keys, do_global_help),
-                history_menu_help);
+  add_menu_help_key (&keys, history_menu_help);
   add_menu_key (&keys, CTRL_KEY ('a'), history_menu_annotate);
   add_menu_key (&keys, CTRL_KEY ('d'), history_menu_details);
   add_menu_key (&keys, '\n', history_menu_view_annotation);

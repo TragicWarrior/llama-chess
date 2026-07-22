@@ -372,10 +372,18 @@ set_default_keys ()
   add_key_binding (&global_keys, do_global_perl, CTRL_KEY ('O'),
 		   _("Call PERL subroutine"), 0);
 #endif
-  add_key_binding (&global_keys, do_global_about, KEY_F (10),
+  /* About: letter key (F10 used to be About; now free for Help). */
+  add_key_binding (&global_keys, do_global_about, 'a',
 		   _("version information"), 0);
   add_key_binding (&global_keys, do_global_redraw, CTRL_KEY ('L'),
 		   _("redraw the screen"), 0);
+  /*
+   * Help: F1 is often intercepted by the terminal. Prefer F10 as the
+   * primary binding (shown in "Type … for help" prompts), keep Ctrl-H
+   * and F1 as alternatives.
+   */
+  add_key_binding (&global_keys, do_global_help, KEY_F (10), NULL, 0);
+  add_key_binding (&global_keys, do_global_help, CTRL_KEY ('h'), NULL, 0);
   add_key_binding (&global_keys, do_global_help, KEY_F (1), NULL, 0);
   add_key_binding (&global_keys, do_global_quit, 'Q', _("quit"), 0);
 }
@@ -1138,6 +1146,23 @@ keycode_lookup (struct key_s **keys, key_func f)
   struct key_s *k = find_key (keys, f);
 
   return k ? k->c : 0;
+}
+
+int
+key_matches (struct key_s **keys, key_func f, wint_t c)
+{
+  int i;
+
+  if (!keys)
+    return 0;
+
+  for (i = 0; keys[i]; i++)
+    {
+      if (keys[i]->f == f && keys[i]->c == c)
+	return 1;
+    }
+
+  return 0;
 }
 
 struct key_s *

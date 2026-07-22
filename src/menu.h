@@ -69,6 +69,8 @@ struct menu_input_s
 };
 
 void add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func);
+/* Bind every global key assigned to do_global_help (F10/Ctrl-H/F1/…). */
+void add_menu_help_key (struct menu_key_s ***dst, menu_key func);
 WIN *construct_menu (int rows, int cols, int y, int x, const char *title,
 		     int name_only, menu_items_fn * func,
 		     struct menu_key_s **keys, void *data,

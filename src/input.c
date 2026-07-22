@@ -206,7 +206,7 @@ get_input_vdk (WIN * win)
       return 1;
     }
 
-  if (win->c == keycode_lookup (global_keys, do_global_help))
+  if (key_matches (global_keys, do_global_help, win->c))
     {
       message (_("Line Editing Keys"), ANY_KEY_STR,
 	       "%s",
