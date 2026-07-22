@@ -22,41 +22,25 @@
 
 #include <stdio.h>
 
+#include <vdk.h>
+
 #include "common.h"
 #include "conf.h"
 #include "colors.h"
 
-static int next_cp;
-
-/*
- * Looks for a matching color pair or creates a new color pair if not found.
- */
-static chtype
-find_cp (short fg, short bg, attr_t attrs)
-{
-  short i;
-  short xfg, xbg;
-
-  for (i = 1; i < next_cp; i++)
-    {
-      pair_content (i, &xfg, &xbg);
-
-      if (xfg == fg && xbg == bg)
-	return COLOR_PAIR (i) | attrs;
-    }
-
-  init_pair (next_cp, fg, bg);
-  return COLOR_PAIR (next_cp++) | attrs;
-}
-
 /*
  * Mixes two color pairs' fg and bg colors determined by 'which'.
+ * Uses VDK's pair matrix so board overlays stay consistent with widgets.
  */
 chtype
 mix_cp (chtype a, chtype b, attr_t attrs, int which)
 {
   short afg, abg;
   short bfg, bbg;
+  short fg = 0, bg = 0;
+
+  if (!COLORS)
+    return attrs;
 
   pair_content (PAIR_NUMBER (a), &afg, &abg);
   pair_content (PAIR_NUMBER (b), &bfg, &bbg);
@@ -64,118 +48,49 @@ mix_cp (chtype a, chtype b, attr_t attrs, int which)
   switch (which)
     {
     case A_FG_B_BG:
-      return find_cp (afg, bbg, attrs);
+      fg = afg;
+      bg = bbg;
+      break;
     case A_FG_B_FG:
-      return find_cp (afg, bfg, attrs);
+      fg = afg;
+      bg = bfg;
+      break;
     case A_BG_B_BG:
-      return find_cp (abg, bbg, attrs);
+      fg = abg;
+      bg = bbg;
+      break;
     case B_FG_A_BG:
-      return find_cp (bfg, abg, attrs);
+      fg = bfg;
+      bg = abg;
+      break;
     case B_BG_B_FG:
-      return find_cp (bbg, bfg, attrs);
+      fg = bbg;
+      bg = bfg;
+      break;
     case A_BG_A_FG:
-      return find_cp (abg, afg, attrs);
+      fg = abg;
+      bg = afg;
+      break;
     case B_BG_A_FG:
-      return find_cp (bbg, afg, attrs);
+      fg = bbg;
+      bg = afg;
+      break;
+    default:
+      return 0;
     }
 
-  return 0;
+  return COLOR_PAIR (vdk_color_pair (fg, bg)) | attrs;
 }
 
+/*
+ * VDK already registered the 8x8 (and optional extended) pair matrix in
+ * vdk_color_init().  Static CP_* macros resolve through vdk_color_pair() so
+ * this is a no-op kept for call-site compatibility.
+ */
 void
-init_color_pairs ()
+init_color_pairs (void)
 {
-  next_cp = 1;
-
-  init_pair (next_cp++, config.color[CONF_BCOORDS].fg,
-	     config.color[CONF_BCOORDS].bg);
-  init_pair (next_cp++, config.color[CONF_BGRAPHICS].fg,
-	     config.color[CONF_BGRAPHICS].bg);
-  init_pair (next_cp++, config.color[CONF_BWHITE].fg,
-	     config.color[CONF_BWHITE].bg);
-  init_pair (next_cp++, config.color[CONF_BBLACK].fg,
-	     config.color[CONF_BBLACK].bg);
-  init_pair (next_cp++, config.color[CONF_BSELECTED].fg,
-	     config.color[CONF_BSELECTED].bg);
-  init_pair (next_cp++, config.color[CONF_BCURSOR].fg,
-	     config.color[CONF_BCURSOR].bg);
-  init_pair (next_cp++, config.color[CONF_SWINDOW].fg,
-	     config.color[CONF_SWINDOW].bg);
-  init_pair (next_cp++, config.color[CONF_SBORDER].fg,
-	     config.color[CONF_SBORDER].bg);
-  init_pair (next_cp++, config.color[CONF_STITLE].fg,
-	     config.color[CONF_STITLE].bg);
-  init_pair (next_cp++, config.color[CONF_SENGINE].fg,
-	     config.color[CONF_SENGINE].bg);
-  init_pair (next_cp++, config.color[CONF_SNOTIFY].fg,
-	     config.color[CONF_SNOTIFY].bg);
-  init_pair (next_cp++, config.color[CONF_TWINDOW].fg,
-	     config.color[CONF_TWINDOW].bg);
-  init_pair (next_cp++, config.color[CONF_TBORDER].fg,
-	     config.color[CONF_TBORDER].bg);
-  init_pair (next_cp++, config.color[CONF_TTITLE].fg,
-	     config.color[CONF_TTITLE].bg);
-  init_pair (next_cp++, config.color[CONF_HWINDOW].fg,
-	     config.color[CONF_HWINDOW].bg);
-  init_pair (next_cp++, config.color[CONF_HBORDER].fg,
-	     config.color[CONF_HBORDER].bg);
-  init_pair (next_cp++, config.color[CONF_HTITLE].fg,
-	     config.color[CONF_HTITLE].bg);
-  init_pair (next_cp++, config.color[CONF_MWINDOW].fg,
-	     config.color[CONF_MWINDOW].bg);
-  init_pair (next_cp++, config.color[CONF_MBORDER].fg,
-	     config.color[CONF_MBORDER].bg);
-  init_pair (next_cp++, config.color[CONF_MTITLE].fg,
-	     config.color[CONF_MTITLE].bg);
-  init_pair (next_cp++, config.color[CONF_MPROMPT].fg,
-	     config.color[CONF_MPROMPT].bg);
-  init_pair (next_cp++, config.color[CONF_IWINDOW].fg,
-	     config.color[CONF_IWINDOW].bg);
-  init_pair (next_cp++, config.color[CONF_IBORDER].fg,
-	     config.color[CONF_IBORDER].bg);
-  init_pair (next_cp++, config.color[CONF_ITITLE].fg,
-	     config.color[CONF_ITITLE].bg);
-  init_pair (next_cp++, config.color[CONF_IPROMPT].fg,
-	     config.color[CONF_IPROMPT].bg);
-  init_pair (next_cp++, config.color[CONF_BMOVESW].fg,
-	     config.color[CONF_BMOVESW].bg);
-  init_pair (next_cp++, config.color[CONF_BMOVESB].fg,
-	     config.color[CONF_BMOVESB].bg);
-  init_pair (next_cp++, config.color[CONF_BCOUNT].fg,
-	     config.color[CONF_BCOUNT].bg);
-  init_pair (next_cp++, config.color[CONF_BDWINDOW].fg,
-	     config.color[CONF_BDWINDOW].bg);
-  init_pair (next_cp++, config.color[CONF_MENU].fg,
-	     config.color[CONF_MENU].bg);
-  init_pair (next_cp++, config.color[CONF_MENUS].fg,
-	     config.color[CONF_MENUS].bg);
-  init_pair (next_cp++, config.color[CONF_MENUH].fg,
-	     config.color[CONF_MENUH].bg);
-  init_pair (next_cp++, config.color[CONF_HISTORY_MENU_LG].fg,
-	     config.color[CONF_HISTORY_MENU_LG].bg);
-
-  /*
-   * These are not configurable. They are the color pairs that are mixed
-   * with the background of the current square and foreground of the current
-   * piece. See draw_board() for details.
-   */
-  init_pair (next_cp++, config.color[CONF_BWHITE].fg,
-	     config.color[CONF_BWHITE].bg);
-  init_pair (next_cp++, config.color[CONF_BBLACK].fg,
-	     config.color[CONF_BWHITE].bg);
-  init_pair (next_cp++, config.color[CONF_BBLACK].fg,
-	     config.color[CONF_BBLACK].bg);
-  init_pair (next_cp++, config.color[CONF_BWHITE].fg,
-	     config.color[CONF_BBLACK].bg);
-
-  init_pair (next_cp++, config.color[CONF_BCASTLING].fg,
-	     config.color[CONF_BCASTLING].bg);
-  init_pair (next_cp++, config.color[CONF_BENPASSANT].fg,
-	     config.color[CONF_BENPASSANT].bg);
-  init_pair (next_cp++, config.color[CONF_BATTACK].fg,
-	     config.color[CONF_BATTACK].bg);
-  init_pair (next_cp++, config.color[CONF_BPREVMOVE].fg,
-	     config.color[CONF_BPREVMOVE].bg);
+  /* Intentionally empty: do not call init_pair() on VDK's pair range. */
 }
 
 void

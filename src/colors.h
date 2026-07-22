@@ -19,178 +19,80 @@
 #ifndef COLORS_H
 #define COLORS_H
 
+/*
+ * Color pairs for the board and chrome use VDK's vdk_color_pair() so they
+ * share the same pair table as VDK widgets.  Do not call init_pair() on the
+ * low pair numbers (1-63): that is VDK's 8x8 matrix.  Overwriting it made
+ * dialog borders resolve to the wrong colors (e.g. cyan appeared orange).
+ */
+#include <vdk.h>
+
 enum
 {
   A_FG_B_BG, A_FG_B_FG, A_BG_B_BG, B_FG_A_BG, B_BG_B_FG, A_BG_A_FG,
   A_BG_B_FG, B_BG_A_FG
 };
 
-#define CP_BOARD_COORDS	((COLORS) ? \
-	COLOR_PAIR(1) | config.color[CONF_BCOORDS].attrs : \
-	config.color[CONF_BCOORDS].nattrs)
+#define CP_CFG(conf) \
+	((COLORS) \
+	 ? (COLOR_PAIR (vdk_color_pair (config.color[conf].fg, \
+					config.color[conf].bg)) \
+	    | config.color[conf].attrs) \
+	 : config.color[conf].nattrs)
 
-#define CP_BOARD_GRAPHICS	((COLORS) ? \
-	COLOR_PAIR(2) | config.color[CONF_BGRAPHICS].attrs : \
-	config.color[CONF_BGRAPHICS].nattrs)
+#define CP_BOARD_COORDS		CP_CFG (CONF_BCOORDS)
+#define CP_BOARD_GRAPHICS	CP_CFG (CONF_BGRAPHICS)
+#define CP_BOARD_WHITE		CP_CFG (CONF_BWHITE)
+#define CP_BOARD_BLACK		CP_CFG (CONF_BBLACK)
+#define CP_BOARD_SELECTED	CP_CFG (CONF_BSELECTED)
+#define CP_BOARD_CURSOR		CP_CFG (CONF_BCURSOR)
+#define CP_STATUS_WINDOW	CP_CFG (CONF_SWINDOW)
+#define CP_STATUS_BORDER	CP_CFG (CONF_SBORDER)
+#define CP_STATUS_TITLE		CP_CFG (CONF_STITLE)
+#define CP_STATUS_ENGINE	CP_CFG (CONF_SENGINE)
+#define CP_STATUS_NOTIFY	CP_CFG (CONF_SNOTIFY)
+#define CP_TAG_WINDOW		CP_CFG (CONF_TWINDOW)
+#define CP_TAG_BORDER		CP_CFG (CONF_TBORDER)
+#define CP_TAG_TITLE		CP_CFG (CONF_TTITLE)
+#define CP_HISTORY_WINDOW	CP_CFG (CONF_HWINDOW)
+#define CP_HISTORY_BORDER	CP_CFG (CONF_HBORDER)
+#define CP_HISTORY_TITLE	CP_CFG (CONF_HTITLE)
+#define CP_MESSAGE_WINDOW	CP_CFG (CONF_MWINDOW)
+#define CP_MESSAGE_BORDER	CP_CFG (CONF_MBORDER)
+#define CP_MESSAGE_TITLE	CP_CFG (CONF_MTITLE)
+#define CP_MESSAGE_PROMPT	CP_CFG (CONF_MPROMPT)
+#define CP_INPUT_WINDOW		CP_CFG (CONF_IWINDOW)
+#define CP_INPUT_BORDER		CP_CFG (CONF_IBORDER)
+#define CP_INPUT_TITLE		CP_CFG (CONF_ITITLE)
+#define CP_INPUT_PROMPT		CP_CFG (CONF_IPROMPT)
+#define CP_BOARD_MOVES_WHITE	CP_CFG (CONF_BMOVESW)
+#define CP_BOARD_MOVES_BLACK	CP_CFG (CONF_BMOVESB)
+#define CP_BOARD_COUNT		CP_CFG (CONF_BCOUNT)
+#define CP_BOARD_WINDOW		CP_CFG (CONF_BDWINDOW)
+#define CP_MENU			CP_CFG (CONF_MENU)
+#define CP_MENU_SELECTED	CP_CFG (CONF_MENUS)
+#define CP_MENU_HIGHLIGHT	CP_CFG (CONF_MENUH)
+#define CP_HISTORY_MENU_LG	CP_CFG (CONF_HISTORY_MENU_LG)
+#define CP_BOARD_CASTLING	CP_CFG (CONF_BCASTLING)
+#define CP_BOARD_ENPASSANT	CP_CFG (CONF_BENPASSANT)
+#define CP_BOARD_ATTACK		CP_CFG (CONF_BATTACK)
+#define CP_BOARD_PREVMOVE	CP_CFG (CONF_BPREVMOVE)
 
-#define CP_BOARD_WHITE	((COLORS) ? \
-	COLOR_PAIR(3) | config.color[CONF_BWHITE].attrs : \
-	config.color[CONF_BWHITE].nattrs)
+/* Piece-on-square mixes (fg of piece, bg of square). */
+#define CP_MIX(fgconf, bgconf, attr_src) \
+	((COLORS) \
+	 ? (COLOR_PAIR (vdk_color_pair (config.color[fgconf].fg, \
+					config.color[bgconf].bg)) \
+	    | config.color[attr_src].attrs) \
+	 : config.color[attr_src].nattrs)
 
-#define CP_BOARD_BLACK	((COLORS) ? \
-	COLOR_PAIR(4) | config.color[CONF_BBLACK].attrs : \
-	config.color[CONF_BBLACK].nattrs)
+#define CP_BOARD_W_W	CP_MIX (CONF_BWHITE, CONF_BWHITE, CONF_BWHITE)
+#define CP_BOARD_W_B	CP_MIX (CONF_BBLACK, CONF_BWHITE, CONF_BBLACK)
+#define CP_BOARD_B_B	CP_MIX (CONF_BBLACK, CONF_BBLACK, CONF_BBLACK)
+#define CP_BOARD_B_W	CP_MIX (CONF_BWHITE, CONF_BBLACK, CONF_BWHITE)
 
-#define CP_BOARD_SELECTED	((COLORS) ? \
-	COLOR_PAIR(5) | config.color[CONF_BSELECTED].attrs : \
-	config.color[CONF_BSELECTED].nattrs)
-
-#define CP_BOARD_CURSOR	((COLORS) ? \
-	COLOR_PAIR(6) | config.color[CONF_BCURSOR].attrs : \
-	config.color[CONF_BCURSOR].nattrs)
-
-#define CP_STATUS_WINDOW	((COLORS) ? \
-	COLOR_PAIR(7) | config.color[CONF_SWINDOW].attrs : \
-	config.color[CONF_SWINDOW].nattrs)
-
-#define CP_STATUS_BORDER	((COLORS) ? \
-	COLOR_PAIR(8) | config.color[CONF_SBORDER].attrs : \
-	config.color[CONF_SBORDER].nattrs)
-
-#define CP_STATUS_TITLE	((COLORS) ? \
-	COLOR_PAIR(9) | config.color[CONF_STITLE].attrs : \
-	config.color[CONF_STITLE].nattrs)
-
-#define CP_STATUS_ENGINE	((COLORS) ? \
-	COLOR_PAIR(10) | config.color[CONF_SENGINE].attrs : \
-	config.color[CONF_SENGINE].nattrs)
-
-#define CP_STATUS_NOTIFY	((COLORS) ? \
-	COLOR_PAIR(11) | config.color[CONF_SNOTIFY].attrs : \
-	config.color[CONF_SNOTIFY].nattrs)
-
-#define CP_TAG_WINDOW	((COLORS) ? \
-	COLOR_PAIR(12) | config.color[CONF_TWINDOW].attrs : \
-	config.color[CONF_TWINDOW].nattrs)
-
-#define CP_TAG_BORDER	((COLORS) ? \
-	COLOR_PAIR(13) | config.color[CONF_TBORDER].attrs : \
-	config.color[CONF_TBORDER].nattrs)
-
-#define CP_TAG_TITLE	((COLORS) ? \
-	COLOR_PAIR(14) | config.color[CONF_TTITLE].attrs : \
-	config.color[CONF_TTITLE].nattrs)
-
-#define CP_HISTORY_WINDOW	((COLORS) ? \
-	COLOR_PAIR(15) | config.color[CONF_HWINDOW].attrs : \
-	config.color[CONF_HWINDOW].nattrs)
-
-#define CP_HISTORY_BORDER	((COLORS) ? \
-	COLOR_PAIR(16) | config.color[CONF_HBORDER].attrs : \
-	config.color[CONF_HBORDER].nattrs)
-
-#define CP_HISTORY_TITLE	((COLORS) ? \
-	COLOR_PAIR(17) | config.color[CONF_HTITLE].attrs : \
-	config.color[CONF_HTITLE].nattrs)
-
-#define CP_MESSAGE_WINDOW	((COLORS) ? \
-	COLOR_PAIR(18) | config.color[CONF_MWINDOW].attrs : \
-	config.color[CONF_MWINDOW].nattrs)
-
-#define CP_MESSAGE_BORDER	((COLORS) ? \
-	COLOR_PAIR(19) | config.color[CONF_MBORDER].attrs : \
-	config.color[CONF_MBORDER].nattrs)
-
-#define CP_MESSAGE_TITLE	((COLORS) ? \
-	COLOR_PAIR(20) | config.color[CONF_MTITLE].attrs : \
-	config.color[CONF_MTITLE].nattrs)
-
-#define CP_MESSAGE_PROMPT	((COLORS) ? \
-	COLOR_PAIR(21) | config.color[CONF_MPROMPT].attrs : \
-	config.color[CONF_MPROMPT].nattrs)
-
-#define CP_INPUT_WINDOW	((COLORS) ? \
-	COLOR_PAIR(22) | config.color[CONF_IWINDOW].attrs : \
-	config.color[CONF_IWINDOW].nattrs)
-
-#define CP_INPUT_BORDER	((COLORS) ? \
-	COLOR_PAIR(23) | config.color[CONF_IBORDER].attrs : \
-	config.color[CONF_IBORDER].nattrs)
-
-#define CP_INPUT_TITLE	((COLORS) ? \
-	COLOR_PAIR(24) | config.color[CONF_ITITLE].attrs : \
-	config.color[CONF_ITITLE].nattrs)
-
-#define CP_INPUT_PROMPT	((COLORS) ? \
-	COLOR_PAIR(25) | config.color[CONF_IPROMPT].attrs : \
-	config.color[CONF_IPROMPT].nattrs)
-
-#define CP_BOARD_MOVES_WHITE	((COLORS) ? \
-	COLOR_PAIR(26) | config.color[CONF_BMOVESW].attrs : \
-	config.color[CONF_BMOVESW].nattrs)
-
-#define CP_BOARD_MOVES_BLACK	((COLORS) ? \
-	COLOR_PAIR(27) | config.color[CONF_BMOVESB].attrs : \
-	config.color[CONF_BMOVESB].nattrs)
-
-#define CP_BOARD_COUNT	((COLORS) ? \
-	COLOR_PAIR(28) | config.color[CONF_BCOUNT].attrs : \
-	config.color[CONF_BCOUNT].nattrs)
-
-#define CP_BOARD_WINDOW	((COLORS) ? \
-	COLOR_PAIR(29) | config.color[CONF_BDWINDOW].attrs : \
-	config.color[CONF_BDWINDOW].nattrs)
-
-#define CP_MENU	((COLORS) ? \
-	COLOR_PAIR(30) | config.color[CONF_MENU].attrs : \
-	config.color[CONF_MENU].nattrs)
-
-#define CP_MENU_SELECTED	((COLORS) ? \
-	COLOR_PAIR(31) | config.color[CONF_MENUS].attrs : \
-	config.color[CONF_MENUS].nattrs)
-
-#define CP_MENU_HIGHLIGHT	((COLORS) ? \
-	COLOR_PAIR(32) | config.color[CONF_MENUH].attrs : \
-	config.color[CONF_MENUH].nattrs)
-
-#define CP_HISTORY_MENU_LG	((COLORS) ? \
-	COLOR_PAIR(33) | config.color[CONF_HISTORY_MENU_LG].attrs : \
-	config.color[CONF_HISTORY_MENU_LG].nattrs)
-
-#define CP_BOARD_W_W		((COLORS) ? \
-	COLOR_PAIR(34) | config.color[CONF_BWHITE].attrs : \
-	config.color[CONF_BWHITE].nattrs)
-
-#define CP_BOARD_W_B		((COLORS) ? \
-	COLOR_PAIR(35) | config.color[CONF_BBLACK].attrs : \
-	config.color[CONF_BWHITE].nattrs)
-
-#define CP_BOARD_B_B		((COLORS) ? \
-	COLOR_PAIR(36) | config.color[CONF_BBLACK].attrs : \
-	config.color[CONF_BBLACK].nattrs)
-
-#define CP_BOARD_B_W		((COLORS) ? \
-	COLOR_PAIR(37) | config.color[CONF_BWHITE].attrs : \
-	config.color[CONF_BBLACK].nattrs)
-
-#define CP_BOARD_CASTLING	((COLORS) ? \
-	COLOR_PAIR(38) | config.color[CONF_BCASTLING].attrs : \
-	config.color[CONF_BCASTLING].nattrs)
-
-#define CP_BOARD_ENPASSANT	((COLORS) ? \
-	COLOR_PAIR(39) | config.color[CONF_BENPASSANT].attrs : \
-	config.color[CONF_BENPASSANT].nattrs)
-
-#define CP_BOARD_ATTACK	((COLORS) ? \
-	COLOR_PAIR(40) | config.color[CONF_BATTACK].attrs : \
-	config.color[CONF_BATTACK].nattrs)
-
-#define CP_BOARD_PREVMOVE	((COLORS) ? \
-	COLOR_PAIR(41) | config.color[CONF_BPREVMOVE].attrs : \
-	config.color[CONF_BPREVMOVE].nattrs)
-
-void init_color_pairs ();
-void set_default_colors ();
-chtype mix_cp (chtype a, chtype b, attr_t, int which);
+void init_color_pairs (void);
+void set_default_colors (void);
+chtype mix_cp (chtype a, chtype b, attr_t attrs, int which);
 
 #endif
