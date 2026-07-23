@@ -446,6 +446,8 @@ notice_style(struct notice_s *n)
         int lw = 0, lh = 0;
 
         vk_widget_set_colors(VK_WIDGET(n->label), fg, bg);
+        /* A_BOLD → bright white (plain COLOR_WHITE is dim/grey on many terms). */
+        vk_widget_set_attrs(VK_WIDGET(n->label), A_BOLD);
         vk_widget_get_metrics(VK_WIDGET(n->label), &lw, &lh);
         if (lw < 1 && n->client)
             vk_widget_get_metrics(VK_WIDGET(n->client), &lw, NULL);
@@ -608,6 +610,7 @@ construct_notice_popup(const char *body, const char *title,
     vk_label_set_justify(lab, VK_JUSTIFY_CENTER);
     vk_label_set_text(lab, text);
     vk_widget_set_colors(VK_WIDGET(lab), fg, bg);
+    vk_widget_set_attrs(VK_WIDGET(lab), A_BOLD);
     vk_label_update(lab);
     vk_box_set_widget(client, 1, VK_WIDGET(lab));
 
