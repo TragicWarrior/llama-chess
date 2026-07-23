@@ -23,6 +23,7 @@
 #include "window.h"
 #include "ui_screen.h"
 #include "menubar.h"
+#include "ollama.h"
 
 #ifndef N_
 #define N_(s) gettext_noop(s)
@@ -63,6 +64,9 @@ static int focused;
 static const struct mb_item file_items[] = {
     {N_("Open PGN…"), do_global_resume_game, MODE_MASK_ANY},
     {N_("Save…"), do_global_save_game, MODE_MASK_ANY},
+    {NULL, NULL, 0},
+    {N_("Connect…"), do_global_connect_ollama, MODE_MASK_ANY},
+    {N_("Disconnect Ollama"), do_global_disconnect_ollama, MODE_MASK_ANY},
     {NULL, NULL, 0},
     {N_("New game / round"), do_global_new_game, MODE_MASK_ANY},
     {N_("New from scratch…"), do_global_new_all, MODE_MASK_ANY},

@@ -131,6 +131,8 @@ key_func do_global_toggle_delete;
 key_func do_global_delete_game;
 key_func do_global_resume_game;
 key_func do_global_save_game;
+key_func do_global_connect_ollama;
+key_func do_global_disconnect_ollama;
 key_func do_global_about;
 key_func do_global_quit;
 key_func do_global_toggle_engine_window;

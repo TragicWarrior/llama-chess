@@ -69,6 +69,7 @@
 #include "ui_screen.h"
 #include "menubar.h"
 #include "mouse.h"
+#include "ollama.h"
 
 #ifdef DEBUG
 #include <debug.h>
@@ -2022,6 +2023,8 @@ void update_status_window(GAME g)
             strncat(buf, _(" (human/human)"), len - 1);
         else if (TEST_FLAG(d->flags, CF_ENGINE_LOOP))
             strncat(buf, _(" (engine/engine)"), len - 1);
+        else if (engine_is_ollama(g))
+            strncat(buf, _(" (human/ollama)"), len - 1);
         else
             strncat(buf, (d->play_mode == PLAY_EH) ? _(" (engine/human)") : _(" (human/engine)"), len - 1);
     }
@@ -6006,6 +6009,8 @@ void cleanup_all()
     free_userdata();
     pgn_free_all();
     free(config.engine_cmd);
+    free(config.ollama_url);
+    free(config.ollama_model);
     free(config.pattern);
     free(config.ccfile);
     free(config.nagfile);

@@ -6,6 +6,8 @@ set(CBOARD_SOURCES
   misc.h
   engine.c
   engine.h
+  ollama.c
+  ollama.h
   input.c
   input.h
   rcfile.c

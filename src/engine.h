@@ -58,11 +58,18 @@ struct queue_s
     int status;
 };
 
+enum
+{
+    ENGINE_BACKEND_LOCAL = 0, /* gnuchess / external CECP process */
+    ENGINE_BACKEND_OLLAMA     /* XBoard bridge to Ollama HTTP */
+};
+
 struct engine_s
 {
     int fd[2];
     pid_t pid;
     int status;
+    int backend; /* ENGINE_BACKEND_* */
     struct queue_s **queue;
     char **enginebuf;
     char *iobuf;

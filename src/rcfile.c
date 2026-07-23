@@ -392,6 +392,8 @@ void set_config_defaults()
     config.pattern = strdup("*.[Pp][Gg][Nn]*");
     config.engine_cmd = strdup("gnuchess --xboard");
     config.engine_protocol = 1;
+    config.ollama_url = NULL;
+    config.ollama_model = NULL;
     config.jumpcount = 5;
     config.linegraphics = 1;
     config.saveprompt = 1;

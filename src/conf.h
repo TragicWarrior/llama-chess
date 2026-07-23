@@ -116,6 +116,8 @@ struct config_s
     char *engine_cmd;                      // Alternate chess engine command.
     int engine_protocol;                   // XBoard protocol: 1 or 2
     int engine_timeout;                    // seconds to wait for the engine to spawn
+    char *ollama_url;                      // e.g. http://127.0.0.1:11434
+    char *ollama_model;                    // e.g. llama3.2
     struct color_s color[CONF_MAX_COLORS]; // Color configuration.
     TAG **tag;                             // Custom PGN tags.
     char *pattern;                         // Filename filter in the file browser.
