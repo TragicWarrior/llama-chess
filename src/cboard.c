@@ -1067,6 +1067,23 @@ board_square_color(int rank, int file)
     return ((rank + file) % 2) ? WHITE : BLACK;
 }
 
+/*
+ * Empty-square fill: colour pair only, no A_BOLD.
+ * CONF_BWHITE carries A_BOLD so piece glyphs are bright white; bold on a
+ * red background is often rendered as orange, so never put bold on fills.
+ */
+static chtype
+board_square_fill_attrs(int sq_white)
+{
+    int conf = sq_white ? CONF_BWHITE : CONF_BBLACK;
+
+    if (!COLORS)
+        return A_NORMAL;
+
+    return COLOR_PAIR(vdk_color_pair(config.color[conf].fg,
+                                     config.color[conf].bg));
+}
+
 static void
 board_fill_cell(WINDOW *cv, int x, int y, int w, int h, chtype attrs)
 {
@@ -1446,32 +1463,37 @@ void update_board_window(GAME g)
                        || (d->ospm_row == rank && d->ospm_col == file));
 
             /*
-             * Keep normal red/black (etc.) square colours.  Valid moves are
-             * marked later with a purple cell border, not by recolouring
-             * the square.
+             * Keep normal red/black square colours (no bold on fills).
+             * Valid moves use a purple cell border later, not a recolour.
              */
             if (is_selected)
                 cell_attrs = CP_BOARD_SELECTED;
             else if (is_prev)
                 cell_attrs = CP_BOARD_PREVMOVE;
             else
-                cell_attrs = sq_white ? CP_BOARD_WHITE : CP_BOARD_BLACK;
+                cell_attrs = board_square_fill_attrs(sq_white);
 
             if (config.details && d->b[br][bc].enpassant)
             {
                 p = pi = 'x';
                 cell_attrs = mix_cp(CP_BOARD_ENPASSANT, cell_attrs,
                                     ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
+                /* mix may re-apply bold; keep fill intensity normal. */
+                cell_attrs &= ~(A_BOLD);
             }
 
             if (can_attack)
+            {
                 cell_attrs = mix_cp(CP_BOARD_ATTACK, cell_attrs,
                                     ATTRS(CP_BOARD_ATTACK), A_FG_B_BG);
+                cell_attrs &= ~(A_BOLD);
+            }
 
             board_fill_cell(cv, x, y, w, h, cell_attrs);
 
             if (pi != OPEN_SQUARE && p != 'x' && !can_attack)
             {
+                /* Pieces keep bold white via CP_BOARD_W_*. */
                 if (sq_white)
                     piece_attrs = isupper(p) ? CP_BOARD_W_W : CP_BOARD_W_B;
                 else
