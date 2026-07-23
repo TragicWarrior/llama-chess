@@ -99,7 +99,7 @@ static const struct mb_item play_items[] = {
   {N_("Human vs Human"), do_play_toggle_human, MODE_MASK_PLAY},
   {N_("Pause / resume"), do_play_toggle_pause, MODE_MASK_PLAY},
   {N_("Strict castling"), do_play_toggle_strict_castling, MODE_MASK_PLAY},
-  {N_("Valid moves"), do_play_toggle_valid_moves, MODE_MASK_PLAY},
+  {N_("Toggle valid moves"), do_play_toggle_valid_moves, MODE_MASK_PLAY},
   {NULL, NULL, 0},
   {N_("History mode"), do_play_history_mode, MODE_MASK_PLAY},
   {N_("Edit mode"), do_play_edit_mode, MODE_MASK_PLAY},

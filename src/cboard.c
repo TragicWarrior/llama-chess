@@ -1954,6 +1954,9 @@ update_status_window (GAME g)
   mvwprintw (statusw, y++, 0, "%-*s", len, buf);
   free (buf);
 
+  mvwprintw (statusw, y++, 0, "%*s %-*s", 7, _("Valid:"), w,
+	     config.validmoves ? _("on") : _("off"));
+
   if (d->engine)
     {
       switch (d->engine->status)
