@@ -1647,11 +1647,15 @@ void pgn_find_valid_moves(GAME g, BOARD b, int file, int rank)
 {
     int p = pgn_piece_to_int(b[RANKTOBOARD(rank)][FILETOBOARD(file)].icon);
     int r, f;
+    int sfile = file, srank = rank;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: BEGIN valid destination squares for %c%c\n", __FILE__,
              __LINE__, INTTOFILE(file), INTTORANK(rank));
 #endif
+
+    /* Clear previous piece's destinations so highlights do not accumulate. */
+    pgn_reset_valid_moves(b);
 
     g->validate_find = 1;
     find_king_squares(g, b, &g->kfile, &g->krank, &g->okfile, &g->okrank);
@@ -1660,10 +1664,16 @@ void pgn_find_valid_moves(GAME g, BOARD b, int file, int rank)
     {
         for (f = 1; VALIDFILE(f); f++)
         {
+            int from_file = sfile, from_rank = srank;
+
             if (val_piece_side(g->turn, b[RANKTOBOARD(r)][FILETOBOARD(f)].icon))
                 continue;
 
-            if (find_source_square(g, b, p, &file, &rank, f, r) != 0)
+            /*
+             * find_source_square may rewrite file/rank; always start from the
+             * selected origin for each destination candidate.
+             */
+            if (find_source_square(g, b, p, &from_file, &from_rank, f, r) != 0)
             {
                 b[RANKTOBOARD(r)][FILETOBOARD(f)].valid = 1;
 #ifdef DEBUG

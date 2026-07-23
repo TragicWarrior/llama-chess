@@ -3371,12 +3371,27 @@ int cboard_board_mouse(int x, int y, mmask_t bstate)
     if (d->mode == MODE_PLAY)
     {
         /*
-       * Same as keyboard: first click on a side-to-move piece selects it
-       * (yellow). Second click on a destination commits. Empty/wrong-side
-       * squares only move the cursor (green).
-       */
+         * Same as keyboard: click own piece → select (or re-select and
+         * refresh valid-move highlights).  Click elsewhere with a piece
+         * already selected → try commit.  Empty/wrong-side with no
+         * selection only moves the cursor.
+         */
         if (d->sp.icon)
-            do_play_commit();
+        {
+            char r = d->c_row, c = d->c_col;
+            unsigned char icon;
+
+            if (d->rotate)
+                rotate_position(&r, &c);
+            icon = d->b[RANKTOBOARD(r)][FILETOBOARD(c)].icon;
+
+            if (pgn_piece_to_int(icon) != OPEN_SQUARE
+                && ((islower((unsigned char) icon) && gp->turn == BLACK)
+                    || (isupper((unsigned char) icon) && gp->turn == WHITE)))
+                do_play_select();
+            else
+                do_play_commit();
+        }
         else
             do_play_select();
     }
@@ -3458,7 +3473,11 @@ void do_play_select()
     d->sp.scol = d->c_col;
 
     if (config.validmoves)
+    {
+        /* Always clear first so re-selecting another piece replaces highlights. */
+        pgn_reset_valid_moves(d->b);
         pgn_find_valid_moves(gp, d->b, d->sp.scol, d->sp.srow);
+    }
 
     if (d->rotate)
     {
