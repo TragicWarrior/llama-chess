@@ -661,12 +661,13 @@ construct_confirm (const char *title, const char *text,
   char titlebuf[128];
   const char *body = text ? text : "";
 
-  w = (int) strlen (body) + 6;
-  if (w < 28)
-    w = 28;
+  /* Tight fit: frame(2) + 1-line label + button bar(3) = 6 rows. */
+  w = (int) strlen (body) + 8;
+  if (w < 24)
+    w = 24;
   if (w > COLS - 4)
     w = COLS - 4;
-  h = 8;
+  h = 6;
   if (h > LINES - 2)
     h = LINES - 2;
 
@@ -685,7 +686,9 @@ construct_confirm (const char *title, const char *text,
   else
     vk_popup_set_title (popup, " Confirm ");
 
-  lab = vk_label_create (w - 4);
+  /* Full interior width so justify-center is relative to the dialog. */
+  lab = vk_label_create (w - 2);
+  vk_label_set_justify (lab, VK_JUSTIFY_CENTER);
   vk_label_set_text (lab, (char *) body);
   vk_popup_set_client (popup, VK_WIDGET (lab));
 
@@ -744,8 +747,8 @@ confirm_dialog_mouse (WIN * win, int x, int y, mmask_t bstate)
   lx = x - px;
   ly = y - py;
 
-  /* Button bar occupies the lower interior of the popup (border inset). */
-  bar_top = ph - 5;
+  /* Button bar is the bottom ~3 rows of the popup (tight 6-row dialog). */
+  bar_top = ph - 4;
   if (bar_top < 2)
     bar_top = ph / 2;
 
