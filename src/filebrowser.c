@@ -60,40 +60,80 @@ enum
 struct fb_state_s
 {
   struct input_s *in;		/* parent input dialog state */
+  WIN *parent;			/* construct_input WIN under this dialog */
   vk_filedialog_t *fd;
   int tab;			/* FB_TAB_* */
 };
 
-static void
-fb_apply_selection (struct fb_state_s *st)
+static int
+fb_is_enter_key (int key)
 {
-  const char *path;
+  return key == '\n' || key == '\r' || key == KEY_ENTER;
+}
+
+/* Copy current list selection; 0 = empty/unavailable. */
+static int
+fb_copy_selected (struct fb_state_s *st, char *buf, size_t buflen)
+{
   const char *selected;
-  char fullpath[FILENAME_MAX];
+
+  if (!st || !st->fd || !buf || buflen < 2)
+    return 0;
+
+  selected = vk_filedialog_get_selected (st->fd);
+  if (!selected || !selected[0])
+    return 0;
+
+  strncpy (buf, selected, buflen - 1);
+  buf[buflen - 1] = '\0';
+  return 1;
+}
+
+static int
+fb_is_dir_entry (const char *name)
+{
   size_t len;
 
-  if (!st || !st->fd || !st->in)
-    return;
+  if (!name || !name[0])
+    return 0;
+  if (strcmp (name, "..") == 0)
+    return 1;
+  len = strlen (name);
+  return name[len - 1] == '/';
+}
+
+/*
+ * Write a file name into the parent input.  Returns 1 on success.
+ * name must already be a non-directory list entry (not ".." / "foo/").
+ */
+static int
+fb_apply_name (struct fb_state_s *st, const char *name)
+{
+  const char *path;
+  char fullpath[FILENAME_MAX];
+
+  if (!st || !st->fd || !st->in || !name || !name[0])
+    return 0;
+  if (fb_is_dir_entry (name))
+    return 0;
 
   path = vk_filedialog_get_path (st->fd);
-  selected = vk_filedialog_get_selected (st->fd);
-  if (!path || !selected || !selected[0])
-    return;
-
-  len = strlen (selected);
-  if (selected[len - 1] == '/' || strcmp (selected, "..") == 0)
-    return;
+  if (!path || !path[0])
+    return 0;
 
   if (strcmp (path, "/") == 0)
-    snprintf (fullpath, sizeof (fullpath), "/%s", selected);
+    snprintf (fullpath, sizeof (fullpath), "/%s", name);
   else
-    snprintf (fullpath, sizeof (fullpath), "%s/%s", path, selected);
+    snprintf (fullpath, sizeof (fullpath), "%s/%s", path, name);
 
   input_set_buf (st->in, fullpath);
+  if (st->parent)
+    input_refresh_win (st->parent);
 
   if (oldwd)
     free (oldwd);
   oldwd = strdup (path);
+  return 1;
 }
 
 /* Focused control: bright yellow FG; idle: bright white (CONF_MENU). */
@@ -279,34 +319,61 @@ fb_display (WIN * win)
 
   if (st->tab == FB_TAB_OK || st->tab == FB_TAB_CANCEL)
     {
-      if (key == '\n' || key == KEY_ENTER)
+      if (fb_is_enter_key (key))
 	{
+	  char name[NAME_MAX + 1];
+
 	  if (st->tab == FB_TAB_CANCEL)
 	    {
 	      fb_free (win);
 	      return 0;
 	    }
-	  /* Okay — accept current list selection if it is a file. */
-	  {
-	    const char *selected = vk_filedialog_get_selected (st->fd);
-
-	    if (selected && selected[0]
-		&& selected[strlen (selected) - 1] != '/'
-		&& strcmp (selected, "..") != 0)
-	      {
-		fb_apply_selection (st);
-		fb_free (win);
-		return 0;
-	      }
-	  }
+	  /* Okay — accept list selection if it is a regular file. */
+	  if (fb_copy_selected (st, name, sizeof (name))
+	      && fb_apply_name (st, name))
+	    {
+	      fb_free (win);
+	      return 0;
+	    }
 	  return 1;
 	}
       /* Swallow other keys on buttons so list/path do not steal them. */
       return 1;
     }
 
-  /* Path or list: keep filedialog subfocus in sync, then drive kmio. */
+  /*
+   * List Enter: accept a file, or navigate into a directory.  Do this
+   * before kmio so we never race activate+repopulate with get_selected.
+   * Normalize KEY_ENTER to '\\n' for VDK (it only treats KEY_CRLF).
+   */
+  if (st->tab == FB_TAB_LIST && fb_is_enter_key (key))
+    {
+      char name[NAME_MAX + 1];
+
+      if (!fb_copy_selected (st, name, sizeof (name)))
+	return 1;
+
+      if (fb_is_dir_entry (name))
+	{
+	  fb_sync_box_focus (st);
+	  cboard_ui_push_key ((cboard_widget_t *) st->fd, '\n');
+	  vk_filedialog_update (st->fd);
+	  cboard_ui_refresh ();
+	  return 1;
+	}
+
+      if (fb_apply_name (st, name))
+	{
+	  fb_free (win);
+	  return 0;
+	}
+      return 1;
+    }
+
+  /* Path or list (non-accept keys): drive VDK kmio. */
   fb_sync_box_focus (st);
+  if (fb_is_enter_key (key))
+    key = '\n';
   cboard_ui_push_key ((cboard_widget_t *) st->fd, key);
   /* Re-read box focus if VDK moved path↔list ('/' or Enter on path). */
   {
@@ -325,22 +392,6 @@ fb_display (WIN * win)
   }
   vk_filedialog_update (st->fd);
   cboard_ui_refresh ();
-
-  if (st->tab == FB_TAB_LIST
-      && (key == '\n' || key == KEY_ENTER))
-    {
-      const char *selected = vk_filedialog_get_selected (st->fd);
-
-      if (selected && selected[0]
-	  && selected[strlen (selected) - 1] != '/'
-	  && strcmp (selected, "..") != 0)
-	{
-	  fb_apply_selection (st);
-	  fb_free (win);
-	  return 0;
-	}
-    }
-
   return 1;
 }
 
@@ -445,6 +496,8 @@ file_browser (void *arg)
 
   st = Calloc (1, sizeof (struct fb_state_s));
   st->in = in;
+  /* Top of stack is the open input dialog that invoked us. */
+  st->parent = window_top ();
   st->fd = fd;
   st->tab = FB_TAB_LIST;
   fb_sync_box_focus (st);

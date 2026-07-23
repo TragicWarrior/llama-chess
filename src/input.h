@@ -75,5 +75,7 @@ WIN *construct_input (const char *title, const char *init, int lines,
 
 /* Update the live input buffer (and VDK field, if any). */
 void input_set_buf (struct input_s *in, const char *text);
+/* Re-composite an open construct_input dialog after external buf changes. */
+void input_refresh_win (WIN *win);
 
 #endif

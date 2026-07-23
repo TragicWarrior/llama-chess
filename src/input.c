@@ -370,6 +370,16 @@ input_set_buf (struct input_s *in, const char *text)
     }
 }
 
+void
+input_refresh_win (WIN * win)
+{
+  if (!win || !win->data)
+    return;
+
+  /* win->data is vdk_input_s while the input dialog is open. */
+  input_composite (win);
+}
+
 /*
  * Inputs use VDK vk_input (single-line field with long max length).
  */
