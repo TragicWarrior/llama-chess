@@ -88,11 +88,15 @@ void set_default_colors()
     config.color[CONF_BDWINDOW].bg = COLOR_BLACK;
     config.color[CONF_BCOORDS].fg = COLOR_YELLOW;
     config.color[CONF_BCOORDS].bg = COLOR_BLACK;
-    config.color[CONF_BMOVESW].fg = COLOR_WHITE;
-    config.color[CONF_BMOVESW].bg = COLOR_WHITE;
+    /* Valid-move targets use purple cell borders (see board paint); keep
+       config slots purple for any remaining CP_BOARD_MOVES_* uses. */
+    config.color[CONF_BMOVESW].fg = COLOR_MAGENTA;
+    config.color[CONF_BMOVESW].bg = COLOR_MAGENTA;
+    config.color[CONF_BMOVESW].attrs = A_BOLD;
     config.color[CONF_BMOVESW].nattrs = A_REVERSE;
-    config.color[CONF_BMOVESB].fg = COLOR_WHITE;
-    config.color[CONF_BMOVESB].bg = COLOR_BLUE;
+    config.color[CONF_BMOVESB].fg = COLOR_MAGENTA;
+    config.color[CONF_BMOVESB].bg = COLOR_MAGENTA;
+    config.color[CONF_BMOVESB].attrs = A_BOLD;
     config.color[CONF_BMOVESB].nattrs = A_REVERSE;
     config.color[CONF_BCOUNT].fg = COLOR_MAGENTA;
     config.color[CONF_BCOUNT].bg = COLOR_CYAN;

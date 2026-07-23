@@ -1155,12 +1155,13 @@ board_table_junction(int style, int r, int c)
 }
 
 /*
- * Light up the subfocus cell by recoloring its table dividers (border),
- * not the square fill — same mechanism as vk_color focus overdraw.
- * Cell interior stays normal; only the surrounding grid lines change.
+ * Highlight a cell by recoloring its table dividers (border), not the
+ * square fill — same mechanism as vk_color focus overdraw.
+ * line_fg is the highlight colour (e.g. green cursor, purple valid moves).
  */
 static void
-board_paint_subfocus_border(vk_table_t *table, WINDOW *cv, int gcol, int grow)
+board_paint_cell_border(vk_table_t *table, WINDOW *cv, int gcol, int grow,
+                        short line_fg)
 {
     vk_grid_t *grid;
     int x, y, w, h;
@@ -1186,10 +1187,8 @@ board_paint_subfocus_border(vk_table_t *table, WINDOW *cv, int gcol, int grow)
     /*
      * With gap=1, dividers sit immediately outside the cell rect:
      *   top    y-1,  left x-1,  bottom y+h,  right x+w
-     * Cursor green is CONF_BCURSOR.bg; draw that as the line fg.
      */
-    pair = vdk_color_pair(config.color[CONF_BCURSOR].bg,
-                          config.color[CONF_BGRAPHICS].bg);
+    pair = vdk_color_pair(line_fg, config.color[CONF_BGRAPHICS].bg);
     attrs = A_BOLD;
 
     if (style == VK_BORDER_ASCII)
@@ -1230,6 +1229,9 @@ board_paint_subfocus_border(vk_table_t *table, WINDOW *cv, int gcol, int grow)
 
     wattr_set(cv, A_NORMAL, 0, NULL);
 }
+
+/* Purple (magenta) border for legal-move targets. */
+#define BOARD_VALID_MOVE_FG COLOR_MAGENTA
 
 
 static int
@@ -1443,13 +1445,14 @@ void update_board_window(GAME g)
             is_prev = ((d->pm_row == rank && d->pm_col == file)
                        || (d->ospm_row == rank && d->ospm_col == file));
 
-            /* Base square colour (cursor uses subfocus rim, not fill). */
-            if (valid)
-                cell_attrs = sq_white ? CP_BOARD_MOVES_WHITE
-                                      : CP_BOARD_MOVES_BLACK;
-            else if (is_selected)
+            /*
+             * Keep normal red/black (etc.) square colours.  Valid moves are
+             * marked later with a purple cell border, not by recolouring
+             * the square.
+             */
+            if (is_selected)
                 cell_attrs = CP_BOARD_SELECTED;
-            else if (is_prev && !valid)
+            else if (is_prev)
                 cell_attrs = CP_BOARD_PREVMOVE;
             else
                 cell_attrs = sq_white ? CP_BOARD_WHITE : CP_BOARD_BLACK;
@@ -1483,15 +1486,20 @@ void update_board_window(GAME g)
                                      ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
 
             board_paint_piece(cv, x, y, w, h, p, pi, piece_attrs);
+
+            /* Purple table-border highlight on legal destinations. */
+            if (valid)
+                board_paint_cell_border(board_table, cv, gcol, grow,
+                                        BOARD_VALID_MOVE_FG);
         }
     }
 
     /*
-     * Cursor = table border highlight on the subfocus cell (not a green
-     * tile fill).  Dividers around the cell are overdrawn in cursor color.
+     * Cursor last so green border wins over purple on the focused cell.
      */
     if (focus_col >= 0 && focus_row >= 0)
-        board_paint_subfocus_border(board_table, cv, focus_col, focus_row);
+        board_paint_cell_border(board_table, cv, focus_col, focus_row,
+                                config.color[CONF_BCURSOR].bg);
 
     /* Composite inset table onto host, then coords in the gutters. */
     vk_widget_draw(VK_WIDGET(board_table));
