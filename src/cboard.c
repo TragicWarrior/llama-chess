@@ -1096,6 +1096,38 @@ board_fill_cell(WINDOW *cv, int x, int y, int w, int h, chtype attrs)
             mvwaddch(cv, y + yy, x + xx, ' ' | attrs);
 }
 
+/*
+ * Piece glyph colours must use the *current* cell background (red, black,
+ * yellow selected, etc.).  CP_BOARD_W_W always bakes in red as bg, so a
+ * selected light square was fill=yellow then piece=bold-white-on-red → orange.
+ */
+static chtype
+board_piece_on_cell_attrs(unsigned char p, chtype cell_attrs)
+{
+    short cell_fg, cell_bg;
+    short piece_fg;
+    attr_t attrs = A_NORMAL;
+    int white_piece = isupper((unsigned char) p);
+
+    if (!COLORS)
+        return cell_attrs;
+
+    pair_content(PAIR_NUMBER(cell_attrs), &cell_fg, &cell_bg);
+
+    if (white_piece)
+    {
+        piece_fg = config.color[CONF_BWHITE].fg;
+        attrs = config.color[CONF_BWHITE].attrs; /* bold → bright white */
+    }
+    else
+    {
+        piece_fg = config.color[CONF_BBLACK].fg; /* typically cyan */
+        attrs = config.color[CONF_BBLACK].attrs;
+    }
+
+    return COLOR_PAIR(vdk_color_pair(piece_fg, cell_bg)) | attrs;
+}
+
 static void
 board_paint_piece(WINDOW *cv, int x, int y, int w, int h,
                   unsigned char p, int pi, chtype attrs)
@@ -1493,11 +1525,8 @@ void update_board_window(GAME g)
 
             if (pi != OPEN_SQUARE && p != 'x' && !can_attack)
             {
-                /* Pieces keep bold white via CP_BOARD_W_*. */
-                if (sq_white)
-                    piece_attrs = isupper(p) ? CP_BOARD_W_W : CP_BOARD_W_B;
-                else
-                    piece_attrs = isupper(p) ? CP_BOARD_B_W : CP_BOARD_B_B;
+                /* Fg from piece colour; bg from this cell (selected yellow, etc.). */
+                piece_attrs = board_piece_on_cell_attrs(p, cell_attrs);
             }
             else
                 piece_attrs = cell_attrs;
