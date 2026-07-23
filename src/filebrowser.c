@@ -85,47 +85,94 @@ fb_apply_selection (struct fb_state_s *st)
   oldwd = strdup (path);
 }
 
+/* Focused control: bright yellow FG; idle: bright white (CONF_MENU). */
+#define FB_FOCUS_FG	COLOR_YELLOW
+
 static void
-fb_style_widgets (vk_filedialog_t *fd)
+fb_paint_slot (vk_widget_t *w, short fg, short bg, attr_t attrs)
 {
+  if (!w)
+    return;
+  vk_widget_set_colors (w, fg, bg);
+  vk_widget_set_attrs (w, attrs);
+}
+
+static void
+fb_style_widgets (struct fb_state_s *st)
+{
+  vk_filedialog_t *fd;
   vk_listbox_t *lb;
   vk_widget_t *path_w;
   vk_widget_t *list_frame;
-  short fg = config.color[CONF_MENU].fg;
-  short bg = config.color[CONF_MENU].bg;
-  attr_t attrs = config.color[CONF_MENU].attrs;
+  vk_box_t *bar;
+  vk_widget_t *btn0, *btn1;
+  short base_fg, base_bg;
+  attr_t attrs;
+  short path_fg, list_fg, ok_fg, cancel_fg;
 
-  vk_filedialog_set_colors (fd, fg, bg);
+  if (!st || !st->fd)
+    return;
+
+  fd = st->fd;
+  base_fg = config.color[CONF_MENU].fg;
+  base_bg = config.color[CONF_MENU].bg;
+  attrs = config.color[CONF_MENU].attrs | A_BOLD;
+
+  path_fg = (st->focus_slot == FB_SLOT_PATH) ? FB_FOCUS_FG : base_fg;
+  list_fg = (st->focus_slot == FB_SLOT_LIST) ? FB_FOCUS_FG : base_fg;
+  ok_fg = (st->focus_slot == FB_SLOT_BUTTONS && st->button_focus == 0)
+    ? FB_FOCUS_FG : base_fg;
+  cancel_fg = (st->focus_slot == FB_SLOT_BUTTONS && st->button_focus == 1)
+    ? FB_FOCUS_FG : base_fg;
+
+  vk_filedialog_set_colors (fd, base_fg, base_bg);
   vk_filedialog_set_highlight (fd,
 			       config.color[CONF_MENUS].fg,
 			       config.color[CONF_MENUS].bg);
-  vk_filedialog_set_button_colors (fd, fg, bg);
+  vk_filedialog_set_button_colors (fd, base_fg, base_bg);
   vk_filedialog_set_button_attrs (fd, attrs);
+  vk_widget_set_attrs (VK_WIDGET (fd), attrs);
 
-  /* Bright white text on path breadcrumb and file list (public box slots). */
   path_w = vk_box_get_widget (VK_BOX (fd), FB_SLOT_PATH);
-  if (path_w)
-    {
-      vk_widget_set_colors (path_w, fg, bg);
-      vk_widget_set_attrs (path_w, attrs);
-    }
+  fb_paint_slot (path_w, path_fg, base_bg, attrs);
 
   list_frame = vk_box_get_widget (VK_BOX (fd), FB_SLOT_LIST);
-  if (list_frame)
-    {
-      vk_widget_set_colors (list_frame, fg, bg);
-      vk_widget_set_attrs (list_frame, attrs);
-    }
+  fb_paint_slot (list_frame, list_fg, base_bg, attrs);
 
   lb = vk_filedialog_get_file_list (fd);
   if (lb)
     {
-      vk_widget_set_colors (VK_WIDGET (lb), fg, bg);
-      vk_widget_set_attrs (VK_WIDGET (lb), attrs);
-      vk_listbox_set_highlight_attrs (lb, config.color[CONF_MENUS].attrs);
+      fb_paint_slot (VK_WIDGET (lb), list_fg, base_bg, attrs);
+      /* Selected row stays distinct; when list is focused use yellow select. */
+      if (st->focus_slot == FB_SLOT_LIST)
+	{
+	  vk_listbox_set_highlight (lb, FB_FOCUS_FG, COLOR_BLUE);
+	  vk_listbox_set_highlight_attrs (lb, A_BOLD);
+	}
+      else
+	{
+	  vk_listbox_set_highlight (lb,
+				    config.color[CONF_MENUS].fg,
+				    config.color[CONF_MENUS].bg);
+	  vk_listbox_set_highlight_attrs (lb,
+					  config.color[CONF_MENUS].attrs
+					  | A_BOLD);
+	}
     }
 
-  vk_widget_set_attrs (VK_WIDGET (fd), attrs);
+  bar = VK_BOX (vk_box_get_widget (VK_BOX (fd), FB_SLOT_BUTTONS));
+  if (bar)
+    {
+      btn0 = vk_box_get_widget (bar, 0);
+      btn1 = vk_box_get_widget (bar, 1);
+      fb_paint_slot (btn0, ok_fg, base_bg, attrs);
+      fb_paint_slot (btn1, cancel_fg, base_bg, attrs);
+      if (btn0)
+	vk_button_update (VK_BUTTON (btn0));
+      if (btn1)
+	vk_button_update (VK_BUTTON (btn1));
+      vk_box_update (bar);
+    }
 }
 
 static void
@@ -152,6 +199,8 @@ fb_sync_box_focus (struct fb_state_s *st)
 	st->button_focus = 1;
       vk_box_set_subfocus (bar, st->button_focus);
     }
+
+  fb_style_widgets (st);
 }
 
 static void
@@ -184,6 +233,7 @@ fb_display (WIN * win)
 
   if (key == KEY_RESIZE)
     {
+      fb_style_widgets (st);
       vk_filedialog_update (st->fd);
       cboard_ui_refresh ();
       return 1;
@@ -258,8 +308,11 @@ fb_display (WIN * win)
   {
     int slot = vk_box_get_subfocus (VK_BOX (st->fd));
 
-    if (slot >= 0 && slot < FB_SLOT_COUNT)
-      st->focus_slot = slot;
+    if (slot >= 0 && slot < FB_SLOT_COUNT && slot != st->focus_slot)
+      {
+	st->focus_slot = slot;
+	fb_style_widgets (st);
+      }
   }
   vk_filedialog_update (st->fd);
   cboard_ui_refresh ();
@@ -303,7 +356,6 @@ fb_resize (WIN * w)
       cboard_ui_widget_move (w->vk, w->posy, w->posx);
       if (st && st->fd)
 	{
-	  fb_style_widgets (st->fd);
 	  fb_sync_box_focus (st);
 	  vk_filedialog_update (st->fd);
 	}
@@ -379,9 +431,6 @@ file_browser (void *arg)
   if (path[0])
     vk_filedialog_set_path (fd, path);
 
-  fb_style_widgets (fd);
-  vk_filedialog_update (fd);
-
   cboard_ui_widget_attach ((cboard_widget_t *) fd, y, x);
   cboard_ui_widget_raise ((cboard_widget_t *) fd);
 
@@ -391,6 +440,7 @@ file_browser (void *arg)
   st->focus_slot = FB_SLOT_LIST;
   st->button_focus = 0;
   fb_sync_box_focus (st);
+  vk_filedialog_update (fd);
 
   win = window_adopt (_("File Browser"), (void *) fd, WIN_VK_FILEDIALOG,
 		      h, w, y, x, fb_display, st, NULL, fb_resize);
