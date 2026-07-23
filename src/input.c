@@ -494,14 +494,19 @@ construct_input (const char *title, const char *init, int lines, int reset,
   else
     vk_window_set_title (vkw, " Input ");
 
-  /* Classic cboard input: white-on-black body, cyan border. */
+  /*
+   * Match modal menus: bright white on cyan body; border is bright white
+   * on cyan (CONF_MENU).
+   */
   vk_window_set_border_style (vkw, VK_BORDER_SINGLE);
   vk_window_set_border_colors (vkw,
-			       config.color[CONF_IBORDER].fg,
-			       config.color[CONF_IBORDER].bg);
+			       config.color[CONF_MENU].fg,
+			       config.color[CONF_MENU].bg);
+  vk_window_set_border_attrs (vkw, config.color[CONF_MENU].attrs);
   vk_widget_set_colors (VK_WIDGET (vkw),
-			config.color[CONF_IWINDOW].fg,
-			config.color[CONF_IWINDOW].bg);
+			config.color[CONF_MENU].fg,
+			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (vkw), config.color[CONF_MENU].attrs);
 
   field = vk_input_create (w - 2);
   vk_input_set_border_style (field, VK_BORDER_SINGLE);
@@ -509,13 +514,13 @@ construct_input (const char *title, const char *init, int lines, int reset,
   vk_input_show_cursor (field, true);
   if (in->buf[0])
     vk_input_set_text (field, in->buf);
-  /* Field uses window colors; sunken border reads as cyan-on-black. */
   vk_widget_set_colors (VK_WIDGET (field),
-			config.color[CONF_IWINDOW].fg,
-			config.color[CONF_IWINDOW].bg);
+			config.color[CONF_MENU].fg,
+			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (field), config.color[CONF_MENU].attrs);
   vk_widget_set_relief_colors (VK_WIDGET (field),
-			       config.color[CONF_IBORDER].fg,
-			       config.color[CONF_IWINDOW].bg);
+			       config.color[CONF_MENU].fg,
+			       config.color[CONF_MENU].bg);
   vin->field = field;
 
   if (eh > 0)
@@ -525,8 +530,9 @@ construct_input (const char *title, const char *init, int lines, int reset,
 
       vbox = vk_box_create (w - 2, h - 2, VK_BOX_VERTICAL, slots);
       vk_widget_set_colors (VK_WIDGET (vbox),
-			    config.color[CONF_IWINDOW].fg,
-			    config.color[CONF_IWINDOW].bg);
+			    config.color[CONF_MENU].fg,
+			    config.color[CONF_MENU].bg);
+      vk_widget_set_attrs (VK_WIDGET (vbox), config.color[CONF_MENU].attrs);
       vk_widget_set_expand (VK_WIDGET (vbox));
       vk_box_set_widget (vbox, 0, VK_WIDGET (field));
       for (si = 0; si < eh; si++)
@@ -534,10 +540,10 @@ construct_input (const char *title, const char *init, int lines, int reset,
 	  vk_label_t *lab = vk_label_create (w - 2);
 
 	  vk_label_set_text (lab, in->extra[si]);
-	  /* Prompt line: white on magenta by default (CONF_IPROMPT). */
 	  vk_widget_set_colors (VK_WIDGET (lab),
-				config.color[CONF_IPROMPT].fg,
-				config.color[CONF_IPROMPT].bg);
+				config.color[CONF_MENU].fg,
+				config.color[CONF_MENU].bg);
+	  vk_widget_set_attrs (VK_WIDGET (lab), config.color[CONF_MENU].attrs);
 	  vk_label_update (lab);
 	  vk_box_set_widget (vbox, si + 1, VK_WIDGET (lab));
 	}
@@ -550,16 +556,18 @@ construct_input (const char *title, const char *init, int lines, int reset,
 
       vbox = vk_box_create (w - 2, h - 2, VK_BOX_VERTICAL, 2);
       vk_widget_set_colors (VK_WIDGET (vbox),
-			    config.color[CONF_IWINDOW].fg,
-			    config.color[CONF_IWINDOW].bg);
+			    config.color[CONF_MENU].fg,
+			    config.color[CONF_MENU].bg);
+      vk_widget_set_attrs (VK_WIDGET (vbox), config.color[CONF_MENU].attrs);
       vk_widget_set_expand (VK_WIDGET (vbox));
       vk_box_set_widget (vbox, 0, VK_WIDGET (field));
       snprintf (helpbuf, sizeof (helpbuf), _("Type %ls for help"),
 		key_lookup (global_keys, do_global_help));
       vk_label_set_text (lab, helpbuf);
       vk_widget_set_colors (VK_WIDGET (lab),
-			    config.color[CONF_IPROMPT].fg,
-			    config.color[CONF_IPROMPT].bg);
+			    config.color[CONF_MENU].fg,
+			    config.color[CONF_MENU].bg);
+      vk_widget_set_attrs (VK_WIDGET (lab), config.color[CONF_MENU].attrs);
       vk_label_update (lab);
       vk_box_set_widget (vbox, 1, VK_WIDGET (lab));
       vk_window_set_child (vkw, VK_WIDGET (vbox));
