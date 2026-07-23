@@ -4674,6 +4674,9 @@ init_userdata_once(GAME g, int n)
     d->n = n;
     d->c_row = 2, d->c_col = 5;
     SET_FLAG(d->flags, CF_NEW);
+    /* Default: human vs human (not human/engine). */
+    SET_FLAG(d->flags, CF_HUMAN);
+    d->play_mode = PLAY_HE;
     g->data = d;
 
     if (pgn_board_init_fen(g, d->b, NULL) != E_PGN_OK)
