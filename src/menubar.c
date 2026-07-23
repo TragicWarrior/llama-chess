@@ -87,6 +87,7 @@ static const struct mb_item game_items[] = {
     {NULL, NULL, -2}};
 
 static const struct mb_item play_items[] = {
+    {N_("Exit history mode"), do_history_toggle, MODE_MASK_HISTORY},
     {N_("Undo move"), do_play_undo, MODE_MASK_PLAY},
     {N_("Engine move (Go)"), do_play_go, MODE_MASK_PLAY},
     {N_("Send engine command…"), do_play_send_command, MODE_MASK_PLAY},
