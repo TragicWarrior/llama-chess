@@ -69,9 +69,10 @@ struct menu_input_s
   int cstatic;
   int ystatic;
   int xstatic;
-  /* VDK listbox (child of win->vk window); not destroyed separately. */
+  /* VDK widgets owned by the window frame (not destroyed separately). */
   void *listbox;
   void *status_label;
+  void *vbox;			/* vk_box holding listbox + status label */
 };
 
 void add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func);

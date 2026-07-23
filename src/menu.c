@@ -89,6 +89,27 @@ menu_update_status (struct menu_input_s *m)
   vk_label_update (lab);
 }
 
+/*
+ * Composite listbox/status into the box, then the box into the window.
+ * vk_listbox_update / vk_label_update only paint each widget's own canvas;
+ * without vk_box_update those canvases never reach the window frame (menus
+ * would open with a border and an empty interior).
+ */
+static void
+menu_composite (WIN * win)
+{
+  struct menu_input_s *m;
+
+  if (!win || !win->vk)
+    return;
+
+  m = win->data;
+  if (m && m->vbox)
+    vk_box_update (VK_BOX (m->vbox));
+  vk_window_update (VK_WINDOW (win->vk));
+  cboard_ui_refresh ();
+}
+
 static void
 menu_sync_selection (struct menu_input_s *m)
 {
@@ -155,9 +176,7 @@ menu_populate_listbox (WIN * win)
   m->top = vk_listbox_get_scroll_pos (lb);
   menu_update_status (m);
   vk_listbox_update (lb);
-  if (win->vk)
-    vk_window_update (VK_WINDOW (win->vk));
-  cboard_ui_refresh ();
+  menu_composite (win);
 }
 
 static void
@@ -260,6 +279,10 @@ menu_apply_geometry (WIN * win)
     inner_w = 1;
   if (list_h < 1)
     list_h = 1;
+
+  /* Keep the box fill matching the window interior (border inset). */
+  if (m->vbox)
+    vk_widget_resize (VK_WIDGET (m->vbox), inner_w, win->rows - 2);
 
   if (lb)
     vk_widget_resize (VK_WIDGET (lb), inner_w, list_h);
@@ -425,6 +448,7 @@ display_menu (WIN * win)
 	      vk_listbox_set_curr (lb, cur);
 	      menu_sync_selection (m);
 	      vk_listbox_update (lb);
+	      menu_composite (win);
 	    }
 	}
       else
@@ -435,15 +459,17 @@ display_menu (WIN * win)
       menu_sync_selection (m);
       if (lb)
 	vk_listbox_update (lb);
-      if (win->vk)
-	vk_window_update (VK_WINDOW (win->vk));
-      cboard_ui_refresh ();
+      menu_composite (win);
     }
 
   if (m->draw_exit_func)
     (*m->draw_exit_func) (m);
 
-  update_all (gp);
+  /*
+   * Do not call update_all() here: that re-raises the menubar front stack
+   * and re-composites the board over this modal.  The menu already painted
+   * itself via menu_composite().
+   */
   return 1;
 
 done:
@@ -594,9 +620,12 @@ construct_menu (int rows, int cols, int y, int x, const char *title,
   vk_widget_set_colors (VK_WIDGET (vbox),
 			config.color[CONF_MENU].fg,
 			config.color[CONF_MENU].bg);
+  /* Expand with the frame so geometry changes keep a full interior. */
+  vk_widget_set_expand (VK_WIDGET (vbox));
   vk_box_set_widget (vbox, 0, VK_WIDGET (lb));
   vk_box_set_widget (vbox, 1, VK_WIDGET (lab));
   vk_window_set_child (vkw, VK_WIDGET (vbox));
+  m->vbox = vbox;
 
   cboard_ui_widget_attach ((cboard_widget_t *) vkw, posy, posx);
   cboard_ui_widget_raise ((cboard_widget_t *) vkw);
