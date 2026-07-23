@@ -144,7 +144,7 @@ do_cc_finalize (WIN * win)
   struct input_s *in = win->data;
   TAG *t = (TAG *) in->arg;
 
-  set_field_buffer (in->fields[0], 0, t->value);
+  input_set_buf (in, t->value ? t->value : "");
 }
 
 static void

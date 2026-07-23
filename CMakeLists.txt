@@ -43,10 +43,17 @@ if(NOT CURSES_FOUND)
   find_package(Curses REQUIRED)
 endif()
 
-# Menu / form companion libraries (wide variants preferred).
-# Panel is no longer required: chrome/modals use VDK widgets.
-find_library(MENU_LIBRARY NAMES menuw menu REQUIRED)
-find_library(FORM_LIBRARY NAMES formw form REQUIRED)
+# FindCurses often appends libform to CURSES_LIBRARIES.  We do not use
+# ncurses form (or menu/panel); drop them so they never end up on the
+# link line.
+if(CURSES_LIBRARIES)
+  list(FILTER CURSES_LIBRARIES EXCLUDE REGEX "[Ff][Oo][Rr][Mm]")
+  list(FILTER CURSES_LIBRARIES EXCLUDE REGEX "[Mm][Ee][Nn][Uu]")
+  list(FILTER CURSES_LIBRARIES EXCLUDE REGEX "[Pp][Aa][Nn][Ee][Ll]")
+endif()
+
+# ncurses menu/form/panel libraries are not required: menus, forms, and
+# window stacking are implemented with VDK (libvdk) widgets.
 
 # ---------------------------------------------------------------------------
 # libviper / VDK (sibling source tree by default, same pattern as vwm)
@@ -99,17 +106,6 @@ check_include_file("ncurses/curses.h" HAVE_NCURSES_CURSES_H)
 check_include_file("ncurses.h" HAVE_NCURSES_H)
 check_include_file("curses.h" HAVE_CURSES_H)
 
-check_include_file("ncursesw/panel.h" HAVE_NCURSESW_PANEL_H)
-check_include_file("ncurses/panel.h" HAVE_NCURSES_PANEL_H)
-check_include_file("panel.h" HAVE_PANEL_H)
-
-check_include_file("ncursesw/menu.h" HAVE_NCURSESW_MENU_H)
-check_include_file("ncurses/menu.h" HAVE_NCURSES_MENU_H)
-check_include_file("menu.h" HAVE_MENU_H)
-
-check_include_file("ncursesw/form.h" HAVE_NCURSESW_FORM_H)
-check_include_file("ncurses/form.h" HAVE_NCURSES_FORM_H)
-check_include_file("form.h" HAVE_FORM_H)
 cmake_pop_check_state()
 
 if(HAVE_NCURSESW_CURSES_H OR HAVE_NCURSESW_H)
@@ -121,27 +117,9 @@ endif()
 if(HAVE_CURSES_H OR HAVE_NCURSES OR HAVE_NCURSESW)
   set(HAVE_CURSES 1)
 endif()
-if(HAVE_NCURSESW_PANEL_H OR HAVE_NCURSES_PANEL_H OR HAVE_PANEL_H)
-  set(HAVE_PANEL 1)
-endif()
-if(HAVE_NCURSESW_MENU_H OR HAVE_NCURSES_MENU_H OR HAVE_MENU_H)
-  set(HAVE_MENU 1)
-endif()
-if(HAVE_NCURSESW_FORM_H OR HAVE_NCURSES_FORM_H OR HAVE_FORM_H)
-  set(HAVE_FORM 1)
-endif()
 
 if(NOT HAVE_CURSES)
   message(FATAL_ERROR "A SysV or X/Open-compatible Curses library is required")
-endif()
-if(NOT HAVE_PANEL)
-  message(FATAL_ERROR "Curses panel library/headers not found")
-endif()
-if(NOT HAVE_MENU)
-  message(FATAL_ERROR "Curses menu library/headers not found")
-endif()
-if(NOT HAVE_FORM)
-  message(FATAL_ERROR "Curses form library/headers not found")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -349,8 +327,6 @@ endif()
 message(STATUS "")
 message(STATUS "CBoard ${PROJECT_VERSION}")
 message(STATUS "  Curses:     ${CURSES_LIBRARIES}")
-message(STATUS "  Menu:       ${MENU_LIBRARY}")
-message(STATUS "  Form:       ${FORM_LIBRARY}")
 message(STATUS "  VDK:        ${VDK_LIBRARY}")
 message(STATUS "  PERL:       ${WITH_LIBPERL}")
 message(STATUS "  Debug:      ${ENABLE_DEBUG}")

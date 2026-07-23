@@ -19,7 +19,7 @@
 # define ENABLE_NLS 0
 #endif
 
-/* Curses / ncurses */
+/* Curses / ncurses (core library only; panel/menu/form unused) */
 #cmakedefine HAVE_CURSES 1
 #cmakedefine HAVE_CURSES_H 1
 #cmakedefine HAVE_NCURSES 1
@@ -28,24 +28,6 @@
 #cmakedefine HAVE_NCURSESW 1
 #cmakedefine HAVE_NCURSESW_H 1
 #cmakedefine HAVE_NCURSESW_CURSES_H 1
-
-/* Curses panel */
-#cmakedefine HAVE_PANEL 1
-#cmakedefine HAVE_PANEL_H 1
-#cmakedefine HAVE_NCURSES_PANEL_H 1
-#cmakedefine HAVE_NCURSESW_PANEL_H 1
-
-/* Curses menu */
-#cmakedefine HAVE_MENU 1
-#cmakedefine HAVE_MENU_H 1
-#cmakedefine HAVE_NCURSES_MENU_H 1
-#cmakedefine HAVE_NCURSESW_MENU_H 1
-
-/* Curses form */
-#cmakedefine HAVE_FORM 1
-#cmakedefine HAVE_FORM_H 1
-#cmakedefine HAVE_NCURSES_FORM_H 1
-#cmakedefine HAVE_NCURSESW_FORM_H 1
 
 /* Headers */
 #cmakedefine HAVE_DIRENT_H 1

@@ -7,8 +7,9 @@ Requirements
 * A C compiler (GCC or Clang)
 * CMake 3.16 or newer
 * NCurses (wide-character build preferred: ncursesw)
-* Curses menu and form libraries
 * libviper / VDK (libvdk) — sibling checkout at ../libviper by default
+  (provides menus, dialogs, and compositing; ncurses menu/form/panel
+  libraries are not required)
 * gettext / libintl (optional, for translations)
 * libperl (optional, for the PERL plugin)
 

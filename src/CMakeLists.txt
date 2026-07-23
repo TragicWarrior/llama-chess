@@ -62,8 +62,6 @@ target_link_libraries(cboard
   PRIVATE
     chess
     ${CURSES_LIBRARIES}
-    ${MENU_LIBRARY}
-    ${FORM_LIBRARY}
     "${VDK_LIBRARY}"
 )
 

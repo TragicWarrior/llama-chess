@@ -47,9 +47,6 @@ struct input_s
 {
   char buf[MAX_PGN_LINE_LEN];
   WINDOW *sw;
-  FIELD *fields[2];
-  FORM *f;
-  FIELDTYPE *ft;
   int w;
   int h;
   int lines;

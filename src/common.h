@@ -39,27 +39,8 @@
 #error "SysV or X/Open-compatible Curses header file required"
 #endif
 
-/* ncurses PANEL is no longer used; VDK (libvdk) composites widgets. */
-
-#if defined(HAVE_NCURSESW_MENU_H)
-#include <ncursesw/menu.h>
-#elif defined(HAVE_NCURSES_MENU_H)
-#include <ncurses/menu.h>
-#elif defined(HAVE_MENU_H)
-#include <menu.h>
-#else
-#error "SysV-compatible Curses Menu header file required"
-#endif
-
-#if defined(HAVE_NCURSESW_FORM_H)
-#include <ncursesw/form.h>
-#elif defined(HAVE_NCURSES_FORM_H)
-#include <ncurses/form.h>
-#elif defined(HAVE_FORM_H)
-#include <form.h>
-#else
-#error "SysV-compatible Curses Form header file required"
-#endif
+/* ncurses PANEL / MENU / FORM are no longer used; VDK composites widgets
+ * and supplies listbox, menubar, and input fields. */
 
 #ifndef _
 #include "gettext.h"
