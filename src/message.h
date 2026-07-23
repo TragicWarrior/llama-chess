@@ -32,4 +32,16 @@ WIN *construct_message (const char *, const char *, int, int, const char *,
 			message_func *, void *, window_exit_func *, wint_t,
                         int, window_resize_func *, const char *, ...);
 
+/*
+ * Yes/No confirm popup (menu style, clickable buttons).
+ * On close, efunc is run if non-NULL; win->c is the first character of
+ * the localized "y" on Yes, or 0 on No/Esc.  Typical efunc checks win->c
+ * against yes_wchar (same as classic [ Yes or No ] prompts).
+ */
+WIN *construct_confirm (const char *title, const char *text,
+			window_exit_func *efunc);
+
+/* Mouse for an open confirm WIN. Returns 1 if handled. */
+int confirm_dialog_mouse (WIN *win, int x, int y, mmask_t bstate);
+
 #endif

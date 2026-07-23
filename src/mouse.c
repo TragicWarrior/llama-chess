@@ -16,6 +16,7 @@
 #include "menubar.h"
 #include "filebrowser.h"
 #include "menu.h"
+#include "message.h"
 #include "mouse.h"
 
 extern GAME gp;
@@ -160,6 +161,11 @@ cboard_mouse_handle (const MEVENT *mev)
       if (win->vk_kind == WIN_VK_FILEDIALOG)
 	{
 	  if (file_browser_mouse (win, x, y, b))
+	    return 1;
+	}
+      else if (win->vk_kind == WIN_VK_POPUP)
+	{
+	  if (confirm_dialog_mouse (win, x, y, b))
 	    return 1;
 	}
       else

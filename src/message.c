@@ -502,3 +502,271 @@ construct_message (const char *title, const char *prompt, int center,
   message_paint (m);
   return win;
 }
+
+/* ---- Yes/No confirm (vk_popup, menu colors, keyboard + mouse) ---- */
+
+struct confirm_s
+{
+  vk_popup_t *popup;
+  vk_label_t *label;
+  int focus;			/* 0 = Yes, 1 = No */
+};
+
+static wchar_t
+confirm_yes_char (void)
+{
+  wchar_t *yw = str_to_wchar (_("y"));
+  wchar_t c = (yw && yw[0]) ? yw[0] : L'y';
+
+  free (yw);
+  return c;
+}
+
+static void
+confirm_style (struct confirm_s *c)
+{
+  short fg = config.color[CONF_MENU].fg;
+  short bg = config.color[CONF_MENU].bg;
+  attr_t attrs = config.color[CONF_MENU].attrs | A_BOLD;
+  short yfg, nfg;
+  vk_button_t *by, *bn;
+
+  if (!c || !c->popup)
+    return;
+
+  yfg = (c->focus == 0) ? COLOR_YELLOW : fg;
+  nfg = (c->focus == 1) ? COLOR_YELLOW : fg;
+
+  vk_popup_set_colors (c->popup, fg, bg);
+  vk_popup_set_button_colors (c->popup, fg, bg);
+  vk_popup_set_button_attrs (c->popup, attrs);
+  vk_window_set_border_colors (VK_WINDOW (c->popup), fg, bg);
+  vk_window_set_border_attrs (VK_WINDOW (c->popup), attrs);
+  vk_widget_set_colors (VK_WIDGET (c->popup), fg, bg);
+  vk_widget_set_attrs (VK_WIDGET (c->popup), attrs);
+
+  if (c->label)
+    {
+      vk_widget_set_colors (VK_WIDGET (c->label), fg, bg);
+      vk_widget_set_attrs (VK_WIDGET (c->label), attrs);
+      vk_label_update (c->label);
+    }
+
+  by = vk_popup_get_button (c->popup, 0);
+  bn = vk_popup_get_button (c->popup, 1);
+  if (by)
+    {
+      vk_widget_set_colors (VK_WIDGET (by), yfg, bg);
+      vk_widget_set_attrs (VK_WIDGET (by), attrs);
+      vk_button_update (by);
+    }
+  if (bn)
+    {
+      vk_widget_set_colors (VK_WIDGET (bn), nfg, bg);
+      vk_widget_set_attrs (VK_WIDGET (bn), attrs);
+      vk_button_update (bn);
+    }
+
+  {
+    vk_box_t *bar = vk_popup_get_button_bar (c->popup);
+
+    if (bar)
+      {
+	vk_box_set_subfocus (bar, c->focus);
+	vk_box_update (bar);
+      }
+  }
+
+  vk_popup_update (c->popup);
+}
+
+static void
+confirm_free (WIN * w)
+{
+  struct confirm_s *c = w->data;
+
+  if (c)
+    {
+      /* popup destroyed with WIN_VK_POPUP */
+      c->popup = NULL;
+      c->label = NULL;
+      free (c);
+    }
+  w->data = NULL;
+}
+
+static int
+display_confirm (WIN * win)
+{
+  struct confirm_s *c = win->data;
+  wint_t k;
+
+  if (!c || !c->popup)
+    return 0;
+
+  k = win->c;
+
+  if (k == KEY_ESCAPE || k == 'n' || k == 'N')
+    {
+      win->c = 0;
+      confirm_free (win);
+      return 0;
+    }
+
+  if (k == 'y' || k == 'Y')
+    {
+      win->c = confirm_yes_char ();
+      confirm_free (win);
+      return 0;
+    }
+
+  if (k == KEY_LEFT || k == KEY_BTAB)
+    {
+      c->focus = 0;
+      confirm_style (c);
+      cboard_ui_refresh ();
+      return 1;
+    }
+
+  if (k == KEY_RIGHT || k == '\t')
+    {
+      c->focus = 1;
+      confirm_style (c);
+      cboard_ui_refresh ();
+      return 1;
+    }
+
+  if (k == '\n' || k == '\r' || k == KEY_ENTER)
+    {
+      if (c->focus == 0)
+	win->c = confirm_yes_char ();
+      else
+	win->c = 0;
+      confirm_free (win);
+      return 0;
+    }
+
+  return 1;
+}
+
+WIN *
+construct_confirm (const char *title, const char *text,
+		   window_exit_func * efunc)
+{
+  WIN *win;
+  vk_popup_t *popup;
+  vk_label_t *lab;
+  struct confirm_s *c;
+  int w, h, y, x;
+  char titlebuf[128];
+  const char *body = text ? text : "";
+
+  w = (int) strlen (body) + 6;
+  if (w < 28)
+    w = 28;
+  if (w > COLS - 4)
+    w = COLS - 4;
+  h = 8;
+  if (h > LINES - 2)
+    h = LINES - 2;
+
+  y = CALCPOSY (h);
+  x = CALCPOSX (w);
+
+  popup = vk_popup_create (w, h, VK_BORDER_SINGLE, _("Yes"), _("No"), NULL);
+  if (!popup)
+    return NULL;
+
+  if (title && title[0])
+    {
+      snprintf (titlebuf, sizeof (titlebuf), " %s ", title);
+      vk_popup_set_title (popup, titlebuf);
+    }
+  else
+    vk_popup_set_title (popup, " Confirm ");
+
+  lab = vk_label_create (w - 4);
+  vk_label_set_text (lab, (char *) body);
+  vk_popup_set_client (popup, VK_WIDGET (lab));
+
+  c = Calloc (1, sizeof (struct confirm_s));
+  c->popup = popup;
+  c->label = lab;
+  c->focus = 0;
+  confirm_style (c);
+
+  cboard_ui_widget_attach ((cboard_widget_t *) popup, y, x);
+  cboard_ui_widget_raise ((cboard_widget_t *) popup);
+  vk_popup_update (popup);
+
+  win = window_adopt (title, (void *) popup, WIN_VK_POPUP, h, w, y, x,
+		      display_confirm, c, efunc, NULL);
+  cboard_ui_refresh ();
+  return win;
+}
+
+/*
+ * Close confirm after mouse: set win->c for efunc, free state, inject a
+ * key so game_loop runs display_confirm (data NULL → return 0 → destroy).
+ */
+static void
+confirm_mouse_close (WIN * win, wint_t result_c)
+{
+  win->c = result_c;
+  confirm_free (win);
+  pushkey = KEY_ESCAPE;
+}
+
+int
+confirm_dialog_mouse (WIN * win, int x, int y, mmask_t bstate)
+{
+  struct confirm_s *c;
+  int px, py, pw, ph;
+  int lx, ly;
+  int bar_top;
+  int mid;
+
+  if (!win || !win->data || win->vk_kind != WIN_VK_POPUP)
+    return 0;
+
+  c = win->data;
+  if (!c->popup)
+    return 0;
+
+  vk_widget_get_position (VK_WIDGET (c->popup), &px, &py);
+  vk_widget_get_metrics (VK_WIDGET (c->popup), &pw, &ph);
+  if (x < px || y < py || x >= px + pw || y >= py + ph)
+    return 0;
+
+  if (!(bstate & (BUTTON1_PRESSED | BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED)))
+    return 1;
+
+  lx = x - px;
+  ly = y - py;
+
+  /* Button bar occupies the lower interior of the popup (border inset). */
+  bar_top = ph - 5;
+  if (bar_top < 2)
+    bar_top = ph / 2;
+
+  if (ly < bar_top)
+    {
+      /* Click on message area — focus Yes by default. */
+      c->focus = 0;
+      confirm_style (c);
+      cboard_ui_refresh ();
+      return 1;
+    }
+
+  mid = pw / 2;
+  if (lx < mid)
+    {
+      /* Yes */
+      confirm_mouse_close (win, confirm_yes_char ());
+      return 1;
+    }
+
+  /* No */
+  confirm_mouse_close (win, 0);
+  return 1;
+}

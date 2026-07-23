@@ -5353,10 +5353,25 @@ void
 do_global_quit ()
 {
   if (config.exitdialogbox)
-    construct_message (NULL, _("[ Yes or No ]"), 1, 1, NULL, NULL, NULL,
-		       do_quit, 0, 0, NULL, "%s", _("Want to Quit?"));
+    construct_confirm (_("Quit"), _("Want to Quit?"), do_quit);
   else
     quit = 1;
+}
+
+void
+do_play_toggle_valid_moves ()
+{
+  config.validmoves = config.validmoves ? 0 : 1;
+  if (!config.validmoves && gp && gp->data)
+    {
+      struct userdata_s *d = gp->data;
+
+      pgn_reset_valid_moves (d->b);
+    }
+  update_status_notify (gp,
+			config.validmoves ? _("Valid moves: on")
+			: _("Valid moves: off"));
+  update_all (gp);
 }
 
 void

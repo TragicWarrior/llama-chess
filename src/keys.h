@@ -106,6 +106,7 @@ key_func do_play_toggle_pause;
 key_func do_play_history_mode;
 key_func do_play_edit_mode;
 key_func do_play_toggle_strict_castling;
+key_func do_play_toggle_valid_moves;
 
 extern struct key_s **global_keys;
 key_func do_global_tag_edit;
