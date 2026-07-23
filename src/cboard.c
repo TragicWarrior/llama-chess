@@ -3260,7 +3260,12 @@ do_play_commit ()
 
 /*
  * Map a click on the board widget to rank/file (1..8).
- * Classic small board only (18×34, 2-row × 4-col cells with a line grid).
+ *
+ * Layout matches update_board_window: a line grid with cell size
+ *   small  2×4  (BOARD 18×34)
+ *   big    4×8  (BOARD 34×66)
+ *   mega   6×12 (BOARD 50×98)
+ * Top-left square is display rank 8 / file 1 (same as keyboard cursor).
  * Paint uses col+coordsyleft, so subtract that offset from the click.
  * Returns 1 and sets *rank/*file on hit (any cell inside the square).
  */
@@ -3270,25 +3275,28 @@ board_click_to_square (int lx, int ly, int *rank, int *file)
   int r, c;
   int col;			/* logical paint column (before coords shift) */
   int l = config.coordsyleft ? 1 : 0;
+  int rowr = (MEGA_BOARD) ? 6 : (BIG_BOARD) ? 4 : 2;
+  int colr = (MEGA_BOARD) ? 12 : (BIG_BOARD) ? 8 : 4;
+  int maxy = BOARD_HEIGHT;
+  int maxx = BOARD_WIDTH;
 
-  if (BIG_BOARD || MEGA_BOARD)
+  /*
+   * Grid lines on rows 0, rowr, 2*rowr, …, maxy-2; file labels on maxy-1.
+   * Content rows are 1 .. maxy-3 excluding grid lines.
+   */
+  if (ly < 1 || ly > maxy - 3 || (ly % rowr) == 0)
     return 0;
-
-  /* Content rows for ranks are 1,3,...,15 (grid lines on even rows). */
-  if (ly < 1 || ly > 15 || (ly % 2) == 0)
-    return 0;
-  r = 8 - (ly - 1) / 2;
+  r = 8 - (ly - 1) / rowr;
   if (r < 1 || r > 8)
     return 0;
 
   /* Undo left rank-number column if present. */
   col = lx - l;
-  /* Interior: cols 1..31; vertical grid every 4 (0,4,...,32). */
-  if (col < 1 || col > 31 || (col % 4) == 0)
+  /* Interior: cols 1 .. maxx-3; vertical grid every colr (0, colr, …, maxx-2). */
+  if (col < 1 || col > maxx - 3 || (col % colr) == 0)
     return 0;
 
-  /* Square file: cols 1–3 → a, 5–7 → b, … */
-  c = (col - 1) / 4 + 1;
+  c = (col - 1) / colr + 1;
   if (c < 1 || c > 8)
     return 0;
 
