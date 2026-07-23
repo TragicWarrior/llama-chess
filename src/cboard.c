@@ -3256,33 +3256,36 @@ do_play_commit ()
 }
 
 /*
- * Map a click on the board widget to rank/file (1..8).  Small-board layout
- * only (classic 18x34).  Returns 1 and sets *rank/*file on hit.
+ * Map a click on the board widget to rank/file (1..8).
+ * Classic small board only (18×34, 2-row × 4-col cells with a line grid).
+ * Paint uses col+coordsyleft, so subtract that offset from the click.
+ * Returns 1 and sets *rank/*file on hit (any cell inside the square).
  */
 static int
 board_click_to_square (int lx, int ly, int *rank, int *file)
 {
   int r, c;
+  int col;			/* logical paint column (before coords shift) */
+  int l = config.coordsyleft ? 1 : 0;
 
   if (BIG_BOARD || MEGA_BOARD)
     return 0;
 
-  /* ROWTOMATRIX(r)=(8-r)*2+1 → ly odd 1..15 */
-  if (ly < 1 || (ly % 2) == 0)
+  /* Content rows for ranks are 1,3,...,15 (grid lines on even rows). */
+  if (ly < 1 || ly > 15 || (ly % 2) == 0)
     return 0;
   r = 8 - (ly - 1) / 2;
   if (r < 1 || r > 8)
     return 0;
 
-  /* COLTOMATRIX: 1,5,9,...,29 */
-  if (lx < 1)
+  /* Undo left rank-number column if present. */
+  col = lx - l;
+  /* Interior: cols 1..31; vertical grid every 4 (0,4,...,32). */
+  if (col < 1 || col > 31 || (col % 4) == 0)
     return 0;
-  if (lx == 1)
-    c = 1;
-  else if ((lx + 3) % 4 == 0)
-    c = (lx + 3) / 4;
-  else
-    return 0;
+
+  /* Square file: cols 1–3 → a, 5–7 → b, … */
+  c = (col - 1) / 4 + 1;
   if (c < 1 || c > 8)
     return 0;
 
@@ -3312,25 +3315,27 @@ cboard_board_mouse (int x, int y, mmask_t bstate)
   lx = x - bx;
   ly = y - by;
   if (!board_click_to_square (lx, ly, &rank, &file))
-    return 1;			/* click on board chrome, absorb */
+    return 1;			/* grid/border/coords — absorb, no move */
 
   d = gp->data;
+  /* Always move the green cursor (c_row/c_col) to the clicked square. */
   d->c_row = rank;
   d->c_col = file;
 
   if (d->mode == MODE_PLAY)
     {
+      /*
+       * Same as keyboard: first click on a side-to-move piece selects it
+       * (yellow). Second click on a destination commits. Empty/wrong-side
+       * squares only move the cursor (green).
+       */
       if (d->sp.icon)
 	do_play_commit ();
       else
 	do_play_select ();
-      update_all (gp);
-    }
-  else if (d->mode == MODE_EDIT || d->mode == MODE_HISTORY)
-    {
-      update_all (gp);
     }
 
+  update_all (gp);
   return 1;
 }
 
