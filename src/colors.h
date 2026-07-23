@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -28,22 +28,22 @@
 
 enum
 {
-  A_FG_B_BG,
-  A_FG_B_FG,
-  A_BG_B_BG,
-  B_FG_A_BG,
-  B_BG_B_FG,
-  A_BG_A_FG,
-  A_BG_B_FG,
-  B_BG_A_FG
+    A_FG_B_BG,
+    A_FG_B_FG,
+    A_BG_B_BG,
+    B_FG_A_BG,
+    B_BG_B_FG,
+    A_BG_A_FG,
+    A_BG_B_FG,
+    B_BG_A_FG
 };
 
-#define CP_CFG(conf)                                          \
-  ((COLORS)                                                   \
-       ? (COLOR_PAIR(vdk_color_pair(config.color[conf].fg,    \
-                                    config.color[conf].bg)) | \
-          config.color[conf].attrs)                           \
-       : config.color[conf].nattrs)
+#define CP_CFG(conf)                                            \
+    ((COLORS)                                                   \
+         ? (COLOR_PAIR(vdk_color_pair(config.color[conf].fg,    \
+                                      config.color[conf].bg)) | \
+            config.color[conf].attrs)                           \
+         : config.color[conf].nattrs)
 
 #define CP_BOARD_COORDS CP_CFG(CONF_BCOORDS)
 #define CP_BOARD_GRAPHICS CP_CFG(CONF_BGRAPHICS)
@@ -84,12 +84,12 @@ enum
 #define CP_BOARD_PREVMOVE CP_CFG(CONF_BPREVMOVE)
 
 /* Piece-on-square mixes (fg of piece, bg of square). */
-#define CP_MIX(fgconf, bgconf, attr_src)                        \
-  ((COLORS)                                                     \
-       ? (COLOR_PAIR(vdk_color_pair(config.color[fgconf].fg,    \
-                                    config.color[bgconf].bg)) | \
-          config.color[attr_src].attrs)                         \
-       : config.color[attr_src].nattrs)
+#define CP_MIX(fgconf, bgconf, attr_src)                          \
+    ((COLORS)                                                     \
+         ? (COLOR_PAIR(vdk_color_pair(config.color[fgconf].fg,    \
+                                      config.color[bgconf].bg)) | \
+            config.color[attr_src].attrs)                         \
+         : config.color[attr_src].nattrs)
 
 #define CP_BOARD_W_W CP_MIX(CONF_BWHITE, CONF_BWHITE, CONF_BWHITE)
 #define CP_BOARD_W_B CP_MIX(CONF_BBLACK, CONF_BWHITE, CONF_BBLACK)

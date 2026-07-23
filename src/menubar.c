@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2026 cboard VDK port
 
@@ -30,22 +30,22 @@
 
 enum
 {
-  MB_FILE = 0,
-  MB_GAME,
-  MB_PLAY,
-  MB_HISTORY,
-  MB_EDIT,
-  MB_VIEW,
-  MB_TAGS,
-  MB_HELP,
-  MB_COUNT
+    MB_FILE = 0,
+    MB_GAME,
+    MB_PLAY,
+    MB_HISTORY,
+    MB_EDIT,
+    MB_VIEW,
+    MB_TAGS,
+    MB_HELP,
+    MB_COUNT
 };
 
 struct mb_item
 {
-  const char *label;
-  key_func *func; /* NULL = separator */
-  int mode_mask;  /* bit (1<<MODE_*) or -1 for any */
+    const char *label;
+    key_func *func; /* NULL = separator */
+    int mode_mask;  /* bit (1<<MODE_*) or -1 for any */
 };
 
 #define MODE_MASK_ANY (-1)
@@ -166,540 +166,540 @@ static const char *const menu_titles[MB_COUNT] = {
 static int
 current_mode_bit(void)
 {
-  struct userdata_s *d;
+    struct userdata_s *d;
 
-  if (!gp || !gp->data)
+    if (!gp || !gp->data)
+        return MODE_MASK_PLAY;
+
+    d = gp->data;
+    if (d->mode == MODE_HISTORY)
+        return MODE_MASK_HISTORY;
+    if (d->mode == MODE_EDIT)
+        return MODE_MASK_EDIT;
     return MODE_MASK_PLAY;
-
-  d = gp->data;
-  if (d->mode == MODE_HISTORY)
-    return MODE_MASK_HISTORY;
-  if (d->mode == MODE_EDIT)
-    return MODE_MASK_EDIT;
-  return MODE_MASK_PLAY;
 }
 
 static int
 item_enabled(const struct mb_item *it)
 {
-  int bit;
+    int bit;
 
-  if (!it->func)
-    return 0;
-  if (it->mode_mask == MODE_MASK_ANY)
-    return 1;
-  bit = current_mode_bit();
-  return (it->mode_mask & bit) != 0;
+    if (!it->func)
+        return 0;
+    if (it->mode_mask == MODE_MASK_ANY)
+        return 1;
+    bit = current_mode_bit();
+    return (it->mode_mask & bit) != 0;
 }
 
 static void
 close_dropdown(void)
 {
-  if (dropdown)
-  {
-    cboard_ui_window_destroy((cboard_widget_t *) dropdown);
-    dropdown = NULL;
-  }
-  dropdown_idx = -1;
+    if (dropdown)
+    {
+        cboard_ui_window_destroy((cboard_widget_t *) dropdown);
+        dropdown = NULL;
+    }
+    dropdown_idx = -1;
 }
 
 static int
 on_dropdown_item(vk_widget_t *widget, void *anything)
 {
-  key_func *fn = (key_func *) anything;
+    key_func *fn = (key_func *) anything;
 
-  (void) widget;
-  close_dropdown();
-  focused = 0;
-  if (menubar)
-  {
-    vk_menubar_set_focused(menubar, false);
-    vk_menubar_update(menubar);
-  }
-  cboard_ui_refresh();
+    (void) widget;
+    close_dropdown();
+    focused = 0;
+    if (menubar)
+    {
+        vk_menubar_set_focused(menubar, false);
+        vk_menubar_update(menubar);
+    }
+    cboard_ui_refresh();
 
-  if (fn)
-    (*fn)();
+    if (fn)
+        (*fn)();
 
-  return 0;
+    return 0;
 }
 
 static void
 open_dropdown(int idx)
 {
-  const struct mb_item *table;
-  vk_listbox_t *lb;
-  vk_window_t *win;
-  int i, n, max_w, max_h, item_x, bar_x, bar_y;
-  int scr_h, scr_w;
-  char caption[64];
+    const struct mb_item *table;
+    vk_listbox_t *lb;
+    vk_window_t *win;
+    int i, n, max_w, max_h, item_x, bar_x, bar_y;
+    int scr_h, scr_w;
+    char caption[64];
 
-  if (idx < 0 || idx >= MB_COUNT || !menubar)
-    return;
+    if (idx < 0 || idx >= MB_COUNT || !menubar)
+        return;
 
-  close_dropdown();
+    close_dropdown();
 
-  table = menu_tables[idx];
-  max_w = 12;
-  n = 0;
-  for (i = 0; table[i].mode_mask != -2; i++)
-  {
-    if (!table[i].func && !table[i].label)
+    table = menu_tables[idx];
+    max_w = 12;
+    n = 0;
+    for (i = 0; table[i].mode_mask != -2; i++)
     {
-      n++;
-      continue;
+        if (!table[i].func && !table[i].label)
+        {
+            n++;
+            continue;
+        }
+        if (table[i].func && !item_enabled(&table[i]))
+            continue;
+        if (table[i].label)
+        {
+            int len = (int) strlen(_(table[i].label));
+
+            if (len + 2 > max_w)
+                max_w = len + 2;
+            n++;
+        }
     }
-    if (table[i].func && !item_enabled(&table[i]))
-      continue;
-    if (table[i].label)
+
+    if (n < 1)
+        n = 1;
+    max_h = n;
+    if (max_h > LINES - 4)
+        max_h = LINES - 4;
+    if (max_w > COLS - 2)
+        max_w = COLS - 2;
+    if (max_w < 16)
+        max_w = 16;
+
+    lb = vk_listbox_create(max_w, max_h);
+    vk_listbox_set_wrap(lb, true);
+    vk_listbox_set_highlight(lb,
+                             config.color[CONF_MENUS].fg,
+                             config.color[CONF_MENUS].bg);
+    vk_listbox_set_highlight_attrs(lb, config.color[CONF_MENUS].attrs);
+    vk_widget_set_colors(VK_WIDGET(lb),
+                         config.color[CONF_MENU].fg,
+                         config.color[CONF_MENU].bg);
+    vk_widget_set_attrs(VK_WIDGET(lb), config.color[CONF_MENU].attrs);
+
+    for (i = 0; table[i].mode_mask != -2; i++)
     {
-      int len = (int) strlen(_(table[i].label));
-
-      if (len + 2 > max_w)
-        max_w = len + 2;
-      n++;
+        if (!table[i].func && !table[i].label)
+        {
+            vk_listbox_add_separator(lb, VK_SEPARATOR_SINGLE);
+            continue;
+        }
+        if (table[i].func && !item_enabled(&table[i]))
+            continue;
+        if (table[i].label && table[i].func)
+            vk_listbox_add_item(lb, (char *) _(table[i].label),
+                                on_dropdown_item, (void *) table[i].func);
     }
-  }
 
-  if (n < 1)
-    n = 1;
-  max_h = n;
-  if (max_h > LINES - 4)
-    max_h = LINES - 4;
-  if (max_w > COLS - 2)
-    max_w = COLS - 2;
-  if (max_w < 16)
-    max_w = 16;
+    snprintf(caption, sizeof(caption), " %s ", _(menu_titles[idx]));
+    win = vk_window_create(max_w + 2, max_h + 2);
+    vk_window_set_title(win, caption);
+    vk_window_set_border_style(win, VK_BORDER_SINGLE);
+    vk_window_set_border_colors(win,
+                                config.color[CONF_MENU].fg,
+                                config.color[CONF_MENU].bg);
+    vk_window_set_border_attrs(win, config.color[CONF_MENU].attrs);
+    vk_widget_set_colors(VK_WIDGET(win),
+                         config.color[CONF_MENU].fg,
+                         config.color[CONF_MENU].bg);
+    vk_widget_set_attrs(VK_WIDGET(win), config.color[CONF_MENU].attrs);
+    vk_window_set_child(win, VK_WIDGET(lb));
 
-  lb = vk_listbox_create(max_w, max_h);
-  vk_listbox_set_wrap(lb, true);
-  vk_listbox_set_highlight(lb,
-                           config.color[CONF_MENUS].fg,
-                           config.color[CONF_MENUS].bg);
-  vk_listbox_set_highlight_attrs(lb, config.color[CONF_MENUS].attrs);
-  vk_widget_set_colors(VK_WIDGET(lb),
-                       config.color[CONF_MENU].fg,
-                       config.color[CONF_MENU].bg);
-  vk_widget_set_attrs(VK_WIDGET(lb), config.color[CONF_MENU].attrs);
+    vk_widget_get_position(VK_WIDGET(menubar), &bar_x, &bar_y);
+    (void) bar_y;
+    vk_menubar_get_item_position(menubar, idx, &item_x);
+    getmaxyx(stdscr, scr_h, scr_w);
+    (void) scr_h;
+    if (bar_x + item_x + max_w + 2 > scr_w)
+        item_x = scr_w - max_w - 2 - bar_x;
+    if (item_x < 0)
+        item_x = 0;
 
-  for (i = 0; table[i].mode_mask != -2; i++)
-  {
-    if (!table[i].func && !table[i].label)
-    {
-      vk_listbox_add_separator(lb, VK_SEPARATOR_SINGLE);
-      continue;
-    }
-    if (table[i].func && !item_enabled(&table[i]))
-      continue;
-    if (table[i].label && table[i].func)
-      vk_listbox_add_item(lb, (char *) _(table[i].label),
-                          on_dropdown_item, (void *) table[i].func);
-  }
+    cboard_ui_widget_attach((cboard_widget_t *) win,
+                            CBOARD_MENUBAR_H, bar_x + item_x);
 
-  snprintf(caption, sizeof(caption), " %s ", _(menu_titles[idx]));
-  win = vk_window_create(max_w + 2, max_h + 2);
-  vk_window_set_title(win, caption);
-  vk_window_set_border_style(win, VK_BORDER_SINGLE);
-  vk_window_set_border_colors(win,
-                              config.color[CONF_MENU].fg,
-                              config.color[CONF_MENU].bg);
-  vk_window_set_border_attrs(win, config.color[CONF_MENU].attrs);
-  vk_widget_set_colors(VK_WIDGET(win),
-                       config.color[CONF_MENU].fg,
-                       config.color[CONF_MENU].bg);
-  vk_widget_set_attrs(VK_WIDGET(win), config.color[CONF_MENU].attrs);
-  vk_window_set_child(win, VK_WIDGET(lb));
+    vk_listbox_update(lb);
+    vk_window_update(win);
 
-  vk_widget_get_position(VK_WIDGET(menubar), &bar_x, &bar_y);
-  (void) bar_y;
-  vk_menubar_get_item_position(menubar, idx, &item_x);
-  getmaxyx(stdscr, scr_h, scr_w);
-  (void) scr_h;
-  if (bar_x + item_x + max_w + 2 > scr_w)
-    item_x = scr_w - max_w - 2 - bar_x;
-  if (item_x < 0)
-    item_x = 0;
+    dropdown = win;
+    dropdown_idx = idx;
 
-  cboard_ui_widget_attach((cboard_widget_t *) win,
-                          CBOARD_MENUBAR_H, bar_x + item_x);
-
-  vk_listbox_update(lb);
-  vk_window_update(win);
-
-  dropdown = win;
-  dropdown_idx = idx;
-
-  cboard_ui_front_clear();
-  cboard_ui_front_push((cboard_widget_t *) menubar);
-  cboard_ui_front_push((cboard_widget_t *) dropdown);
-  cboard_ui_refresh();
+    cboard_ui_front_clear();
+    cboard_ui_front_push((cboard_widget_t *) menubar);
+    cboard_ui_front_push((cboard_widget_t *) dropdown);
+    cboard_ui_refresh();
 }
 
 static int
 on_menubar_activate(vk_widget_t *widget, void *anything)
 {
-  int idx = (int) (intptr_t) anything;
+    int idx = (int) (intptr_t) anything;
 
-  (void) widget;
-  if (dropdown && dropdown_idx == idx)
-  {
-    close_dropdown();
-    cboard_ui_refresh();
+    (void) widget;
+    if (dropdown && dropdown_idx == idx)
+    {
+        close_dropdown();
+        cboard_ui_refresh();
+        return 0;
+    }
+    open_dropdown(idx);
     return 0;
-  }
-  open_dropdown(idx);
-  return 0;
 }
 
 void cboard_menubar_init(void)
 {
-  int i;
-  int width = COLS > 0 ? COLS : 80;
+    int i;
+    int width = COLS > 0 ? COLS : 80;
 
-  if (menubar)
-    return;
+    if (menubar)
+        return;
 
-  menubar = vk_menubar_create(width);
-  /* Bar itself: classic black on light gray/white (not the cyan menus). */
-  vk_widget_set_colors(VK_WIDGET(menubar), COLOR_BLACK, COLOR_WHITE);
-  vk_widget_set_attrs(VK_WIDGET(menubar), A_NORMAL);
-  vk_menubar_set_highlight(menubar, COLOR_WHITE, COLOR_BLUE);
+    menubar = vk_menubar_create(width);
+    /* Bar itself: classic black on light gray/white (not the cyan menus). */
+    vk_widget_set_colors(VK_WIDGET(menubar), COLOR_BLACK, COLOR_WHITE);
+    vk_widget_set_attrs(VK_WIDGET(menubar), A_NORMAL);
+    vk_menubar_set_highlight(menubar, COLOR_WHITE, COLOR_BLUE);
 
-  for (i = 0; i < MB_COUNT; i++)
-    vk_menubar_add_item(menubar, (char *) _(menu_titles[i]),
-                        on_menubar_activate, (void *) (intptr_t) i);
+    for (i = 0; i < MB_COUNT; i++)
+        vk_menubar_add_item(menubar, (char *) _(menu_titles[i]),
+                            on_menubar_activate, (void *) (intptr_t) i);
 
-  vk_widget_move(VK_WIDGET(menubar), 0, 0);
-  cboard_ui_widget_attach((cboard_widget_t *) menubar, 0, 0);
-  vk_menubar_set_focused(menubar, false);
-  vk_menubar_update(menubar);
-  focused = 0;
-  dropdown = NULL;
-  dropdown_idx = -1;
+    vk_widget_move(VK_WIDGET(menubar), 0, 0);
+    cboard_ui_widget_attach((cboard_widget_t *) menubar, 0, 0);
+    vk_menubar_set_focused(menubar, false);
+    vk_menubar_update(menubar);
+    focused = 0;
+    dropdown = NULL;
+    dropdown_idx = -1;
 }
 
 void cboard_menubar_shutdown(void)
 {
-  close_dropdown();
-  if (menubar)
-  {
-    cboard_ui_widget_destroy((cboard_widget_t *) menubar);
-    menubar = NULL;
-  }
-  focused = 0;
+    close_dropdown();
+    if (menubar)
+    {
+        cboard_ui_widget_destroy((cboard_widget_t *) menubar);
+        menubar = NULL;
+    }
+    focused = 0;
 }
 
 void cboard_menubar_resize(void)
 {
-  if (!menubar)
-    return;
+    if (!menubar)
+        return;
 
-  close_dropdown();
-  vk_widget_resize(VK_WIDGET(menubar), COLS, 1);
-  vk_widget_move(VK_WIDGET(menubar), 0, 0);
-  vk_menubar_update(menubar);
-  cboard_ui_widget_raise((cboard_widget_t *) menubar);
+    close_dropdown();
+    vk_widget_resize(VK_WIDGET(menubar), COLS, 1);
+    vk_widget_move(VK_WIDGET(menubar), 0, 0);
+    vk_menubar_update(menubar);
+    cboard_ui_widget_raise((cboard_widget_t *) menubar);
 }
 
 void cboard_menubar_refresh(void)
 {
-  if (!menubar)
-    return;
+    if (!menubar)
+        return;
 
-  vk_menubar_update(menubar);
+    vk_menubar_update(menubar);
 
-  if (dropdown)
-  {
-    vk_listbox_t *lb = VK_LISTBOX(vk_window_get_child(dropdown));
+    if (dropdown)
+    {
+        vk_listbox_t *lb = VK_LISTBOX(vk_window_get_child(dropdown));
 
-    if (lb)
-      vk_listbox_update(lb);
-    vk_window_update(dropdown);
-  }
+        if (lb)
+            vk_listbox_update(lb);
+        vk_window_update(dropdown);
+    }
 
-  /*
+    /*
    * Register menubar (and open dropdown) as the front layer.  refresh()
    * raises them and redraws them after the full composite so the board
    * cannot occlude the menus.
    */
-  cboard_ui_front_clear();
-  cboard_ui_front_push((cboard_widget_t *) menubar);
-  if (dropdown)
-    cboard_ui_front_push((cboard_widget_t *) dropdown);
+    cboard_ui_front_clear();
+    cboard_ui_front_push((cboard_widget_t *) menubar);
+    if (dropdown)
+        cboard_ui_front_push((cboard_widget_t *) dropdown);
 }
 
 int cboard_menubar_active(void)
 {
-  return focused || dropdown != NULL;
+    return focused || dropdown != NULL;
 }
 
 static void
 menubar_activate(void)
 {
-  if (!menubar)
-    return;
+    if (!menubar)
+        return;
 
-  focused = 1;
-  vk_menubar_set_focused(menubar, true);
-  if (vk_menubar_get_curr(menubar) < 0)
-    vk_menubar_set_curr(menubar, 0);
-  vk_menubar_update(menubar);
-  cboard_ui_front_clear();
-  cboard_ui_front_push((cboard_widget_t *) menubar);
-  if (dropdown)
-    cboard_ui_front_push((cboard_widget_t *) dropdown);
-  cboard_ui_refresh();
+    focused = 1;
+    vk_menubar_set_focused(menubar, true);
+    if (vk_menubar_get_curr(menubar) < 0)
+        vk_menubar_set_curr(menubar, 0);
+    vk_menubar_update(menubar);
+    cboard_ui_front_clear();
+    cboard_ui_front_push((cboard_widget_t *) menubar);
+    if (dropdown)
+        cboard_ui_front_push((cboard_widget_t *) dropdown);
+    cboard_ui_refresh();
 }
 
 static void
 menubar_deactivate(void)
 {
-  close_dropdown();
-  focused = 0;
-  if (menubar)
-  {
-    vk_menubar_set_focused(menubar, false);
-    vk_menubar_update(menubar);
-  }
-  cboard_ui_refresh();
+    close_dropdown();
+    focused = 0;
+    if (menubar)
+    {
+        vk_menubar_set_focused(menubar, false);
+        vk_menubar_update(menubar);
+    }
+    cboard_ui_refresh();
 }
 
 int cboard_menubar_key(wint_t c)
 {
-  vk_listbox_t *lb;
+    vk_listbox_t *lb;
 
-  /* F10 toggles the menubar. */
-  if (c == KEY_F(10))
-  {
-    if (cboard_menubar_active())
-      menubar_deactivate();
-    else
-      menubar_activate();
-    return 1;
-  }
+    /* F10 toggles the menubar. */
+    if (c == KEY_F(10))
+    {
+        if (cboard_menubar_active())
+            menubar_deactivate();
+        else
+            menubar_activate();
+        return 1;
+    }
 
-  if (!cboard_menubar_active())
-    return 0;
+    if (!cboard_menubar_active())
+        return 0;
 
-  /* Dropdown open: drive listbox. */
-  if (dropdown)
-  {
-    lb = VK_LISTBOX(vk_window_get_child(dropdown));
+    /* Dropdown open: drive listbox. */
+    if (dropdown)
+    {
+        lb = VK_LISTBOX(vk_window_get_child(dropdown));
 
+        switch (c)
+        {
+        case KEY_ESCAPE:
+            close_dropdown();
+            cboard_ui_refresh();
+            return 1;
+        case KEY_UP:
+            if (lb)
+            {
+                vk_listbox_set_prev(lb);
+                vk_listbox_update(lb);
+                vk_window_update(dropdown);
+                cboard_ui_refresh();
+            }
+            return 1;
+        case KEY_DOWN:
+            if (lb)
+            {
+                vk_listbox_set_next(lb);
+                vk_listbox_update(lb);
+                vk_window_update(dropdown);
+                cboard_ui_refresh();
+            }
+            return 1;
+        case KEY_HOME:
+            if (lb)
+            {
+                vk_listbox_set_curr(lb, 0);
+                vk_listbox_update(lb);
+                vk_window_update(dropdown);
+                cboard_ui_refresh();
+            }
+            return 1;
+        case KEY_END:
+            if (lb)
+            {
+                int n = vk_listbox_get_item_count(lb);
+
+                if (n > 0)
+                    vk_listbox_set_curr(lb, n - 1);
+                vk_listbox_update(lb);
+                vk_window_update(dropdown);
+                cboard_ui_refresh();
+            }
+            return 1;
+        case KEY_LEFT:
+            close_dropdown();
+            if (menubar)
+            {
+                vk_menubar_set_prev(menubar);
+                vk_menubar_update(menubar);
+                open_dropdown(vk_menubar_get_curr(menubar));
+            }
+            return 1;
+        case KEY_RIGHT:
+            close_dropdown();
+            if (menubar)
+            {
+                vk_menubar_set_next(menubar);
+                vk_menubar_update(menubar);
+                open_dropdown(vk_menubar_get_curr(menubar));
+            }
+            return 1;
+        case '\n':
+        case KEY_ENTER:
+            if (lb)
+                vk_listbox_exec_curr(lb);
+            return 1;
+        default:
+            return 1; /* swallow while menu open */
+        }
+    }
+
+    /* Bar focused, no dropdown. */
     switch (c)
     {
     case KEY_ESCAPE:
-      close_dropdown();
-      cboard_ui_refresh();
-      return 1;
-    case KEY_UP:
-      if (lb)
-      {
-        vk_listbox_set_prev(lb);
-        vk_listbox_update(lb);
-        vk_window_update(dropdown);
-        cboard_ui_refresh();
-      }
-      return 1;
-    case KEY_DOWN:
-      if (lb)
-      {
-        vk_listbox_set_next(lb);
-        vk_listbox_update(lb);
-        vk_window_update(dropdown);
-        cboard_ui_refresh();
-      }
-      return 1;
-    case KEY_HOME:
-      if (lb)
-      {
-        vk_listbox_set_curr(lb, 0);
-        vk_listbox_update(lb);
-        vk_window_update(dropdown);
-        cboard_ui_refresh();
-      }
-      return 1;
-    case KEY_END:
-      if (lb)
-      {
-        int n = vk_listbox_get_item_count(lb);
-
-        if (n > 0)
-          vk_listbox_set_curr(lb, n - 1);
-        vk_listbox_update(lb);
-        vk_window_update(dropdown);
-        cboard_ui_refresh();
-      }
-      return 1;
+        menubar_deactivate();
+        return 1;
     case KEY_LEFT:
-      close_dropdown();
-      if (menubar)
-      {
-        vk_menubar_set_prev(menubar);
-        vk_menubar_update(menubar);
-        open_dropdown(vk_menubar_get_curr(menubar));
-      }
-      return 1;
+        if (menubar)
+        {
+            vk_menubar_set_prev(menubar);
+            vk_menubar_update(menubar);
+            cboard_ui_refresh();
+        }
+        return 1;
     case KEY_RIGHT:
-      close_dropdown();
-      if (menubar)
-      {
-        vk_menubar_set_next(menubar);
-        vk_menubar_update(menubar);
-        open_dropdown(vk_menubar_get_curr(menubar));
-      }
-      return 1;
+        if (menubar)
+        {
+            vk_menubar_set_next(menubar);
+            vk_menubar_update(menubar);
+            cboard_ui_refresh();
+        }
+        return 1;
+    case KEY_DOWN:
     case '\n':
     case KEY_ENTER:
-      if (lb)
-        vk_listbox_exec_curr(lb);
-      return 1;
+        if (menubar)
+            open_dropdown(vk_menubar_get_curr(menubar));
+        return 1;
     default:
-      return 1; /* swallow while menu open */
+        return 1;
     }
-  }
-
-  /* Bar focused, no dropdown. */
-  switch (c)
-  {
-  case KEY_ESCAPE:
-    menubar_deactivate();
-    return 1;
-  case KEY_LEFT:
-    if (menubar)
-    {
-      vk_menubar_set_prev(menubar);
-      vk_menubar_update(menubar);
-      cboard_ui_refresh();
-    }
-    return 1;
-  case KEY_RIGHT:
-    if (menubar)
-    {
-      vk_menubar_set_next(menubar);
-      vk_menubar_update(menubar);
-      cboard_ui_refresh();
-    }
-    return 1;
-  case KEY_DOWN:
-  case '\n':
-  case KEY_ENTER:
-    if (menubar)
-      open_dropdown(vk_menubar_get_curr(menubar));
-    return 1;
-  default:
-    return 1;
-  }
 }
 
 static int
 mb_left_press(mmask_t bstate)
 {
-  return (bstate & (BUTTON1_PRESSED | BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED)) != 0;
+    return (bstate & (BUTTON1_PRESSED | BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED)) != 0;
 }
 
 int cboard_menubar_mouse(int x, int y, mmask_t bstate)
 {
-  int bar_x, bar_y, bar_w, bar_h;
-  int idx;
-  int lx;
+    int bar_x, bar_y, bar_w, bar_h;
+    int idx;
+    int lx;
 
-  if (!menubar)
-    return 0;
+    if (!menubar)
+        return 0;
 
-  /* Wheel over open dropdown → move selection. */
-  if (dropdown && (bstate & (BUTTON4_PRESSED | BUTTON5_PRESSED)))
-  {
-    int dx, dy, dw, dh;
-    vk_listbox_t *lb;
-
-    vk_widget_get_position(VK_WIDGET(dropdown), &dx, &dy);
-    vk_widget_get_metrics(VK_WIDGET(dropdown), &dw, &dh);
-    if (x >= dx && x < dx + dw && y >= dy && y < dy + dh)
+    /* Wheel over open dropdown → move selection. */
+    if (dropdown && (bstate & (BUTTON4_PRESSED | BUTTON5_PRESSED)))
     {
-      lb = VK_LISTBOX(vk_window_get_child(dropdown));
-      if (lb)
-      {
-        if (bstate & BUTTON4_PRESSED)
-          vk_listbox_set_prev(lb);
-        else
-          vk_listbox_set_next(lb);
-        vk_listbox_update(lb);
-        vk_window_update(dropdown);
-        cboard_ui_refresh();
-      }
-      return 1;
-    }
-  }
+        int dx, dy, dw, dh;
+        vk_listbox_t *lb;
 
-  if (!mb_left_press(bstate))
-    return 0;
-
-  /* Click on open dropdown list → select and activate. */
-  if (dropdown)
-  {
-    int dx, dy, dw, dh;
-    int ly, row;
-    vk_listbox_t *lb;
-
-    vk_widget_get_position(VK_WIDGET(dropdown), &dx, &dy);
-    vk_widget_get_metrics(VK_WIDGET(dropdown), &dw, &dh);
-    if (x >= dx && x < dx + dw && y >= dy && y < dy + dh)
-    {
-      lb = VK_LISTBOX(vk_window_get_child(dropdown));
-      /* Interior of window frame: inset 1 for border. */
-      ly = y - dy - 1;
-      if (lb && ly >= 0)
-      {
-        int n = vk_listbox_get_item_count(lb);
-        int scroll = vk_listbox_get_scroll_pos(lb);
-
-        row = scroll + ly;
-        if (row >= 0 && row < n)
+        vk_widget_get_position(VK_WIDGET(dropdown), &dx, &dy);
+        vk_widget_get_metrics(VK_WIDGET(dropdown), &dw, &dh);
+        if (x >= dx && x < dx + dw && y >= dy && y < dy + dh)
         {
-          vk_listbox_set_curr(lb, row);
-          vk_listbox_update(lb);
-          vk_window_update(dropdown);
-          /* Activate via the same path as Enter. */
-          vk_listbox_exec_curr(lb);
-          return 1;
+            lb = VK_LISTBOX(vk_window_get_child(dropdown));
+            if (lb)
+            {
+                if (bstate & BUTTON4_PRESSED)
+                    vk_listbox_set_prev(lb);
+                else
+                    vk_listbox_set_next(lb);
+                vk_listbox_update(lb);
+                vk_window_update(dropdown);
+                cboard_ui_refresh();
+            }
+            return 1;
         }
-      }
-      return 1;
     }
 
-    /* Click outside dropdown while open → close (and maybe open other). */
-    close_dropdown();
-  }
+    if (!mb_left_press(bstate))
+        return 0;
 
-  vk_widget_get_position(VK_WIDGET(menubar), &bar_x, &bar_y);
-  vk_widget_get_metrics(VK_WIDGET(menubar), &bar_w, &bar_h);
-  if (y < bar_y || y >= bar_y + bar_h || x < bar_x || x >= bar_x + bar_w)
-  {
-    if (cboard_menubar_active())
+    /* Click on open dropdown list → select and activate. */
+    if (dropdown)
     {
-      menubar_deactivate();
-      return 1;
+        int dx, dy, dw, dh;
+        int ly, row;
+        vk_listbox_t *lb;
+
+        vk_widget_get_position(VK_WIDGET(dropdown), &dx, &dy);
+        vk_widget_get_metrics(VK_WIDGET(dropdown), &dw, &dh);
+        if (x >= dx && x < dx + dw && y >= dy && y < dy + dh)
+        {
+            lb = VK_LISTBOX(vk_window_get_child(dropdown));
+            /* Interior of window frame: inset 1 for border. */
+            ly = y - dy - 1;
+            if (lb && ly >= 0)
+            {
+                int n = vk_listbox_get_item_count(lb);
+                int scroll = vk_listbox_get_scroll_pos(lb);
+
+                row = scroll + ly;
+                if (row >= 0 && row < n)
+                {
+                    vk_listbox_set_curr(lb, row);
+                    vk_listbox_update(lb);
+                    vk_window_update(dropdown);
+                    /* Activate via the same path as Enter. */
+                    vk_listbox_exec_curr(lb);
+                    return 1;
+                }
+            }
+            return 1;
+        }
+
+        /* Click outside dropdown while open → close (and maybe open other). */
+        close_dropdown();
     }
-    return 0;
-  }
 
-  lx = x - bar_x;
-  idx = vk_menubar_hit_test(menubar, lx);
-  if (idx < 0)
-  {
+    vk_widget_get_position(VK_WIDGET(menubar), &bar_x, &bar_y);
+    vk_widget_get_metrics(VK_WIDGET(menubar), &bar_w, &bar_h);
+    if (y < bar_y || y >= bar_y + bar_h || x < bar_x || x >= bar_x + bar_w)
+    {
+        if (cboard_menubar_active())
+        {
+            menubar_deactivate();
+            return 1;
+        }
+        return 0;
+    }
+
+    lx = x - bar_x;
+    idx = vk_menubar_hit_test(menubar, lx);
+    if (idx < 0)
+    {
+        if (!cboard_menubar_active())
+            menubar_activate();
+        return 1;
+    }
+
     if (!cboard_menubar_active())
-      menubar_activate();
+    {
+        focused = 1;
+        vk_menubar_set_focused(menubar, true);
+    }
+    vk_menubar_set_curr(menubar, idx);
+    vk_menubar_update(menubar);
+    open_dropdown(idx);
     return 1;
-  }
-
-  if (!cboard_menubar_active())
-  {
-    focused = 1;
-    vk_menubar_set_focused(menubar, true);
-  }
-  vk_menubar_set_curr(menubar, idx);
-  vk_menubar_update(menubar);
-  open_dropdown(idx);
-  return 1;
 }

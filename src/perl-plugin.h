@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2007-2024 Ben Kibbey <bjk@luxsci.net>
 

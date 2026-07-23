@@ -32,13 +32,13 @@
 
 extern char *__progname;
 
-#define VA(call)          \
-  {                       \
-    va_list ap;           \
-    va_start(ap, format); \
-    call;                 \
-    va_end(ap);           \
-  }
+#define VA(call)              \
+    {                         \
+        va_list ap;           \
+        va_start(ap, format); \
+        call;                 \
+        va_end(ap);           \
+    }
 
 #ifndef HAVE_FPUTS_UNLOCKED
 
@@ -53,28 +53,28 @@ extern char *__progname;
 
 int fputs_unlocked(const char *str, FILE *fp)
 {
-  char *p = str;
+    char *p = str;
 
-  while (*p)
-  {
-    if (putc_unlocked(*p++, fp) == EOF)
-      return EOF;
-  }
+    while (*p)
+    {
+        if (putc_unlocked(*p++, fp) == EOF)
+            return EOF;
+    }
 
-  return 1;
+    return 1;
 }
 
 int fputws_unlocked(const char *str, FILE *fp)
 {
-  char *p = str;
+    char *p = str;
 
-  while (*p)
-  {
-    if (putw_unlocked(*p++, fp) == EOF)
-      return EOF;
-  }
+    while (*p)
+    {
+        if (putw_unlocked(*p++, fp) == EOF)
+            return EOF;
+    }
 
-  return 1;
+    return 1;
 }
 #endif
 
@@ -83,135 +83,135 @@ static void
 convert_and_print(const char *format, __gnuc_va_list ap)
 {
 #define ALLOCA_LIMIT 2000
-  size_t len;
-  wchar_t *wformat = NULL;
-  mbstate_t st;
-  size_t res;
-  const char *tmp;
+    size_t len;
+    wchar_t *wformat = NULL;
+    mbstate_t st;
+    size_t res;
+    const char *tmp;
 
-  if (format == NULL)
-    return;
-
-  len = strlen(format) + 1;
-
-  do
-  {
-    if (len < ALLOCA_LIMIT)
-      wformat = (wchar_t *) alloca(len * sizeof(wchar_t));
-    else
-    {
-      if (wformat != NULL && len / 2 < ALLOCA_LIMIT)
-        wformat = NULL;
-
-      wformat = (wchar_t *) realloc(wformat, len * sizeof(wchar_t));
-
-      if (wformat == NULL)
-      {
-        fputws_unlocked(L"out of memory\n", stderr);
+    if (format == NULL)
         return;
-      }
-    }
 
-    memset(&st, '\0', sizeof(st));
-    tmp = format;
-  } while ((res = __mbsrtowcs(wformat, &tmp, len, &st)) == len);
+    len = strlen(format) + 1;
 
-  if (res == (size_t) -1)
-    /* The string cannot be converted.  */
-    wformat = (wchar_t *) L"???";
+    do
+    {
+        if (len < ALLOCA_LIMIT)
+            wformat = (wchar_t *) alloca(len * sizeof(wchar_t));
+        else
+        {
+            if (wformat != NULL && len / 2 < ALLOCA_LIMIT)
+                wformat = NULL;
 
-  __vfwprintf(stderr, wformat, ap);
+            wformat = (wchar_t *) realloc(wformat, len * sizeof(wchar_t));
+
+            if (wformat == NULL)
+            {
+                fputws_unlocked(L"out of memory\n", stderr);
+                return;
+            }
+        }
+
+        memset(&st, '\0', sizeof(st));
+        tmp = format;
+    } while ((res = __mbsrtowcs(wformat, &tmp, len, &st)) == len);
+
+    if (res == (size_t) -1)
+        /* The string cannot be converted.  */
+        wformat = (wchar_t *) L"???";
+
+    __vfwprintf(stderr, wformat, ap);
 }
 #endif
 
 void vwarnx(const char *format, __gnuc_va_list ap)
 {
-  flockfile(stderr);
+    flockfile(stderr);
 #ifdef USE_IN_LIBIO
-  if (_IO_fwide(stderr, 0) > 0)
-  {
-    __fwprintf(stderr, L"%s: ", __progname);
-    convert_and_print(format, ap);
-    putwc_unlocked(L'\n', stderr);
-  }
-  else
+    if (_IO_fwide(stderr, 0) > 0)
+    {
+        __fwprintf(stderr, L"%s: ", __progname);
+        convert_and_print(format, ap);
+        putwc_unlocked(L'\n', stderr);
+    }
+    else
 #endif
-  {
-    fprintf(stderr, "%s: ", __progname);
-    if (format)
-      vfprintf(stderr, format, ap);
-    putc_unlocked('\n', stderr);
-  }
-  funlockfile(stderr);
+    {
+        fprintf(stderr, "%s: ", __progname);
+        if (format)
+            vfprintf(stderr, format, ap);
+        putc_unlocked('\n', stderr);
+    }
+    funlockfile(stderr);
 }
 //libc_hidden_def (vwarnx)
 
 void vwarn(const char *format, __gnuc_va_list ap)
 {
-  int error = errno;
+    int error = errno;
 
-  flockfile(stderr);
+    flockfile(stderr);
 #ifdef USE_IN_LIBIO
-  if (_IO_fwide(stderr, 0) > 0)
-  {
-    __fwprintf(stderr, L"%s: ", __progname);
-    if (format)
+    if (_IO_fwide(stderr, 0) > 0)
     {
-      convert_and_print(format, ap);
-      fputws_unlocked(L": ", stderr);
+        __fwprintf(stderr, L"%s: ", __progname);
+        if (format)
+        {
+            convert_and_print(format, ap);
+            fputws_unlocked(L": ", stderr);
+        }
+        //__set_errno (error);
+        __fwprintf(stderr, L"%s\n", strerror(error));
     }
-    //__set_errno (error);
-    __fwprintf(stderr, L"%s\n", strerror(error));
-  }
-  else
+    else
 #endif
-  {
-    fprintf(stderr, "%s: ", __progname);
-    if (format)
     {
-      vfprintf(stderr, format, ap);
-      fputs_unlocked(": ", stderr);
+        fprintf(stderr, "%s: ", __progname);
+        if (format)
+        {
+            vfprintf(stderr, format, ap);
+            fputs_unlocked(": ", stderr);
+        }
+        //__set_errno (error);
+        fprintf(stderr, "%s\n", strerror(error));
     }
-    //__set_errno (error);
-    fprintf(stderr, "%s\n", strerror(error));
-  }
-  funlockfile(stderr);
+    funlockfile(stderr);
 }
 //libc_hidden_def (vwarn)
 
 
 void warn(const char *format, ...)
 {
-  VA(vwarn(format, ap))
+    VA(vwarn(format, ap))
 }
 //libc_hidden_def (warn)
 
 void warnx(const char *format, ...)
 {
-  VA(vwarnx(format, ap))
+    VA(vwarnx(format, ap))
 }
 //libc_hidden_def (warnx)
 
 void verr(int status, const char *format, __gnuc_va_list ap)
 {
-  vwarn(format, ap);
-  exit(status);
+    vwarn(format, ap);
+    exit(status);
 }
 //libc_hidden_def (verr)
 
 void verrx(int status, const char *format, __gnuc_va_list ap)
 {
-  vwarnx(format, ap);
-  exit(status);
+    vwarnx(format, ap);
+    exit(status);
 }
 //libc_hidden_def (verrx)
 
 void err(int status, const char *format, ...)
 {
-  VA(verr(status, format, ap))
+    VA(verr(status, format, ap))
 }
 
 void errx(int status, const char *format, ...)
 {
-  VA(verrx(status, format, ap))
+    VA(verrx(status, format, ap))
 }

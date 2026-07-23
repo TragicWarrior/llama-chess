@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -42,19 +42,19 @@
 
 enum
 {
-  OPEN_SQUARE,
-  PAWN,
-  BISHOP,
-  ROOK,
-  KNIGHT,
-  QUEEN,
-  KING
+    OPEN_SQUARE,
+    PAWN,
+    BISHOP,
+    ROOK,
+    KNIGHT,
+    QUEEN,
+    KING
 };
 
 enum
 {
-  WHITE,
-  BLACK
+    WHITE,
+    BLACK
 };
 
 /* Game flags. */
@@ -72,10 +72,10 @@ enum
  */
 typedef struct
 {
-  unsigned char icon;      // The piece.
-  unsigned char valid : 1, /* != 0 if this square is a valid move for the
-				  selected piece. */
-      enpassant : 1;
+    unsigned char icon;      // The piece.
+    unsigned char valid : 1, /* != 0 if this square is a valid move for the
+                  selected piece. */
+        enpassant : 1;
 } BOARD[8][8];
 
 /*
@@ -83,8 +83,8 @@ typedef struct
  */
 typedef struct tags
 {
-  char *name;  // Tag name.
-  char *value; // Tag value.
+    char *name;  // Tag name.
+    char *value; // Tag value.
 } __attribute__((packed)) TAG;
 
 /*
@@ -96,11 +96,11 @@ typedef struct tags
  */
 typedef struct history
 {
-  char *move;                     // The SAN move text.
-  char *comment;                  // Annotation for this move.
-  unsigned char nag[MAX_PGN_NAG]; // Numeric Annotation Glyph.
-  char *fen;                      // Of the current board.
-  struct history **rav;           // Variation of the current move.
+    char *move;                     // The SAN move text.
+    char *comment;                  // Annotation for this move.
+    unsigned char nag[MAX_PGN_NAG]; // Numeric Annotation Glyph.
+    char *fen;                      // Of the current board.
+    struct history **rav;           // Variation of the current move.
 } HISTORY;
 
 /*
@@ -108,10 +108,10 @@ typedef struct history
  */
 typedef struct
 {
-  char *fen; // Game board state.
-  unsigned short flags;
-  unsigned short hindex;
-  HISTORY **hp; // Pointer to the root move.
+    char *fen; // Game board state.
+    unsigned short flags;
+    unsigned short hindex;
+    HISTORY **hp; // Pointer to the root move.
 } RAV;
 
 /*
@@ -120,33 +120,33 @@ typedef struct
  */
 typedef struct game_s
 {
-  TAG **tag;              // Roster tags.
-  HISTORY **history;      // Move history for this game.
-  HISTORY **hp;           /* History pointer pointing to the location
-				   in *history used mainly for RAV. */
-  RAV *rav;               // Saved game states for the root move of RAV.
-  int ravlevel;           // An index to *rav.
-  unsigned short hindex;  // Current move in *hp.
-  unsigned short flags;   // Game flags.
-  unsigned short oflags;  // Game flags for the previous move.
-  unsigned char side : 1, // This playing side. BLACK or WHITE.
-      turn : 1;           // BLACK or WHITE.
-  unsigned short ply;     // Move count.
-  void *data;             /* User data associated with this game. Must
-				 * be freed by the user. */
-  // internal validation state
-  int validate;
-  int done_fen_tag;
-  int pgn_fen_tag;
-  int capture;
-  int castle;
-  int check;
-  int check_testing;
-  int kfile;
-  int krank;
-  int okfile;
-  int okrank;
-  int validate_find;
+    TAG **tag;              // Roster tags.
+    HISTORY **history;      // Move history for this game.
+    HISTORY **hp;           /* History pointer pointing to the location
+                   in *history used mainly for RAV. */
+    RAV *rav;               // Saved game states for the root move of RAV.
+    int ravlevel;           // An index to *rav.
+    unsigned short hindex;  // Current move in *hp.
+    unsigned short flags;   // Game flags.
+    unsigned short oflags;  // Game flags for the previous move.
+    unsigned char side : 1, // This playing side. BLACK or WHITE.
+        turn : 1;           // BLACK or WHITE.
+    unsigned short ply;     // Move count.
+    void *data;             /* User data associated with this game. Must
+                 * be freed by the user. */
+    // internal validation state
+    int validate;
+    int done_fen_tag;
+    int pgn_fen_tag;
+    int capture;
+    int castle;
+    int check;
+    int check_testing;
+    int kfile;
+    int krank;
+    int okfile;
+    int okrank;
+    int validate_find;
 } *GAME;
 
 /*
@@ -164,50 +164,50 @@ extern int gindex, gtotal;
  */
 typedef enum
 {
-  /*
+    /*
    * When pgn_write() is called to write a game, write reduced PGN format.
    * This will only write the seven tag roster and move text skipping any
    * annotation. The type for this flag is an int.
    */
-  PGN_REDUCED,
+    PGN_REDUCED,
 
-  /*
+    /*
    * The number of full moves to write per line. If 0 then pgn_write() will
    * write as many as possible within 80 columns. The type for this flag
    * is an int.
    */
-  PGN_MPL,
+    PGN_MPL,
 
-  /*
+    /*
    * Normally when a parse error occurs in a game the game is flagged with
    * GF_PERROR and the rest of the game is discarded and processing of the
    * next game is done. When set and a parse error occurs the rest of the
    * entire file will be discarded. The type for this flag is an int.
    */
-  PGN_STOP_ON_ERROR,
+    PGN_STOP_ON_ERROR,
 
 #ifdef DEBUG
-  /*
+    /*
    * If the following is set to a value > 0 and DEBUG was defined
    * at compile time then debugging output will be written to
    * "libchess.debug" in the current directory.
    */
-  PGN_DEBUG,
+    PGN_DEBUG,
 #endif
 
-  /*
+    /*
    * After PGN_PROGRESS amount of bytes have been read from a file, call
    * PGN_PROGRESS_FUNC. The type for PGN_PROGRESS is a long.
    * PGN_PROGRESS_FUNC is of type pgn_progress.
    */
-  PGN_PROGRESS,
-  PGN_PROGRESS_FUNC,
+    PGN_PROGRESS,
+    PGN_PROGRESS_FUNC,
 
-  /*
+    /*
    * If set to 1 and an opponent can attack a castling square the castling
    * move will not be a valid one.
    */
-  PGN_STRICT_CASTLING,
+    PGN_STRICT_CASTLING,
 } pgn_config_flag;
 
 /*
@@ -215,19 +215,19 @@ typedef enum
  */
 typedef enum
 {
-  E_PGN_ERR = -1,
-  E_PGN_OK,
-  E_PGN_PARSE,
-  E_PGN_AMBIGUOUS,
-  E_PGN_INVALID
+    E_PGN_ERR = -1,
+    E_PGN_OK,
+    E_PGN_PARSE,
+    E_PGN_AMBIGUOUS,
+    E_PGN_INVALID
 } pgn_error_t;
 
 typedef struct
 {
-  FILE *fp;
-  char *filename;
-  char *tmpfile; /* For appending. */
-  int pipe;
+    FILE *fp;
+    char *filename;
+    char *tmpfile; /* For appending. */
+    int pipe;
 } PGN_FILE;
 
 /*

@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -27,9 +27,9 @@
 
 struct menu_item_s
 {
-  char *name;
-  char *value;
-  int selected;
+    char *name;
+    char *value;
+    int selected;
 };
 
 typedef struct menu_input_s MENU_INPUT;
@@ -37,9 +37,9 @@ typedef void(menu_key)(MENU_INPUT *);
 
 struct menu_key_s
 {
-  wint_t c;
-  menu_key *func;
-  void *data;
+    wint_t c;
+    menu_key *func;
+    void *data;
 };
 
 /* Kept for API compatibility; listbox uses formatted text instead of
@@ -50,29 +50,29 @@ typedef struct menu_item_s **(menu_items_fn) (WIN *);
 
 struct menu_input_s
 {
-  int update;
-  int selected;
-  int nofree;
-  int top; /* scroll offset (synced from listbox) */
-  int total;
-  menu_items_fn *func;
-  menu_key *draw_exit_func;
-  menu_print_func *print_func;
-  int print_line;
-  int name_only;
-  struct menu_item_s **items;
-  struct menu_item_s *item;
-  struct menu_key_s **keys;
-  void *data;
-  char search[16];
-  int rstatic;
-  int cstatic;
-  int ystatic;
-  int xstatic;
-  /* VDK widgets owned by the window frame (not destroyed separately). */
-  void *listbox;
-  void *status_label;
-  void *vbox; /* vk_box holding listbox + status label */
+    int update;
+    int selected;
+    int nofree;
+    int top; /* scroll offset (synced from listbox) */
+    int total;
+    menu_items_fn *func;
+    menu_key *draw_exit_func;
+    menu_print_func *print_func;
+    int print_line;
+    int name_only;
+    struct menu_item_s **items;
+    struct menu_item_s *item;
+    struct menu_key_s **keys;
+    void *data;
+    char search[16];
+    int rstatic;
+    int cstatic;
+    int ystatic;
+    int xstatic;
+    /* VDK widgets owned by the window frame (not destroyed separately). */
+    void *listbox;
+    void *status_label;
+    void *vbox; /* vk_box holding listbox + status label */
 };
 
 void add_menu_key(struct menu_key_s ***dst, wint_t c, menu_key func);

@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -68,11 +68,11 @@
 
 struct clock_s
 {
-  struct timeval elapsed;
-  unsigned short move; /* move count */
-  int tc[MAX_TC][2];   /* 0 = move count, 1 = time (in seconds) */
-  int tcn;
-  int incr;
+    struct timeval elapsed;
+    unsigned short move; /* move count */
+    int tc[MAX_TC][2];   /* 0 = move count, 1 = time (in seconds) */
+    int tcn;
+    int incr;
 };
 
 /*
@@ -80,44 +80,44 @@ struct clock_s
  */
 struct userdata_s
 {
-  BOARD b;
-  int global_help;
-  struct engine_s *engine;
-  unsigned short flags;
-  char c_row;
-  char c_col;
-  char pm_frfr[6]; // Previous move
-  char pm_row;
-  char pm_col;
-  char ospm_row;
-  char ospm_col;
-  char pm_undo;
-  char paused;
-  unsigned n;
-  unsigned char mode;
-  char rotate; // Rotation control board
-  int go_move; // Movement function result 'do_play_go'
-  int play_mode;
-  struct clock_s wclock;
-  struct clock_s bclock;
-  struct timeval elapsed;
+    BOARD b;
+    int global_help;
+    struct engine_s *engine;
+    unsigned short flags;
+    char c_row;
+    char c_col;
+    char pm_frfr[6]; // Previous move
+    char pm_row;
+    char pm_col;
+    char ospm_row;
+    char ospm_col;
+    char pm_undo;
+    char paused;
+    unsigned n;
+    unsigned char mode;
+    char rotate; // Rotation control board
+    int go_move; // Movement function result 'do_play_go'
+    int play_mode;
+    struct clock_s wclock;
+    struct clock_s bclock;
+    struct timeval elapsed;
 
-  // The selected piece.
-  struct
-  {
-    unsigned char icon;
-    char scol;
-    char srow;
-    char col;
-    char row;
-  } sp;
+    // The selected piece.
+    struct
+    {
+        unsigned char icon;
+        char scol;
+        char srow;
+        char col;
+        char row;
+    } sp;
 
-  void *data; // For the history menu
+    void *data; // For the history menu
 
 #ifdef WITH_LIBPERL
-  char *perlfen;
-  char *oldfen;
-  unsigned short perlflags;
+    char *perlfen;
+    char *oldfen;
+    unsigned short perlflags;
 #endif
 };
 

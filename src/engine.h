@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -26,47 +26,47 @@
 #define _PATH_DEV "/dev/"
 #endif
 
-#define RETURN(d)                     \
-  {                                   \
-    d->engine->status = ENGINE_READY; \
-    return;                           \
-  }
+#define RETURN(d)                         \
+    {                                     \
+        d->engine->status = ENGINE_READY; \
+        return;                           \
+    }
 
 enum
 {
-  ENGINE_OFFLINE = -1,
-  ENGINE_READY,
-  ENGINE_THINKING,
-  ENGINE_INITIALIZING
+    ENGINE_OFFLINE = -1,
+    ENGINE_READY,
+    ENGINE_THINKING,
+    ENGINE_INITIALIZING
 };
 
 enum
 {
-  HUMAN,
-  ENGINE
+    HUMAN,
+    ENGINE
 };
 
 enum
 {
-  ENGINE_IN_FD,
-  ENGINE_OUT_FD,
+    ENGINE_IN_FD,
+    ENGINE_OUT_FD,
 };
 
 struct queue_s
 {
-  char *line;
-  int status;
+    char *line;
+    int status;
 };
 
 struct engine_s
 {
-  int fd[2];
-  pid_t pid;
-  int status;
-  struct queue_s **queue;
-  char **enginebuf;
-  char *iobuf;
-  int len;
+    int fd[2];
+    pid_t pid;
+    int status;
+    struct queue_s **queue;
+    char **enginebuf;
+    char *iobuf;
+    int len;
 };
 
 int send_signal_to_engine(pid_t, int);

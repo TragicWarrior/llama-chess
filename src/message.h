@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -22,9 +22,9 @@
 #define MSG_WIDTH ((COLS / 5) * 4) /* For multiline messages. */
 
 #define message(t, p, fmt...) \
-  construct_message(t, p, 0, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
+    construct_message(t, p, 0, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
 #define cmessage(t, p, fmt...) \
-  construct_message(t, p, 1, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
+    construct_message(t, p, 1, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
 
 typedef void *(message_func) (void *);
 

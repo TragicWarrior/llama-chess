@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -23,56 +23,56 @@
 
 enum
 {
-  INPUT_HIST_ENGINE,
-  INPUT_HIST_CLOCK,
-  INPUT_HIST_FILE,
-  INPUT_HIST_MOVE_EXP,
-  INPUT_HIST_GAME_EXP,
+    INPUT_HIST_ENGINE,
+    INPUT_HIST_CLOCK,
+    INPUT_HIST_FILE,
+    INPUT_HIST_MOVE_EXP,
+    INPUT_HIST_GAME_EXP,
 #ifdef WITH_LIBPERL
-  INPUT_HIST_PERL,
+    INPUT_HIST_PERL,
 #endif
-  INPUT_HIST_MAX
+    INPUT_HIST_MAX
 };
 
 enum
 {
-  FIELD_TYPE_ALNUM,
-  FIELD_TYPE_ALPHA,
-  FIELD_TYPE_INTEGER,
-  FIELD_TYPE_NUMERIC,
-  FIELD_TYPE_REGEXP,
-  FIELD_TYPE_IPV4,
-  FIELD_TYPE_ENUM,
-  FIELD_TYPE_PGN_TAG_NAME,
-  FIELD_TYPE_PGN_DATE,
-  FIELD_TYPE_PGN_ROUND,
-  FIELD_TYPE_PGN_RESULT
+    FIELD_TYPE_ALNUM,
+    FIELD_TYPE_ALPHA,
+    FIELD_TYPE_INTEGER,
+    FIELD_TYPE_NUMERIC,
+    FIELD_TYPE_REGEXP,
+    FIELD_TYPE_IPV4,
+    FIELD_TYPE_ENUM,
+    FIELD_TYPE_PGN_TAG_NAME,
+    FIELD_TYPE_PGN_DATE,
+    FIELD_TYPE_PGN_ROUND,
+    FIELD_TYPE_PGN_RESULT
 };
 
 typedef void(input_func)(void *);
 struct input_s
 {
-  char buf[MAX_PGN_LINE_LEN];
-  WINDOW *sw;
-  int w;
-  int h;
-  int lines;
-  char *init;
-  char **extra;
-  input_func *func;
-  char *arg;
-  wint_t c;
-  void *data;
-  int reset;
-  int hist;
+    char buf[MAX_PGN_LINE_LEN];
+    WINDOW *sw;
+    int w;
+    int h;
+    int lines;
+    char *init;
+    char **extra;
+    input_func *func;
+    char *arg;
+    wint_t c;
+    void *data;
+    int reset;
+    int hist;
 };
 
 struct input_data_s
 {
-  void *data;
-  void *moredata;
-  char *str;
-  window_exit_func *efunc;
+    void *data;
+    void *moredata;
+    char *str;
+    window_exit_func *efunc;
 };
 
 WIN *construct_input(const char *title, const char *init, int lines,

@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
     Copyright (C) 2026 cboard VDK port
@@ -27,46 +27,46 @@ typedef void(window_resize_func)(WIN *);
 /* How to free win->vk when the WIN is destroyed. */
 enum
 {
-  WIN_VK_PLAIN = 0, /* bare canvas widget */
-  WIN_VK_WINDOW,    /* vk_window_t */
-  WIN_VK_POPUP,     /* vk_popup_t */
-  WIN_VK_FILEDIALOG /* vk_filedialog_t */
+    WIN_VK_PLAIN = 0, /* bare canvas widget */
+    WIN_VK_WINDOW,    /* vk_window_t */
+    WIN_VK_POPUP,     /* vk_popup_t */
+    WIN_VK_FILEDIALOG /* vk_filedialog_t */
 };
 
 /* App-level dialog class (do not cast win->data without this). */
 enum
 {
-  WIN_APP_GENERIC = 0,
-  WIN_APP_MENU,       /* construct_menu — data is menu_input_s */
-  WIN_APP_MESSAGE,    /* construct_message — data is message_s */
-  WIN_APP_INPUT,      /* construct_input — data is vdk_input_s */
-  WIN_APP_CONFIRM,    /* construct_confirm — data is confirm_s */
-  WIN_APP_FILEBROWSER /* file_browser — data is fb_state_s */
+    WIN_APP_GENERIC = 0,
+    WIN_APP_MENU,       /* construct_menu — data is menu_input_s */
+    WIN_APP_MESSAGE,    /* construct_message — data is message_s */
+    WIN_APP_INPUT,      /* construct_input — data is vdk_input_s */
+    WIN_APP_CONFIRM,    /* construct_confirm — data is confirm_s */
+    WIN_APP_FILEBROWSER /* file_browser — data is fb_state_s */
 };
 
 struct window_s
 {
-  WINDOW *w;
-  /* VDK widget (opaque cboard_widget_t *); replaces ncurses PANEL. */
-  void *vk;
-  int vk_kind;
-  int app_kind; /* WIN_APP_* — type of win->data */
-  int rows;
-  int cols;
-  int posy;
-  int posx;
-  char *title;
-  /*
+    WINDOW *w;
+    /* VDK widget (opaque cboard_widget_t *); replaces ncurses PANEL. */
+    void *vk;
+    int vk_kind;
+    int app_kind; /* WIN_APP_* — type of win->data */
+    int rows;
+    int cols;
+    int posy;
+    int posx;
+    char *title;
+    /*
    * Key handler for the top-of-stack modal.  game_loop always reads keys
    * from stdscr and dispatches here.  Return 0 to run efunc (if any) and
    * destroy this window.
    */
-  window_func *func;
-  window_exit_func *efunc;
-  window_resize_func *rfunc;
-  void *data;
-  wint_t c;
-  int freedata; /* free() .data when destroying */
+    window_func *func;
+    window_exit_func *efunc;
+    window_resize_func *rfunc;
+    void *data;
+    wint_t c;
+    int freedata; /* free() .data when destroying */
 };
 
 /* Legacy alias of the modal stack (NULL-terminated). Prefer window_top(). */

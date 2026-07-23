@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -21,10 +21,10 @@
 
 static const struct custom_key_s
 {
-  int mode;
-  const char *name;
-  key_func *func;
-  int r;
+    int mode;
+    const char *name;
+    key_func *func;
+    int r;
 } config_keys[] =
     {
         {MODE_PLAY, "select", do_play_select, 0},

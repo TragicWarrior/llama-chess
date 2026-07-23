@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -24,44 +24,44 @@
 
 enum
 {
-  MODE_ANY = -1,
-  MODE_HISTORY,
-  MODE_PLAY,
-  MODE_EDIT
+    MODE_ANY = -1,
+    MODE_HISTORY,
+    MODE_PLAY,
+    MODE_EDIT
 };
 
 enum
 {
-  PLAY_HE,
-  PLAY_EH
+    PLAY_HE,
+    PLAY_EH
 };
 
 enum
 {
-  CURSOR_POSITION,
-  SP_POSITION,
-  SPS_POSITION
+    CURSOR_POSITION,
+    SP_POSITION,
+    SPS_POSITION
 };
 
 typedef void(key_func)(void);
 
 struct key_s
 {
-  key_func *f;
-  wint_t c;
-  wchar_t *key;
-  wchar_t *d;
-  int r;
+    key_func *f;
+    wint_t c;
+    wchar_t *key;
+    wchar_t *d;
+    int r;
 };
 
 struct macro_s
 {
-  wint_t c;
-  wint_t *keys;
-  wchar_t *desc;
-  int n;
-  int total;
-  int mode;
+    wint_t c;
+    wint_t *keys;
+    wchar_t *desc;
+    int n;
+    int total;
+    int mode;
 };
 
 extern struct macro_s **macros;

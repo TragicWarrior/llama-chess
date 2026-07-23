@@ -1,4 +1,4 @@
-/* vim:tw=78:ts=8:sw=4:set ft=c:  */
+/* vim:tw=78:ts=4:sw=4:sts=4:et:set ft=c:  */
 /*
     Copyright (C) 2007-2024 Ben Kibbey <bjk@luxsci.net>
 
@@ -35,78 +35,78 @@ static perl_error_func *error_func;
 
 int perl_init_file(const char *filename, perl_error_func *efunc)
 {
-  const char *args[] = {"", "-e", "0"};
-  char *buf;
-  int argc;
-  char **argv, **env;
+    const char *args[] = {"", "-e", "0"};
+    char *buf;
+    int argc;
+    char **argv, **env;
 
-  if (my_perl)
+    if (my_perl)
+        return 0;
+
+    error_func = efunc;
+    PERL_SYS_INIT3(&argc, &argv, &env);
+    my_perl = perl_alloc();
+    perl_construct(my_perl);
+    PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
+    perl_parse(my_perl, NULL, 3, (char **) args, NULL);
+    perl_run(my_perl);
+
+    asprintf(&buf, "do \"%s\"", filename);
+    eval_pv(buf, FALSE);
+    free(buf);
+
+    if (SvTRUE(ERRSV))
+    {
+        (*error_func)("%s", SvPV_nolen(ERRSV));
+        perl_cleanup();
+        return 1;
+    }
+
     return 0;
-
-  error_func = efunc;
-  PERL_SYS_INIT3(&argc, &argv, &env);
-  my_perl = perl_alloc();
-  perl_construct(my_perl);
-  PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
-  perl_parse(my_perl, NULL, 3, (char **) args, NULL);
-  perl_run(my_perl);
-
-  asprintf(&buf, "do \"%s\"", filename);
-  eval_pv(buf, FALSE);
-  free(buf);
-
-  if (SvTRUE(ERRSV))
-  {
-    (*error_func)("%s", SvPV_nolen(ERRSV));
-    perl_cleanup();
-    return 1;
-  }
-
-  return 0;
 }
 
 int perl_call_sub(const char *str, const char *arg, char **result)
 {
-  int flags = G_EVAL;
-  int ret = 0;
+    int flags = G_EVAL;
+    int ret = 0;
 
-  dSP;
-  ENTER;
-  SAVETMPS;
-  PUSHMARK(SP);
+    dSP;
+    ENTER;
+    SAVETMPS;
+    PUSHMARK(SP);
 
-  if (arg && *arg)
-  {
-    XPUSHs(sv_2mortal(newSVpvn(arg, strlen(arg))));
+    if (arg && *arg)
+    {
+        XPUSHs(sv_2mortal(newSVpvn(arg, strlen(arg))));
+        PUTBACK;
+    }
+    else
+        flags |= G_NOARGS;
+
+    call_pv(str, flags);
+
+    if (SvTRUE(ERRSV))
+    {
+        (*error_func)("%s", SvPV_nolen(ERRSV));
+        ret = 1;
+    }
+    else
+        *result = strdup(POPp);
+
     PUTBACK;
-  }
-  else
-    flags |= G_NOARGS;
-
-  call_pv(str, flags);
-
-  if (SvTRUE(ERRSV))
-  {
-    (*error_func)("%s", SvPV_nolen(ERRSV));
-    ret = 1;
-  }
-  else
-    *result = strdup(POPp);
-
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
-  return ret;
+    FREETMPS;
+    LEAVE;
+    return ret;
 }
 
 void perl_cleanup()
 {
-  if (!my_perl)
-    return;
+    if (!my_perl)
+        return;
 
-  perl_destruct(my_perl);
-  perl_free(my_perl);
-  PERL_SYS_TERM();
-  my_perl = NULL;
-  error_func = NULL;
+    perl_destruct(my_perl);
+    perl_free(my_perl);
+    PERL_SYS_TERM();
+    my_perl = NULL;
+    error_func = NULL;
 }
