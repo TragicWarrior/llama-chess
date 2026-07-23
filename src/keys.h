@@ -19,25 +19,31 @@
 #ifndef KEYS_H
 #define KEYS_H
 
-#define CTRL_KEY(x)		((x) & 0x1f)
-#define KEY_ESCAPE	CTRL_KEY('[')
+#define CTRL_KEY(x) ((x) & 0x1f)
+#define KEY_ESCAPE CTRL_KEY('[')
 
 enum
 {
-  MODE_ANY = -1, MODE_HISTORY, MODE_PLAY, MODE_EDIT
+  MODE_ANY = -1,
+  MODE_HISTORY,
+  MODE_PLAY,
+  MODE_EDIT
 };
 
 enum
 {
-  PLAY_HE, PLAY_EH
+  PLAY_HE,
+  PLAY_EH
 };
 
 enum
 {
-  CURSOR_POSITION, SP_POSITION, SPS_POSITION
+  CURSOR_POSITION,
+  SP_POSITION,
+  SPS_POSITION
 };
 
-typedef void (key_func) (void);
+typedef void(key_func)(void);
 
 struct key_s
 {

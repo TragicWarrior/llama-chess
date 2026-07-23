@@ -51,143 +51,142 @@ struct key_s **global_keys;
 struct macro_s **macros;
 
 static int
-attributes (const char *filename, int line, char *str)
+attributes(const char *filename, int line, char *str)
 {
   char *tmp;
   int attrs = 0;
 
-  while ((tmp = strsep (&str, ",")) != NULL)
-    {
-      if (strcasecmp (tmp, "BOLD") == 0)
-	attrs |= A_BOLD;
-      else if (strcasecmp (tmp, "REVERSE") == 0)
-	attrs |= A_REVERSE;
-      else if (strcasecmp (tmp, "NONE") == 0)
-	attrs |= A_NORMAL;
-      else if (strcasecmp (tmp, "DIM") == 0)
-	attrs |= A_DIM;
-      else if (strcasecmp (tmp, "STANDOUT") == 0)
-	attrs |= A_STANDOUT;
-      else if (strcasecmp (tmp, "UNDERLINE") == 0)
-	attrs |= A_UNDERLINE;
-      else if (strcasecmp (tmp, "BLINK") == 0)
-	attrs |= A_BLINK;
-      else if (strcasecmp (tmp, "INVISIBLE") == 0)
-	attrs |= A_INVIS;
-      else
-	errx (EXIT_FAILURE, _("%s(%i): invalid attribute \"%s\""), filename,
-	      line, tmp);
-    }
+  while ((tmp = strsep(&str, ",")) != NULL)
+  {
+    if (strcasecmp(tmp, "BOLD") == 0)
+      attrs |= A_BOLD;
+    else if (strcasecmp(tmp, "REVERSE") == 0)
+      attrs |= A_REVERSE;
+    else if (strcasecmp(tmp, "NONE") == 0)
+      attrs |= A_NORMAL;
+    else if (strcasecmp(tmp, "DIM") == 0)
+      attrs |= A_DIM;
+    else if (strcasecmp(tmp, "STANDOUT") == 0)
+      attrs |= A_STANDOUT;
+    else if (strcasecmp(tmp, "UNDERLINE") == 0)
+      attrs |= A_UNDERLINE;
+    else if (strcasecmp(tmp, "BLINK") == 0)
+      attrs |= A_BLINK;
+    else if (strcasecmp(tmp, "INVISIBLE") == 0)
+      attrs |= A_INVIS;
+    else
+      errx(EXIT_FAILURE, _("%s(%i): invalid attribute \"%s\""), filename,
+           line, tmp);
+  }
 
   return attrs;
 }
 
 static short
-color_name (const char *filename, int line, const char *color)
+color_name(const char *filename, int line, const char *color)
 {
-  if (strcasecmp (color, "BLACK") == 0)
+  if (strcasecmp(color, "BLACK") == 0)
     return COLOR_BLACK;
-  else if (strcasecmp (color, "WHITE") == 0)
+  else if (strcasecmp(color, "WHITE") == 0)
     return COLOR_WHITE;
-  else if (strcasecmp (color, "GREEN") == 0)
+  else if (strcasecmp(color, "GREEN") == 0)
     return COLOR_GREEN;
-  else if (strcasecmp (color, "YELLOW") == 0)
+  else if (strcasecmp(color, "YELLOW") == 0)
     return COLOR_YELLOW;
-  else if (strcasecmp (color, "MAGENTA") == 0)
+  else if (strcasecmp(color, "MAGENTA") == 0)
     return COLOR_MAGENTA;
-  else if (strcasecmp (color, "BLUE") == 0)
+  else if (strcasecmp(color, "BLUE") == 0)
     return COLOR_BLUE;
-  else if (strcasecmp (color, "RED") == 0)
+  else if (strcasecmp(color, "RED") == 0)
     return COLOR_RED;
-  else if (strcasecmp (color, "CYAN") == 0)
+  else if (strcasecmp(color, "CYAN") == 0)
     return COLOR_CYAN;
-  else if (strcasecmp (color, "-") == 0)
+  else if (strcasecmp(color, "-") == 0)
     ;
   else
-    errx (EXIT_FAILURE, _("%s(%i): invalid color \"%s\""), filename, line,
-	  color);
+    errx(EXIT_FAILURE, _("%s(%i): invalid color \"%s\""), filename, line,
+         color);
 
   return -1;
 }
 
 static void
-parse_color (const char *filename, int line, const char *str,
-	     struct color_s *c)
+parse_color(const char *filename, int line, const char *str,
+            struct color_s *c)
 {
   char fg[16], bg[16], attr[64], nattr[64];
   int n;
 
   if ((n =
-       sscanf (str, "%[a-zA-Z-] %[a-zA-Z-] %[a-zA-Z,-] %[a-zA-Z,-]", fg, bg,
-	       attr, nattr)) < 2)
-    errx (EXIT_FAILURE, _("%s(%i): parse error"), filename, line);
+           sscanf(str, "%[a-zA-Z-] %[a-zA-Z-] %[a-zA-Z,-] %[a-zA-Z,-]", fg, bg,
+                  attr, nattr)) < 2)
+    errx(EXIT_FAILURE, _("%s(%i): parse error"), filename, line);
 
-  if ((n = color_name (filename, line, fg)) >= 0)
+  if ((n = color_name(filename, line, fg)) >= 0)
     c->fg = n;
 
-  if ((n = color_name (filename, line, bg)) >= 0)
+  if ((n = color_name(filename, line, bg)) >= 0)
     c->bg = n;
 
   c->attrs = c->nattrs = 0;
 
   if (n > 2)
-    c->attrs = attributes (filename, line, attr);
+    c->attrs = attributes(filename, line, attr);
 
   if (n > 3)
-    c->nattrs = attributes (filename, line, nattr);
+    c->nattrs = attributes(filename, line, nattr);
 }
 
 static int
-on_or_off (const char *filename, int lines, const char *str)
+on_or_off(const char *filename, int lines, const char *str)
 {
-  if (strcasecmp (str, "on") == 0 || strcasecmp (str, "1") == 0 ||
-      strcasecmp (str, "yes") == 0 || strcasecmp (str, "true") == 0)
+  if (strcasecmp(str, "on") == 0 || strcasecmp(str, "1") == 0 ||
+      strcasecmp(str, "yes") == 0 || strcasecmp(str, "true") == 0)
     return 1;
 
-  if (strcasecmp (str, "off") == 0 || strcasecmp (str, "0") == 0 ||
-      strcasecmp (str, "no") == 0 || strcasecmp (str, "false") == 0)
+  if (strcasecmp(str, "off") == 0 || strcasecmp(str, "0") == 0 ||
+      strcasecmp(str, "no") == 0 || strcasecmp(str, "false") == 0)
     return 0;
 
-  errx (EXIT_FAILURE, _("%s(%i): invalid value \"%s\""), filename, lines,
-	str);
+  errx(EXIT_FAILURE, _("%s(%i): invalid value \"%s\""), filename, lines,
+       str);
 }
 
-void
-copydatafile (const char *dst, const char *src)
+void copydatafile(const char *dst, const char *src)
 {
   FILE *fp, *ofp;
   char buf[LINE_MAX], *s;
 
-  snprintf (buf, sizeof (buf), "%s/%s", DATA_PATH, src);
+  snprintf(buf, sizeof(buf), "%s/%s", DATA_PATH, src);
 
-  if ((fp = fopen (buf, "r")) == NULL)
-    {
-      if (errno != ENOENT)
-	warn ("%s", buf);
-      return;
-    }
+  if ((fp = fopen(buf, "r")) == NULL)
+  {
+    if (errno != ENOENT)
+      warn("%s", buf);
+    return;
+  }
 
-  if ((ofp = fopen (dst, "w+")) == NULL)
-    {
-      fclose (fp);
-      warn ("%s", dst);
-      return;
-    }
+  if ((ofp = fopen(dst, "w+")) == NULL)
+  {
+    fclose(fp);
+    warn("%s", dst);
+    return;
+  }
 
-  while ((s = fgets (buf, sizeof (buf), fp)) != NULL)
-    fprintf (ofp, "%s", s);
+  while ((s = fgets(buf, sizeof(buf), fp)) != NULL)
+    fprintf(ofp, "%s", s);
 
-  fclose (fp);
-  fclose (ofp);
+  fclose(fp);
+  fclose(ofp);
 }
 
 char *
-fancy_key_name (wint_t c)
+fancy_key_name(wint_t c)
 {
-  static char buf[64] = { 0 };
+  static char buf[64] = {0};
   char *p;
 
-  strncpy (buf, keyname (c) ? keyname (c) : key_name (c), sizeof (buf) - 1);
+  strncpy(buf, keyname(c) ? keyname(c) : key_name(c), sizeof(buf) - 1);
   p = buf;
 
   if (*p == '^' && *(p + 1) == '[')
@@ -196,34 +195,34 @@ fancy_key_name (wint_t c)
   if (*p == '^' && *(p + 1) == 'J')
     return _("Enter");
 
-  if (strncasecmp (p, "KEY_", 4) == 0)
+  if (strncasecmp(p, "KEY_", 4) == 0)
+  {
+    for (p = buf; *p; p++)
+      *p = tolower(*p);
+
+    p = buf;
+    p += 4;
+
+    if (*p == 'f')
     {
-      for (p = buf; *p; p++)
-	*p = tolower (*p);
+      char *t = buf + 4;
 
-      p = buf;
-      p += 4;
+      p += 2;
 
-      if (*p == 'f')
-	{
-	  char *t = buf + 4;
+      while (isdigit(*p))
+        *++t = *p++;
 
-	  p += 2;
-
-	  while (isdigit (*p))
-	    *++t = *p++;
-
-	  *++t = 0;
-	  p = buf + 4;
-	}
-      else if (strcmp (p, "ppage") == 0)
-	return _("PgUp");
-      else if (strcmp (p, "npage") == 0)
-	return _("PgDown");
-
-      *p = toupper (*p);
-      return p;
+      *++t = 0;
+      p = buf + 4;
     }
+    else if (strcmp(p, "ppage") == 0)
+      return _("PgUp");
+    else if (strcmp(p, "npage") == 0)
+      return _("PgDown");
+
+    *p = toupper(*p);
+    return p;
+  }
 
   if (*p == ' ')
     return _("Space");
@@ -231,169 +230,167 @@ fancy_key_name (wint_t c)
   return p;
 }
 
-void
-add_key_binding (struct key_s ***dst, key_func * func, wint_t c,
-		 char *desc, int repeat)
+void add_key_binding(struct key_s ***dst, key_func *func, wint_t c,
+                     char *desc, int repeat)
 {
   int i = 0;
   struct key_s **k = *dst;
 
   if (k)
-    for (i = 0; k[i]; i++);
+    for (i = 0; k[i]; i++)
+      ;
 
-  k = Realloc (k, (i + 2) * sizeof (struct key_s *));
-  k[i] = Calloc (1, sizeof (struct key_s));
+  k = Realloc(k, (i + 2) * sizeof(struct key_s *));
+  k[i] = Calloc(1, sizeof(struct key_s));
   k[i]->f = func;
   k[i]->c = c;
   k[i]->r = repeat;
-  k[i]->key = str_to_wchar (fancy_key_name (c));
+  k[i]->key = str_to_wchar(fancy_key_name(c));
 
   if (desc)
-    k[i]->d = str_to_wchar (desc);
+    k[i]->d = str_to_wchar(desc);
 
   i++;
   k[i] = NULL;
   *dst = k;
 }
 
-void
-set_default_keys ()
+void set_default_keys()
 {
-  add_key_binding (&history_keys, do_history_jump_next, KEY_UP,
-		   _("history jump next"), 1);
-  add_key_binding (&history_keys, do_history_jump_prev, KEY_DOWN,
-		   _("history jump previous"), 1);
-  add_key_binding (&history_keys, do_history_next, KEY_RIGHT, _("next move"),
-		   1);
-  add_key_binding (&history_keys, do_history_prev, KEY_LEFT,
-		   _("previous move"), 1);
-  add_key_binding (&history_keys, do_history_half_move_toggle, ' ',
-		   _("toggle half move (ply) stepping"), 0);
-  add_key_binding (&history_keys, do_history_rotate_board, 'r',
-		   _("rotate board"), 0);
-  add_key_binding (&history_keys, do_history_jump, 'j',
-		   _("jump to move number"), 1);
-  add_key_binding (&history_keys, do_history_find_new, '/',
-		   _("new move text expression"), 0);
-  add_key_binding (&history_keys, do_history_find_next, ']',
-		   _("find next move text expression"), 1);
-  add_key_binding (&history_keys, do_history_find_prev, '[',
-		   _("find previous move text expression"), 1);
-  add_key_binding (&history_keys, do_history_annotate, CTRL_KEY ('a'),
-		   _("annotate the previous move"), 0);
-  add_key_binding (&history_keys, do_history_rav_next, '+',
-		   _("next variation of the previous move"), 0);
-  add_key_binding (&history_keys, do_history_rav_prev, '-',
-		   _("previous variation of the previous move"), 0);
-  add_key_binding (&history_keys, do_history_menu, 'M',
-		   _("move history tree"), 0);
-  add_key_binding (&history_keys, do_history_toggle, 'h',
-		   _("exit history mode"), 0);
+  add_key_binding(&history_keys, do_history_jump_next, KEY_UP,
+                  _("history jump next"), 1);
+  add_key_binding(&history_keys, do_history_jump_prev, KEY_DOWN,
+                  _("history jump previous"), 1);
+  add_key_binding(&history_keys, do_history_next, KEY_RIGHT, _("next move"),
+                  1);
+  add_key_binding(&history_keys, do_history_prev, KEY_LEFT,
+                  _("previous move"), 1);
+  add_key_binding(&history_keys, do_history_half_move_toggle, ' ',
+                  _("toggle half move (ply) stepping"), 0);
+  add_key_binding(&history_keys, do_history_rotate_board, 'r',
+                  _("rotate board"), 0);
+  add_key_binding(&history_keys, do_history_jump, 'j',
+                  _("jump to move number"), 1);
+  add_key_binding(&history_keys, do_history_find_new, '/',
+                  _("new move text expression"), 0);
+  add_key_binding(&history_keys, do_history_find_next, ']',
+                  _("find next move text expression"), 1);
+  add_key_binding(&history_keys, do_history_find_prev, '[',
+                  _("find previous move text expression"), 1);
+  add_key_binding(&history_keys, do_history_annotate, CTRL_KEY('a'),
+                  _("annotate the previous move"), 0);
+  add_key_binding(&history_keys, do_history_rav_next, '+',
+                  _("next variation of the previous move"), 0);
+  add_key_binding(&history_keys, do_history_rav_prev, '-',
+                  _("previous variation of the previous move"), 0);
+  add_key_binding(&history_keys, do_history_menu, 'M',
+                  _("move history tree"), 0);
+  add_key_binding(&history_keys, do_history_toggle, 'h',
+                  _("exit history mode"), 0);
 
-  add_key_binding (&edit_keys, do_edit_select, ' ',
-		   _("select piece for movement"), 0);
-  add_key_binding (&edit_keys, do_edit_commit, '\n',
-		   _("commit selected piece"), 0);
-  add_key_binding (&edit_keys, do_edit_cancel_selected, KEY_ESCAPE,
-		   _("cancel selected piece"), 0);
-  add_key_binding (&edit_keys, do_edit_delete, 'd',
-		   _("remove the piece under the cursor"), 0);
-  add_key_binding (&edit_keys, do_edit_insert, 'i', _("insert piece"), 0);
-  add_key_binding (&edit_keys, do_edit_toggle_castle, 'c',
-		   _("toggle castling availability"), 0);
-  add_key_binding (&edit_keys, do_edit_enpassant, 'p',
-		   _("toggle enpassant square"), 0);
-  add_key_binding (&edit_keys, do_edit_switch_turn, 'w', _("toggle turn"), 0);
-  add_key_binding (&edit_keys, do_edit_exit, 'e', _("exit edit mode"), 0);
+  add_key_binding(&edit_keys, do_edit_select, ' ',
+                  _("select piece for movement"), 0);
+  add_key_binding(&edit_keys, do_edit_commit, '\n',
+                  _("commit selected piece"), 0);
+  add_key_binding(&edit_keys, do_edit_cancel_selected, KEY_ESCAPE,
+                  _("cancel selected piece"), 0);
+  add_key_binding(&edit_keys, do_edit_delete, 'd',
+                  _("remove the piece under the cursor"), 0);
+  add_key_binding(&edit_keys, do_edit_insert, 'i', _("insert piece"), 0);
+  add_key_binding(&edit_keys, do_edit_toggle_castle, 'c',
+                  _("toggle castling availability"), 0);
+  add_key_binding(&edit_keys, do_edit_enpassant, 'p',
+                  _("toggle enpassant square"), 0);
+  add_key_binding(&edit_keys, do_edit_switch_turn, 'w', _("toggle turn"), 0);
+  add_key_binding(&edit_keys, do_edit_exit, 'e', _("exit edit mode"), 0);
 
-  add_key_binding (&play_keys, do_play_select, ' ',
-		   _("select piece for movement"), 0);
-  add_key_binding (&play_keys, do_play_commit, '\n',
-		   _("commit selected piece"), 0);
-  add_key_binding (&play_keys, do_play_cancel_selected, KEY_ESCAPE,
-		   _("cancel selected piece"), 0);
-  add_key_binding (&play_keys, do_play_set_clock, 'C', _("set clock"), 0);
-//    add_key_binding(&play_keys, do_play_switch_turn, 'w', _("switch turn"), 0);
-  add_key_binding (&play_keys, do_play_undo, 'u', _("undo previous move"), 1);
-  add_key_binding (&play_keys, do_play_go, 'g',
-		   _("force the chess engine to make the next move"), 0);
-  add_key_binding (&play_keys, do_play_send_command, '|',
-		   _("send a command to the chess engine"), 0);
-  add_key_binding (&play_keys, do_play_toggle_eh_mode, 'w',
-		   _("toggle engine/human play"), 0);
-  add_key_binding (&play_keys, do_play_toggle_engine, 'E',
-		   _("toggle engine/engine play"), 0);
-  add_key_binding (&play_keys, do_play_toggle_human, 'H',
-		   _("toggle human/human play"), 0);
-  add_key_binding (&play_keys, do_play_toggle_pause, 'p',
-		   _("toggle pausing of this game"), 0);
-  add_key_binding (&play_keys, do_play_history_mode, 'h',
-		   _("enter history mode"), 0);
-  add_key_binding (&play_keys, do_play_edit_mode, 'e', _("enter edit mode"),
-		   0);
-  add_key_binding (&play_keys, do_play_toggle_strict_castling,
-		   CTRL_KEY ('p'), _("toggle strict castling"), 0);
+  add_key_binding(&play_keys, do_play_select, ' ',
+                  _("select piece for movement"), 0);
+  add_key_binding(&play_keys, do_play_commit, '\n',
+                  _("commit selected piece"), 0);
+  add_key_binding(&play_keys, do_play_cancel_selected, KEY_ESCAPE,
+                  _("cancel selected piece"), 0);
+  add_key_binding(&play_keys, do_play_set_clock, 'C', _("set clock"), 0);
+  //    add_key_binding(&play_keys, do_play_switch_turn, 'w', _("switch turn"), 0);
+  add_key_binding(&play_keys, do_play_undo, 'u', _("undo previous move"), 1);
+  add_key_binding(&play_keys, do_play_go, 'g',
+                  _("force the chess engine to make the next move"), 0);
+  add_key_binding(&play_keys, do_play_send_command, '|',
+                  _("send a command to the chess engine"), 0);
+  add_key_binding(&play_keys, do_play_toggle_eh_mode, 'w',
+                  _("toggle engine/human play"), 0);
+  add_key_binding(&play_keys, do_play_toggle_engine, 'E',
+                  _("toggle engine/engine play"), 0);
+  add_key_binding(&play_keys, do_play_toggle_human, 'H',
+                  _("toggle human/human play"), 0);
+  add_key_binding(&play_keys, do_play_toggle_pause, 'p',
+                  _("toggle pausing of this game"), 0);
+  add_key_binding(&play_keys, do_play_history_mode, 'h',
+                  _("enter history mode"), 0);
+  add_key_binding(&play_keys, do_play_edit_mode, 'e', _("enter edit mode"),
+                  0);
+  add_key_binding(&play_keys, do_play_toggle_strict_castling,
+                  CTRL_KEY('p'), _("toggle strict castling"), 0);
 
-  add_key_binding (&global_keys, do_global_tag_edit, CTRL_KEY ('t'),
-		   _("edit roster tags"), 0);
-  add_key_binding (&global_keys, do_global_tag_view, 't',
-		   _("view roster tags"), 0);
-  add_key_binding (&global_keys, do_global_find_new, '?',
-		   _("new find game expression"), 0);
-  add_key_binding (&global_keys, do_global_find_next, '}',
-		   _("find next game"), 1);
-  add_key_binding (&global_keys, do_global_find_prev, '{',
-		   _("find previous game"), 1);
-  add_key_binding (&global_keys, do_global_new_game, CTRL_KEY ('n'),
-		   _("new game or round"), 0);
-  add_key_binding (&global_keys, do_global_new_all, CTRL_KEY ('k'),
-		   _("new game from scratch"), 0);
-  add_key_binding (&global_keys, do_global_copy_game, CTRL_KEY ('i'),
-		   _("copy current game"), 0);
-  add_key_binding (&global_keys, do_global_copy_game_fen, CTRL_KEY ('f'),
-		   _("copy current game as FEN tag"), 0);
-  add_key_binding (&global_keys, do_global_next_game, '>', _("next game"), 1);
-  add_key_binding (&global_keys, do_global_prev_game, '<', _("previous game"),
-		   1);
-  add_key_binding (&global_keys, do_global_game_jump, 'J', _("jump to game"),
-		   1);
-  add_key_binding (&global_keys, do_global_toggle_delete, 'X',
-		   _("toggle delete flag"), 1);
-  add_key_binding (&global_keys, do_global_delete_game, CTRL_KEY ('X'),
-		   _("delete the current or flagged games"), 0);
-  add_key_binding (&global_keys, do_global_resume_game, CTRL_KEY ('r'),
-		   _("load a PGN file"), 0);
-  add_key_binding (&global_keys, do_global_save_game, 's', _("save game"), 0);
-  add_key_binding (&global_keys, do_global_toggle_board_details,
-		   CTRL_KEY ('d'), _("toggle board details"), 0);
-  add_key_binding (&global_keys, do_global_toggle_engine_window, 'W',
-		   _("toggle chess engine IO window"), 0);
+  add_key_binding(&global_keys, do_global_tag_edit, CTRL_KEY('t'),
+                  _("edit roster tags"), 0);
+  add_key_binding(&global_keys, do_global_tag_view, 't',
+                  _("view roster tags"), 0);
+  add_key_binding(&global_keys, do_global_find_new, '?',
+                  _("new find game expression"), 0);
+  add_key_binding(&global_keys, do_global_find_next, '}',
+                  _("find next game"), 1);
+  add_key_binding(&global_keys, do_global_find_prev, '{',
+                  _("find previous game"), 1);
+  add_key_binding(&global_keys, do_global_new_game, CTRL_KEY('n'),
+                  _("new game or round"), 0);
+  add_key_binding(&global_keys, do_global_new_all, CTRL_KEY('k'),
+                  _("new game from scratch"), 0);
+  add_key_binding(&global_keys, do_global_copy_game, CTRL_KEY('i'),
+                  _("copy current game"), 0);
+  add_key_binding(&global_keys, do_global_copy_game_fen, CTRL_KEY('f'),
+                  _("copy current game as FEN tag"), 0);
+  add_key_binding(&global_keys, do_global_next_game, '>', _("next game"), 1);
+  add_key_binding(&global_keys, do_global_prev_game, '<', _("previous game"),
+                  1);
+  add_key_binding(&global_keys, do_global_game_jump, 'J', _("jump to game"),
+                  1);
+  add_key_binding(&global_keys, do_global_toggle_delete, 'X',
+                  _("toggle delete flag"), 1);
+  add_key_binding(&global_keys, do_global_delete_game, CTRL_KEY('X'),
+                  _("delete the current or flagged games"), 0);
+  add_key_binding(&global_keys, do_global_resume_game, CTRL_KEY('r'),
+                  _("load a PGN file"), 0);
+  add_key_binding(&global_keys, do_global_save_game, 's', _("save game"), 0);
+  add_key_binding(&global_keys, do_global_toggle_board_details,
+                  CTRL_KEY('d'), _("toggle board details"), 0);
+  add_key_binding(&global_keys, do_global_toggle_engine_window, 'W',
+                  _("toggle chess engine IO window"), 0);
 #ifdef WITH_LIBPERL
-  add_key_binding (&global_keys, do_global_perl, CTRL_KEY ('O'),
-		   _("Call PERL subroutine"), 0);
+  add_key_binding(&global_keys, do_global_perl, CTRL_KEY('O'),
+                  _("Call PERL subroutine"), 0);
 #endif
   /* About: letter key. F10 opens the menubar (see menubar.c). */
-  add_key_binding (&global_keys, do_global_about, 'a',
-		   _("version information"), 0);
-  add_key_binding (&global_keys, do_global_redraw, CTRL_KEY ('L'),
-		   _("redraw the screen"), 0);
+  add_key_binding(&global_keys, do_global_about, 'a',
+                  _("version information"), 0);
+  add_key_binding(&global_keys, do_global_redraw, CTRL_KEY('L'),
+                  _("redraw the screen"), 0);
   /*
    * Help: F1 is often intercepted by the terminal; F10 is the menubar.
    * Prefer Ctrl-H (shown in prompts); keep F1 as an alternative.
    */
-  add_key_binding (&global_keys, do_global_help, CTRL_KEY ('h'), NULL, 0);
-  add_key_binding (&global_keys, do_global_help, KEY_F (1), NULL, 0);
-  add_key_binding (&global_keys, do_global_quit, 'Q', _("quit"), 0);
-  add_key_binding (&global_keys, do_global_quit, 'q', NULL, 0);
+  add_key_binding(&global_keys, do_global_help, CTRL_KEY('h'), NULL, 0);
+  add_key_binding(&global_keys, do_global_help, KEY_F(1), NULL, 0);
+  add_key_binding(&global_keys, do_global_quit, 'Q', _("quit"), 0);
+  add_key_binding(&global_keys, do_global_quit, 'q', NULL, 0);
 }
 
-void
-set_config_defaults ()
+void set_config_defaults()
 {
   struct stat st;
 
-  config.pattern = strdup ("*.[Pp][Gg][Nn]*");
-  config.engine_cmd = strdup ("gnuchess --xboard");
+  config.pattern = strdup("*.[Pp][Gg][Nn]*");
+  config.engine_cmd = strdup("gnuchess --xboard");
   config.engine_protocol = 1;
   config.jumpcount = 5;
   config.linegraphics = 1;
@@ -411,53 +408,53 @@ set_config_defaults ()
   config.utf8_pieces = 1;
   config.engine_timeout = 10;
 
-  set_default_colors ();
+  set_default_colors();
 
-  if (stat (config.nagfile, &st) == -1)
-    {
-      if (errno == ENOENT)
-	copydatafile (config.nagfile, "nag.data");
-      else
-	warn ("%s", config.nagfile);
-    }
+  if (stat(config.nagfile, &st) == -1)
+  {
+    if (errno == ENOENT)
+      copydatafile(config.nagfile, "nag.data");
+    else
+      warn("%s", config.nagfile);
+  }
 
-  if (stat (config.ccfile, &st) == -1)
-    {
-      if (errno == ENOENT)
-	copydatafile (config.ccfile, "cc.data");
-      else
-	warn ("%s", config.ccfile);
-    }
+  if (stat(config.ccfile, &st) == -1)
+  {
+    if (errno == ENOENT)
+      copydatafile(config.ccfile, "cc.data");
+    else
+      warn("%s", config.ccfile);
+  }
 }
 
 static void
-update_key (struct key_s **dst, struct custom_key_s config_key,
-	    wint_t c, char *desc)
+update_key(struct key_s **dst, struct custom_key_s config_key,
+           wint_t c, char *desc)
 {
   int i;
 
   for (i = 0; dst[i]; i++)
+  {
+    if (dst[i]->f == config_key.func)
     {
-      if (dst[i]->f == config_key.func)
-	{
-	  dst[i]->c = c;
+      dst[i]->c = c;
 
-	  if (dst[i]->key)
-	    free (dst[i]->key);
+      if (dst[i]->key)
+        free(dst[i]->key);
 
-	  dst[i]->key = str_to_wchar (fancy_key_name (c));
-	  if (desc)
-	    {
-	      free (dst[i]->d);
-	      dst[i]->d = str_to_wchar (desc);
-	    }
+      dst[i]->key = str_to_wchar(fancy_key_name(c));
+      if (desc)
+      {
+        free(dst[i]->d);
+        dst[i]->d = str_to_wchar(desc);
+      }
 
-	  goto done;
-	}
+      goto done;
     }
+  }
 
-  add_key_binding (&dst, config_key.func, c,
-		   (desc) ? desc : _("no description"), config_key.r);
+  add_key_binding(&dst, config_key.func, c,
+                  (desc) ? desc : _("no description"), config_key.r);
 
 done:
   return;
@@ -468,127 +465,112 @@ static struct known_key_s
   wint_t c;
   const char *name;
 } known_keys[] =
-{
-  {
-  KEY_UP, "up"},
-  {
-  KEY_DOWN, "down"},
-  {
-  KEY_LEFT, "left"},
-  {
-  KEY_RIGHT, "right"},
-  {
-  KEY_HOME, "home"},
-  {
-  KEY_END, "end"},
-  {
-  KEY_DC, "delete"},
-  {
-  KEY_PPAGE, "pgup"},
-  {
-  KEY_NPAGE, "pgdn"},
-  {
-  KEY_IC, "insert"},
-  {
-  ' ', "space"},
-  {
-  KEY_ESCAPE, "escape"},
-  {
-  '\n', "enter"},
-  {
-  0, NULL}
-};
+    {
+        {KEY_UP, "up"},
+        {KEY_DOWN, "down"},
+        {KEY_LEFT, "left"},
+        {KEY_RIGHT, "right"},
+        {KEY_HOME, "home"},
+        {KEY_END, "end"},
+        {KEY_DC, "delete"},
+        {KEY_PPAGE, "pgup"},
+        {KEY_NPAGE, "pgdn"},
+        {KEY_IC, "insert"},
+        {' ', "space"},
+        {KEY_ESCAPE, "escape"},
+        {'\n', "enter"},
+        {0, NULL}};
 
 static wint_t
-parse_key (const char *filename, int lines, int word, wchar_t ** key)
+parse_key(const char *filename, int lines, int word, wchar_t **key)
 {
   wchar_t *p = key ? *key : NULL;
   wchar_t *orig = key ? *key : NULL;
   wint_t c = 0;
   int quote = 0;
 
-  if (!key || !wcslen (*key))
+  if (!key || !wcslen(*key))
     return 0;
 
-  if (*p == '\"' && !isspace (*(p+1)))
-    {
-      quote = 1;
-      p++;
-    }
+  if (*p == '\"' && !isspace(*(p + 1)))
+  {
+    quote = 1;
+    p++;
+  }
 
   if (*p == '<')
+  {
+    int i;
+
+    p++;
+
+    for (i = 0; known_keys[i].name; i++)
     {
-      int i;
+      wchar_t *wc = str_to_wchar(known_keys[i].name);
 
-      p++;
+      if (!wcsncasecmp(p, wc, wcslen(wc)))
+      {
+        c = known_keys[i].c;
+        p += strlen(known_keys[i].name);
+        free(wc);
+        break;
+      }
 
-      for (i = 0; known_keys[i].name; i++)
-	{
-	  wchar_t *wc = str_to_wchar (known_keys[i].name);
-
-	  if (!wcsncasecmp (p, wc, wcslen (wc)))
-	    {
-	      c = known_keys[i].c;
-	      p += strlen (known_keys[i].name);
-	      free (wc);
-	      break;
-	    }
-
-	  free (wc);
-	}
-
-      if (!c)
-	{
-	  if (*p == '^')
-	    {
-	      p++;
-	      c = CTRL_KEY (*p++);
-	    }
-	  else if (*p == 'F' || *p == 'f')
-	    {
-	      char *str = wchar_to_str (++p);
-
-	      c = KEY_F (atoi (str));
-	      p += integer_len (atoi (str));
-	      free (str);
-	    }
-	}
-
-      if (!c)
-	c = *p++;
-
-      if (*p++ != '>')
-	errx (EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
-	      lines, orig);
+      free(wc);
     }
-  else if (*p == '\\')
+
+    if (!c)
     {
-      p++;
+      if (*p == '^')
+      {
+        p++;
+        c = CTRL_KEY(*p++);
+      }
+      else if (*p == 'F' || *p == 'f')
+      {
+        char *str = wchar_to_str(++p);
+
+        c = KEY_F(atoi(str));
+        p += integer_len(atoi(str));
+        free(str);
+      }
+    }
+
+    if (!c)
       c = *p++;
-    }
+
+    if (*p++ != '>')
+      errx(EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
+           lines, orig);
+  }
+  else if (*p == '\\')
+  {
+    p++;
+    c = *p++;
+  }
   else
     c = *p++;
 
   if (quote && *p != '\"')
-    errx (EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
-          lines, orig);
+    errx(EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
+         lines, orig);
   else if (quote)
     p++;
 
-  if (word && *p && !isspace (*p))
-    errx (EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
-          lines, orig);
+  if (word && *p && !isspace(*p))
+    errx(EXIT_FAILURE, _("%s(%i): parse error \"%ls\""), filename,
+         lines, orig);
 
-  orig += wcslen (orig) - wcslen (p);
+  orig += wcslen(orig) - wcslen(p);
   *key = orig;
   return c;
 }
 
 static void
-parse_key_binding (const char *filename, int lines, char *val)
+parse_key_binding(const char *filename, int lines, char *val)
 {
   char mode[64], func[64];
-  wchar_t desc[64] = { 0 };
+  wchar_t desc[64] = {0};
   wchar_t key[64];
   int n;
   int m = 0;
@@ -598,109 +580,109 @@ parse_key_binding (const char *filename, int lines, char *val)
   wchar_t *p;
   char *str;
 
-  n = sscanf (val, "%s %ls %s %63lc", mode, key, func, desc);
+  n = sscanf(val, "%s %ls %s %63lc", mode, key, func, desc);
 
   if (n < 3)
-    errx (EXIT_FAILURE, _("%s(%i): too few arguments"), filename, lines);
+    errx(EXIT_FAILURE, _("%s(%i): too few arguments"), filename, lines);
 
-  if (strcasecmp (mode, "history") == 0)
+  if (strcasecmp(mode, "history") == 0)
     m = MODE_HISTORY;
-  else if (strcasecmp (mode, "play") == 0)
+  else if (strcasecmp(mode, "play") == 0)
     m = MODE_PLAY;
-  else if (strcasecmp (mode, "edit") == 0)
+  else if (strcasecmp(mode, "edit") == 0)
     m = MODE_EDIT;
-  else if (strcasecmp (mode, "any") == 0)
+  else if (strcasecmp(mode, "any") == 0)
     m = MODE_ANY;
   else
-    errx (EXIT_FAILURE, _("%s(%i): invalid game mode \"%s\""), filename,
-	  lines, mode);
+    errx(EXIT_FAILURE, _("%s(%i): invalid game mode \"%s\""), filename,
+         lines, mode);
 
   p = key;
-  c = parse_key (filename, lines, 1, &p);
+  c = parse_key(filename, lines, 1, &p);
 
   if (m != -1)
+  {
+    for (i = 0; global_keys[i]; i++)
     {
-      for (i = 0; global_keys[i]; i++)
-	{
-	  if (global_keys[i]->c == c)
-	    errx (EXIT_FAILURE,
-		  _("%s(%i): key \"%ls\" conflicts with a global key"),
-		  filename, lines, key);
-	}
+      if (global_keys[i]->c == c)
+        errx(EXIT_FAILURE,
+             _("%s(%i): key \"%ls\" conflicts with a global key"),
+             filename, lines, key);
     }
+  }
 
   for (f = -2, i = 0; config_keys[i].name; i++)
+  {
+    if (strcmp(config_keys[i].name, func) == 0 && config_keys[i].mode == m)
     {
-      if (strcmp (config_keys[i].name, func) == 0 && config_keys[i].mode == m)
-	{
-	  f = i;
-	  break;
-	}
+      f = i;
+      break;
     }
+  }
 
   if (f == -2)
-    errx (EXIT_FAILURE, _("%s(%i): invalid command \"%s\""), filename,
-	  lines, func);
+    errx(EXIT_FAILURE, _("%s(%i): invalid command \"%s\""), filename,
+         lines, func);
 
-  str = wchar_to_str (desc);
+  str = wchar_to_str(desc);
 
   switch (m)
-    {
-    case MODE_PLAY:
-      update_key (play_keys, config_keys[f], c, (n > 3) ? str : NULL);
-      break;
-    case MODE_HISTORY:
-      update_key (history_keys, config_keys[f], c, (n > 3) ? str : NULL);
-      break;
-    case MODE_EDIT:
-      update_key (edit_keys, config_keys[f], c, (n > 3) ? str : NULL);
-      break;
-    default:
-      update_key (global_keys, config_keys[f], c, (n > 3) ? str : NULL);
-      break;
-    }
+  {
+  case MODE_PLAY:
+    update_key(play_keys, config_keys[f], c, (n > 3) ? str : NULL);
+    break;
+  case MODE_HISTORY:
+    update_key(history_keys, config_keys[f], c, (n > 3) ? str : NULL);
+    break;
+  case MODE_EDIT:
+    update_key(edit_keys, config_keys[f], c, (n > 3) ? str : NULL);
+    break;
+  default:
+    update_key(global_keys, config_keys[f], c, (n > 3) ? str : NULL);
+    break;
+  }
 
-  free (str);
+  free(str);
 }
 
 static wchar_t *
-parse_macro_desc (const char *filename, int lines, wchar_t **val)
+parse_macro_desc(const char *filename, int lines, wchar_t **val)
 {
   int quote = 0;
   wchar_t *p;
-  wchar_t *buf = Malloc (256 * sizeof (wchar_t));
+  wchar_t *buf = Malloc(256 * sizeof(wchar_t));
   wchar_t *b = buf;
 
   if (!buf)
     return NULL;
 
   for (p = *val; p && *p; p++)
+  {
+    if (*p == '\"')
     {
-      if (*p == '\"')
-        {
-          if (quote)
-            {
-              p++;
-              break;
-            }
-
-          quote = 1;
-          continue;
-        }
-      else if (isspace (*p) && !quote)
+      if (quote)
+      {
+        p++;
         break;
+      }
 
-      *b++ = *p;
+      quote = 1;
+      continue;
     }
+    else if (isspace(*p) && !quote)
+      break;
 
-  if (!p || !isspace (*p) || !*(p+1))
-    {
-      fprintf(stderr, _ ("%s(%i): parse error\n"), filename, lines);
-      free (buf);
-      return NULL;
-    }
+    *b++ = *p;
+  }
 
-  while (isspace (*p))
+  if (!p || !isspace(*p) || !*(p + 1))
+  {
+    fprintf(stderr, _("%s(%i): parse error\n"), filename, lines);
+    free(buf);
+    return NULL;
+  }
+
+  while (isspace(*p))
     p++;
 
   *val = p;
@@ -709,38 +691,38 @@ parse_macro_desc (const char *filename, int lines, wchar_t **val)
 }
 
 static const wchar_t *
-command_name (struct key_s *k)
+command_name(struct key_s *k)
 {
   int i;
 
   for (i = 0; config_keys[i].name; i++)
-    {
-      if (config_keys[i].func == k->f)
-        return str_to_wchar (config_keys[i].name);
-    }
+  {
+    if (config_keys[i].func == k->f)
+      return str_to_wchar(config_keys[i].name);
+  }
 
   return NULL;
 }
 
 static const wchar_t *
-macro_name (wint_t c, int mode)
+macro_name(wint_t c, int mode)
 {
   int i;
 
   for (i = 0; macros[i]; i++)
-    {
-      if (macros[i]->c == c && macros[i]->mode == mode)
-        return macros[i]->desc;
-    }
+  {
+    if (macros[i]->c == c && macros[i]->mode == mode)
+      return macros[i]->desc;
+  }
 
   return NULL;
 }
 
 static void
-parse_macro (const char *filename, int lines, char *val)
+parse_macro(const char *filename, int lines, char *val)
 {
   char mode[16];
-  wchar_t keys[2048] = { 0 }, key[8];
+  wchar_t keys[2048] = {0}, key[8];
   int n;
   int m;
   wint_t c;
@@ -749,98 +731,97 @@ parse_macro (const char *filename, int lines, char *val)
   const char *dupmode = NULL;
   struct key_s *keydef = NULL;
 
-  n = sscanf (val, "%s %ls %2047lc", mode, key, keys);
+  n = sscanf(val, "%s %ls %2047lc", mode, key, keys);
 
   if (n != 3)
-    errx (EXIT_FAILURE, _("%s(%i): too few arguments"), filename, lines);
+    errx(EXIT_FAILURE, _("%s(%i): too few arguments"), filename, lines);
 
-  if (strcasecmp (mode, "history") == 0)
+  if (strcasecmp(mode, "history") == 0)
     m = MODE_HISTORY;
-  else if (strcasecmp (mode, "play") == 0)
+  else if (strcasecmp(mode, "play") == 0)
     m = MODE_PLAY;
-  else if (strcasecmp (mode, "edit") == 0)
+  else if (strcasecmp(mode, "edit") == 0)
     m = MODE_EDIT;
-  else if (strcasecmp (mode, "any") == 0)
+  else if (strcasecmp(mode, "any") == 0)
     m = -1;
   else
-    errx (EXIT_FAILURE, _("%s(%i): invalid game mode \"%s\""), filename,
-	  lines, mode);
+    errx(EXIT_FAILURE, _("%s(%i): invalid game mode \"%s\""), filename,
+         lines, mode);
 
   p = key;
-  c = parse_key (filename, lines, 1, &p);
+  c = parse_key(filename, lines, 1, &p);
 
   if (macros)
-    for (i = 0; macros[i]; i++);
+    for (i = 0; macros[i]; i++)
+      ;
 
   for (n = 0; n < i; n++)
+  {
+    if (macros[n]->c == c && (macros[n]->mode == m || m == MODE_ANY || macros[n]->mode == MODE_ANY))
     {
-      if (macros[n]->c == c && (macros[n]->mode == m || m == MODE_ANY
-                                || macros[n]->mode == MODE_ANY))
-        {
-          dupmode = macros[n]->mode == m ? mode : "any";
-          break;
-        }
-
-      keydef = key_lookup_by_keycode (global_keys, c);
-      if (keydef)
-        {
-          dupmode = "any";
-          break;
-        }
-
-      switch (m)
-        {
-        case MODE_PLAY:
-          keydef = key_lookup_by_keycode (play_keys, c);
-          if (keydef)
-            dupmode = "play";
-          break;
-        case MODE_HISTORY:
-          keydef = key_lookup_by_keycode (history_keys, c);
-          if (keydef)
-            dupmode = "history";
-          break;
-        case MODE_EDIT:
-          keydef = key_lookup_by_keycode (edit_keys, c);
-          if (keydef)
-            dupmode = "edit";
-          break;
-        default:
-          break;
-        }
-
-      if (dupmode)
-        break;
+      dupmode = macros[n]->mode == m ? mode : "any";
+      break;
     }
 
-  if (dupmode)
-    errx (EXIT_FAILURE,
-          _("%s(%i): macro definition in mode \"%s\" conflicts with existing key in mode \"%s\" (command=%ls)"),
-          filename, lines, mode, dupmode,
-          keydef ? command_name (keydef) : macro_name (c, m));
+    keydef = key_lookup_by_keycode(global_keys, c);
+    if (keydef)
+    {
+      dupmode = "any";
+      break;
+    }
 
-  macros = Realloc (macros, (i + 2) * sizeof (struct macro_s *));
-  macros[i] = Calloc (1, sizeof (struct macro_s));
+    switch (m)
+    {
+    case MODE_PLAY:
+      keydef = key_lookup_by_keycode(play_keys, c);
+      if (keydef)
+        dupmode = "play";
+      break;
+    case MODE_HISTORY:
+      keydef = key_lookup_by_keycode(history_keys, c);
+      if (keydef)
+        dupmode = "history";
+      break;
+    case MODE_EDIT:
+      keydef = key_lookup_by_keycode(edit_keys, c);
+      if (keydef)
+        dupmode = "edit";
+      break;
+    default:
+      break;
+    }
+
+    if (dupmode)
+      break;
+  }
+
+  if (dupmode)
+    errx(EXIT_FAILURE,
+         _("%s(%i): macro definition in mode \"%s\" conflicts with existing key in mode \"%s\" (command=%ls)"),
+         filename, lines, mode, dupmode,
+         keydef ? command_name(keydef) : macro_name(c, m));
+
+  macros = Realloc(macros, (i + 2) * sizeof(struct macro_s *));
+  macros[i] = Calloc(1, sizeof(struct macro_s));
   macros[i]->c = c;
   macros[i]->mode = m;
   p = keys;
 
-  macros[i]->desc = parse_macro_desc (filename, lines, &p);
+  macros[i]->desc = parse_macro_desc(filename, lines, &p);
   if (!macros[i]->desc)
-    exit (EXIT_FAILURE);
+    exit(EXIT_FAILURE);
 
-  while ((c = parse_key (filename, lines, 0, &p)) != 0)
-    {
-      macros[i]->keys = Realloc (macros[i]->keys, (macros[i]->total + 2) *
-				 sizeof (wint_t));
-      macros[i]->keys[macros[i]->total++] = c;
-    }
+  while ((c = parse_key(filename, lines, 0, &p)) != 0)
+  {
+    macros[i]->keys = Realloc(macros[i]->keys, (macros[i]->total + 2) *
+                                                   sizeof(wint_t));
+    macros[i]->keys[macros[i]->total++] = c;
+  }
 
   macros[++i] = NULL;
 }
 
-void
-parse_rcfile (const char *filename)
+void parse_rcfile(const char *filename)
 {
   FILE *fp;
   char *line, buf[LINE_MAX];
@@ -850,305 +831,304 @@ parse_rcfile (const char *filename)
   int k = 0;
   int c;
 
-  if ((fp = fopen (filename, "r")) == NULL)
-    err (EXIT_FAILURE, "%s", filename);
+  if ((fp = fopen(filename, "r")) == NULL)
+    err(EXIT_FAILURE, "%s", filename);
 
-  while ((line = fgets (buf, sizeof (buf), fp)) != NULL)
+  while ((line = fgets(buf, sizeof(buf), fp)) != NULL)
+  {
+    int n;
+    char var[30] = {0}, val[LINE_MAX - sizeof(var) - 1] =
+                            {
+                                0};
+    char token[MAX_PGN_LINE_LEN + 1] = {0};
+    char value[MAX_PGN_LINE_LEN + 1] = {0};
+    char *p;
+
+    lines++;
+    line = trim(line);
+
+    if (!line[0] || line[0] == '#')
+      continue;
+
+    if ((n = sscanf(line, "%s %[^\n]", var, val)) != 2)
+      errx(EXIT_FAILURE, _("%s(%i): parse error %i"), filename, lines, n);
+
+    p = strdup(trim(val));
+    strncpy(val, p, sizeof(val) - 1);
+    free(p);
+    p = strdup(trim(var));
+    strncpy(var, p, sizeof(var) - 1);
+    free(p);
+
+    if (strcmp(var, "jump_count") == 0)
     {
-      int n;
-      char var[30] = { 0 }, val[LINE_MAX - sizeof (var) - 1] =
-      {
-      0};
-      char token[MAX_PGN_LINE_LEN + 1] = { 0 };
-      char value[MAX_PGN_LINE_LEN + 1] = { 0 };
-      char *p;
+      if (!isinteger(val))
+        errx(EXIT_FAILURE, _("%s(%i): value is not an integer"),
+             filename, lines);
 
-      lines++;
-      line = trim (line);
-
-      if (!line[0] || line[0] == '#')
-	continue;
-
-      if ((n = sscanf (line, "%s %[^\n]", var, val)) != 2)
-	errx (EXIT_FAILURE, _("%s(%i): parse error %i"), filename, lines, n);
-
-      p = strdup (trim (val));
-      strncpy (val, p, sizeof (val) - 1);
-      free (p);
-      p = strdup (trim (var));
-      strncpy (var, p, sizeof (var) - 1);
-      free (p);
-
-      if (strcmp (var, "jump_count") == 0)
-	{
-	  if (!isinteger (val))
-	    errx (EXIT_FAILURE, _("%s(%i): value is not an integer"),
-		  filename, lines);
-
-	  config.jumpcount = atoi (val);
-	}
-      else if (strcmp (var, "engine_init") == 0)
-	{
-	  config.einit =
-	    Realloc (config.einit, (init + 2) * sizeof (wchar_t *));
-	  config.einit[init++] = str_to_wchar (val);
-	  config.einit[init] = NULL;
-	}
-      else if (strcmp (var, "pattern") == 0)
-	{
-	  free (config.pattern);
-	  config.pattern = strdup (val);
-	}
-      else if (strcmp (var, "mpl") == 0)
-	{
-	  if (!isinteger (val))
-	    errx (EXIT_FAILURE, _("%s(%i): value is not an integer"),
-		  filename, lines);
-	  pgn_config_set (PGN_MPL, atoi (val));
-	}
-      else if (strcmp (var, "stop_on_error") == 0)
-	pgn_config_set (PGN_STOP_ON_ERROR, on_or_off (filename, lines, val));
-      else if (strcmp (var, "tag") == 0)
-	{
-	  if ((n = sscanf (val, "%s %s ", token, value)) < 1 || n > 2)
-	    errx (EXIT_FAILURE, _("%s(%i): invalid value \"%s\""), filename,
-		  lines, val);
-
-	  if (n == 1)
-	    value[0] = 0;
-	  else
-	    {
-	      p = val + strlen (token);
-	      strncpy (value, p, sizeof (value) - 1);
-	    }
-
-	  for (n = 0; n < strlen (token); n++)
-	    {
-	      if (!isalnum (token[n]) && token[n] != '_')
-		errx (EXIT_FAILURE,
-		      _("%s(%i): token names must match 0-9A-Za-z_."),
-		      filename, lines);
-	    }
-
-	  token[0] = toupper (token[0]);
-	  pgn_tag_add (&config.tag, token, value);
-	}
-      else if (strcmp (var, "save_directory") == 0)
-	config.savedirectory = strdup (val);
-      else if (strcmp (var, "line_graphics") == 0)
-	config.linegraphics = on_or_off (filename, lines, val);
-      else if (strcmp (var, "save_prompt") == 0)
-	config.saveprompt = on_or_off (filename, lines, val);
-      else if (strcmp (var, "delete_prompt") == 0)
-	config.deleteprompt = on_or_off (filename, lines, val);
-      else if (strcmp (var, "valid_moves") == 0)
-	config.validmoves = on_or_off (filename, lines, val);
-      else if (strcmp (var, "board_details") == 0)
-	config.details = on_or_off (filename, lines, val);
-      else if (strcmp (var, "show_attacks") == 0)
-	config.showattacks = on_or_off (filename, lines, val);
-      else if (strcmp (var, "coords_y_left") == 0)
-	config.coordsyleft = on_or_off (filename, lines, val);
-      else if (strcmp (var, "fm_polyglot") == 0)
-	config.fmpolyglot = on_or_off (filename, lines, val);
-      else if (strcmp (var, "board_left") == 0)
-	config.boardleft = on_or_off (filename, lines, val);
-      else if (strcmp (var, "exit_dialog_box") == 0)
-	config.exitdialogbox = on_or_off (filename, lines, val);
-      else if (strcmp (var, "engine_cmd_blacktag") == 0)
-	config.enginecmdblacktag = on_or_off (filename, lines, val);
-      else if (strcmp (var, "board_prev_move") == 0)
-	config.bprevmove = on_or_off (filename, lines, val);
-      else if (strcmp (var, "strict_castling") == 0)
-	pgn_config_set (PGN_STRICT_CASTLING,
-			on_or_off (filename, lines, val));
-      else if (strcmp (var, "engine_cmd") == 0)
-	altengine = strdup (val);
-      else if (strcmp (var, "engine_protocol") == 0)
-	{
-	  if (!isinteger (val))
-	    errx (EXIT_FAILURE, _("%s(%i): value is not an integer"),
-		  filename, lines);
-
-	  config.engine_protocol = atoi (val);
-
-	  if (config.engine_protocol != 1 && config.engine_protocol != 2)
-	    errx (EXIT_FAILURE, _("%s(%i): invalid value"), filename, lines);
-	}
-      else if (strcmp (var, "engine_timeout") == 0)
-	config.engine_timeout = atoi (val);
-      else if (strcmp (var, "utf8_pieces") == 0)
-	config.utf8_pieces = on_or_off (filename, lines, val);
-      else if (strcmp (var, "turn_cmd") == 0)
-        config.turn_cmd = strdup (val);
-      else if (strcmp (var, "color_board_window") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BDWINDOW]);
-      else if (strcmp (var, "color_board_selected") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BSELECTED]);
-      else if (strcmp (var, "color_board_white_moves") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BMOVESW]);
-      else if (strcmp (var, "color_board_black_moves") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BMOVESB]);
-      else if (strcmp (var, "color_board_count") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BCOUNT]);
-      else if (strcmp (var, "color_board_cursor") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BCURSOR]);
-      else if (strcmp (var, "color_board_black") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BBLACK]);
-      else if (strcmp (var, "color_board_white") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BWHITE]);
-      else if (strcmp (var, "color_board_graphics") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BGRAPHICS]);
-      else if (strcmp (var, "color_board_coords") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BCOORDS]);
-      else if (strcmp (var, "color_board_castling") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BCASTLING]);
-      else if (strcmp (var, "color_board_enpassant") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BENPASSANT]);
-      else if (strcmp (var, "color_board_attack") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BATTACK]);
-      else if (strcmp (var, "color_board_prev_move") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_BPREVMOVE]);
-      else if (strcmp (var, "color_status_window") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_SWINDOW]);
-      else if (strcmp (var, "color_status_title") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_STITLE]);
-      else if (strcmp (var, "color_status_border") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_SBORDER]);
-      else if (strcmp (var, "color_status_notify") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_SNOTIFY]);
-      else if (strcmp (var, "color_status_engine") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_SENGINE]);
-      else if (strcmp (var, "color_tag_window") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_TWINDOW]);
-      else if (strcmp (var, "color_tag_title") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_TTITLE]);
-      else if (strcmp (var, "color_tag_border") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_TBORDER]);
-      else if (strcmp (var, "color_history_window") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_HWINDOW]);
-      else if (strcmp (var, "color_history_title") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_HTITLE]);
-      else if (strcmp (var, "color_history_border") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_HBORDER]);
-      else if (strcmp (var, "color_message_window") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_MWINDOW]);
-      else if (strcmp (var, "color_message_title") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_MTITLE]);
-      else if (strcmp (var, "color_message_border") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_MBORDER]);
-      else if (strcmp (var, "color_message_prompt") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_MPROMPT]);
-      else if (strcmp (var, "color_input_window") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_IWINDOW]);
-      else if (strcmp (var, "color_input_title") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_ITITLE]);
-      else if (strcmp (var, "color_input_border") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_IBORDER]);
-      else if (strcmp (var, "color_input_prompt") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_IPROMPT]);
-      else if (strcmp (var, "color_menu") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_MENU]);
-      else if (strcmp (var, "color_menu_selected") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_MENUS]);
-      else if (strcmp (var, "color_menu_highlight") == 0)
-	parse_color (filename, lines, val, &config.color[CONF_MENUH]);
-      else if (strcmp (var, "color_menu_graphics") == 0)
-	parse_color (filename, lines, val,
-		     &config.color[CONF_HISTORY_MENU_LG]);
-      else if (strcmp (var, "bind") == 0)
-	parse_key_binding (filename, lines, val);
-      else if (strcmp (var, "macro") == 0)
-	parse_macro (filename, lines, val);
-      else if (strcmp (var, "cbind") == 0)
-	{
-	  config.keys = Realloc (config.keys, (k + 2) *
-				 sizeof (struct config_key_s *));
-	  config.keys[k] = Calloc (1, sizeof (struct config_key_s));
-	  p = val;
-	  n = 0;
-
-	  while (*p && !isspace (*p))
-	    p++, n++;
-
-	  c = *p;
-	  *p = 0;
-	  p -= n;
-
-	  if (strcasecmp (p, "none") == 0)
-	    config.keys[k]->type = KEY_DEFAULT;
-	  else if (strcasecmp (p, "repeat") == 0)
-	    config.keys[k]->type = KEY_REPEAT;
-	  else if (strcasecmp (p, "set") == 0)
-	    config.keys[k]->type = KEY_SET;
-	  else
-	    errx (EXIT_FAILURE, _("%s(%i): invalid value \"%s\""), filename,
-		  lines, p);
-
-	  p = val + n;
-	  *p = c;
-
-	  while (*p && isspace (*p))
-	    p++;
-
-	  config.keys[k]->c = *p++;
-
-	  while (isspace (*p))
-	    p++;
-
-	  config.keys[k++]->str = str_to_wchar (p);
-	  config.keys[k] = NULL;
-	}
-      else
-	errx (EXIT_FAILURE, _("%s(%i): invalid parameter \"%s\""), filename,
-	      lines, var);
+      config.jumpcount = atoi(val);
     }
+    else if (strcmp(var, "engine_init") == 0)
+    {
+      config.einit =
+          Realloc(config.einit, (init + 2) * sizeof(wchar_t *));
+      config.einit[init++] = str_to_wchar(val);
+      config.einit[init] = NULL;
+    }
+    else if (strcmp(var, "pattern") == 0)
+    {
+      free(config.pattern);
+      config.pattern = strdup(val);
+    }
+    else if (strcmp(var, "mpl") == 0)
+    {
+      if (!isinteger(val))
+        errx(EXIT_FAILURE, _("%s(%i): value is not an integer"),
+             filename, lines);
+      pgn_config_set(PGN_MPL, atoi(val));
+    }
+    else if (strcmp(var, "stop_on_error") == 0)
+      pgn_config_set(PGN_STOP_ON_ERROR, on_or_off(filename, lines, val));
+    else if (strcmp(var, "tag") == 0)
+    {
+      if ((n = sscanf(val, "%s %s ", token, value)) < 1 || n > 2)
+        errx(EXIT_FAILURE, _("%s(%i): invalid value \"%s\""), filename,
+             lines, val);
 
-  fclose (fp);
+      if (n == 1)
+        value[0] = 0;
+      else
+      {
+        p = val + strlen(token);
+        strncpy(value, p, sizeof(value) - 1);
+      }
+
+      for (n = 0; n < strlen(token); n++)
+      {
+        if (!isalnum(token[n]) && token[n] != '_')
+          errx(EXIT_FAILURE,
+               _("%s(%i): token names must match 0-9A-Za-z_."),
+               filename, lines);
+      }
+
+      token[0] = toupper(token[0]);
+      pgn_tag_add(&config.tag, token, value);
+    }
+    else if (strcmp(var, "save_directory") == 0)
+      config.savedirectory = strdup(val);
+    else if (strcmp(var, "line_graphics") == 0)
+      config.linegraphics = on_or_off(filename, lines, val);
+    else if (strcmp(var, "save_prompt") == 0)
+      config.saveprompt = on_or_off(filename, lines, val);
+    else if (strcmp(var, "delete_prompt") == 0)
+      config.deleteprompt = on_or_off(filename, lines, val);
+    else if (strcmp(var, "valid_moves") == 0)
+      config.validmoves = on_or_off(filename, lines, val);
+    else if (strcmp(var, "board_details") == 0)
+      config.details = on_or_off(filename, lines, val);
+    else if (strcmp(var, "show_attacks") == 0)
+      config.showattacks = on_or_off(filename, lines, val);
+    else if (strcmp(var, "coords_y_left") == 0)
+      config.coordsyleft = on_or_off(filename, lines, val);
+    else if (strcmp(var, "fm_polyglot") == 0)
+      config.fmpolyglot = on_or_off(filename, lines, val);
+    else if (strcmp(var, "board_left") == 0)
+      config.boardleft = on_or_off(filename, lines, val);
+    else if (strcmp(var, "exit_dialog_box") == 0)
+      config.exitdialogbox = on_or_off(filename, lines, val);
+    else if (strcmp(var, "engine_cmd_blacktag") == 0)
+      config.enginecmdblacktag = on_or_off(filename, lines, val);
+    else if (strcmp(var, "board_prev_move") == 0)
+      config.bprevmove = on_or_off(filename, lines, val);
+    else if (strcmp(var, "strict_castling") == 0)
+      pgn_config_set(PGN_STRICT_CASTLING,
+                     on_or_off(filename, lines, val));
+    else if (strcmp(var, "engine_cmd") == 0)
+      altengine = strdup(val);
+    else if (strcmp(var, "engine_protocol") == 0)
+    {
+      if (!isinteger(val))
+        errx(EXIT_FAILURE, _("%s(%i): value is not an integer"),
+             filename, lines);
+
+      config.engine_protocol = atoi(val);
+
+      if (config.engine_protocol != 1 && config.engine_protocol != 2)
+        errx(EXIT_FAILURE, _("%s(%i): invalid value"), filename, lines);
+    }
+    else if (strcmp(var, "engine_timeout") == 0)
+      config.engine_timeout = atoi(val);
+    else if (strcmp(var, "utf8_pieces") == 0)
+      config.utf8_pieces = on_or_off(filename, lines, val);
+    else if (strcmp(var, "turn_cmd") == 0)
+      config.turn_cmd = strdup(val);
+    else if (strcmp(var, "color_board_window") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BDWINDOW]);
+    else if (strcmp(var, "color_board_selected") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BSELECTED]);
+    else if (strcmp(var, "color_board_white_moves") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BMOVESW]);
+    else if (strcmp(var, "color_board_black_moves") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BMOVESB]);
+    else if (strcmp(var, "color_board_count") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BCOUNT]);
+    else if (strcmp(var, "color_board_cursor") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BCURSOR]);
+    else if (strcmp(var, "color_board_black") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BBLACK]);
+    else if (strcmp(var, "color_board_white") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BWHITE]);
+    else if (strcmp(var, "color_board_graphics") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BGRAPHICS]);
+    else if (strcmp(var, "color_board_coords") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BCOORDS]);
+    else if (strcmp(var, "color_board_castling") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BCASTLING]);
+    else if (strcmp(var, "color_board_enpassant") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BENPASSANT]);
+    else if (strcmp(var, "color_board_attack") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BATTACK]);
+    else if (strcmp(var, "color_board_prev_move") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_BPREVMOVE]);
+    else if (strcmp(var, "color_status_window") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_SWINDOW]);
+    else if (strcmp(var, "color_status_title") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_STITLE]);
+    else if (strcmp(var, "color_status_border") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_SBORDER]);
+    else if (strcmp(var, "color_status_notify") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_SNOTIFY]);
+    else if (strcmp(var, "color_status_engine") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_SENGINE]);
+    else if (strcmp(var, "color_tag_window") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_TWINDOW]);
+    else if (strcmp(var, "color_tag_title") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_TTITLE]);
+    else if (strcmp(var, "color_tag_border") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_TBORDER]);
+    else if (strcmp(var, "color_history_window") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_HWINDOW]);
+    else if (strcmp(var, "color_history_title") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_HTITLE]);
+    else if (strcmp(var, "color_history_border") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_HBORDER]);
+    else if (strcmp(var, "color_message_window") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_MWINDOW]);
+    else if (strcmp(var, "color_message_title") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_MTITLE]);
+    else if (strcmp(var, "color_message_border") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_MBORDER]);
+    else if (strcmp(var, "color_message_prompt") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_MPROMPT]);
+    else if (strcmp(var, "color_input_window") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_IWINDOW]);
+    else if (strcmp(var, "color_input_title") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_ITITLE]);
+    else if (strcmp(var, "color_input_border") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_IBORDER]);
+    else if (strcmp(var, "color_input_prompt") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_IPROMPT]);
+    else if (strcmp(var, "color_menu") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_MENU]);
+    else if (strcmp(var, "color_menu_selected") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_MENUS]);
+    else if (strcmp(var, "color_menu_highlight") == 0)
+      parse_color(filename, lines, val, &config.color[CONF_MENUH]);
+    else if (strcmp(var, "color_menu_graphics") == 0)
+      parse_color(filename, lines, val,
+                  &config.color[CONF_HISTORY_MENU_LG]);
+    else if (strcmp(var, "bind") == 0)
+      parse_key_binding(filename, lines, val);
+    else if (strcmp(var, "macro") == 0)
+      parse_macro(filename, lines, val);
+    else if (strcmp(var, "cbind") == 0)
+    {
+      config.keys = Realloc(config.keys, (k + 2) *
+                                             sizeof(struct config_key_s *));
+      config.keys[k] = Calloc(1, sizeof(struct config_key_s));
+      p = val;
+      n = 0;
+
+      while (*p && !isspace(*p))
+        p++, n++;
+
+      c = *p;
+      *p = 0;
+      p -= n;
+
+      if (strcasecmp(p, "none") == 0)
+        config.keys[k]->type = KEY_DEFAULT;
+      else if (strcasecmp(p, "repeat") == 0)
+        config.keys[k]->type = KEY_REPEAT;
+      else if (strcasecmp(p, "set") == 0)
+        config.keys[k]->type = KEY_SET;
+      else
+        errx(EXIT_FAILURE, _("%s(%i): invalid value \"%s\""), filename,
+             lines, p);
+
+      p = val + n;
+      *p = c;
+
+      while (*p && isspace(*p))
+        p++;
+
+      config.keys[k]->c = *p++;
+
+      while (isspace(*p))
+        p++;
+
+      config.keys[k++]->str = str_to_wchar(p);
+      config.keys[k] = NULL;
+    }
+    else
+      errx(EXIT_FAILURE, _("%s(%i): invalid parameter \"%s\""), filename,
+           lines, var);
+  }
+
+  fclose(fp);
 
   if (altengine)
-    {
-      free (config.engine_cmd);
-      config.engine_cmd = NULL;
-      config.engine_cmd = altengine;
-    }
+  {
+    free(config.engine_cmd);
+    config.engine_cmd = NULL;
+    config.engine_cmd = altengine;
+  }
 
   if (config.enginecmdblacktag)
-    pgn_tag_add (&config.tag, (char *) "Black", config.engine_cmd);
+    pgn_tag_add(&config.tag, (char *) "Black", config.engine_cmd);
 }
 
 static struct key_s *
-find_key (struct key_s **keys, key_func f)
+find_key(struct key_s **keys, key_func f)
 {
   int i;
 
   for (i = 0; keys[i]; i++)
-    {
-      if (keys[i]->f == f)
-        return keys[i];
-    }
+  {
+    if (keys[i]->f == f)
+      return keys[i];
+  }
 
   return NULL;
 }
 
 const wchar_t *
-key_lookup (struct key_s **keys, key_func f)
+key_lookup(struct key_s **keys, key_func f)
 {
-  struct key_s *k = find_key (keys, f);
+  struct key_s *k = find_key(keys, f);
 
   return k ? k->key : NULL;
 }
 
 wint_t
-keycode_lookup (struct key_s **keys, key_func f)
+keycode_lookup(struct key_s **keys, key_func f)
 {
-  struct key_s *k = find_key (keys, f);
+  struct key_s *k = find_key(keys, f);
 
   return k ? k->c : 0;
 }
 
-int
-key_matches (struct key_s **keys, key_func f, wint_t c)
+int key_matches(struct key_s **keys, key_func f, wint_t c)
 {
   int i;
 
@@ -1156,24 +1136,24 @@ key_matches (struct key_s **keys, key_func f, wint_t c)
     return 0;
 
   for (i = 0; keys[i]; i++)
-    {
-      if (keys[i]->f == f && keys[i]->c == c)
-	return 1;
-    }
+  {
+    if (keys[i]->f == f && keys[i]->c == c)
+      return 1;
+  }
 
   return 0;
 }
 
 struct key_s *
-key_lookup_by_keycode (struct key_s **keys, wint_t c)
+key_lookup_by_keycode(struct key_s **keys, wint_t c)
 {
   int i;
 
   for (i = 0; keys[i]; i++)
-    {
-      if (keys[i]->c == c)
-        return keys[i];
-    }
+  {
+    if (keys[i]->c == c)
+      return keys[i];
+  }
 
   return NULL;
 }

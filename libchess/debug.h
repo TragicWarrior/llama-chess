@@ -19,11 +19,11 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#define DUMP(fmt, args...)	write_debug_output(NULL, fmt, ## args)
-#define DUMP_F(file, fmt, args...)	write_debug_output(file, fmt, ## args)
+#define DUMP(fmt, args...) write_debug_output(NULL, fmt, ##args)
+#define DUMP_F(file, fmt, args...) write_debug_output(file, fmt, ##args)
 
-void write_debug_output (const char *, const char *, ...);
-char *debug_board (BOARD b);
-void dump_board (const char *, BOARD b);
+void write_debug_output(const char *, const char *, ...);
+char *debug_board(BOARD b);
+void dump_board(const char *, BOARD b);
 
 #endif

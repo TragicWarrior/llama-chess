@@ -22,8 +22,8 @@
 #include "window.h"
 
 #define MAX_MENU_HEIGHT (LINES - 4)
-#define MAX_MENU_WIDTH  (COLS - 4)
-#define REFRESH_MENU	-2
+#define MAX_MENU_WIDTH (COLS - 4)
+#define REFRESH_MENU -2
 
 struct menu_item_s
 {
@@ -33,7 +33,7 @@ struct menu_item_s
 };
 
 typedef struct menu_input_s MENU_INPUT;
-typedef void (menu_key) (MENU_INPUT *);
+typedef void(menu_key)(MENU_INPUT *);
 
 struct menu_key_s
 {
@@ -45,7 +45,7 @@ struct menu_key_s
 /* Kept for API compatibility; listbox uses formatted text instead of
  * canvas print callbacks.  Callers may still pass a print_func; it is
  * ignored for painting but stored for callers that inspect the field. */
-typedef void (menu_print_func) (WIN *);
+typedef void(menu_print_func)(WIN *);
 typedef struct menu_item_s **(menu_items_fn) (WIN *);
 
 struct menu_input_s
@@ -53,7 +53,7 @@ struct menu_input_s
   int update;
   int selected;
   int nofree;
-  int top;			/* scroll offset (synced from listbox) */
+  int top; /* scroll offset (synced from listbox) */
   int total;
   menu_items_fn *func;
   menu_key *draw_exit_func;
@@ -72,17 +72,17 @@ struct menu_input_s
   /* VDK widgets owned by the window frame (not destroyed separately). */
   void *listbox;
   void *status_label;
-  void *vbox;			/* vk_box holding listbox + status label */
+  void *vbox; /* vk_box holding listbox + status label */
 };
 
-void add_menu_key (struct menu_key_s ***dst, wint_t c, menu_key func);
+void add_menu_key(struct menu_key_s ***dst, wint_t c, menu_key func);
 /* Bind every global key assigned to do_global_help (F10/Ctrl-H/F1/…). */
-void add_menu_help_key (struct menu_key_s ***dst, menu_key func);
-WIN *construct_menu (int rows, int cols, int y, int x, const char *title,
-		     int name_only, menu_items_fn * func,
-		     struct menu_key_s **keys, void *data,
-		     menu_print_func * pfunc, window_exit_func * efunc,
-		     window_resize_func * rfunc);
-void redraw_menu (WIN *);
+void add_menu_help_key(struct menu_key_s ***dst, menu_key func);
+WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
+                    int name_only, menu_items_fn *func,
+                    struct menu_key_s **keys, void *data,
+                    menu_print_func *pfunc, window_exit_func *efunc,
+                    window_resize_func *rfunc);
+void redraw_menu(WIN *);
 
 #endif

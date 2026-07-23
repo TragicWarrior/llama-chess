@@ -19,18 +19,18 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#define MSG_WIDTH	((COLS / 5) * 4)	/* For multiline messages. */
+#define MSG_WIDTH ((COLS / 5) * 4) /* For multiline messages. */
 
 #define message(t, p, fmt...) \
-    construct_message(t, p, 0, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
+  construct_message(t, p, 0, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
 #define cmessage(t, p, fmt...) \
-    construct_message(t, p, 1, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
+  construct_message(t, p, 1, 0, NULL, NULL, NULL, NULL, 0, 0, NULL, ##fmt)
 
 typedef void *(message_func) (void *);
 
-WIN *construct_message (const char *, const char *, int, int, const char *,
-			message_func *, void *, window_exit_func *, wint_t,
-                        int, window_resize_func *, const char *, ...);
+WIN *construct_message(const char *, const char *, int, int, const char *,
+                       message_func *, void *, window_exit_func *, wint_t,
+                       int, window_resize_func *, const char *, ...);
 
 /*
  * Yes/No confirm popup (menu style, clickable buttons).
@@ -38,10 +38,10 @@ WIN *construct_message (const char *, const char *, int, int, const char *,
  * the localized "y" on Yes, or 0 on No/Esc.  Typical efunc checks win->c
  * against yes_wchar (same as classic [ Yes or No ] prompts).
  */
-WIN *construct_confirm (const char *title, const char *text,
-			window_exit_func *efunc);
+WIN *construct_confirm(const char *title, const char *text,
+                       window_exit_func *efunc);
 
 /* Mouse for an open confirm WIN. Returns 1 if handled. */
-int confirm_dialog_mouse (WIN *win, int x, int y, mmask_t bstate);
+int confirm_dialog_mouse(WIN *win, int x, int y, mmask_t bstate);
 
 #endif

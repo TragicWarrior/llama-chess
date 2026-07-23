@@ -19,10 +19,10 @@
 #ifndef PERL_PLUGIN_H
 #define PERL_PLUGIN_H
 
-typedef void (perl_error_func) (const char *fmt, ...);
+typedef void(perl_error_func)(const char *fmt, ...);
 
-int perl_init_file (const char *filename, perl_error_func * efunc);
-int perl_call_sub (const char *str, const char *arg, char **result);
-void perl_cleanup (void);
+int perl_init_file(const char *filename, perl_error_func *efunc);
+int perl_call_sub(const char *str, const char *arg, char **result);
+void perl_cleanup(void);
 
 #endif

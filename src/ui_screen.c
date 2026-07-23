@@ -31,52 +31,49 @@ static int kmio_fd = -1;
 static vk_widget_t *front_stack[FRONT_MAX];
 static int front_count;
 
-void
-cboard_ui_init (void)
+void cboard_ui_init(void)
 {
   int fd;
 
   if (screen)
     return;
 
-  screen = vk_screen_create ();
+  screen = vk_screen_create();
   if (screen == NULL)
-    errx (EXIT_FAILURE, "%s", "Could not initialize VDK screen.");
+    errx(EXIT_FAILURE, "%s", "Could not initialize VDK screen.");
 
-  vdk_color_init ();
-  curs_set (0);
-  cbreak ();
-  noecho ();
-  keypad (stdscr, TRUE);
+  vdk_color_init();
+  curs_set(0);
+  cbreak();
+  noecho();
+  keypad(stdscr, TRUE);
   front_count = 0;
 
   /* SGR mouse via vk_kmio (mousemask 0; do not cook via ncurses). */
-  fd = vk_screen_get_fd (screen);
+  fd = vk_screen_get_fd(screen);
   if (fd < 0)
     fd = STDOUT_FILENO;
   kmio_fd = fd;
-  vk_kmio_init (kmio_fd, VK_KMIO_MOUSE);
+  vk_kmio_init(kmio_fd, VK_KMIO_MOUSE);
 }
 
-void
-cboard_ui_shutdown (void)
+void cboard_ui_shutdown(void)
 {
   if (screen == NULL)
     return;
 
   if (kmio_fd >= 0)
-    {
-      vk_kmio_shutdown (kmio_fd);
-      kmio_fd = -1;
-    }
+  {
+    vk_kmio_shutdown(kmio_fd);
+    kmio_fd = -1;
+  }
 
   front_count = 0;
-  vk_screen_destroy (screen);
+  vk_screen_destroy(screen);
   screen = NULL;
 }
 
-int
-cboard_ui_poll_event (wint_t *key, MEVENT *mev)
+int cboard_ui_poll_event(wint_t *key, MEVENT *mev)
 {
   int32_t code;
   MEVENT local;
@@ -87,8 +84,8 @@ cboard_ui_poll_event (wint_t *key, MEVENT *mev)
   if (mev == NULL)
     mev = &local;
 
-  memset (mev, 0, sizeof (*mev));
-  code = vk_kmio_fetch (mev);
+  memset(mev, 0, sizeof(*mev));
+  code = vk_kmio_fetch(mev);
 
   if (code == -1 || code == ERR)
     return 0;
@@ -101,14 +98,12 @@ cboard_ui_poll_event (wint_t *key, MEVENT *mev)
   return 1;
 }
 
-void
-cboard_ui_front_clear (void)
+void cboard_ui_front_clear(void)
 {
   front_count = 0;
 }
 
-void
-cboard_ui_front_push (cboard_widget_t *widget)
+void cboard_ui_front_push(cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
   int i;
@@ -118,17 +113,17 @@ cboard_ui_front_push (cboard_widget_t *widget)
 
   /* Avoid duplicates; keep latest push as topmost. */
   for (i = 0; i < front_count; i++)
+  {
+    if (front_stack[i] == w)
     {
-      if (front_stack[i] == w)
-	{
-	  int j;
+      int j;
 
-	  for (j = i; j < front_count - 1; j++)
-	    front_stack[j] = front_stack[j + 1];
-	  front_count--;
-	  break;
-	}
+      for (j = i; j < front_count - 1; j++)
+        front_stack[j] = front_stack[j + 1];
+      front_count--;
+      break;
     }
+  }
 
   if (front_count >= FRONT_MAX)
     return;
@@ -137,15 +132,15 @@ cboard_ui_front_push (cboard_widget_t *widget)
 }
 
 static void
-raise_widget (vk_widget_t *w)
+raise_widget(vk_widget_t *w)
 {
   if (w == NULL || screen == NULL)
     return;
 
   /* Detach first (ignore not-found) so we never leave duplicates. */
-  (void) vk_screen_detach_widget (screen, 0, w);
-  vk_screen_attach_widget (screen, 0, w);
-  vk_widget_show (w);
+  (void) vk_screen_detach_widget(screen, 0, w);
+  vk_screen_attach_widget(screen, 0, w);
+  vk_widget_show(w);
 }
 
 /*
@@ -158,20 +153,19 @@ raise_widget (vk_widget_t *w)
  * does not re-blit them.
  */
 static void
-untouch_canvas (vk_widget_t *w)
+untouch_canvas(vk_widget_t *w)
 {
   WINDOW *canvas;
 
   if (w == NULL)
     return;
 
-  canvas = vk_widget_get_canvas (w);
+  canvas = vk_widget_get_canvas(w);
   if (canvas != NULL)
-    untouchwin (canvas);
+    untouchwin(canvas);
 }
 
-void
-cboard_ui_refresh (void)
+void cboard_ui_refresh(void)
 {
   int i;
   WINDOW *surface = NULL;
@@ -181,11 +175,11 @@ cboard_ui_refresh (void)
 
   /* 1) Front chrome (menubar/dropdown) then modal stack on top. */
   for (i = 0; i < front_count; i++)
-    raise_widget (front_stack[i]);
-  window_raise_all ();
+    raise_widget(front_stack[i]);
+  window_raise_all();
 
   /* 2) Full composite (wallpaper + all widgets → stdscr). */
-  vk_screen_refresh (screen);
+  vk_screen_refresh(screen);
 
   /*
    * 3) Redraw front chrome then each modal on top of the surface.
@@ -193,114 +187,111 @@ cboard_ui_refresh (void)
    *    board chrome.
    */
   for (i = 0; i < front_count; i++)
-    {
-      vk_widget_t *w = front_stack[i];
-      WINDOW *ws;
+  {
+    vk_widget_t *w = front_stack[i];
+    WINDOW *ws;
 
-      if (w == NULL || !(vk_widget_get_state (w) & VK_STATE_VISIBLE))
-	continue;
-      ws = vk_widget_get_surface (w);
-      if (ws == NULL)
-	continue;
-      surface = ws;
-      vk_widget_draw (w);
-    }
+    if (w == NULL || !(vk_widget_get_state(w) & VK_STATE_VISIBLE))
+      continue;
+    ws = vk_widget_get_surface(w);
+    if (ws == NULL)
+      continue;
+    surface = ws;
+    vk_widget_draw(w);
+  }
 
   {
-    int d, depth = window_depth ();
+    int d, depth = window_depth();
 
     for (d = 0; d < depth; d++)
-      {
-	WIN *mw = window_at (d);
-	vk_widget_t *w;
-	WINDOW *ws;
+    {
+      WIN *mw = window_at(d);
+      vk_widget_t *w;
+      WINDOW *ws;
 
-	if (mw == NULL || mw->vk == NULL)
-	  continue;
-	w = (vk_widget_t *) mw->vk;
-	if (!(vk_widget_get_state (w) & VK_STATE_VISIBLE))
-	  continue;
-	ws = vk_widget_get_surface (w);
-	if (ws == NULL)
-	  continue;
-	surface = ws;
-	/* Window frames need full update so children stay on the canvas. */
-	if (mw->vk_kind == WIN_VK_WINDOW)
-	  vk_window_update (VK_WINDOW (w));
-	else
-	  vk_widget_draw (w);
-	untouch_canvas (w);
-      }
+      if (mw == NULL || mw->vk == NULL)
+        continue;
+      w = (vk_widget_t *) mw->vk;
+      if (!(vk_widget_get_state(w) & VK_STATE_VISIBLE))
+        continue;
+      ws = vk_widget_get_surface(w);
+      if (ws == NULL)
+        continue;
+      surface = ws;
+      /* Window frames need full update so children stay on the canvas. */
+      if (mw->vk_kind == WIN_VK_WINDOW)
+        vk_window_update(VK_WINDOW(w));
+      else
+        vk_widget_draw(w);
+      untouch_canvas(w);
+    }
   }
 
   if (surface != NULL)
-    {
-      overwrite (surface, stdscr);
-      wrefresh (stdscr);
-    }
+  {
+    overwrite(surface, stdscr);
+    wrefresh(stdscr);
+  }
 
   /* 4) Prevent per-widget auto-wrefresh from burying the composite. */
   for (i = 0; i < front_count; i++)
-    untouch_canvas (front_stack[i]);
-  untouchwin (stdscr);
+    untouch_canvas(front_stack[i]);
+  untouchwin(stdscr);
 }
 
-void
-cboard_ui_resize (void)
+void cboard_ui_resize(void)
 {
   if (screen)
-    vk_screen_resize (screen);
+    vk_screen_resize(screen);
 }
 
-void
-cboard_ui_input_rearm (void)
+void cboard_ui_input_rearm(void)
 {
   int fd;
 
   if (screen == NULL)
     return;
 
-  fd = vk_screen_get_fd (screen);
+  fd = vk_screen_get_fd(screen);
   if (fd < 0)
     fd = STDOUT_FILENO;
   kmio_fd = fd;
   /* Re-emit SGR mouse enable; no-op if already armed on this fd. */
-  vk_kmio_init (kmio_fd, VK_KMIO_MOUSE);
-  keypad (stdscr, TRUE);
-  cbreak ();
-  noecho ();
-  curs_set (0);
+  vk_kmio_init(kmio_fd, VK_KMIO_MOUSE);
+  keypad(stdscr, TRUE);
+  cbreak();
+  noecho();
+  curs_set(0);
 }
 
-int
-cboard_ui_active (void)
+int cboard_ui_active(void)
 {
   return screen != NULL;
 }
 
 cboard_widget_t *
-cboard_ui_widget_new (int height, int width, int y, int x)
+cboard_ui_widget_new(int height, int width, int y, int x)
 {
   vk_widget_t *w;
 
   if (screen == NULL || height < 1 || width < 1)
     return NULL;
 
-  w = vk_widget_create (width, height);
+  w = vk_widget_create(width, height);
   if (w == NULL)
     return NULL;
 
-  vk_widget_move (w, x, y);
+  vk_widget_move(w, x, y);
   /* Drop any stale attach then attach once. */
-  (void) vk_screen_detach_widget (screen, 0, w);
-  vk_screen_attach_widget (screen, 0, w);
+  (void) vk_screen_detach_widget(screen, 0, w);
+  vk_screen_attach_widget(screen, 0, w);
   return (cboard_widget_t *) w;
 }
 
 cboard_widget_t *
-cboard_ui_frame_new (int height, int width, int y, int x,
-		     const char *title, short body_fg, short body_bg,
-		     short border_fg, short border_bg)
+cboard_ui_frame_new(int height, int width, int y, int x,
+                    const char *title, short body_fg, short body_bg,
+                    short border_fg, short border_bg)
 {
   vk_window_t *win;
   vk_widget_t *body;
@@ -310,19 +301,19 @@ cboard_ui_frame_new (int height, int width, int y, int x,
   if (screen == NULL || height < 3 || width < 3)
     return NULL;
 
-  win = vk_window_create (width, height);
+  win = vk_window_create(width, height);
   if (win == NULL)
     return NULL;
 
   if (title && title[0])
-    {
-      snprintf (titlebuf, sizeof (titlebuf), " %s ", title);
-      vk_window_set_title (win, titlebuf);
-    }
+  {
+    snprintf(titlebuf, sizeof(titlebuf), " %s ", title);
+    vk_window_set_title(win, titlebuf);
+  }
 
-  vk_window_set_border_style (win, VK_BORDER_SINGLE);
-  vk_window_set_border_colors (win, border_fg, border_bg);
-  vk_widget_set_colors (VK_WIDGET (win), body_fg, body_bg);
+  vk_window_set_border_style(win, VK_BORDER_SINGLE);
+  vk_window_set_border_colors(win, border_fg, border_bg);
+  vk_widget_set_colors(VK_WIDGET(win), body_fg, body_bg);
 
   inner_w = width - 2;
   inner_h = height - 2;
@@ -331,43 +322,43 @@ cboard_ui_frame_new (int height, int width, int y, int x,
   if (inner_h < 1)
     inner_h = 1;
 
-  body = vk_widget_create (inner_w, inner_h);
+  body = vk_widget_create(inner_w, inner_h);
   if (body == NULL)
-    {
-      vk_window_destroy (win);
-      return NULL;
-    }
+  {
+    vk_window_destroy(win);
+    return NULL;
+  }
 
-  vk_widget_set_colors (body, body_fg, body_bg);
-  vk_widget_set_expand (body);
-  vk_window_set_child (win, body);
+  vk_widget_set_colors(body, body_fg, body_bg);
+  vk_widget_set_expand(body);
+  vk_window_set_child(win, body);
 
-  vk_widget_move (VK_WIDGET (win), x, y);
-  (void) vk_screen_detach_widget (screen, 0, VK_WIDGET (win));
-  vk_screen_attach_widget (screen, 0, VK_WIDGET (win));
-  vk_widget_show (VK_WIDGET (win));
-  vk_window_update (win);
+  vk_widget_move(VK_WIDGET(win), x, y);
+  (void) vk_screen_detach_widget(screen, 0, VK_WIDGET(win));
+  vk_screen_attach_widget(screen, 0, VK_WIDGET(win));
+  vk_widget_show(VK_WIDGET(win));
+  vk_window_update(win);
 
   return (cboard_widget_t *) win;
 }
 
 WINDOW *
-cboard_ui_frame_canvas (cboard_widget_t *frame)
+cboard_ui_frame_canvas(cboard_widget_t *frame)
 {
   vk_widget_t *child;
 
   if (frame == NULL)
     return NULL;
 
-  child = vk_window_get_child (VK_WINDOW (frame));
+  child = vk_window_get_child(VK_WINDOW(frame));
   if (child == NULL)
     return NULL;
 
-  return vk_widget_get_canvas (child);
+  return vk_widget_get_canvas(child);
 }
 
 WINDOW *
-cboard_ui_frame_resize (cboard_widget_t *frame, int height, int width)
+cboard_ui_frame_resize(cboard_widget_t *frame, int height, int width)
 {
   vk_window_t *win = (vk_window_t *) frame;
   vk_widget_t *child;
@@ -376,9 +367,9 @@ cboard_ui_frame_resize (cboard_widget_t *frame, int height, int width)
   if (win == NULL || height < 3 || width < 3)
     return NULL;
 
-  vk_widget_resize (VK_WIDGET (win), width, height);
+  vk_widget_resize(VK_WIDGET(win), width, height);
 
-  child = vk_window_get_child (win);
+  child = vk_window_get_child(win);
   if (child == NULL)
     return NULL;
 
@@ -389,45 +380,42 @@ cboard_ui_frame_resize (cboard_widget_t *frame, int height, int width)
     inner_w = 1;
   if (inner_h < 1)
     inner_h = 1;
-  vk_widget_resize (child, inner_w, inner_h);
+  vk_widget_resize(child, inner_w, inner_h);
 
-  return vk_widget_get_canvas (child);
+  return vk_widget_get_canvas(child);
 }
 
-void
-cboard_ui_frame_paint (cboard_widget_t *frame)
+void cboard_ui_frame_paint(cboard_widget_t *frame)
 {
   if (frame == NULL)
     return;
 
-  vk_window_update (VK_WINDOW (frame));
+  vk_window_update(VK_WINDOW(frame));
 }
 
-void
-cboard_ui_widget_attach (cboard_widget_t *widget, int y, int x)
+void cboard_ui_widget_attach(cboard_widget_t *widget, int y, int x)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL || screen == NULL)
     return;
 
-  vk_widget_move (w, x, y);
-  (void) vk_screen_detach_widget (screen, 0, w);
-  vk_screen_attach_widget (screen, 0, w);
-  vk_widget_show (w);
+  vk_widget_move(w, x, y);
+  (void) vk_screen_detach_widget(screen, 0, w);
+  vk_screen_attach_widget(screen, 0, w);
+  vk_widget_show(w);
 }
 
 static void
-detach_widget (vk_widget_t *w)
+detach_widget(vk_widget_t *w)
 {
   if (w == NULL || screen == NULL)
     return;
 
-  vk_screen_detach_widget (screen, 0, w);
+  vk_screen_detach_widget(screen, 0, w);
 }
 
-void
-cboard_ui_widget_destroy (cboard_widget_t *widget)
+void cboard_ui_widget_destroy(cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
   int i;
@@ -436,24 +424,23 @@ cboard_ui_widget_destroy (cboard_widget_t *widget)
     return;
 
   for (i = 0; i < front_count; i++)
+  {
+    if (front_stack[i] == w)
     {
-      if (front_stack[i] == w)
-	{
-	  int j;
+      int j;
 
-	  for (j = i; j < front_count - 1; j++)
-	    front_stack[j] = front_stack[j + 1];
-	  front_count--;
-	  break;
-	}
+      for (j = i; j < front_count - 1; j++)
+        front_stack[j] = front_stack[j + 1];
+      front_count--;
+      break;
     }
+  }
 
-  detach_widget (w);
-  vk_widget_destroy (w);
+  detach_widget(w);
+  vk_widget_destroy(w);
 }
 
-void
-cboard_ui_window_destroy (cboard_widget_t *widget)
+void cboard_ui_window_destroy(cboard_widget_t *widget)
 {
   vk_window_t *w = (vk_window_t *) widget;
   int i;
@@ -462,126 +449,118 @@ cboard_ui_window_destroy (cboard_widget_t *widget)
     return;
 
   for (i = 0; i < front_count; i++)
+  {
+    if (front_stack[i] == VK_WIDGET(w))
     {
-      if (front_stack[i] == VK_WIDGET (w))
-	{
-	  int j;
+      int j;
 
-	  for (j = i; j < front_count - 1; j++)
-	    front_stack[j] = front_stack[j + 1];
-	  front_count--;
-	  break;
-	}
+      for (j = i; j < front_count - 1; j++)
+        front_stack[j] = front_stack[j + 1];
+      front_count--;
+      break;
     }
+  }
 
-  detach_widget (VK_WIDGET (w));
-  vk_window_destroy (w);
+  detach_widget(VK_WIDGET(w));
+  vk_window_destroy(w);
 }
 
-void
-cboard_ui_popup_destroy (cboard_widget_t *widget)
+void cboard_ui_popup_destroy(cboard_widget_t *widget)
 {
   vk_popup_t *p = (vk_popup_t *) widget;
 
   if (p == NULL)
     return;
 
-  detach_widget (VK_WIDGET (p));
-  vk_popup_destroy (p);
+  detach_widget(VK_WIDGET(p));
+  vk_popup_destroy(p);
 }
 
-void
-cboard_ui_filedialog_destroy (cboard_widget_t *widget)
+void cboard_ui_filedialog_destroy(cboard_widget_t *widget)
 {
   vk_filedialog_t *d = (vk_filedialog_t *) widget;
 
   if (d == NULL)
     return;
 
-  detach_widget (VK_WIDGET (d));
-  vk_filedialog_destroy (d);
+  detach_widget(VK_WIDGET(d));
+  vk_filedialog_destroy(d);
 }
 
 WINDOW *
-cboard_ui_widget_canvas (cboard_widget_t *widget)
+cboard_ui_widget_canvas(cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL)
     return NULL;
 
-  return vk_widget_get_canvas (w);
+  return vk_widget_get_canvas(w);
 }
 
-void
-cboard_ui_widget_move (cboard_widget_t *widget, int y, int x)
+void cboard_ui_widget_move(cboard_widget_t *widget, int y, int x)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL)
     return;
 
-  vk_widget_move (w, x, y);
+  vk_widget_move(w, x, y);
 }
 
 WINDOW *
-cboard_ui_widget_resize (cboard_widget_t *widget, int height, int width)
+cboard_ui_widget_resize(cboard_widget_t *widget, int height, int width)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL || height < 1 || width < 1)
     return NULL;
 
-  vk_widget_resize (w, width, height);
-  return vk_widget_get_canvas (w);
+  vk_widget_resize(w, width, height);
+  return vk_widget_get_canvas(w);
 }
 
-void
-cboard_ui_widget_show (cboard_widget_t *widget)
+void cboard_ui_widget_show(cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL)
     return;
 
-  vk_widget_show (w);
+  vk_widget_show(w);
 }
 
-void
-cboard_ui_widget_hide (cboard_widget_t *widget)
+void cboard_ui_widget_hide(cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL)
     return;
 
-  vk_widget_hide (w);
+  vk_widget_hide(w);
 }
 
-int
-cboard_ui_widget_hidden (cboard_widget_t *widget)
+int cboard_ui_widget_hidden(cboard_widget_t *widget)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL)
     return 1;
 
-  return !vk_widget_is_visible (w);
+  return !vk_widget_is_visible(w);
 }
 
-void
-cboard_ui_widget_raise (cboard_widget_t *widget)
+void cboard_ui_widget_raise(cboard_widget_t *widget)
 {
-  raise_widget ((vk_widget_t *) widget);
+  raise_widget((vk_widget_t *) widget);
 }
 
-void
-cboard_ui_push_key (cboard_widget_t *widget, int key)
+void cboard_ui_push_key(cboard_widget_t *widget, int key)
 {
   vk_widget_t *w = (vk_widget_t *) widget;
 
   if (w == NULL)
     return;
 
-  vk_object_push_keystroke (VK_OBJECT (w), key);
+  vk_object_push_keystroke(VK_OBJECT(w), key);
 }

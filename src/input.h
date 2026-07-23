@@ -19,7 +19,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#define INPUT_WIDTH		((COLS / 4) * 3)
+#define INPUT_WIDTH ((COLS / 4) * 3)
 
 enum
 {
@@ -36,13 +36,20 @@ enum
 
 enum
 {
-  FIELD_TYPE_ALNUM, FIELD_TYPE_ALPHA, FIELD_TYPE_INTEGER,
-  FIELD_TYPE_NUMERIC, FIELD_TYPE_REGEXP, FIELD_TYPE_IPV4, FIELD_TYPE_ENUM,
-  FIELD_TYPE_PGN_TAG_NAME, FIELD_TYPE_PGN_DATE, FIELD_TYPE_PGN_ROUND,
+  FIELD_TYPE_ALNUM,
+  FIELD_TYPE_ALPHA,
+  FIELD_TYPE_INTEGER,
+  FIELD_TYPE_NUMERIC,
+  FIELD_TYPE_REGEXP,
+  FIELD_TYPE_IPV4,
+  FIELD_TYPE_ENUM,
+  FIELD_TYPE_PGN_TAG_NAME,
+  FIELD_TYPE_PGN_DATE,
+  FIELD_TYPE_PGN_ROUND,
   FIELD_TYPE_PGN_RESULT
 };
 
-typedef void (input_func) (void *);
+typedef void(input_func)(void *);
 struct input_s
 {
   char buf[MAX_PGN_LINE_LEN];
@@ -68,14 +75,14 @@ struct input_data_s
   window_exit_func *efunc;
 };
 
-WIN *construct_input (const char *title, const char *init, int lines,
-		      int reset, const char *extra_help, input_func * func,
-		      void *arg, wint_t key, struct input_data_s *id,
-		      int history, window_resize_func, int type, ...);
+WIN *construct_input(const char *title, const char *init, int lines,
+                     int reset, const char *extra_help, input_func *func,
+                     void *arg, wint_t key, struct input_data_s *id,
+                     int history, window_resize_func, int type, ...);
 
 /* Update the live input buffer (and VDK field, if any). */
-void input_set_buf (struct input_s *in, const char *text);
+void input_set_buf(struct input_s *in, const char *text);
 /* Re-composite an open construct_input dialog after external buf changes. */
-void input_refresh_win (WIN *win);
+void input_refresh_win(WIN *win);
 
 #endif

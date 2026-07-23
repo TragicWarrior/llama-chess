@@ -1,0 +1,31 @@
+# Allman braces; otherwise stay close to existing cboard style.
+BasedOnStyle: LLVM
+IndentWidth: 2
+TabWidth: 8
+UseTab: Never
+ColumnLimit: 0
+BreakBeforeBraces: Allman
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+SpaceBeforeParens: ControlStatements
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDefinitionName: true
+  AfterFunctionDeclarationName: true
+  BeforeNonEmptyParentheses: false
+SpacesInParentheses: false
+SpaceAfterCStyleCast: true
+PointerAlignment: Right
+ReferenceAlignment: Right
+SortIncludes: false
+ReflowComments: false
+InsertBraces: false
+KeepEmptyLinesAtTheStartOfBlocks: true
+MaxEmptyLinesToKeep: 2
+IndentCaseLabels: false
+NamespaceIndentation: None
+FixNamespaceComments: false

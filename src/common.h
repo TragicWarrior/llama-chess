@@ -49,28 +49,28 @@
 
 #include "chess.h"
 
-#define CF_ENGINE_LOOP	0x01
-#define CF_HUMAN	0x02
-#define CF_NEW		0x04
-#define CF_CLOCK	0x08
-#define CF_MODIFIED	0x10
-#define CF_DELETE	0x20
+#define CF_ENGINE_LOOP 0x01
+#define CF_HUMAN 0x02
+#define CF_NEW 0x04
+#define CF_CLOCK 0x08
+#define CF_MODIFIED 0x10
+#define CF_DELETE 0x20
 #ifdef WITH_LIBPERL
-#define CF_PERL		0x40
+#define CF_PERL 0x40
 #endif
 
 #include <sys/time.h>
-#define MAX_TC		8	/* Time controls. */
+#define MAX_TC 8 /* Time controls. */
 
-#define ANY_KEY_STR             _("[ press any key to continue ]")
-#define ANY_KEY_SCROLL_STR      _("[ press any key to continue (UP/DN to scroll) ]")
-#define ERROR_STR               _("[ ERROR ]")
+#define ANY_KEY_STR _("[ press any key to continue ]")
+#define ANY_KEY_SCROLL_STR _("[ press any key to continue (UP/DN to scroll) ]")
+#define ERROR_STR _("[ ERROR ]")
 
 struct clock_s
 {
   struct timeval elapsed;
-  unsigned short move;		/* move count */
-  int tc[MAX_TC][2];		/* 0 = move count, 1 = time (in seconds) */
+  unsigned short move; /* move count */
+  int tc[MAX_TC][2];   /* 0 = move count, 1 = time (in seconds) */
   int tcn;
   int incr;
 };
@@ -86,7 +86,7 @@ struct userdata_s
   unsigned short flags;
   char c_row;
   char c_col;
-  char pm_frfr[6];		// Previous move
+  char pm_frfr[6]; // Previous move
   char pm_row;
   char pm_col;
   char ospm_row;
@@ -95,8 +95,8 @@ struct userdata_s
   char paused;
   unsigned n;
   unsigned char mode;
-  char rotate;			// Rotation control board
-  int go_move;			// Movement function result 'do_play_go'
+  char rotate; // Rotation control board
+  int go_move; // Movement function result 'do_play_go'
   int play_mode;
   struct clock_s wclock;
   struct clock_s bclock;
@@ -112,7 +112,7 @@ struct userdata_s
     char row;
   } sp;
 
-  void *data;			// For the history menu
+  void *data; // For the history menu
 
 #ifdef WITH_LIBPERL
   char *perlfen;
@@ -124,16 +124,16 @@ struct userdata_s
 /* A pointer to the game in focus. */
 extern GAME gp;
 
-void gameover (GAME);
-void update_cursor (GAME, int);
-void invalid_move (int n, int e, const char *m);
-void update_status_window (GAME g);
-void update_all (GAME g);
-void update_status_notify (GAME g, const char *fmt, ...);
-void update_tag_window (TAG ** tags);
-void update_all (GAME g);
-void edit_tags (GAME g, BOARD b, int edit);
-void add_custom_tags (TAG *** t);
-wchar_t *translate_tag_name (const char *);
+void gameover(GAME);
+void update_cursor(GAME, int);
+void invalid_move(int n, int e, const char *m);
+void update_status_window(GAME g);
+void update_all(GAME g);
+void update_status_notify(GAME g, const char *fmt, ...);
+void update_tag_window(TAG **tags);
+void update_all(GAME g);
+void edit_tags(GAME g, BOARD b, int edit);
+void add_custom_tags(TAG ***t);
+wchar_t *translate_tag_name(const char *);
 
 #endif

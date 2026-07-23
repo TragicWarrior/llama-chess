@@ -11,9 +11,9 @@
  * Handle one mouse event from vk_kmio_fetch (KEY_MOUSE path).
  * Returns 1 if the event was consumed.
  */
-int cboard_mouse_handle (const MEVENT *mev);
+int cboard_mouse_handle(const MEVENT *mev);
 
 /* Board square hit-test (implemented in cboard.c). */
-int cboard_board_mouse (int x, int y, mmask_t bstate);
+int cboard_board_mouse(int x, int y, mmask_t bstate);
 
 #endif

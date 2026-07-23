@@ -20,7 +20,9 @@
 #define COMMON_H
 
 #ifdef DEBUG
-#define PGN_DUMP(fmt, args...)	if (dumptofile) DUMP_F("libchess.debug", fmt, ## args)
+#define PGN_DUMP(fmt, args...) \
+  if (dumptofile)              \
+  DUMP_F("libchess.debug", fmt, ##args)
 #endif
 
 struct pgn_config_s

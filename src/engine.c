@@ -56,17 +56,15 @@
 #include "engine.h"
 #include "ui_screen.h"
 
-int
-send_signal_to_engine (pid_t pid, int sig)
+int send_signal_to_engine(pid_t pid, int sig)
 {
-  if (kill (pid, sig) == -1)
+  if (kill(pid, sig) == -1)
     return 1;
 
   return 0;
 }
 
-int
-send_to_engine (GAME g, int status, const char *format, ...)
+int send_to_engine(GAME g, int status, const char *format, ...)
 {
   va_list ap;
   int len;
@@ -74,127 +72,126 @@ send_to_engine (GAME g, int status, const char *format, ...)
   struct userdata_s *d = g->data;
 
   if (!d->engine || d->engine->status == ENGINE_OFFLINE ||
-      TEST_FLAG (d->flags, CF_HUMAN))
+      TEST_FLAG(d->flags, CF_HUMAN))
     return 1;
 
-  va_start (ap, format);
+  va_start(ap, format);
 #ifdef HAVE_VASPRINTF
-  len = vasprintf (&line, format, ap);
+  len = vasprintf(&line, format, ap);
 #else
-  line = Malloc (LINE_MAX);
-  len = vsnprintf (line, LINE_MAX, format, ap);
+  line = Malloc(LINE_MAX);
+  len = vsnprintf(line, LINE_MAX, format, ap);
 #endif
-  va_end (ap);
+  va_end(ap);
 
   while (1)
+  {
+    int n;
+    fd_set fds;
+    struct timeval tv;
+
+    FD_ZERO(&fds);
+    FD_SET(d->engine->fd[ENGINE_OUT_FD], &fds);
+
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+
+    if ((n = select(d->engine->fd[ENGINE_OUT_FD] + 1, NULL, &fds, NULL,
+                    &tv)) > 0)
     {
-      int n;
-      fd_set fds;
-      struct timeval tv;
+      if (FD_ISSET(d->engine->fd[ENGINE_OUT_FD], &fds))
+      {
+        n = write(d->engine->fd[ENGINE_OUT_FD], line, len);
 
-      FD_ZERO (&fds);
-      FD_SET (d->engine->fd[ENGINE_OUT_FD], &fds);
+        if (n == -1)
+        {
+          if (errno == EAGAIN)
+          {
+            usleep(50000);
+            continue;
+          }
 
-      tv.tv_sec = 0;
-      tv.tv_usec = 0;
+          if (kill(d->engine->pid, 0) == -1)
+          {
+            message(ERROR_STR, ANY_KEY_STR,
+                    _("Could not write to engine. "
+                      "Process no longer exists."));
+            d->engine->status = ENGINE_OFFLINE;
+            break;
+          }
 
-      if ((n = select (d->engine->fd[ENGINE_OUT_FD] + 1, NULL, &fds, NULL,
-		       &tv)) > 0)
-	{
-	  if (FD_ISSET (d->engine->fd[ENGINE_OUT_FD], &fds))
-	    {
-	      n = write (d->engine->fd[ENGINE_OUT_FD], line, len);
+          message(ERROR_STR, ANY_KEY_STR,
+                  "write() error to engine: %s", strerror(errno));
+          d->engine->status = ENGINE_OFFLINE;
+          break;
+        }
 
-	      if (n == -1)
-		{
-		  if (errno == EAGAIN)
-		    {
-		      usleep (50000);
-		      continue;
-		    }
+        if (len != n)
+        {
+          message(NULL, ANY_KEY_STR,
+                  _("short write() count to engine. Expected %i, got %i."),
+                  len, n);
+          d->engine->status = ENGINE_OFFLINE;
+          break;
+        }
 
-		  if (kill (d->engine->pid, 0) == -1)
-		    {
-		      message (ERROR_STR, ANY_KEY_STR,
-			       _("Could not write to engine. "
-				 "Process no longer exists."));
-		      d->engine->status = ENGINE_OFFLINE;
-		      break;
-		    }
-
-		  message (ERROR_STR, ANY_KEY_STR,
-			   "write() error to engine: %s", strerror (errno));
-		  d->engine->status = ENGINE_OFFLINE;
-		  break;
-		}
-
-	      if (len != n)
-		{
-		  message (NULL, ANY_KEY_STR,
-			   _
-			   ("short write() count to engine. Expected %i, got %i."),
-			   len, n);
-		  d->engine->status = ENGINE_OFFLINE;
-		  break;
-		}
-
-	      break;
-	    }
-	}
-      else
-	{
-	  /* timeout */
-	}
+        break;
+      }
     }
+    else
+    {
+      /* timeout */
+    }
+  }
 
   if (d->engine->status == ENGINE_OFFLINE)
-    stop_engine (g);
+    stop_engine(g);
   else
     d->engine->status = status;
 
-  free (line);
+  free(line);
   return d->engine->status == ENGINE_OFFLINE ? 1 : 0;
 }
 
 #ifndef UNIX98
 /* From the Xboard and screen packages. */
 static int
-get_pty (char *pty_name)
+get_pty(char *pty_name)
 {
   int i;
   int fd;
 
   for (i = 0; PTY_MAJOR[i]; i++)
+  {
+    int n;
+
+    for (n = 0; PTY_MINOR[n]; n++)
     {
-      int n;
+      sprintf(pty_name, "%spty%c%c", _PATH_DEV, PTY_MAJOR[i],
+              PTY_MINOR[n]);
 
-      for (n = 0; PTY_MINOR[n]; n++)
-	{
-	  sprintf (pty_name, "%spty%c%c", _PATH_DEV, PTY_MAJOR[i],
-		   PTY_MINOR[n]);
+      if ((fd = open(pty_name, O_RDWR | O_NOCTTY)) == -1)
+        continue;
 
-	  if ((fd = open (pty_name, O_RDWR | O_NOCTTY)) == -1)
-	    continue;
+      sprintf(pty_name, "%stty%c%c", _PATH_DEV, PTY_MAJOR[i],
+              PTY_MINOR[n]);
 
-	  sprintf (pty_name, "%stty%c%c", _PATH_DEV, PTY_MAJOR[i],
-		   PTY_MINOR[n]);
+      if (access(pty_name, R_OK | W_OK) == -1)
+      {
+        close(fd);
+        continue;
+      }
 
-	  if (access (pty_name, R_OK | W_OK) == -1)
-	    {
-	      close (fd);
-	      continue;
-	    }
-
-	  return fd;
-	}
+      return fd;
     }
+  }
 
   return -1;
 }
 #endif
 
 static char **
-parseargs (char *str)
+parseargs(char *str)
 {
   char **pptr, *s;
   char arg[255];
@@ -206,76 +203,75 @@ parseargs (char *str)
   if (!str)
     return NULL;
 
-  if (!(pptr = Malloc (sizeof (char *))))
+  if (!(pptr = Malloc(sizeof(char *))))
     return NULL;
 
   for (i = 0, s = str; *s; lastchar = *s++)
+  {
+    if ((*s == '\"' || *s == '\'') && lastchar != '\\')
     {
-      if ((*s == '\"' || *s == '\'') && lastchar != '\\')
-	{
-	  quote = (quote) ? 0 : 1;
-	  continue;
-	}
-
-      if (*s == ' ' && !quote)
-	{
-	  arg[i] = 0;
-	  pptr = Realloc (pptr, (n + 2) * sizeof (char *));
-	  pptr[n++] = strdup (arg);
-	  arg[0] = i = 0;
-	  continue;
-	}
-
-      if ((i + 1) == sizeof (arg))
-	continue;
-
-      arg[i++] = *s;
+      quote = (quote) ? 0 : 1;
+      continue;
     }
+
+    if (*s == ' ' && !quote)
+    {
+      arg[i] = 0;
+      pptr = Realloc(pptr, (n + 2) * sizeof(char *));
+      pptr[n++] = strdup(arg);
+      arg[0] = i = 0;
+      continue;
+    }
+
+    if ((i + 1) == sizeof(arg))
+      continue;
+
+    arg[i++] = *s;
+  }
 
   arg[i] = 0;
 
   if (arg[0])
-    {
-      pptr = Realloc (pptr, (n + 2) * sizeof (char *));
-      pptr[n++] = strdup (arg);
-    }
+  {
+    pptr = Realloc(pptr, (n + 2) * sizeof(char *));
+    pptr[n++] = strdup(arg);
+  }
 
   pptr[n] = NULL;
   return pptr;
 }
 
-int
-init_chess_engine (GAME g)
+int init_chess_engine(GAME g)
 {
   struct userdata_s *d = g->data;
   char *tmp;
 
-  if (start_chess_engine (g) > 0)
-    {
-      d->sp.icon = 0;
-      return 1;
-    }
+  if (start_chess_engine(g) > 0)
+  {
+    d->sp.icon = 0;
+    return 1;
+  }
 
-  tmp = pgn_game_to_fen (g, d->b);
-  add_engine_command (g, ENGINE_READY, "setboard %s\n", tmp);
-  free (tmp);
+  tmp = pgn_game_to_fen(g, d->b);
+  add_engine_command(g, ENGINE_READY, "setboard %s\n", tmp);
+  free(tmp);
 
-  if (config.fmpolyglot && !TEST_FLAG (d->flags, CF_HUMAN) )
-    {
-      add_engine_command (g, ENGINE_READY, "%s\n",
-                          g->side == WHITE ? "white" : "black");
-      if (g->turn == WHITE && g->side == BLACK)
-        add_engine_command (g, ENGINE_READY, "%s\n", "go");
-      else if (g->turn == BLACK && g->side == WHITE)
-        add_engine_command (g, ENGINE_READY, "%s\n", "go");
-    }
+  if (config.fmpolyglot && !TEST_FLAG(d->flags, CF_HUMAN))
+  {
+    add_engine_command(g, ENGINE_READY, "%s\n",
+                       g->side == WHITE ? "white" : "black");
+    if (g->turn == WHITE && g->side == BLACK)
+      add_engine_command(g, ENGINE_READY, "%s\n", "go");
+    else if (g->turn == BLACK && g->side == WHITE)
+      add_engine_command(g, ENGINE_READY, "%s\n", "go");
+  }
 
   return 0;
 }
 
 /* Is this dangerous if pty permissions are wrong? */
 static pid_t
-exec_chess_engine (GAME g, char **args)
+exec_chess_engine(GAME g, char **args)
 {
   pid_t pid;
   int from[2], to[2];
@@ -284,108 +280,105 @@ exec_chess_engine (GAME g, char **args)
 #ifndef UNIX98
   char pty[FILENAME_MAX];
 
-  if ((to[1] = get_pty (pty)) == -1)
-    {
-      errno = 0;
-      return -1;
-    }
+  if ((to[1] = get_pty(pty)) == -1)
+  {
+    errno = 0;
+    return -1;
+  }
 #else
-  if ((to[1] = open ("/dev/ptmx", O_RDWR | O_NOCTTY)) == -1)
-    {
-      return -1;
-    }
+  if ((to[1] = open("/dev/ptmx", O_RDWR | O_NOCTTY)) == -1)
+  {
+    return -1;
+  }
 
-  if (grantpt (to[1]) == -1)
-    {
-      return -1;
-    }
+  if (grantpt(to[1]) == -1)
+  {
+    return -1;
+  }
 
-  if (unlockpt (to[1]) == -1)
-    {
-      return -1;
-    }
+  if (unlockpt(to[1]) == -1)
+  {
+    return -1;
+  }
 #endif
 
   from[0] = to[1];
   errno = 0;
 
 #ifndef UNIX98
-  if ((to[0] = open (pty, O_RDWR, 0)) == -1)
+  if ((to[0] = open(pty, O_RDWR, 0)) == -1)
 #else
-  if ((to[0] = open (ptsname (to[1]), O_RDWR | O_NOCTTY, 0)) == -1)
+  if ((to[0] = open(ptsname(to[1]), O_RDWR | O_NOCTTY, 0)) == -1)
 #endif
     return -1;
 
   from[1] = to[0];
   errno = 0;
 
-  switch ((pid = fork ()))
-    {
-    case -1:
-      return -2;
-    case 0:
-      dup2 (to[0], STDIN_FILENO);
-      dup2 (from[1], STDOUT_FILENO);
-      close (to[0]);
-      close (to[1]);
-      close (from[0]);
-      close (from[1]);
-      dup2 (STDOUT_FILENO, STDERR_FILENO);
-      execvp (args[0], args);
-      _exit (EXIT_FAILURE);
-    default:
-      break;
-    }
+  switch ((pid = fork()))
+  {
+  case -1:
+    return -2;
+  case 0:
+    dup2(to[0], STDIN_FILENO);
+    dup2(from[1], STDOUT_FILENO);
+    close(to[0]);
+    close(to[1]);
+    close(from[0]);
+    close(from[1]);
+    dup2(STDOUT_FILENO, STDERR_FILENO);
+    execvp(args[0], args);
+    _exit(EXIT_FAILURE);
+  default:
+    break;
+  }
 
   while (tries--)
-    {
-      if (send_signal_to_engine (pid, 0) && !tries)
-        return -2;
-      else
-        break;
-    }
+  {
+    if (send_signal_to_engine(pid, 0) && !tries)
+      return -2;
+    else
+      break;
+  }
 
-  close (to[0]);
-  close (from[1]);
+  close(to[0]);
+  close(from[1]);
 
   d->engine->fd[ENGINE_IN_FD] = from[0];
   d->engine->fd[ENGINE_OUT_FD] = to[1];
 
-  if (fcntl (d->engine->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK) == -1)
+  if (fcntl(d->engine->fd[ENGINE_IN_FD], F_SETFL, O_NONBLOCK) == -1)
     return -2;
 
-  if (fcntl (d->engine->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK) == -1)
+  if (fcntl(d->engine->fd[ENGINE_OUT_FD], F_SETFL, O_NONBLOCK) == -1)
     return -2;
 
   d->engine->pid = pid;
   return 0;
 }
 
-void
-stop_engine (GAME g)
+void stop_engine(GAME g)
 {
   struct userdata_s *d = g->data;
   int s;
 
-  if (!d->engine || d->engine->pid == -1
-      || d->engine->status == ENGINE_OFFLINE)
+  if (!d->engine || d->engine->pid == -1 || d->engine->status == ENGINE_OFFLINE)
     return;
 
-  send_to_engine (g, ENGINE_READY, "quit\n");
+  send_to_engine(g, ENGINE_READY, "quit\n");
 
-  if (!send_signal_to_engine (d->engine->pid, 0))
-    {
-      if (!send_signal_to_engine (d->engine->pid, SIGTERM))
-	send_signal_to_engine (d->engine->pid, SIGKILL);
-    }
+  if (!send_signal_to_engine(d->engine->pid, 0))
+  {
+    if (!send_signal_to_engine(d->engine->pid, SIGTERM))
+      send_signal_to_engine(d->engine->pid, SIGKILL);
+  }
 
-  waitpid (d->engine->pid, &s, WNOHANG);
+  waitpid(d->engine->pid, &s, WNOHANG);
   d->engine->pid = -1;
   d->engine->status = ENGINE_OFFLINE;
 }
 
-void
-set_engine_defaults (GAME g, wchar_t ** init)
+void set_engine_defaults(GAME g, wchar_t **init)
 {
   int i;
 
@@ -393,11 +386,10 @@ set_engine_defaults (GAME g, wchar_t ** init)
     return;
 
   for (i = 0; init[i]; i++)
-    add_engine_command (g, ENGINE_READY, "%ls\n", init[i]);
+    add_engine_command(g, ENGINE_READY, "%ls\n", init[i]);
 }
 
-int
-start_chess_engine (GAME g)
+int start_chess_engine(GAME g)
 {
   char **args;
   int i;
@@ -407,45 +399,45 @@ start_chess_engine (GAME g)
   if (d->engine && d->engine->status != ENGINE_OFFLINE)
     return -1;
 
-  args = parseargs (config.engine_cmd);
+  args = parseargs(config.engine_cmd);
 
   if (!d->engine)
-    d->engine = Calloc (1, sizeof (struct engine_s));
+    d->engine = Calloc(1, sizeof(struct engine_s));
 
   d->engine->status = ENGINE_INITIALIZING;
-  update_status_window (g);
-  cboard_ui_refresh ();
+  update_status_window(g);
+  cboard_ui_refresh();
 
-  switch (exec_chess_engine (g, args))
-    {
-    case -1:
-      /* Pty allocation. */
-      message (ERROR_STR, ANY_KEY_STR, "Could not allocate PTY");
-      d->engine->status = ENGINE_OFFLINE;
-      break;
-    case -2:
-      /* Could not execute engine. */
-      message (ERROR_STR, ANY_KEY_STR, "%s: %s", args[0], strerror (errno));
-      d->engine->status = ENGINE_OFFLINE;
-      break;
-    default:
-      ret = 0;
-      d->engine->status = ENGINE_READY;
-      set_engine_defaults (g, config.einit);
-      break;
-    }
+  switch (exec_chess_engine(g, args))
+  {
+  case -1:
+    /* Pty allocation. */
+    message(ERROR_STR, ANY_KEY_STR, "Could not allocate PTY");
+    d->engine->status = ENGINE_OFFLINE;
+    break;
+  case -2:
+    /* Could not execute engine. */
+    message(ERROR_STR, ANY_KEY_STR, "%s: %s", args[0], strerror(errno));
+    d->engine->status = ENGINE_OFFLINE;
+    break;
+  default:
+    ret = 0;
+    d->engine->status = ENGINE_READY;
+    set_engine_defaults(g, config.einit);
+    break;
+  }
 
   for (i = 0; args[i]; i++)
-    free (args[i]);
+    free(args[i]);
 
-  free (args);
+  free(args);
   return ret;
 }
 
 static void
-parse_xboard_line (GAME g, char *str)
+parse_xboard_line(GAME g, char *str)
 {
-  char m[MAX_SAN_MOVE_LEN + 1] = { 0 }, *p = m;
+  char m[MAX_SAN_MOVE_LEN + 1] = {0}, *p = m;
   struct userdata_s *d = g->data;
   int n;
   char *frfr;
@@ -454,7 +446,7 @@ parse_xboard_line (GAME g, char *str)
   p = str;
 
   // 1. a2a4 (gnuchess)
-  while (isdigit (*p))
+  while (isdigit(*p))
     p++;
 
   // gnuchess echos our input move so we don't need the duplicate (above).
@@ -463,147 +455,143 @@ parse_xboard_line (GAME g, char *str)
 
   // 1. ... a2a4 (gnuchess/engine move)
   if (*p == '.' && *(p + 1) == ' ' && *(p + 2) == '.')
-    {
-      while (*p == ' ' || *p == '.')
-	p++;
-    }
+  {
+    while (*p == ' ' || *p == '.')
+      p++;
+  }
 
-  if (strncmp (str, "move ", 5) == 0)
+  if (strncmp(str, "move ", 5) == 0)
     p = str + 5;
 
-  if (strlen (p) > MAX_SAN_MOVE_LEN)
+  if (strlen(p) > MAX_SAN_MOVE_LEN)
     return;
 
   // We should now have the real move which may be in SAN or frfr format.
-  if (sscanf (p, "%[0-9a-hprnqkxPRNBQKO+=#-]%n", m, &count) == 1)
-    {
-      char *buf = NULL;
+  if (sscanf(p, "%[0-9a-hprnqkxPRNBQKO+=#-]%n", m, &count) == 1)
+  {
+    char *buf = NULL;
 
-      /*
+    /*
        * For engine commands (the '|' key). Don't try and validate them.
        */
-      if (count != strlen (p))
-	return;
+    if (count != strlen(p))
+      return;
 
-      if (TEST_FLAG (g->flags, GF_GAMEOVER))
-	{
-	  gameover (g);
-	  return;
-	}
+    if (TEST_FLAG(g->flags, GF_GAMEOVER))
+    {
+      gameover(g);
+      return;
+    }
 
-      if (strlen (m) < 2)
-	RETURN (d);
+    if (strlen(m) < 2)
+      RETURN(d);
 
-      p = m + strlen (m) - 1;
+    p = m + strlen(m) - 1;
 
-      // Test SAN or a2a4 format.
-      if (!isdigit (*p) && *p != 'O' && *p != '+' && *p != '#'
-	  && ((*(p - 1) != '=' || !isdigit (*(p - 1)))
-	      && pgn_piece_to_int (*p) == -1))
-	return;
+    // Test SAN or a2a4 format.
+    if (!isdigit(*p) && *p != 'O' && *p != '+' && *p != '#' && ((*(p - 1) != '=' || !isdigit(*(p - 1))) && pgn_piece_to_int(*p) == -1))
+      return;
 
-      buf = strdup (m);
-      if ((n = pgn_parse_move (g, d->b, &buf, &frfr)) != E_PGN_OK)
-	{
-	  invalid_move (d->n + 1, n, m);
-	  RETURN (d);
-	}
+    buf = strdup(m);
+    if ((n = pgn_parse_move(g, d->b, &buf, &frfr)) != E_PGN_OK)
+    {
+      invalid_move(d->n + 1, n, m);
+      RETURN(d);
+    }
 
-      strcpy (d->pm_frfr, frfr);
+    strcpy(d->pm_frfr, frfr);
 
-      free (frfr);
-      pgn_history_add (g, d->b, buf);
-      SET_FLAG (d->flags, CF_MODIFIED);
-      pgn_switch_turn (g);
+    free(frfr);
+    pgn_history_add(g, d->b, buf);
+    SET_FLAG(d->flags, CF_MODIFIED);
+    pgn_switch_turn(g);
 
-      if (TEST_FLAG (d->flags, CF_ENGINE_LOOP))
-	{
-          free (buf);
-	  update_cursor (g, g->hindex);
+    if (TEST_FLAG(d->flags, CF_ENGINE_LOOP))
+    {
+      free(buf);
+      update_cursor(g, g->hindex);
 
-	  if (TEST_FLAG (g->flags, GF_GAMEOVER))
-	    {
-	      gameover (g);
-	      return;
-	    }
+      if (TEST_FLAG(g->flags, GF_GAMEOVER))
+      {
+        gameover(g);
+        return;
+      }
 
-	  add_engine_command (g, ENGINE_THINKING, "go\n");
-	  return;
-	}
+      add_engine_command(g, ENGINE_THINKING, "go\n");
+      return;
+    }
 
-      if (TEST_FLAG (gp->flags, GF_GAMEOVER))
-	{
-          free (buf);
-	  gameover (g);
-	  return;
-	}
+    if (TEST_FLAG(gp->flags, GF_GAMEOVER))
+    {
+      free(buf);
+      gameover(g);
+      return;
+    }
 
-      if (g->side == g->turn)
+    if (g->side == g->turn)
+    {
+      if (config.turn_cmd)
+      {
+        char *cmd = string_replace(config.turn_cmd, "%m", buf);
+
+        switch (fork())
         {
-          if (config.turn_cmd)
-            {
-              char *cmd = string_replace (config.turn_cmd, "%m", buf);
-
-              switch (fork ())
-                {
-                case 0:
-                  if (system (cmd) == -1)
-                    _exit (127);
-                  _exit (0);
-                case -1:
-                  break;
-                default:
-                  break;
-                }
-
-              free (cmd);
-            }
-
-          free (buf);
-          RETURN (d);
+        case 0:
+          if (system(cmd) == -1)
+            _exit(127);
+          _exit(0);
+        case -1:
+          break;
+        default:
+          break;
         }
 
-      free (buf);
-      d->engine->status = ENGINE_THINKING;
+        free(cmd);
+      }
+
+      free(buf);
+      RETURN(d);
     }
+
+    free(buf);
+    d->engine->status = ENGINE_THINKING;
+  }
 
   return;
 }
 
-void
-parse_engine_output (GAME g, char *str)
+void parse_engine_output(GAME g, char *str)
 {
   char buf[255], *p = buf;
 
   while (*str)
+  {
+    if (*str == '\n' || *str == '\r')
     {
-      if (*str == '\n' || *str == '\r')
-	{
-	  *p = '\0';
+      *p = '\0';
 
-	  if (*buf)
-	    {
-	      append_enginebuf (g, buf);
-	      parse_xboard_line (g, buf);
-	    }
+      if (*buf)
+      {
+        append_enginebuf(g, buf);
+        parse_xboard_line(g, buf);
+      }
 
-	  str++;
+      str++;
 
-	  if (*str == '\n')
-	    str++;
+      if (*str == '\n')
+        str++;
 
-	  p = buf;
-	  continue;
-	}
-
-      *p++ = *str++;
+      p = buf;
+      continue;
     }
 
-  update_all (gp);
+    *p++ = *str++;
+  }
+
+  update_all(gp);
 }
 
-void
-send_engine_command (GAME g)
+void send_engine_command(GAME g)
 {
   struct userdata_s *d = g->data;
   struct queue_s **q;
@@ -614,32 +602,31 @@ send_engine_command (GAME g)
 
   q = d->engine->queue;
 
-  if (send_to_engine (g, q[0]->status, "%s", q[0]->line))
+  if (send_to_engine(g, q[0]->status, "%s", q[0]->line))
     return;
 
-  free (q[0]->line);
-  free (q[0]);
+  free(q[0]->line);
+  free(q[0]);
 
   for (i = 0; q[i]; i++)
+  {
+    if (q[i + 1])
+      q[i] = q[i + 1];
+    else
     {
-      if (q[i + 1])
-	q[i] = q[i + 1];
-      else
-	{
-	  q[i] = NULL;
-	  break;
-	}
+      q[i] = NULL;
+      break;
     }
+  }
 
   if (!q[0])
-    {
-      free (d->engine->queue);
-      d->engine->queue = NULL;
-    }
+  {
+    free(d->engine->queue);
+    d->engine->queue = NULL;
+  }
 }
 
-void
-add_engine_command (GAME g, int s, const char *fmt, ...)
+void add_engine_command(GAME g, int s, const char *fmt, ...)
 {
   va_list ap;
   int i = 0;
@@ -648,10 +635,10 @@ add_engine_command (GAME g, int s, const char *fmt, ...)
   char *line;
 
   if (!d->engine || d->engine->status == ENGINE_OFFLINE)
-    {
-      if (init_chess_engine (g))
-	return;
-    }
+  {
+    if (init_chess_engine(g))
+      return;
+  }
 
   if (!d->engine)
     return;
@@ -659,21 +646,22 @@ add_engine_command (GAME g, int s, const char *fmt, ...)
   q = d->engine->queue;
 
   if (q)
-    for (i = 0; q[i]; i++);
+    for (i = 0; q[i]; i++)
+      ;
 
-  q = Realloc (q, (i + 2) * sizeof (struct queue_s *));
-  va_start (ap, fmt);
+  q = Realloc(q, (i + 2) * sizeof(struct queue_s *));
+  va_start(ap, fmt);
 #ifdef HAVE_VASPRINTF
-  if (vasprintf (&line, fmt, ap) < 0)
+  if (vasprintf(&line, fmt, ap) < 0)
     line = NULL;
 #else
-  line = Malloc (LINE_MAX + 1);
-  vsnprintf (line, LINE_MAX, fmt, ap);
+  line = Malloc(LINE_MAX + 1);
+  vsnprintf(line, LINE_MAX, fmt, ap);
 #endif
-  va_end (ap);
+  va_end(ap);
   if (!line)
-    err (EXIT_FAILURE, "vasprintf");
-  q[i] = Malloc (sizeof (struct queue_s));
+    err(EXIT_FAILURE, "vasprintf");
+  q[i] = Malloc(sizeof(struct queue_s));
   q[i]->line = line;
   q[i++]->status = (s == -1) ? d->engine->status : s;
   q[i] = NULL;

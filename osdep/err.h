@@ -17,42 +17,42 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#ifndef	_ERR_H
-#define	_ERR_H	1
+#ifndef _ERR_H
+#define _ERR_H 1
 
 //#include <features.h>
 
-#define	__need___va_list
+#define __need___va_list
 #include <stdarg.h>
-#ifndef	__GNUC_VA_LIST
-# define __gnuc_va_list	__ptr_t
+#ifndef __GNUC_VA_LIST
+#define __gnuc_va_list __ptr_t
 #endif
 
 //__BEGIN_DECLS
 
 /* Print "program: ", FORMAT, ": ", the standard error string for errno,
    and a newline, on stderr.  */
-extern void warn (__const char *__format, ...)
-     __attribute__ ((__format__ (__printf__, 1, 2)));
-extern void vwarn (__const char *__format, __gnuc_va_list)
-     __attribute__ ((__format__ (__printf__, 1, 0)));
+extern void warn(__const char *__format, ...)
+    __attribute__((__format__(__printf__, 1, 2)));
+extern void vwarn(__const char *__format, __gnuc_va_list)
+    __attribute__((__format__(__printf__, 1, 0)));
 
 /* Likewise, but without ": " and the standard error string.  */
-extern void warnx (__const char *__format, ...)
-     __attribute__ ((__format__ (__printf__, 1, 2)));
-extern void vwarnx (__const char *__format, __gnuc_va_list)
-     __attribute__ ((__format__ (__printf__, 1, 0)));
+extern void warnx(__const char *__format, ...)
+    __attribute__((__format__(__printf__, 1, 2)));
+extern void vwarnx(__const char *__format, __gnuc_va_list)
+    __attribute__((__format__(__printf__, 1, 0)));
 
 /* Likewise, and then exit with STATUS.  */
-extern void err (int __status, __const char *__format, ...)
-     __attribute__ ((__noreturn__, __format__ (__printf__, 2, 3)));
-extern void verr (int __status, __const char *__format, __gnuc_va_list)
-     __attribute__ ((__noreturn__, __format__ (__printf__, 2, 0)));
-extern void errx (int __status, __const char *__format, ...)
-     __attribute__ ((__noreturn__, __format__ (__printf__, 2, 3)));
-extern void verrx (int __status, __const char *, __gnuc_va_list)
-     __attribute__ ((__noreturn__, __format__ (__printf__, 2, 0)));
+extern void err(int __status, __const char *__format, ...)
+    __attribute__((__noreturn__, __format__(__printf__, 2, 3)));
+extern void verr(int __status, __const char *__format, __gnuc_va_list)
+    __attribute__((__noreturn__, __format__(__printf__, 2, 0)));
+extern void errx(int __status, __const char *__format, ...)
+    __attribute__((__noreturn__, __format__(__printf__, 2, 3)));
+extern void verrx(int __status, __const char *, __gnuc_va_list)
+    __attribute__((__noreturn__, __format__(__printf__, 2, 0)));
 
 //__END_DECLS
 
-#endif	/* err.h */
+#endif /* err.h */

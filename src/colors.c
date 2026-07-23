@@ -33,7 +33,7 @@
  * Resolves the result via VDK's pair matrix (same as CP_* macros).
  */
 chtype
-mix_cp (chtype a, chtype b, attr_t attrs, int which)
+mix_cp(chtype a, chtype b, attr_t attrs, int which)
 {
   short afg, abg;
   short bfg, bbg;
@@ -42,48 +42,47 @@ mix_cp (chtype a, chtype b, attr_t attrs, int which)
   if (!COLORS)
     return attrs;
 
-  pair_content (PAIR_NUMBER (a), &afg, &abg);
-  pair_content (PAIR_NUMBER (b), &bfg, &bbg);
+  pair_content(PAIR_NUMBER(a), &afg, &abg);
+  pair_content(PAIR_NUMBER(b), &bfg, &bbg);
 
   switch (which)
-    {
-    case A_FG_B_BG:
-      fg = afg;
-      bg = bbg;
-      break;
-    case A_FG_B_FG:
-      fg = afg;
-      bg = bfg;
-      break;
-    case A_BG_B_BG:
-      fg = abg;
-      bg = bbg;
-      break;
-    case B_FG_A_BG:
-      fg = bfg;
-      bg = abg;
-      break;
-    case B_BG_B_FG:
-      fg = bbg;
-      bg = bfg;
-      break;
-    case A_BG_A_FG:
-      fg = abg;
-      bg = afg;
-      break;
-    case B_BG_A_FG:
-      fg = bbg;
-      bg = afg;
-      break;
-    default:
-      return 0;
-    }
+  {
+  case A_FG_B_BG:
+    fg = afg;
+    bg = bbg;
+    break;
+  case A_FG_B_FG:
+    fg = afg;
+    bg = bfg;
+    break;
+  case A_BG_B_BG:
+    fg = abg;
+    bg = bbg;
+    break;
+  case B_FG_A_BG:
+    fg = bfg;
+    bg = abg;
+    break;
+  case B_BG_B_FG:
+    fg = bbg;
+    bg = bfg;
+    break;
+  case A_BG_A_FG:
+    fg = abg;
+    bg = afg;
+    break;
+  case B_BG_A_FG:
+    fg = bbg;
+    bg = afg;
+    break;
+  default:
+    return 0;
+  }
 
-  return COLOR_PAIR (vdk_color_pair (fg, bg)) | attrs;
+  return COLOR_PAIR(vdk_color_pair(fg, bg)) | attrs;
 }
 
-void
-set_default_colors ()
+void set_default_colors()
 {
   config.color[CONF_BDWINDOW].fg = COLOR_WHITE;
   config.color[CONF_BDWINDOW].bg = COLOR_BLACK;
