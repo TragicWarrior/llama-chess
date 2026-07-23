@@ -57,8 +57,33 @@ struct vdk_input_s
 {
   struct input_s base;		/* must be first — win->data cast to input_s */
   vk_input_t *field;
+  vk_box_t *vbox;		/* field + help labels under the window frame */
   int (*char_ok) (int c);
 };
+
+/*
+ * Paint field/labels into the box, then the box into the window.
+ * Order matters: update leaf widgets first, then composite upward.
+ */
+static void
+input_composite (WIN * win)
+{
+  struct vdk_input_s *vin;
+
+  if (!win || !win->vk)
+    return;
+
+  vin = win->data;
+  if (vin)
+    {
+      if (vin->field)
+	vk_input_update (vin->field);
+      if (vin->vbox)
+	vk_box_update (vin->vbox);
+    }
+  vk_window_update (VK_WINDOW (win->vk));
+  cboard_ui_refresh ();
+}
 
 static void
 add_input_history (int which, const char *str)
@@ -197,12 +222,7 @@ get_input_vdk (WIN * win)
   if (in->func && in->c && win->c == in->c)
     {
       (*in->func) (in);
-      if (vin->field)
-	{
-	  vk_input_update (vin->field);
-	  vk_window_update (VK_WINDOW (win->vk));
-	  cboard_ui_refresh ();
-	}
+      input_composite (win);
       return 1;
     }
 
@@ -302,25 +322,24 @@ get_input_vdk (WIN * win)
       break;
     }
 
-  vk_input_update (vin->field);
-  if (win->vk)
-    vk_window_update (VK_WINDOW (win->vk));
-  cboard_ui_refresh ();
+  input_composite (win);
   return 1;
 }
 
 static void
 input_resize_func (WIN * w)
 {
+  struct vdk_input_s *vin = w->data;
+
   w->posy = CALCPOSY (w->rows);
   w->posx = CALCPOSX (w->cols);
   if (w->vk)
     {
       w->w = cboard_ui_widget_resize (w->vk, w->rows, w->cols);
       cboard_ui_widget_move (w->vk, w->posy, w->posx);
-      if (w->vk_kind == WIN_VK_WINDOW)
-	vk_window_update (VK_WINDOW (w->vk));
-      cboard_ui_refresh ();
+      if (vin && vin->vbox)
+	vk_widget_resize (VK_WIDGET (vin->vbox), w->cols - 2, w->rows - 2);
+      input_composite (w);
     }
 }
 
@@ -346,6 +365,8 @@ input_set_buf (struct input_s *in, const char *text)
     {
       vk_input_set_text (vin->field, in->buf);
       vk_input_update (vin->field);
+      if (vin->vbox)
+	vk_box_update (vin->vbox);
     }
 }
 
@@ -506,6 +527,7 @@ construct_input (const char *title, const char *init, int lines, int reset,
       vk_widget_set_colors (VK_WIDGET (vbox),
 			    config.color[CONF_IWINDOW].fg,
 			    config.color[CONF_IWINDOW].bg);
+      vk_widget_set_expand (VK_WIDGET (vbox));
       vk_box_set_widget (vbox, 0, VK_WIDGET (field));
       for (si = 0; si < eh; si++)
 	{
@@ -520,7 +542,6 @@ construct_input (const char *title, const char *init, int lines, int reset,
 	  vk_box_set_widget (vbox, si + 1, VK_WIDGET (lab));
 	}
       vk_window_set_child (vkw, VK_WIDGET (vbox));
-      vk_box_update (vbox);
     }
   else
     {
@@ -531,6 +552,7 @@ construct_input (const char *title, const char *init, int lines, int reset,
       vk_widget_set_colors (VK_WIDGET (vbox),
 			    config.color[CONF_IWINDOW].fg,
 			    config.color[CONF_IWINDOW].bg);
+      vk_widget_set_expand (VK_WIDGET (vbox));
       vk_box_set_widget (vbox, 0, VK_WIDGET (field));
       snprintf (helpbuf, sizeof (helpbuf), _("Type %ls for help"),
 		key_lookup (global_keys, do_global_help));
@@ -541,11 +563,8 @@ construct_input (const char *title, const char *init, int lines, int reset,
       vk_label_update (lab);
       vk_box_set_widget (vbox, 1, VK_WIDGET (lab));
       vk_window_set_child (vkw, VK_WIDGET (vbox));
-      vk_box_update (vbox);
     }
-
-  vk_input_update (field);
-  vk_window_update (vkw);
+  vin->vbox = vbox;
 
   cboard_ui_widget_attach ((cboard_widget_t *) vkw, y, x);
   cboard_ui_widget_raise ((cboard_widget_t *) vkw);
@@ -556,6 +575,7 @@ construct_input (const char *title, const char *init, int lines, int reset,
   if (win->w)
     keypad (win->w, TRUE);
   curs_set (1);
-  cboard_ui_refresh ();
+  /* Leaves first, then box, then window — see input_composite(). */
+  input_composite (win);
   return win;
 }
