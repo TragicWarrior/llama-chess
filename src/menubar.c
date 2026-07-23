@@ -370,13 +370,10 @@ cboard_menubar_init (void)
     return;
 
   menubar = vk_menubar_create (width);
-  vk_widget_set_colors (VK_WIDGET (menubar),
-			config.color[CONF_MENU].fg,
-			config.color[CONF_MENU].bg);
-  vk_widget_set_attrs (VK_WIDGET (menubar), config.color[CONF_MENU].attrs);
-  vk_menubar_set_highlight (menubar,
-			    config.color[CONF_MENUH].fg,
-			    config.color[CONF_MENUH].bg);
+  /* Bar itself: classic black on light gray/white (not the cyan menus). */
+  vk_widget_set_colors (VK_WIDGET (menubar), COLOR_BLACK, COLOR_WHITE);
+  vk_widget_set_attrs (VK_WIDGET (menubar), A_NORMAL);
+  vk_menubar_set_highlight (menubar, COLOR_WHITE, COLOR_BLUE);
 
   for (i = 0; i < MB_COUNT; i++)
     vk_menubar_add_item (menubar, (char *) _(menu_titles[i]),
