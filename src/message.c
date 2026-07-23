@@ -401,59 +401,60 @@ message_resize_func(WIN *w)
  * than one line or not (help text vs. tag viewing).
  */
 /*
- * VWM-style error dialog: red text on white, single OK, centered body.
- * Layout mirrors vwm_error_popup_show: vertical client box with fillers
- * so the message is centered and the whole surface is filled white
- * (no black dead space).
+ * Short dismissible notice popup (VWM layout: fillers + centered label + OK).
+ * is_error: red-on-white (VWM error).  Otherwise menu colors (standard).
  */
-struct error_s
+struct notice_s
 {
     vk_popup_t *popup;
     vk_box_t *client;
     vk_label_t *label;
+    short fg;
+    short bg;
+    int is_error;
 };
 
 static void
-error_style(struct error_s *e)
+notice_style(struct notice_s *n)
 {
-    short fg = COLOR_RED;
-    short bg = COLOR_WHITE;
-    short pair;
+    short fg, bg, pair;
     vk_button_t *ok;
     vk_box_t *bar;
 
-    if (!e || !e->popup)
+    if (!n || !n->popup)
         return;
 
+    fg = n->fg;
+    bg = n->bg;
     pair = vdk_color_pair(fg, bg);
 
-    vk_popup_set_colors(e->popup, fg, bg);
-    vk_popup_set_border_colors(e->popup, fg, bg);
-    vk_popup_set_border_attrs(e->popup, A_NORMAL);
-    vk_widget_set_colors(VK_WIDGET(e->popup), fg, bg);
+    vk_popup_set_colors(n->popup, fg, bg);
+    vk_popup_set_border_colors(n->popup, fg, bg);
+    vk_popup_set_border_attrs(n->popup, A_NORMAL);
+    vk_widget_set_colors(VK_WIDGET(n->popup), fg, bg);
 
-    if (e->client)
+    if (n->client)
     {
-        vk_widget_set_colors(VK_WIDGET(e->client), fg, bg);
-        vk_widget_fill(VK_WIDGET(e->client), ' ' | COLOR_PAIR(pair));
-        vk_box_update(e->client);
+        vk_widget_set_colors(VK_WIDGET(n->client), fg, bg);
+        vk_widget_fill(VK_WIDGET(n->client), ' ' | COLOR_PAIR(pair));
+        vk_box_update(n->client);
     }
 
     /* Label after box layout so width matches the slot for center justify. */
-    if (e->label)
+    if (n->label)
     {
         int lw = 0, lh = 0;
 
-        vk_widget_set_colors(VK_WIDGET(e->label), fg, bg);
-        vk_widget_get_metrics(VK_WIDGET(e->label), &lw, &lh);
-        if (lw < 1 && e->client)
-            vk_widget_get_metrics(VK_WIDGET(e->client), &lw, NULL);
+        vk_widget_set_colors(VK_WIDGET(n->label), fg, bg);
+        vk_widget_get_metrics(VK_WIDGET(n->label), &lw, &lh);
+        if (lw < 1 && n->client)
+            vk_widget_get_metrics(VK_WIDGET(n->client), &lw, NULL);
         if (lw > 0)
-            vk_widget_resize(VK_WIDGET(e->label), lw, lh > 0 ? lh : 1);
-        vk_label_update(e->label);
+            vk_widget_resize(VK_WIDGET(n->label), lw, lh > 0 ? lh : 1);
+        vk_label_update(n->label);
     }
 
-    bar = vk_popup_get_button_bar(e->popup);
+    bar = vk_popup_get_button_bar(n->popup);
     if (bar)
     {
         vk_widget_set_colors(VK_WIDGET(bar), fg, bg);
@@ -461,41 +462,42 @@ error_style(struct error_s *e)
         vk_box_update(bar);
     }
 
-    ok = vk_popup_get_button(e->popup, 0);
+    ok = vk_popup_get_button(n->popup, 0);
     if (ok)
     {
+        /* Yellow OK stands out on white (error) and on cyan (notice). */
         vk_widget_set_colors(VK_WIDGET(ok), COLOR_YELLOW, bg);
         vk_widget_set_attrs(VK_WIDGET(ok), A_BOLD);
         vk_button_update(ok);
     }
 
-    vk_popup_update(e->popup);
+    vk_popup_update(n->popup);
 }
 
 static void
-error_free(WIN *w)
+notice_free(WIN *w)
 {
-    struct error_s *e = w->data;
+    struct notice_s *n = w->data;
 
-    if (e)
+    if (n)
     {
-        e->popup = NULL;
-        e->client = NULL;
-        e->label = NULL;
-        free(e);
+        n->popup = NULL;
+        n->client = NULL;
+        n->label = NULL;
+        free(n);
     }
     w->data = NULL;
 }
 
 static int
-display_error(WIN *win)
+display_notice(WIN *win)
 {
     if (win->c == KEY_RESIZE)
         return 1;
 
     if (win->c != 0)
     {
-        error_free(win);
+        notice_free(win);
         return 0;
     }
     return 1;
@@ -503,7 +505,7 @@ display_error(WIN *win)
 
 /* One line for the label: collapse newlines, trim. */
 static char *
-error_flatten_body(const char *body)
+notice_flatten_body(const char *body, const char *fallback)
 {
     char *out;
     char *p;
@@ -511,7 +513,7 @@ error_flatten_body(const char *body)
     size_t n;
 
     if (!body || !body[0])
-        return strdup(_("Unknown error"));
+        return strdup(fallback ? fallback : "");
 
     n = strlen(body);
     out = Malloc(n + 1);
@@ -527,34 +529,35 @@ error_flatten_body(const char *body)
         *p++ = *s;
     }
     *p = '\0';
-    /* trim trailing spaces */
     while (p > out && p[-1] == ' ')
         *--p = '\0';
     return out;
 }
 
 static WIN *
-construct_error_popup(const char *body, window_exit_func *efunc)
+construct_notice_popup(const char *body, const char *title,
+                       int is_error, window_exit_func *efunc)
 {
     WIN *win;
     vk_popup_t *popup;
     vk_box_t *client;
     vk_label_t *lab;
     vk_filler_t *top_pad, *bot_pad;
-    struct error_s *e;
+    struct notice_s *n;
     int w, h, y, x;
     int client_w, client_h;
     char *text;
-    short pair;
+    char titlebuf[128];
+    short fg, bg, pair;
 
-    text = error_flatten_body(body);
+    text = notice_flatten_body(body,
+                               is_error ? _("Unknown error") : _("Notice"));
 
     w = (int) strlen(text) + 10;
     if (w < 40)
         w = 40;
     if (w > COLS - 4)
         w = COLS - 4;
-    /* Same floor as VWM: client needs >= 3 rows (filler/label/filler). */
     h = 8;
     if (h > LINES - 2)
         h = LINES - 2;
@@ -562,9 +565,21 @@ construct_error_popup(const char *body, window_exit_func *efunc)
     y = CALCPOSY(h);
     x = CALCPOSX(w);
     client_w = w - 2;
-    client_h = h - 5; /* title/border strip + button bar */
+    client_h = h - 5;
     if (client_h < 3)
         client_h = 3;
+
+    if (is_error)
+    {
+        fg = COLOR_RED;
+        bg = COLOR_WHITE;
+    }
+    else
+    {
+        /* Standard app chrome (same as menus / confirm). */
+        fg = config.color[CONF_MENU].fg;
+        bg = config.color[CONF_MENU].bg;
+    }
 
     popup = vk_popup_create(w, h, VK_BORDER_SINGLE, _("OK"), NULL);
     if (!popup)
@@ -573,29 +588,31 @@ construct_error_popup(const char *body, window_exit_func *efunc)
         return NULL;
     }
 
-    vk_popup_set_title(popup, " Error ");
+    if (title && title[0])
+    {
+        snprintf(titlebuf, sizeof(titlebuf), " %s ", title);
+        vk_popup_set_title(popup, titlebuf);
+    }
+    else
+        vk_popup_set_title(popup, is_error ? " Error " : " Notice ");
 
-    /*
-     * Homogeneous vertical box: top pad / message / bottom pad.
-     * Fills the client so no black dead zone remains (vwm_error_popup_show).
-     */
     client = vk_box_create(client_w, client_h, VK_BOX_VERTICAL, 3);
     vk_box_set_homogeneous(client, true);
-    vk_widget_set_colors(VK_WIDGET(client), COLOR_RED, COLOR_WHITE);
+    vk_widget_set_colors(VK_WIDGET(client), fg, bg);
 
     top_pad = vk_filler_create();
-    vk_widget_set_colors(VK_WIDGET(top_pad), COLOR_RED, COLOR_WHITE);
+    vk_widget_set_colors(VK_WIDGET(top_pad), fg, bg);
     vk_box_set_widget(client, 0, VK_WIDGET(top_pad));
 
     lab = vk_label_create(client_w);
     vk_label_set_justify(lab, VK_JUSTIFY_CENTER);
     vk_label_set_text(lab, text);
-    vk_widget_set_colors(VK_WIDGET(lab), COLOR_RED, COLOR_WHITE);
+    vk_widget_set_colors(VK_WIDGET(lab), fg, bg);
     vk_label_update(lab);
     vk_box_set_widget(client, 1, VK_WIDGET(lab));
 
     bot_pad = vk_filler_create();
-    vk_widget_set_colors(VK_WIDGET(bot_pad), COLOR_RED, COLOR_WHITE);
+    vk_widget_set_colors(VK_WIDGET(bot_pad), fg, bg);
     vk_box_set_widget(client, 2, VK_WIDGET(bot_pad));
 
     vk_popup_set_client(popup, VK_WIDGET(client));
@@ -605,13 +622,16 @@ construct_error_popup(const char *body, window_exit_func *efunc)
         vk_widget_set_state(VK_WIDGET(client), st & ~VK_STATE_EXPAND);
     }
 
-    e = Calloc(1, sizeof(struct error_s));
-    e->popup = popup;
-    e->client = client;
-    e->label = lab;
-    error_style(e);
+    n = Calloc(1, sizeof(struct notice_s));
+    n->popup = popup;
+    n->client = client;
+    n->label = lab;
+    n->fg = fg;
+    n->bg = bg;
+    n->is_error = is_error;
+    notice_style(n);
 
-    pair = vdk_color_pair(COLOR_RED, COLOR_WHITE);
+    pair = vdk_color_pair(fg, bg);
     vk_widget_fill(VK_WIDGET(client), ' ' | COLOR_PAIR(pair));
     vk_box_update(client);
     vk_popup_update(popup);
@@ -620,9 +640,9 @@ construct_error_popup(const char *body, window_exit_func *efunc)
     cboard_ui_widget_raise((cboard_widget_t *) popup);
     vk_popup_update(popup);
 
-    win = window_adopt(_("Error"), (void *) popup, WIN_VK_POPUP, h, w, y, x,
-                       display_error, e, efunc, NULL);
-    /* MESSAGE app_kind: mouse sink + click-to-dismiss via mouse_modal_message. */
+    win = window_adopt(is_error ? _("Error") : _("Notice"),
+                       (void *) popup, WIN_VK_POPUP, h, w, y, x,
+                       display_notice, n, efunc, NULL);
     win->app_kind = WIN_APP_MESSAGE;
 
     free(text);
@@ -653,27 +673,44 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     va_end(ap);
 
     /*
-     * Error dialogs: VWM red-on-white OK popup.  Message lines only —
-     * no "press any key" prompt (OK button covers that).
+     * Short dismissible notices use a centered OK popup (no "press any key"
+     * line).  ERROR_STR → red-on-white; other any-key messages → menu chrome
+     * (e.g. "not your turn").  Long help text still uses the textbox window.
      */
-    if (title && strcmp(title, ERROR_STR) == 0)
     {
-        char *err_body = lines_to_body(lines, NULL, NULL);
+        int is_error = (title && strcmp(title, ERROR_STR) == 0);
+        int short_notice = (extra_help == NULL && func == NULL
+                            && prompt != NULL
+                            && (strcmp(prompt, ANY_KEY_STR) == 0
+                                || strcmp(prompt, ANY_KEY_SCROLL_STR) == 0));
 
-        for (i = 0; lines && lines[i]; i++)
-            free(lines[i]);
-        free(lines);
-        win = construct_error_popup(err_body, efunc);
-        free(err_body);
-        (void) center;
-        (void) func;
-        (void) arg;
-        (void) ckey;
-        (void) freedata;
-        (void) rfunc;
-        (void) prompt;
-        (void) extra_help;
-        return win;
+        if (is_error || short_notice)
+        {
+            char *body = lines_to_body(lines, NULL, NULL);
+            int nlines = 0;
+
+            for (i = 0; lines && lines[i]; i++)
+                nlines++;
+
+            /* Keep multi-line help-ish content on the scrollable window. */
+            if (is_error || nlines <= 3)
+            {
+                const char *ttl = is_error ? NULL : title;
+
+                for (i = 0; lines && lines[i]; i++)
+                    free(lines[i]);
+                free(lines);
+                win = construct_notice_popup(body, ttl, is_error, efunc);
+                free(body);
+                (void) center;
+                (void) arg;
+                (void) ckey;
+                (void) freedata;
+                (void) rfunc;
+                return win;
+            }
+            free(body);
+        }
     }
 
     m = Calloc(1, sizeof(struct message_s));
