@@ -1282,6 +1282,7 @@ board_paint_cell_border(vk_table_t *table, WINDOW *cv, int gcol, int grow,
 /* Border highlight colours (never recolour square fills). */
 #define BOARD_VALID_MOVE_FG COLOR_MAGENTA /* legal destinations */
 #define BOARD_SELECTED_FG COLOR_YELLOW    /* selected piece origin */
+#define BOARD_CURSOR_FG COLOR_YELLOW      /* focus; bold → bright yellow */
 
 
 static int
@@ -1542,10 +1543,10 @@ void update_board_window(GAME g)
         }
     }
 
-    /* Cursor last so green wins over purple/yellow on the focused cell. */
+    /* Cursor last so bright yellow wins over purple on the focused cell. */
     if (focus_col >= 0 && focus_row >= 0)
         board_paint_cell_border(board_table, cv, focus_col, focus_row,
-                                config.color[CONF_BCURSOR].bg);
+                                BOARD_CURSOR_FG);
 
     /* Composite inset table onto host, then coords in the gutters. */
     vk_widget_draw(VK_WIDGET(board_table));

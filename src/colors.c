@@ -114,8 +114,10 @@ void set_default_colors()
     config.color[CONF_BSELECTED].fg = COLOR_WHITE;
     config.color[CONF_BSELECTED].bg = COLOR_YELLOW;
     config.color[CONF_BSELECTED].nattrs = A_BOLD | A_REVERSE;
-    config.color[CONF_BCURSOR].fg = COLOR_WHITE;
-    config.color[CONF_BCURSOR].bg = COLOR_GREEN;
+    /* Cursor border is bright yellow (see BOARD_CURSOR_FG + A_BOLD). */
+    config.color[CONF_BCURSOR].fg = COLOR_BLACK;
+    config.color[CONF_BCURSOR].bg = COLOR_YELLOW;
+    config.color[CONF_BCURSOR].attrs = A_BOLD;
     config.color[CONF_BCURSOR].nattrs = A_BOLD | A_REVERSE;
     config.color[CONF_SWINDOW].fg = COLOR_WHITE;
     config.color[CONF_SWINDOW].bg = COLOR_BLACK;
