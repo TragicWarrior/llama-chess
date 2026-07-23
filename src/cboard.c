@@ -1279,8 +1279,9 @@ board_paint_cell_border(vk_table_t *table, WINDOW *cv, int gcol, int grow,
     wattr_set(cv, A_NORMAL, 0, NULL);
 }
 
-/* Purple (magenta) border for legal-move targets. */
-#define BOARD_VALID_MOVE_FG COLOR_MAGENTA
+/* Border highlight colours (never recolour square fills). */
+#define BOARD_VALID_MOVE_FG COLOR_MAGENTA /* legal destinations */
+#define BOARD_SELECTED_FG COLOR_YELLOW    /* selected piece origin */
 
 
 static int
@@ -1495,12 +1496,10 @@ void update_board_window(GAME g)
                        || (d->ospm_row == rank && d->ospm_col == file));
 
             /*
-             * Keep normal red/black square colours (no bold on fills).
-             * Valid moves use a purple cell border later, not a recolour.
+             * Square fills stay red/black only — never yellow/orange/etc.
+             * Selection, valid moves, and cursor are table-border highlights.
              */
-            if (is_selected)
-                cell_attrs = CP_BOARD_SELECTED;
-            else if (is_prev)
+            if (is_prev)
                 cell_attrs = CP_BOARD_PREVMOVE;
             else
                 cell_attrs = board_square_fill_attrs(sq_white);
@@ -1510,7 +1509,6 @@ void update_board_window(GAME g)
                 p = pi = 'x';
                 cell_attrs = mix_cp(CP_BOARD_ENPASSANT, cell_attrs,
                                     ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
-                /* mix may re-apply bold; keep fill intensity normal. */
                 cell_attrs &= ~(A_BOLD);
             }
 
@@ -1524,10 +1522,7 @@ void update_board_window(GAME g)
             board_fill_cell(cv, x, y, w, h, cell_attrs);
 
             if (pi != OPEN_SQUARE && p != 'x' && !can_attack)
-            {
-                /* Fg from piece colour; bg from this cell (selected yellow, etc.). */
                 piece_attrs = board_piece_on_cell_attrs(p, cell_attrs);
-            }
             else
                 piece_attrs = cell_attrs;
 
@@ -1538,16 +1533,16 @@ void update_board_window(GAME g)
 
             board_paint_piece(cv, x, y, w, h, p, pi, piece_attrs);
 
-            /* Purple table-border highlight on legal destinations. */
             if (valid)
                 board_paint_cell_border(board_table, cv, gcol, grow,
                                         BOARD_VALID_MOVE_FG);
+            if (is_selected)
+                board_paint_cell_border(board_table, cv, gcol, grow,
+                                        BOARD_SELECTED_FG);
         }
     }
 
-    /*
-     * Cursor last so green border wins over purple on the focused cell.
-     */
+    /* Cursor last so green wins over purple/yellow on the focused cell. */
     if (focus_col >= 0 && focus_row >= 0)
         board_paint_cell_border(board_table, cv, focus_col, focus_row,
                                 config.color[CONF_BCURSOR].bg);
