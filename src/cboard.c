@@ -1575,10 +1575,20 @@ update_time_control (GAME g)
 void
 update_history_window (GAME g)
 {
-  char buf[HISTORY_WIDTH - 1];
+  char buf[256];
   HISTORY *h = NULL;
   int n, total;
   int t = pgn_history_total (g->hp);
+  int maxy, maxx, field_w;
+
+  if (!historyw)
+    return;
+
+  getmaxyx (historyw, maxy, maxx);
+  (void) maxy;
+  field_w = maxx > 14 ? maxx - 12 : maxx;
+  if (field_w < 1)
+    field_w = 1;
 
   n = (g->hindex + 1) / 2;
 
@@ -1594,8 +1604,8 @@ update_history_window (GAME g)
     strncpy (buf, _("not available"), sizeof (buf) - 1);
 
   buf[sizeof (buf) - 1] = 0;
-  mvwprintw (historyw, 2, 1, "%*s %-*s", 10, _("Move:"),
-	     HISTORY_WIDTH - 14, buf);
+  /* Interior of a VDK frame (border/title are the window, not this canvas). */
+  mvwprintw (historyw, 0, 0, "%*s %-*s", 10, _("Move:"), field_w, buf);
 
   h = pgn_history_by_n (g->hp, g->hindex);
   snprintf (buf, sizeof (buf), "%s",
@@ -1624,9 +1634,9 @@ update_history_window (GAME g)
   if (n)
     strncat (buf, ")", sizeof (buf) - 1);
 
-  mvwprintw (historyw, 3, ((LINES < 24) ? 17 : 1), "%s %-*s",
+  mvwprintw (historyw, 1, 0, "%s %-*s",
 	     (LINES < 24) ? _("Next:") : _("Next move:"),
-	     HISTORY_WIDTH - ((LINES < 24) ? 26 : 14), buf);
+	     field_w > 2 ? field_w - 2 : field_w, buf);
 
   h = pgn_history_by_n (g->hp, g->hindex - 1);
   snprintf (buf, sizeof (buf), "%s",
@@ -1655,9 +1665,11 @@ update_history_window (GAME g)
   if (n)
     strncat (buf, ")", sizeof (buf) - 1);
 
-  mvwprintw (historyw, ((LINES < 24) ? 3 : 4), 1, "%s %-*s",
+  mvwprintw (historyw, 2, 0, "%s %-*s",
 	     (LINES < 24) ? _("Prev.:") : _("Prev move:"),
-	     HISTORY_WIDTH - ((LINES < 24) ? 26 : 14), buf);
+	     field_w > 2 ? field_w - 2 : field_w, buf);
+
+  cboard_ui_frame_paint (history_vk);
 }
 
 void
@@ -1825,22 +1837,25 @@ update_status_window (GAME g)
   int y;
   int n;
 
-  if (!curses_initialized)
+  if (!curses_initialized || !statusw)
     return;
 
   getmaxyx (statusw, maxy, maxx);
   (void) maxy;
-  w = maxx - 2 - 8;
-  len = maxx - 2;
+  /* Interior canvas: margin col 0 is optional; field after 7-char label. */
+  w = maxx > 10 ? maxx - 8 : maxx;
+  if (w < 1)
+    w = 1;
+  len = maxx > 2 ? maxx : 2;
   buf = Malloc (len);
-  y = 2;
+  y = 0;
 
   wchar_t *loadfilew = loadfile[0]
     ? str_etc (loadfile, w, 1) : str_to_wchar (_("not available"));
-  mvwprintw (statusw, y++, 1, "%*s %-*ls", 7, _("File:"), w, loadfilew);
+  mvwprintw (statusw, y++, 0, "%*s %-*ls", 7, _("File:"), w, loadfilew);
   free (loadfilew);
   snprintf (buf, len, "%i %s %i", gindex + 1, _("of"), gtotal);
-  mvwprintw (statusw, y++, 1, "%*s %-*s", 7, _("Game:"), w, buf);
+  mvwprintw (statusw, y++, 0, "%*s %-*s", 7, _("Game:"), w, buf);
 
   *tmp = '\0';
   p = tmp;
@@ -1900,7 +1915,7 @@ update_status_window (GAME g)
 #endif
 
   *p = '\0';
-  mvwprintw (statusw, y++, 1, "%*s %-*s", 7, _("Flags:"), w,
+  mvwprintw (statusw, y++, 0, "%*s %-*s", 7, _("Flags:"), w,
 	     (tmp[0]) ? tmp : "-");
 
   switch (d->mode)
@@ -1933,7 +1948,7 @@ update_status_window (GAME g)
     }
 
   buf[len - 1] = 0;
-  mvwprintw (statusw, y++, 1, "%-*s", len, buf);
+  mvwprintw (statusw, y++, 0, "%-*s", len, buf);
   free (buf);
 
   if (d->engine)
@@ -1960,12 +1975,12 @@ update_status_window (GAME g)
   else
     engine = _("offline");
 
-  mvwprintw (statusw, y, 1, "%*s %-*s", 7, _("Engine:"), w, " ");
+  mvwprintw (statusw, y, 0, "%*s %-*s", 7, _("Engine:"), w, " ");
   wattron (statusw, CP_STATUS_ENGINE);
-  mvwaddstr (statusw, y++, 9, engine);
+  mvwaddstr (statusw, y++, 8, engine);
   wattroff (statusw, CP_STATUS_ENGINE);
 
-  mvwprintw (statusw, y++, 1, "%*s %-*s", 7, _("Turn:"), w,
+  mvwprintw (statusw, y++, 0, "%*s %-*s", 7, _("Turn:"), w,
 	     (g->turn == WHITE) ? _("white") : _("black"));
 
   strncpy (tmp, _("white"), sizeof (tmp) - 1);
@@ -1974,7 +1989,7 @@ update_status_window (GAME g)
 	    timeval_to_char (d->wclock.elapsed,
 			     d->wclock.tc[d->wclock.tcn][1]),
 	    time_control_status (&d->wclock));
-  mvwprintw (statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
+  mvwprintw (statusw, y++, 0, "%*s: %-*s", 6, tmp, w, t);
 
   strncpy (tmp, _("black"), sizeof (tmp) - 1);
   tmp[0] = toupper (tmp[0]);
@@ -1982,13 +1997,12 @@ update_status_window (GAME g)
 	    timeval_to_char (d->bclock.elapsed,
 			     d->bclock.tc[d->bclock.tcn][1]),
 	    time_control_status (&d->bclock));
-  mvwprintw (statusw, y++, 1, "%*s: %-*s", 6, tmp, w, t);
+  mvwprintw (statusw, y++, 0, "%*s: %-*s", 6, tmp, w, t);
 
-  mvwprintw (statusw, y++, 1, "%*s %-*s", 7, _("Total:"), w,
+  mvwprintw (statusw, y++, 0, "%*s %-*s", 7, _("Total:"), w,
 	     clock_to_char (d->elapsed.tv_sec));
 
-//      for (i = 0; i < STATUS_WIDTH; i++)
-//      mvwprintw(stdscr, STATUS_HEIGHT, i, " ");
+  cboard_ui_frame_paint (status_vk);
 
   if (!status.notify)
     {
@@ -1999,13 +2013,19 @@ update_status_window (GAME g)
       status.notify = str_to_wchar (tbuf);
     }
 
-  wattron (stdscr, CP_STATUS_NOTIFY);
-  for (i = (config.boardleft) ? BOARD_WIDTH : 0;
-       i < ((config.boardleft) ? COLS : STATUS_WIDTH); i++)
-    mvwprintw (stdscr, STATUS_HEIGHT, i, " ");
-  mvwprintw (stdscr, STATUS_HEIGHT, CENTERX (STATUS_WIDTH, status.notify)
-	     + ((config.boardleft) ? BOARD_WIDTH : 0), "%ls", status.notify);
-  wattroff (stdscr, CP_STATUS_NOTIFY);
+  /* One row under the status frame (menubar + status height). */
+  {
+    int notify_y = UI_TOP + STATUS_HEIGHT;
+
+    wattron (stdscr, CP_STATUS_NOTIFY);
+    for (i = (config.boardleft) ? BOARD_WIDTH : 0;
+	 i < ((config.boardleft) ? COLS : STATUS_WIDTH); i++)
+      mvwprintw (stdscr, notify_y, i, " ");
+    mvwprintw (stdscr, notify_y,
+	       CENTERX (STATUS_WIDTH, status.notify)
+	       + ((config.boardleft) ? BOARD_WIDTH : 0), "%ls", status.notify);
+    wattroff (stdscr, CP_STATUS_NOTIFY);
+  }
 }
 
 wchar_t *
@@ -2034,6 +2054,13 @@ update_tag_window (TAG ** t)
 {
   int i, l, w;
   int namel = 0;
+  int maxy, maxx, rows;
+
+  if (!tagw)
+    return;
+
+  getmaxyx (tagw, maxy, maxx);
+  rows = maxy > 0 ? maxy : 1;
 
   for (i = 0; t[i]; i++)
     {
@@ -2045,20 +2072,24 @@ update_tag_window (TAG ** t)
 	namel = l;
     }
 
-  w = TAG_WIDTH - namel - 4;
+  w = maxx - namel - 2;
+  if (w < 1)
+    w = 1;
 
-  for (i = 0; t[i] && i < TAG_HEIGHT - 3; i++)
+  for (i = 0; t[i] && i < rows; i++)
     {
       wchar_t *namewc = translate_tag_name (t[i]->name);
       wchar_t *valuewc = str_etc (t[i]->value, w, 0);
 
-      mvwprintw (tagw, (i + 2), 1, "%*ls: %-*ls", namel, namewc, w, valuewc);
+      mvwprintw (tagw, i, 0, "%*ls: %-*ls", namel, namewc, w, valuewc);
       free (namewc);
       free (valuewc);
     }
 
-  for (; i < TAG_HEIGHT - 3; i++)
-    mvwprintw (tagw, (i + 2), 1, "%*s", namel + w + 2, " ");
+  for (; i < rows; i++)
+    mvwprintw (tagw, i, 0, "%*s", namel + w + 2, " ");
+
+  cboard_ui_frame_paint (tag_vk);
 }
 
 void
@@ -2491,15 +2522,13 @@ draw_window_decor ()
 			 HISTORY_WIDTH : 0);
 
   wbkgd (boardw, CP_BOARD_WINDOW);
-  wbkgd (statusw, CP_STATUS_WINDOW);
-  window_draw_title (statusw, _("Game Status"), STATUS_WIDTH,
-		     CP_STATUS_TITLE, CP_STATUS_BORDER);
-  wbkgd (tagw, CP_TAG_WINDOW);
-  window_draw_title (tagw, _("Roster Tags"), TAG_WIDTH, CP_TAG_TITLE,
-		     CP_TAG_BORDER);
-  wbkgd (historyw, CP_HISTORY_WINDOW);
-  window_draw_title (historyw, _("Move History"), HISTORY_WIDTH,
-		     CP_HISTORY_TITLE, CP_HISTORY_BORDER);
+  /* Status/tags/history are VDK frames; only the board is a bare canvas. */
+  if (statusw)
+    wbkgd (statusw, CP_STATUS_WINDOW);
+  if (tagw)
+    wbkgd (tagw, CP_TAG_WINDOW);
+  if (historyw)
+    wbkgd (historyw, CP_HISTORY_WINDOW);
 }
 
 static void
@@ -2530,9 +2559,10 @@ do_window_resize ()
   cboard_menubar_resize ();
   boardw = cboard_ui_widget_resize (board_vk, BOARD_HEIGHT, BOARD_WIDTH);
   historyw =
-    cboard_ui_widget_resize (history_vk, HISTORY_HEIGHT, HISTORY_WIDTH);
-  statusw = cboard_ui_widget_resize (status_vk, STATUS_HEIGHT, STATUS_WIDTH);
-  tagw = cboard_ui_widget_resize (tag_vk, TAG_HEIGHT, TAG_WIDTH);
+    cboard_ui_frame_resize (history_vk, HISTORY_HEIGHT, HISTORY_WIDTH);
+  statusw =
+    cboard_ui_frame_resize (status_vk, STATUS_HEIGHT, STATUS_WIDTH);
+  tagw = cboard_ui_frame_resize (tag_vk, TAG_HEIGHT, TAG_WIDTH);
 
   if (loading_vk)
     loadingw = cboard_ui_widget_canvas (loading_vk);
@@ -5945,9 +5975,9 @@ cleanup_all ()
     {
       cboard_menubar_shutdown ();
       cboard_ui_widget_destroy (board_vk);
-      cboard_ui_widget_destroy (history_vk);
-      cboard_ui_widget_destroy (status_vk);
-      cboard_ui_widget_destroy (tag_vk);
+      cboard_ui_window_destroy (history_vk);
+      cboard_ui_window_destroy (status_vk);
+      cboard_ui_window_destroy (tag_vk);
       board_vk = history_vk = status_vk = tag_vk = NULL;
       boardw = historyw = statusw = tagw = NULL;
 
@@ -6280,20 +6310,38 @@ main (int argc, char *argv[])
 			  COLS - BOARD_WIDTH);
   boardw = cboard_ui_widget_canvas (board_vk);
   history_vk =
-    cboard_ui_widget_new (HISTORY_HEIGHT, HISTORY_WIDTH,
-			  LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH);
-  historyw = cboard_ui_widget_canvas (history_vk);
+    cboard_ui_frame_new (HISTORY_HEIGHT, HISTORY_WIDTH,
+			 LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH,
+			 _("Move History"),
+			 config.color[CONF_HWINDOW].fg,
+			 config.color[CONF_HWINDOW].bg,
+			 config.color[CONF_HBORDER].fg,
+			 config.color[CONF_HBORDER].bg);
+  historyw = cboard_ui_frame_canvas (history_vk);
   status_vk =
-    cboard_ui_widget_new (STATUS_HEIGHT, STATUS_WIDTH, UI_TOP, 0);
-  statusw = cboard_ui_widget_canvas (status_vk);
+    cboard_ui_frame_new (STATUS_HEIGHT, STATUS_WIDTH, UI_TOP, 0,
+			 _("Game Status"),
+			 config.color[CONF_SWINDOW].fg,
+			 config.color[CONF_SWINDOW].bg,
+			 config.color[CONF_SBORDER].fg,
+			 config.color[CONF_SBORDER].bg);
+  statusw = cboard_ui_frame_canvas (status_vk);
   tag_vk =
-    cboard_ui_widget_new (TAG_HEIGHT, TAG_WIDTH, UI_TOP + STATUS_HEIGHT + 1,
-			  0);
-  tagw = cboard_ui_widget_canvas (tag_vk);
+    cboard_ui_frame_new (TAG_HEIGHT, TAG_WIDTH,
+			 UI_TOP + STATUS_HEIGHT + 1, 0,
+			 _("Roster Tags"),
+			 config.color[CONF_TWINDOW].fg,
+			 config.color[CONF_TWINDOW].bg,
+			 config.color[CONF_TBORDER].fg,
+			 config.color[CONF_TBORDER].bg);
+  tagw = cboard_ui_frame_canvas (tag_vk);
   keypad (boardw, TRUE);
-  leaveok (tagw, TRUE);
-  leaveok (statusw, TRUE);
-  leaveok (historyw, TRUE);
+  if (tagw)
+    leaveok (tagw, TRUE);
+  if (statusw)
+    leaveok (statusw, TRUE);
+  if (historyw)
+    leaveok (historyw, TRUE);
   draw_window_decor ();
   cboard_menubar_refresh ();
   game_loop ();

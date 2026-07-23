@@ -12,6 +12,7 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <err.h>
 
@@ -200,6 +201,112 @@ cboard_ui_widget_new (int height, int width, int y, int x)
   (void) vk_screen_detach_widget (screen, 0, w);
   vk_screen_attach_widget (screen, 0, w);
   return (cboard_widget_t *) w;
+}
+
+cboard_widget_t *
+cboard_ui_frame_new (int height, int width, int y, int x,
+		     const char *title, short body_fg, short body_bg,
+		     short border_fg, short border_bg)
+{
+  vk_window_t *win;
+  vk_widget_t *body;
+  char titlebuf[128];
+  int inner_w, inner_h;
+
+  if (screen == NULL || height < 3 || width < 3)
+    return NULL;
+
+  win = vk_window_create (width, height);
+  if (win == NULL)
+    return NULL;
+
+  if (title && title[0])
+    {
+      snprintf (titlebuf, sizeof (titlebuf), " %s ", title);
+      vk_window_set_title (win, titlebuf);
+    }
+
+  vk_window_set_border_style (win, VK_BORDER_SINGLE);
+  vk_window_set_border_colors (win, border_fg, border_bg);
+  vk_widget_set_colors (VK_WIDGET (win), body_fg, body_bg);
+
+  inner_w = width - 2;
+  inner_h = height - 2;
+  if (inner_w < 1)
+    inner_w = 1;
+  if (inner_h < 1)
+    inner_h = 1;
+
+  body = vk_widget_create (inner_w, inner_h);
+  if (body == NULL)
+    {
+      vk_window_destroy (win);
+      return NULL;
+    }
+
+  vk_widget_set_colors (body, body_fg, body_bg);
+  vk_widget_set_expand (body);
+  vk_window_set_child (win, body);
+
+  vk_widget_move (VK_WIDGET (win), x, y);
+  (void) vk_screen_detach_widget (screen, 0, VK_WIDGET (win));
+  vk_screen_attach_widget (screen, 0, VK_WIDGET (win));
+  vk_widget_show (VK_WIDGET (win));
+  vk_window_update (win);
+
+  return (cboard_widget_t *) win;
+}
+
+WINDOW *
+cboard_ui_frame_canvas (cboard_widget_t *frame)
+{
+  vk_widget_t *child;
+
+  if (frame == NULL)
+    return NULL;
+
+  child = vk_window_get_child (VK_WINDOW (frame));
+  if (child == NULL)
+    return NULL;
+
+  return vk_widget_get_canvas (child);
+}
+
+WINDOW *
+cboard_ui_frame_resize (cboard_widget_t *frame, int height, int width)
+{
+  vk_window_t *win = (vk_window_t *) frame;
+  vk_widget_t *child;
+  int inner_w, inner_h;
+
+  if (win == NULL || height < 3 || width < 3)
+    return NULL;
+
+  vk_widget_resize (VK_WIDGET (win), width, height);
+
+  child = vk_window_get_child (win);
+  if (child == NULL)
+    return NULL;
+
+  /* Expand handles most cases; force interior metrics after recreate. */
+  inner_w = width - 2;
+  inner_h = height - 2;
+  if (inner_w < 1)
+    inner_w = 1;
+  if (inner_h < 1)
+    inner_h = 1;
+  vk_widget_resize (child, inner_w, inner_h);
+
+  return vk_widget_get_canvas (child);
+}
+
+void
+cboard_ui_frame_paint (cboard_widget_t *frame)
+{
+  if (frame == NULL)
+    return;
+
+  vk_window_update (VK_WINDOW (frame));
 }
 
 void

@@ -20,6 +20,20 @@ void cboard_ui_resize (void);
 
 /* Geometry uses ncurses-style (height, width, y, x). */
 cboard_widget_t *cboard_ui_widget_new (int height, int width, int y, int x);
+/*
+ * Titled chrome panel: vk_window frame + expand child for app content.
+ * Destroy with cboard_ui_window_destroy(). Interior canvas via
+ * cboard_ui_frame_canvas / cboard_ui_frame_resize.
+ */
+cboard_widget_t *cboard_ui_frame_new (int height, int width, int y, int x,
+				      const char *title,
+				      short body_fg, short body_bg,
+				      short border_fg, short border_bg);
+WINDOW *cboard_ui_frame_canvas (cboard_widget_t *frame);
+/* Resize frame; returns the (possibly new) interior canvas. */
+WINDOW *cboard_ui_frame_resize (cboard_widget_t *frame, int height, int width);
+/* Composite border/title + child into the frame canvas after painting. */
+void cboard_ui_frame_paint (cboard_widget_t *frame);
 /* Attach an already-built VDK widget (window/popup/filedialog/etc.). */
 void cboard_ui_widget_attach (cboard_widget_t *w, int y, int x);
 void cboard_ui_widget_destroy (cboard_widget_t *w);
