@@ -173,39 +173,40 @@ int cboard_mouse_handle(const MEVENT *mev)
     y = mev->y;
     b = mev->bstate;
 
+    /*
+     * Modal on top: sink every mouse event until it is dismissed.
+     * Handlers may return 0 for clicks outside their widget; those must
+     * not fall through to the menubar or board (contention artifacts).
+     */
     win = window_top();
     if (win)
     {
         switch (win->app_kind)
         {
         case WIN_APP_FILEBROWSER:
-            if (file_browser_mouse(win, x, y, b))
-                return 1;
+            (void) file_browser_mouse(win, x, y, b);
             break;
         case WIN_APP_CONFIRM:
-            if (confirm_dialog_mouse(win, x, y, b))
-                return 1;
+            (void) confirm_dialog_mouse(win, x, y, b);
             break;
         case WIN_APP_MENU:
-            if (mouse_modal_list(win, x, y, b))
-                return 1;
+            (void) mouse_modal_list(win, x, y, b);
             break;
         case WIN_APP_MESSAGE:
-            if (mouse_modal_message(win, x, y, b))
-                return 1;
+            (void) mouse_modal_message(win, x, y, b);
             break;
         case WIN_APP_INPUT:
-            if (mouse_modal_input(win, x, y, b))
-                return 1;
+            (void) mouse_modal_input(win, x, y, b);
             break;
         default:
-            /* Fallback: filedialog by vk_kind only. */
-            if (win->vk_kind == WIN_VK_FILEDIALOG && file_browser_mouse(win, x, y, b))
-                return 1;
-            if (win->vk_kind == WIN_VK_POPUP && confirm_dialog_mouse(win, x, y, b))
-                return 1;
+            /* Fallback: filedialog / confirm by vk_kind only. */
+            if (win->vk_kind == WIN_VK_FILEDIALOG)
+                (void) file_browser_mouse(win, x, y, b);
+            else if (win->vk_kind == WIN_VK_POPUP)
+                (void) confirm_dialog_mouse(win, x, y, b);
             break;
         }
+        return 1;
     }
 
     if (cboard_menubar_mouse(x, y, b))

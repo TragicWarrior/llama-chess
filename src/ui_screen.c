@@ -415,9 +415,9 @@ detach_widget(vk_widget_t *w)
     vk_screen_detach_widget(screen, 0, w);
 }
 
-void cboard_ui_widget_destroy(cboard_widget_t *widget)
+static void
+front_remove(vk_widget_t *w)
 {
-    vk_widget_t *w = (vk_widget_t *) widget;
     int i;
 
     if (w == NULL)
@@ -435,8 +435,28 @@ void cboard_ui_widget_destroy(cboard_widget_t *widget)
             break;
         }
     }
+}
 
+void
+cboard_ui_widget_detach(cboard_widget_t *widget)
+{
+    vk_widget_t *w = (vk_widget_t *) widget;
+
+    if (w == NULL)
+        return;
+
+    front_remove(w);
     detach_widget(w);
+}
+
+void cboard_ui_widget_destroy(cboard_widget_t *widget)
+{
+    vk_widget_t *w = (vk_widget_t *) widget;
+
+    if (w == NULL)
+        return;
+
+    cboard_ui_widget_detach(widget);
     vk_widget_destroy(w);
 }
 

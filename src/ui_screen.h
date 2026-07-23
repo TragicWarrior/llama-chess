@@ -52,6 +52,8 @@ WINDOW *cboard_ui_frame_resize(cboard_widget_t *frame, int height, int width);
 void cboard_ui_frame_paint(cboard_widget_t *frame);
 /* Attach an already-built VDK widget (window/popup/filedialog/etc.). */
 void cboard_ui_widget_attach(cboard_widget_t *w, int y, int x);
+/* Detach from the screen without destroying the VDK object. */
+void cboard_ui_widget_detach(cboard_widget_t *w);
 void cboard_ui_widget_destroy(cboard_widget_t *w);
 /* Destroy a typed composite (window/popup/filedialog) after detach. */
 void cboard_ui_window_destroy(cboard_widget_t *w);

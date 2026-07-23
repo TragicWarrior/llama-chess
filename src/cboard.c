@@ -76,9 +76,6 @@
 
 #define CBOARD_URL "https://gitlab.com/bjk/cboard/wikis"
 #define COPYRIGHT "Copyright (C) 2002-2024 " PACKAGE_BUGREPORT
-#define LINE_GRAPHIC(c) ((!config.linegraphics) ? ' ' : c)
-#define ROWTOMATRIX(r) ((8 - r) * 2 + 2 - 1)
-#define COLTOMATRIX(c) ((c == 1) ? 1 : c * 4 - 3)
 #define STATUS_HEIGHT 12
 /* Leave row 0 for the menubar; all chrome is laid out below it. */
 #define UI_TOP CBOARD_MENUBAR_H
@@ -112,7 +109,12 @@ enum
 };
 
 static WINDOW *boardw;
-static cboard_widget_t *board_vk;
+static cboard_widget_t *board_vk; /* host canvas: board + coord gutters */
+/* Inset 8x8 table (vk_grid + dividers); paint-mode cells. */
+static vk_table_t *board_table;
+/* 1-col rank gutter + 1-row file gutter outside the table. */
+#define BOARD_RANK_GUTTER 1
+#define BOARD_FILE_GUTTER 1
 static WINDOW *tagw;
 static cboard_widget_t *tag_vk;
 static WINDOW *statusw;
@@ -1020,38 +1022,342 @@ void board_prev_move_history(GAME g)
     }
 }
 
-static int
-is_the_square(int brow, int bcol, int row, int col, int prow, int pcol)
-{
-    if ((!BIG_BOARD && row == ROWTOMATRIX(prow) && col == COLTOMATRIX(pcol)) || (BIG_BOARD && brow + 1 == INV_INT(prow) && bcol + 1 == pcol))
-        return 1;
 
+/*
+ * Display ↔ chess mapping for the 8x8 board_table.
+ * Grid (0,0) is top-left on screen. Unrotated: rank 8 / file a.
+ * Cursor c_row/c_col stay in chess 1..8 display coordinates (same as keys).
+ */
+static void
+board_display_to_chess(const struct userdata_s *d, int gcol, int grow,
+                       int *rank, int *file)
+{
+    if (d && d->rotate)
+    {
+        *rank = grow + 1;
+        *file = 8 - gcol;
+    }
+    else
+    {
+        *rank = 8 - grow;
+        *file = gcol + 1;
+    }
+}
+
+static void
+board_chess_to_display(const struct userdata_s *d, int rank, int file,
+                       int *gcol, int *grow)
+{
+    if (d && d->rotate)
+    {
+        *grow = rank - 1;
+        *gcol = 8 - file;
+    }
+    else
+    {
+        *grow = 8 - rank;
+        *gcol = file - 1;
+    }
+}
+
+static int
+board_square_color(int rank, int file)
+{
+    /* a1 is dark; rank+file even → light when rank/file are 1-based. */
+    return ((rank + file) % 2) ? WHITE : BLACK;
+}
+
+static void
+board_fill_cell(WINDOW *cv, int x, int y, int w, int h, chtype attrs)
+{
+    int yy, xx;
+
+    if (!cv || w < 1 || h < 1)
+        return;
+    for (yy = 0; yy < h; yy++)
+        for (xx = 0; xx < w; xx++)
+            mvwaddch(cv, y + yy, x + xx, ' ' | attrs);
+}
+
+static void
+board_paint_piece(WINDOW *cv, int x, int y, int w, int h,
+                  unsigned char p, int pi, chtype attrs)
+{
+    if (!cv)
+        return;
+
+    wattron(cv, attrs);
+    if (h >= 3 && w >= 7 && BIG_BOARD)
+    {
+        /* ASCII art pieces when the cell is large enough. */
+        int px = x + (w > 7 ? (w - 7) / 2 : 0);
+        int py = y + (h - 3) / 2;
+        if (py < y)
+            py = y;
+        print_piece(cv, py, px, (pi != OPEN_SQUARE) ? (char) p : 0);
+    }
+    else
+    {
+        const wchar_t *ws = piece_to_wchar(pi != OPEN_SQUARE ? p : 0);
+        int px = x + w / 2;
+        int py = y + h / 2;
+        if (px < x)
+            px = x;
+        if (py < y)
+            py = y;
+        mvwaddwstr(cv, py, px, ws);
+    }
+    wattroff(cv, attrs);
+}
+
+/*
+ * Junction glyph for a divider intersection at grid line (r, c) within
+ * an 8x8 table (r,c in 0..8).  Mirrors vk_table / vk_color focus overdraw.
+ */
+static chtype
+board_table_junction(int style, int r, int c)
+{
+    int top = (r > 0);
+    int bot = (r < 8);
+    int left = (c > 0);
+    int right = (c < 8);
+
+    if (style == VK_BORDER_ASCII)
+    {
+        if (!top && !left)
+            return '+';
+        if (!top && !right)
+            return '+';
+        if (!bot && !left)
+            return '+';
+        if (!bot && !right)
+            return '+';
+        return '+';
+    }
+
+    if (!top && !left)
+        return ACS_ULCORNER;
+    if (!top && !right)
+        return ACS_URCORNER;
+    if (!bot && !left)
+        return ACS_LLCORNER;
+    if (!bot && !right)
+        return ACS_LRCORNER;
+    if (!top)
+        return ACS_TTEE;
+    if (!bot)
+        return ACS_BTEE;
+    if (!left)
+        return ACS_LTEE;
+    if (!right)
+        return ACS_RTEE;
+    return ACS_PLUS;
+}
+
+/*
+ * Light up the subfocus cell by recoloring its table dividers (border),
+ * not the square fill — same mechanism as vk_color focus overdraw.
+ * Cell interior stays normal; only the surrounding grid lines change.
+ */
+static void
+board_paint_subfocus_border(vk_table_t *table, WINDOW *cv, int gcol, int grow)
+{
+    vk_grid_t *grid;
+    int x, y, w, h;
+    int i;
+    int style;
+    short pair;
+    attr_t attrs;
+    chtype hl, vl;
+
+    if (!table || !cv)
+        return;
+
+    grid = VK_GRID(table);
+    style = vk_table_get_divider_style(table);
+    if (style == VK_BORDER_NONE)
+        return;
+
+    if (vk_grid_get_cell_rect(grid, gcol, grow, &x, &y, &w, &h) != 0)
+        return;
+    if (w < 1 || h < 1)
+        return;
+
+    /*
+     * With gap=1, dividers sit immediately outside the cell rect:
+     *   top    y-1,  left x-1,  bottom y+h,  right x+w
+     * Cursor green is CONF_BCURSOR.bg; draw that as the line fg.
+     */
+    pair = vdk_color_pair(config.color[CONF_BCURSOR].bg,
+                          config.color[CONF_BGRAPHICS].bg);
+    attrs = A_BOLD;
+
+    if (style == VK_BORDER_ASCII)
+    {
+        hl = '-';
+        vl = '|';
+    }
+    else
+    {
+        hl = ACS_HLINE;
+        vl = ACS_VLINE;
+    }
+
+    wattr_set(cv, attrs, pair, NULL);
+
+    /* Top + bottom edges (between corners). */
+    for (i = 0; i < w; i++)
+    {
+        if (y > 0)
+            mvwaddch(cv, y - 1, x + i, hl);
+        mvwaddch(cv, y + h, x + i, hl);
+    }
+    /* Left + right edges. */
+    for (i = 0; i < h; i++)
+    {
+        if (x > 0)
+            mvwaddch(cv, y + i, x - 1, vl);
+        mvwaddch(cv, y + i, x + w, vl);
+    }
+    /* Four junctions (table line intersections). */
+    if (y > 0 && x > 0)
+        mvwaddch(cv, y - 1, x - 1, board_table_junction(style, grow, gcol));
+    if (y > 0)
+        mvwaddch(cv, y - 1, x + w, board_table_junction(style, grow, gcol + 1));
+    if (x > 0)
+        mvwaddch(cv, y + h, x - 1, board_table_junction(style, grow + 1, gcol));
+    mvwaddch(cv, y + h, x + w, board_table_junction(style, grow + 1, gcol + 1));
+
+    wattr_set(cv, A_NORMAL, 0, NULL);
+}
+
+
+static int
+board_table_ox(void)
+{
+    return config.coordsyleft ? BOARD_RANK_GUTTER : 0;
+}
+
+static int
+board_table_oy(void)
+{
     return 0;
 }
 
 static int
-is_prev_move(struct userdata_s *d, int brow, int bcol, int row, int col)
+board_table_width(void)
 {
-    if (is_the_square(brow, bcol, row, col, d->pm_row, d->pm_col))
-        return 1;
+    int w = BOARD_WIDTH - BOARD_RANK_GUTTER;
+    return w < 10 ? 10 : w;
+}
 
-    return 0;
+static int
+board_table_height(void)
+{
+    int h = BOARD_HEIGHT - BOARD_FILE_GUTTER;
+    return h < 10 ? 10 : h;
+}
+
+/*
+ * Size/place the 8x8 table inset on the host canvas so rank/file labels
+ * live in the outer gutters (outside the squares), like classic cboard.
+ */
+static void
+board_layout_table(void)
+{
+    vk_widget_t *tw;
+    WINDOW *host;
+    int ox, oy, tw_w, tw_h;
+
+    if (!board_table || !board_vk)
+        return;
+
+    host = cboard_ui_widget_canvas(board_vk);
+    boardw = host;
+    if (!host)
+        return;
+
+    tw = VK_WIDGET(board_table);
+    ox = board_table_ox();
+    oy = board_table_oy();
+    tw_w = board_table_width();
+    tw_h = board_table_height();
+
+    vk_widget_resize(tw, tw_w, tw_h);
+    vk_widget_set_surface(tw, host);
+    vk_widget_move(tw, ox, oy);
+}
+
+/* Rank numbers + file letters in host gutters (never inside cells). */
+static void
+board_paint_coord_labels(struct userdata_s *d, WINDOW *host)
+{
+    vk_grid_t *grid;
+    int gcol, grow;
+    int ox, oy;
+    int x, y, w, h;
+    int rank, file;
+
+    if (!board_table || !host || !d)
+        return;
+
+    grid = VK_GRID(board_table);
+    ox = board_table_ox();
+    oy = board_table_oy();
+
+    wattron(host, CP_BOARD_COORDS);
+
+    for (grow = 0; grow < 8; grow++)
+    {
+        if (vk_grid_get_cell_rect(grid, 0, grow, &x, &y, &w, &h) != 0)
+            continue;
+        board_display_to_chess(d, 0, grow, &rank, &file);
+        if (config.coordsyleft)
+            mvwprintw(host, oy + y + h / 2, 0, "%d", rank);
+        else
+            mvwprintw(host, oy + y + h / 2, BOARD_WIDTH - 1, "%d", rank);
+    }
+
+    for (gcol = 0; gcol < 8; gcol++)
+    {
+        /* Center each file letter under its column (bottom gutter). */
+        if (vk_grid_get_cell_rect(grid, gcol, 7, &x, &y, &w, &h) != 0)
+            continue;
+        board_display_to_chess(d, gcol, 7, &rank, &file);
+        mvwprintw(host, BOARD_HEIGHT - 1, ox + x + (w > 1 ? w / 2 : 0), "%c",
+                  "abcdefgh"[file - 1]);
+    }
+
+    wattroff(host, CP_BOARD_COORDS);
+}
+
+static void
+board_sync_subfocus(struct userdata_s *d)
+{
+    int gcol, grow;
+
+    if (!board_table || !d)
+        return;
+    if (d->c_row < 1 || d->c_row > 8 || d->c_col < 1 || d->c_col > 8)
+        return;
+    board_chess_to_display(d, d->c_row, d->c_col, &gcol, &grow);
+    vk_grid_set_subfocus(VK_GRID(board_table), gcol, grow);
 }
 
 void update_board_window(GAME g)
 {
-    int row, col;
-    int bcol = 0, brow = 0;
-    int l = config.coordsyleft;
-    int maxy = BOARD_HEIGHT, maxx = BOARD_WIDTH;
-    int ncols = 0, offset = 1;
-    int rowr = (MEGA_BOARD) ? 6 : (BIG_BOARD) ? 4
-                                              : 2;
-    int colr = (MEGA_BOARD) ? 12 : (BIG_BOARD) ? 8
-                                               : 4;
-    unsigned coords_y = 8, cxgc = 0;
-    unsigned i, cpd = 0;
-    struct userdata_s *d = g->data;
+    struct userdata_s *d;
+    vk_grid_t *grid;
+    WINDOW *cv;
+    WINDOW *host;
+    int gcol, grow;
+    int focus_col, focus_row;
+
+    if (!g || !g->data || !board_table || !board_vk)
+        return;
+
+    d = g->data;
+    grid = VK_GRID(board_table);
 
     if (config.bprevmove && d->mode != MODE_EDIT)
     {
@@ -1071,378 +1377,125 @@ void update_board_window(GAME g)
     if (d->mode != MODE_PLAY && d->mode != MODE_EDIT)
         update_cursor(g, g->hindex);
 
-    if (BIG_BOARD)
-    {
-        if (d->rotate)
-        {
-            brow = 7;
-            coords_y = 1;
-        }
-    }
-    else
-    {
-        if (d->rotate)
-        {
-            brow = 1;
-            coords_y = 1;
-        }
-        else
-            brow = 8;
-    }
+    board_layout_table();
+    host = cboard_ui_widget_canvas(board_vk);
+    boardw = host;
+    if (!host)
+        return;
 
-    for (row = 0; row < maxy; row++)
-    {
-        if (BIG_BOARD)
-        {
-            if (d->rotate)
-                bcol = 7;
-            else
-                bcol = 0;
-        }
-        else
-        {
-            if (d->rotate)
-                bcol = 8;
-            else
-                bcol = 1;
-        }
+    board_sync_subfocus(d);
+    focus_col = vk_grid_get_subfocus_col(grid);
+    focus_row = vk_grid_get_subfocus_row(grid);
 
-        for (col = 0; col < maxx; col++)
+    /* Clear host (includes gutters); table paints onto its own canvas. */
+    werase(host);
+    wbkgd(host, CP_BOARD_WINDOW);
+
+    /* Background + ACS dividers from VDK. */
+    vk_widget_set_colors(VK_WIDGET(board_table),
+                         config.color[CONF_BDWINDOW].fg,
+                         config.color[CONF_BDWINDOW].bg);
+    vk_table_set_border_colors(board_table,
+                               config.color[CONF_BGRAPHICS].fg,
+                               config.color[CONF_BGRAPHICS].bg);
+    vk_table_update(board_table);
+
+    cv = vk_widget_get_canvas(VK_WIDGET(board_table));
+
+    for (grow = 0; grow < 8; grow++)
+    {
+        for (gcol = 0; gcol < 8; gcol++)
         {
-            int attrwhich = -1;
-            chtype attrs = 0, old_attrs = 0;
+            int rank, file, br, bc;
+            int x, y, w, h;
             unsigned char p;
-            int can_attack = 0;
+            int pi;
+            int sq_white;
             int valid = 0;
+            int can_attack = 0;
+            chtype cell_attrs;
+            chtype piece_attrs;
+            int is_selected;
+            int is_prev;
 
-            if (row == 0 || row == maxy - 2)
+            board_display_to_chess(d, gcol, grow, &rank, &file);
+            br = RANKTOBOARD(rank);
+            bc = FILETOBOARD(file);
+            if (br < 0 || br > 7 || bc < 0 || bc > 7)
+                continue;
+
+            if (vk_grid_get_cell_rect(grid, gcol, grow, &x, &y, &w, &h) != 0)
+                continue;
+
+            p = d->b[br][bc].icon;
+            pi = pgn_piece_to_int(p);
+            sq_white = board_square_color(rank, file) == WHITE;
+
+            if (config.validmoves && d->b[br][bc].valid)
+                valid = 1;
+
+            if (config.showattacks && config.details
+                && piece_can_attack(g, rank, file))
+                can_attack = 1;
+
+            is_selected = (d->sp.icon && d->sp.srow == rank
+                           && d->sp.scol == file);
+            is_prev = ((d->pm_row == rank && d->pm_col == file)
+                       || (d->ospm_row == rank && d->ospm_col == file));
+
+            /* Base square colour (cursor uses subfocus rim, not fill). */
+            if (valid)
+                cell_attrs = sq_white ? CP_BOARD_MOVES_WHITE
+                                      : CP_BOARD_MOVES_BLACK;
+            else if (is_selected)
+                cell_attrs = CP_BOARD_SELECTED;
+            else if (is_prev && !valid)
+                cell_attrs = CP_BOARD_PREVMOVE;
+            else
+                cell_attrs = sq_white ? CP_BOARD_WHITE : CP_BOARD_BLACK;
+
+            if (config.details && d->b[br][bc].enpassant)
             {
-                if (col == 0)
-                    mvwaddch(boardw, row, col + l,
-                             LINE_GRAPHIC((row)
-                                              ? ACS_LLCORNER | CP_BOARD_GRAPHICS
-                                              : ACS_ULCORNER | CP_BOARD_GRAPHICS));
-                else if (col == maxx - 2)
-                    mvwaddch(boardw, row, col + l,
-                             LINE_GRAPHIC((row)
-                                              ? ACS_LRCORNER | CP_BOARD_GRAPHICS
-                                              : ACS_URCORNER | CP_BOARD_GRAPHICS));
-                else if (!(col % colr))
-                    mvwaddch(boardw, row, col + l,
-                             LINE_GRAPHIC((row)
-                                              ? ACS_BTEE | CP_BOARD_GRAPHICS
-                                              : ACS_TTEE | CP_BOARD_GRAPHICS));
+                p = pi = 'x';
+                cell_attrs = mix_cp(CP_BOARD_ENPASSANT, cell_attrs,
+                                    ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
+            }
+
+            if (can_attack)
+                cell_attrs = mix_cp(CP_BOARD_ATTACK, cell_attrs,
+                                    ATTRS(CP_BOARD_ATTACK), A_FG_B_BG);
+
+            board_fill_cell(cv, x, y, w, h, cell_attrs);
+
+            if (pi != OPEN_SQUARE && p != 'x' && !can_attack)
+            {
+                if (sq_white)
+                    piece_attrs = isupper(p) ? CP_BOARD_W_W : CP_BOARD_W_B;
                 else
-                {
-                    if (col != maxx - 1)
-                        mvwaddch(boardw, row, col + l,
-                                 LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
-                }
-
-                continue;
-            }
-
-            if ((row % 2) && col == maxx - 1 && (coords_y > 0 && coords_y < 9))
-            {
-                wattron(boardw, CP_BOARD_COORDS);
-                mvwprintw(boardw,
-                          (BIG_BOARD) ? row * ((MEGA_BOARD) ? 3 : 2)
-                                      : row,
-                          (l) ? 0 : col, "%d",
-                          (d->rotate) ? coords_y++ : coords_y--);
-                wattroff(boardw, CP_BOARD_COORDS);
-                continue;
-            }
-
-            if ((col == 0 || col == maxx - 2) && row != maxy - 1)
-            {
-                if (!(row % rowr))
-                    mvwaddch(boardw, row, col + l,
-                             LINE_GRAPHIC((col) ? ACS_RTEE | CP_BOARD_GRAPHICS : ACS_LTEE | CP_BOARD_GRAPHICS));
-                else
-                    mvwaddch(boardw, row, col + l,
-                             LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
-
-                continue;
-            }
-
-            if ((row % rowr) && !(col % colr) && row != maxy - 1)
-            {
-                mvwaddch(boardw, row, col + l,
-                         LINE_GRAPHIC(ACS_VLINE | CP_BOARD_GRAPHICS));
-                continue;
-            }
-
-            if (!(col % colr) && row != maxy - 1)
-            {
-                mvwaddch(boardw, row, col + l,
-                         LINE_GRAPHIC(ACS_PLUS | CP_BOARD_GRAPHICS));
-                continue;
-            }
-
-            if ((row % rowr))
-            {
-                if ((col % colr))
-                {
-                    if (BIG_BOARD)
-                        attrwhich = (cb[brow][bcol]) ? WHITE : BLACK;
-                    else
-                    {
-                        if (ncols++ == 8)
-                        {
-                            offset++;
-                            ncols = 1;
-                        }
-
-                        if (((ncols % 2) && !(offset % 2)) || (!(ncols % 2) && (offset % 2)))
-                            attrwhich = BLACK;
-                        else
-                            attrwhich = WHITE;
-                    }
-
-                    if (BIG_BOARD && d->rotate)
-                    {
-                        brow = INV_INT0(brow);
-                        bcol = INV_INT0(bcol);
-                    }
-
-                    if (BIG_BOARD)
-                        p = d->b[brow][bcol].icon;
-                    else
-                        p = d->b[RANKTOBOARD(brow)][FILETOBOARD(bcol)].icon;
-
-                    int pi = pgn_piece_to_int(p);
-
-                    if (config.details &&
-                        ((!BIG_BOARD && d->b[RANKTOBOARD(brow)][FILETOBOARD(bcol)].enpassant) || (BIG_BOARD && d->b[brow][bcol].enpassant)))
-                    {
-                        p = pi = 'x';
-                        attrs = mix_cp(CP_BOARD_ENPASSANT,
-                                       (attrwhich ==
-                                        WHITE)
-                                           ? CP_BOARD_WHITE
-                                           : CP_BOARD_BLACK,
-                                       ATTRS(CP_BOARD_ENPASSANT), A_FG_B_BG);
-                    }
-
-                    if (config.showattacks && config.details && piece_can_attack(g, BIG_BOARD ? INV_INT0(brow) + 1 : brow, BIG_BOARD ? bcol + 1 : bcol))
-                    {
-                        attrs = CP_BOARD_ATTACK;
-                        old_attrs = attrs;
-                        can_attack = 1;
-                    }
-
-                    if (config.validmoves &&
-                        ((!BIG_BOARD && d->b[RANKTOBOARD(brow)][FILETOBOARD(bcol)].valid) || (BIG_BOARD && d->b[brow][bcol].valid)))
-                    {
-                        old_attrs = -1;
-                        valid = 1;
-
-                        if (attrwhich == WHITE)
-                            attrs = mix_cp(CP_BOARD_MOVES_WHITE,
-                                           IS_ENPASSANT(p),
-                                           ATTRS(CP_BOARD_MOVES_WHITE),
-                                           B_FG_A_BG);
-                        else
-                            attrs = mix_cp(CP_BOARD_MOVES_BLACK,
-                                           IS_ENPASSANT(p),
-                                           ATTRS(CP_BOARD_MOVES_BLACK),
-                                           B_FG_A_BG);
-                    }
-                    else if (p != 'x' && !can_attack)
-                        attrs =
-                            (attrwhich == WHITE) ? CP_BOARD_WHITE : CP_BOARD_BLACK;
-
-                    if (BIG_BOARD && d->rotate)
-                    {
-                        brow = INV_INT0(brow);
-                        bcol = INV_INT0(bcol);
-                    }
-
-                    if (is_the_square(brow, bcol, row, col, d->c_row,
-                                      d->c_col))
-                    {
-                        attrs = mix_cp(CP_BOARD_CURSOR, IS_ENPASSANT(p),
-                                       ATTRS(CP_BOARD_CURSOR), B_FG_A_BG);
-                        old_attrs = -1;
-                    }
-                    else if (is_the_square(brow, bcol, row, col,
-                                           d->sp.srow, d->sp.scol))
-                    {
-                        attrs = mix_cp(CP_BOARD_SELECTED, IS_ENPASSANT(p),
-                                       ATTRS(CP_BOARD_SELECTED), B_FG_A_BG);
-                        old_attrs = -1;
-                    }
-                    else if ((is_prev_move(d, brow, bcol, row, col) && !valid) || (is_the_square(brow, bcol, row, col,
-                                                                                                 d->ospm_row, d->ospm_col)))
-                    {
-                        attrs = mix_cp(CP_BOARD_PREVMOVE, IS_ENPASSANT(p),
-                                       ATTRS(CP_BOARD_PREVMOVE), B_FG_A_BG);
-                        old_attrs = -1;
-                    }
-
-                    if (row == maxy - 1)
-                        attrs = 0;
-
-                    if (can_attack)
-                    {
-                        int n = is_prev_move(d, brow, bcol, row, col);
-                        chtype a = n && !valid
-                                       ? CP_BOARD_PREVMOVE
-                                   : attrwhich ==
-                                           WHITE
-                                       ? valid ? CP_BOARD_MOVES_WHITE : CP_BOARD_WHITE
-                                   : valid ? CP_BOARD_MOVES_BLACK
-                                           : CP_BOARD_BLACK;
-                        attrs =
-                            mix_cp(CP_BOARD_ATTACK, a, ATTRS(CP_BOARD_ATTACK),
-                                   A_FG_B_BG);
-                        old_attrs = -1;
-                    }
-
-                    if (BIG_BOARD)
-                        wmove(boardw, row, col + ((MEGA_BOARD) ? 5 : 3) + l);
-                    else
-                        mvwaddch(boardw, row, col + l, ' ' | attrs);
-
-                    if (row == maxy - 1 && cxgc < 8)
-                    {
-                        waddch(boardw,
-                               "abcdefgh"[(BIG_BOARD) ? bcol : bcol - 1] | CP_BOARD_COORDS);
-                        cxgc++;
-                    }
-                    else
-                    {
-                        if (old_attrs == -1)
-                        {
-                            old_attrs = attrs;
-                            goto printc;
-                        }
-
-                        old_attrs = attrs;
-
-                        if (pi != OPEN_SQUARE && p != 'x' && !can_attack)
-                        {
-                            if (attrwhich == WHITE)
-                            {
-                                if (isupper(p))
-                                    attrs = CP_BOARD_W_W;
-                                else
-                                    attrs = CP_BOARD_W_B;
-                            }
-                            else
-                            {
-                                if (isupper(p))
-                                    attrs = CP_BOARD_B_W;
-                                else
-                                    attrs = CP_BOARD_B_B;
-                            }
-                        }
-
-                    printc:
-                        if (BIG_BOARD)
-                        {
-                            if (config.details && !can_attack && castling_state(g, d->b, (d->rotate) ? INV_INT0(brow + 1) - 1 : brow, (d->rotate) ? INV_INT0(bcol + 1) - 1 : bcol, p, 0))
-                                attrs = mix_cp(CP_BOARD_CASTLING, attrs,
-                                               ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
-                        }
-                        else
-                        {
-                            if (config.details && !can_attack && castling_state(g, d->b, RANKTOBOARD(brow), FILETOBOARD(bcol), p, 0))
-                            {
-                                attrs = mix_cp(CP_BOARD_CASTLING, attrs,
-                                               ATTRS(CP_BOARD_CASTLING),
-                                               A_FG_B_BG);
-                            }
-                        }
-
-                        if (BIG_BOARD)
-                        {
-                            // FIXME: Reimpresión de piezas(+4).
-                            if (cpd < 67)
-                            {
-                                wattron(boardw, attrs);
-                                if (MEGA_BOARD)
-                                {
-                                    for (i = 0; i < 5; i++)
-                                        mvwprintw(boardw, i + brow * 6 + 1,
-                                                  bcol * 12 + 1 + l,
-                                                  "           ");
-                                    if (pi != OPEN_SQUARE)
-                                        print_piece(boardw, brow * 6 + 2,
-                                                    bcol * 12 + 3 + l, p);
-                                }
-                                else
-                                {
-                                    print_piece(boardw, brow * 4 + 1,
-                                                bcol * 8 + 1 + l,
-                                                (pi != OPEN_SQUARE) ? p : 0);
-                                }
-
-                                wattroff(boardw, attrs);
-                                cpd++;
-                            }
-                        }
-                        else
-                        {
-                            wattron(boardw, attrs);
-                            waddwstr(boardw,
-                                     piece_to_wchar(pi !=
-                                                            OPEN_SQUARE
-                                                        ? p
-                                                        : 0));
-                            wattroff(boardw, attrs);
-                        }
-
-                        attrs = old_attrs;
-                    }
-
-                    if (BIG_BOARD)
-                        col += (MEGA_BOARD) ? 10 : 6;
-                    else
-                    {
-                        waddch(boardw, ' ' | attrs);
-                        col += 2;
-                    }
-
-                    if (d->rotate)
-                        bcol--;
-                    else
-                        bcol++;
-
-                    if (BIG_BOARD)
-                    {
-                        if (bcol > 7)
-                            bcol = 0;
-                        if (bcol < 0)
-                            bcol = 7;
-                    }
-                }
+                    piece_attrs = isupper(p) ? CP_BOARD_B_W : CP_BOARD_B_B;
             }
             else
-            {
-                if (col != maxx - 1)
-                    mvwaddch(boardw, row, col + l,
-                             LINE_GRAPHIC(ACS_HLINE | CP_BOARD_GRAPHICS));
-            }
-        }
+                piece_attrs = cell_attrs;
 
-        if (row % rowr)
-        {
-            if (d->rotate)
-                brow++;
-            else
-                brow--;
-        }
+            if (config.details && !can_attack
+                && castling_state(g, d->b, br, bc, p, 0))
+                piece_attrs = mix_cp(CP_BOARD_CASTLING, piece_attrs,
+                                     ATTRS(CP_BOARD_CASTLING), A_FG_B_BG);
 
-        if (BIG_BOARD)
-        {
-            if (brow > 7)
-                brow = 0;
-            if (brow < 0)
-                brow = 7;
+            board_paint_piece(cv, x, y, w, h, p, pi, piece_attrs);
         }
     }
+
+    /*
+     * Cursor = table border highlight on the subfocus cell (not a green
+     * tile fill).  Dividers around the cell are overdrawn in cursor color.
+     */
+    if (focus_col >= 0 && focus_row >= 0)
+        board_paint_subfocus_border(board_table, cv, focus_col, focus_row);
+
+    /* Composite inset table onto host, then coords in the gutters. */
+    vk_widget_draw(VK_WIDGET(board_table));
+    board_paint_coord_labels(d, host);
 }
 
 void invalid_move(int n, int e, const char *m)
@@ -2122,7 +2175,6 @@ void update_all(GAME g)
     if (macro_match != -1)
         return;
 
-    wmove(boardw, ROWTOMATRIX(d->c_row), COLTOMATRIX(d->c_col));
     update_board_window(g);
     update_status_window(g);
     update_history_window(g);
@@ -3221,52 +3273,42 @@ void do_play_commit()
 }
 
 /*
- * Map a click on the board widget to rank/file (1..8).
- *
- * Layout matches update_board_window: a line grid with cell size
- *   small  2×4  (BOARD 18×34)
- *   big    4×8  (BOARD 34×66)
- *   mega   6×12 (BOARD 50×98)
- * Top-left square is display rank 8 / file 1 (same as keyboard cursor).
- * Paint uses col+coordsyleft, so subtract that offset from the click.
- * Returns 1 and sets *rank/*file on hit (any cell inside the square).
+ * Map a local click on the board table to rank/file (1..8) via cell rects.
  */
 static int
 board_click_to_square(int lx, int ly, int *rank, int *file)
 {
-    int r, c;
-    int col; /* logical paint column (before coords shift) */
-    int l = config.coordsyleft ? 1 : 0;
-    int rowr = (MEGA_BOARD) ? 6 : (BIG_BOARD) ? 4
-                                              : 2;
-    int colr = (MEGA_BOARD) ? 12 : (BIG_BOARD) ? 8
-                                               : 4;
-    int maxy = BOARD_HEIGHT;
-    int maxx = BOARD_WIDTH;
+    vk_grid_t *grid;
+    int gcol, grow;
+    int x, y, w, h;
+    int ox, oy;
 
-    /*
-   * Grid lines on rows 0, rowr, 2*rowr, …, maxy-2; file labels on maxy-1.
-   * Content rows are 1 .. maxy-3 excluding grid lines.
-   */
-    if (ly < 1 || ly > maxy - 3 || (ly % rowr) == 0)
-        return 0;
-    r = 8 - (ly - 1) / rowr;
-    if (r < 1 || r > 8)
+    if (!board_table || !gp || !gp->data)
         return 0;
 
-    /* Undo left rank-number column if present. */
-    col = lx - l;
-    /* Interior: cols 1 .. maxx-3; vertical grid every colr (0, colr, …, maxx-2). */
-    if (col < 1 || col > maxx - 3 || (col % colr) == 0)
+    ox = board_table_ox();
+    oy = board_table_oy();
+    /* Clicks on coord gutters are not squares. */
+    lx -= ox;
+    ly -= oy;
+    if (lx < 0 || ly < 0)
         return 0;
 
-    c = (col - 1) / colr + 1;
-    if (c < 1 || c > 8)
-        return 0;
-
-    *rank = r;
-    *file = c;
-    return 1;
+    grid = VK_GRID(board_table);
+    for (grow = 0; grow < 8; grow++)
+    {
+        for (gcol = 0; gcol < 8; gcol++)
+        {
+            if (vk_grid_get_cell_rect(grid, gcol, grow, &x, &y, &w, &h) != 0)
+                continue;
+            if (lx >= x && lx < x + w && ly >= y && ly < y + h)
+            {
+                board_display_to_chess(gp->data, gcol, grow, rank, file);
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 int cboard_board_mouse(int x, int y, mmask_t bstate)
@@ -3292,7 +3334,7 @@ int cboard_board_mouse(int x, int y, mmask_t bstate)
         return 1; /* grid/border/coords — absorb, no move */
 
     d = gp->data;
-    /* Always move the green cursor (c_row/c_col) to the clicked square. */
+    /* Move cursor (grid subfocus) to the clicked square. */
     d->c_row = rank;
     d->c_col = file;
 
@@ -5696,7 +5738,6 @@ void game_loop()
        * Do not poll LINES/COLS here — that ran a second resize cascade and
        * raced ncurses resizeterm inside wrefresh.
        */
-        win = window_top();
         wp = stdscr;
         wtimeout(stdscr, WINDOW_TIMEOUT);
 
@@ -5750,6 +5791,11 @@ void game_loop()
 
         pushkey = 0;
 
+        /*
+         * Top modal sinks keyboard until dismissed (same rule as mouse).
+         * Re-sample after the poll so a mouse-closed dialog is not used.
+         */
+        win = window_top();
         if (win)
         {
             win->c = input_c;
@@ -5919,7 +5965,17 @@ void cleanup_all()
     if (curses_initialized)
     {
         cboard_menubar_shutdown();
-        cboard_ui_widget_destroy(board_vk);
+        if (board_table)
+        {
+            vk_table_destroy(board_table);
+            board_table = NULL;
+        }
+        if (board_vk)
+        {
+            cboard_ui_widget_destroy(board_vk);
+            board_vk = NULL;
+            boardw = NULL;
+        }
         cboard_ui_window_destroy(history_vk);
         cboard_ui_window_destroy(status_vk);
         cboard_ui_window_destroy(tag_vk);
@@ -6241,10 +6297,33 @@ int main(int argc, char *argv[])
 
     cboard_menubar_init();
 
-    board_vk =
-        cboard_ui_widget_new(BOARD_HEIGHT, BOARD_WIDTH, UI_TOP,
-                             COLS - BOARD_WIDTH);
-    boardw = cboard_ui_widget_canvas(board_vk);
+    {
+        int style = config.linegraphics ? VK_BORDER_SINGLE : VK_BORDER_NONE;
+        int bx = config.boardleft ? 0 : COLS - BOARD_WIDTH;
+        int tw = BOARD_WIDTH - BOARD_RANK_GUTTER;
+        int th = BOARD_HEIGHT - BOARD_FILE_GUTTER;
+
+        if (tw < 10)
+            tw = 10;
+        if (th < 10)
+            th = 10;
+
+        /* Host holds gutters; table is inset and drawn onto the host. */
+        board_vk = cboard_ui_widget_new(BOARD_HEIGHT, BOARD_WIDTH, UI_TOP, bx);
+        if (!board_vk)
+            errx(EXIT_FAILURE, "%s", "Could not create board host.");
+        board_table = vk_table_create(tw, th, 8, 8, style);
+        if (!board_table)
+            errx(EXIT_FAILURE, "%s", "Could not create board grid.");
+        vk_table_set_border_colors(board_table,
+                                   config.color[CONF_BGRAPHICS].fg,
+                                   config.color[CONF_BGRAPHICS].bg);
+        vk_widget_set_colors(VK_WIDGET(board_table),
+                             config.color[CONF_BDWINDOW].fg,
+                             config.color[CONF_BDWINDOW].bg);
+        board_layout_table();
+        boardw = cboard_ui_widget_canvas(board_vk);
+    }
     history_vk =
         cboard_ui_frame_new(HISTORY_HEIGHT, HISTORY_WIDTH,
                             LINES - HISTORY_HEIGHT, COLS - HISTORY_WIDTH,
