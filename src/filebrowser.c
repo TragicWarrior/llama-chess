@@ -36,21 +36,32 @@
 struct file_s **files;		/* kept for ABI with older code paths */
 char *oldwd;
 
-/* Filedialog is a 3-slot vertical box: path, list frame, button bar. */
+/* VDK filedialog vertical box slots. */
 enum
 {
-  FB_SLOT_PATH = 0,
-  FB_SLOT_LIST = 1,
-  FB_SLOT_BUTTONS = 2,
-  FB_SLOT_COUNT = 3
+  FB_BOX_PATH = 0,
+  FB_BOX_LIST = 1,
+  FB_BOX_BUTTONS = 2
+};
+
+/*
+ * App-layer tab order: breadcrumb → picker → Okay → Cancel.
+ * OK/Cancel share the button bar box slot; button_focus selects which.
+ */
+enum
+{
+  FB_TAB_PATH = 0,
+  FB_TAB_LIST,
+  FB_TAB_OK,
+  FB_TAB_CANCEL,
+  FB_TAB_COUNT
 };
 
 struct fb_state_s
 {
   struct input_s *in;		/* parent input dialog state */
   vk_filedialog_t *fd;
-  int focus_slot;		/* app-layer tab stop (path / list / buttons) */
-  int button_focus;		/* 0 = OK, 1 = Cancel when on button bar */
+  int tab;			/* FB_TAB_* */
 };
 
 static void
@@ -108,7 +119,7 @@ fb_style_widgets (struct fb_state_s *st)
   vk_widget_t *btn0, *btn1;
   short base_fg, base_bg;
   attr_t attrs;
-  short path_fg, list_fg, ok_fg, cancel_fg;
+  short path_fg, ok_fg, cancel_fg;
 
   if (!st || !st->fd)
     return;
@@ -118,33 +129,27 @@ fb_style_widgets (struct fb_state_s *st)
   base_bg = config.color[CONF_MENU].bg;
   attrs = config.color[CONF_MENU].attrs | A_BOLD;
 
-  path_fg = (st->focus_slot == FB_SLOT_PATH) ? FB_FOCUS_FG : base_fg;
-  list_fg = (st->focus_slot == FB_SLOT_LIST) ? FB_FOCUS_FG : base_fg;
-  ok_fg = (st->focus_slot == FB_SLOT_BUTTONS && st->button_focus == 0)
-    ? FB_FOCUS_FG : base_fg;
-  cancel_fg = (st->focus_slot == FB_SLOT_BUTTONS && st->button_focus == 1)
-    ? FB_FOCUS_FG : base_fg;
+  path_fg = (st->tab == FB_TAB_PATH) ? FB_FOCUS_FG : base_fg;
+  ok_fg = (st->tab == FB_TAB_OK) ? FB_FOCUS_FG : base_fg;
+  cancel_fg = (st->tab == FB_TAB_CANCEL) ? FB_FOCUS_FG : base_fg;
 
   vk_filedialog_set_colors (fd, base_fg, base_bg);
-  vk_filedialog_set_highlight (fd,
-			       config.color[CONF_MENUS].fg,
-			       config.color[CONF_MENUS].bg);
   vk_filedialog_set_button_colors (fd, base_fg, base_bg);
   vk_filedialog_set_button_attrs (fd, attrs);
   vk_widget_set_attrs (VK_WIDGET (fd), attrs);
 
-  path_w = vk_box_get_widget (VK_BOX (fd), FB_SLOT_PATH);
+  path_w = vk_box_get_widget (VK_BOX (fd), FB_BOX_PATH);
   fb_paint_slot (path_w, path_fg, base_bg, attrs);
 
-  list_frame = vk_box_get_widget (VK_BOX (fd), FB_SLOT_LIST);
-  fb_paint_slot (list_frame, list_fg, base_bg, attrs);
+  /* List body always bright white; only the selected row turns yellow. */
+  list_frame = vk_box_get_widget (VK_BOX (fd), FB_BOX_LIST);
+  fb_paint_slot (list_frame, base_fg, base_bg, attrs);
 
   lb = vk_filedialog_get_file_list (fd);
   if (lb)
     {
-      fb_paint_slot (VK_WIDGET (lb), list_fg, base_bg, attrs);
-      /* Selected row stays distinct; when list is focused use yellow select. */
-      if (st->focus_slot == FB_SLOT_LIST)
+      fb_paint_slot (VK_WIDGET (lb), base_fg, base_bg, attrs);
+      if (st->tab == FB_TAB_LIST)
 	{
 	  vk_listbox_set_highlight (lb, FB_FOCUS_FG, COLOR_BLUE);
 	  vk_listbox_set_highlight_attrs (lb, A_BOLD);
@@ -160,7 +165,7 @@ fb_style_widgets (struct fb_state_s *st)
 	}
     }
 
-  bar = VK_BOX (vk_box_get_widget (VK_BOX (fd), FB_SLOT_BUTTONS));
+  bar = VK_BOX (vk_box_get_widget (VK_BOX (fd), FB_BOX_BUTTONS));
   if (bar)
     {
       btn0 = vk_box_get_widget (bar, 0);
@@ -179,26 +184,43 @@ static void
 fb_sync_box_focus (struct fb_state_s *st)
 {
   vk_box_t *bar;
+  int box_slot;
+  int button_i;
 
   if (!st || !st->fd)
     return;
 
-  if (st->focus_slot < 0)
-    st->focus_slot = FB_SLOT_LIST;
-  if (st->focus_slot >= FB_SLOT_COUNT)
-    st->focus_slot = FB_SLOT_PATH;
+  if (st->tab < 0)
+    st->tab = FB_TAB_LIST;
+  if (st->tab >= FB_TAB_COUNT)
+    st->tab = FB_TAB_PATH;
 
-  vk_box_set_subfocus (VK_BOX (st->fd), st->focus_slot);
-
-  bar = VK_BOX (vk_box_get_widget (VK_BOX (st->fd), FB_SLOT_BUTTONS));
-  if (bar)
+  switch (st->tab)
     {
-      if (st->button_focus < 0)
-	st->button_focus = 0;
-      if (st->button_focus > 1)
-	st->button_focus = 1;
-      vk_box_set_subfocus (bar, st->button_focus);
+    case FB_TAB_PATH:
+      box_slot = FB_BOX_PATH;
+      button_i = 0;
+      break;
+    case FB_TAB_LIST:
+      box_slot = FB_BOX_LIST;
+      button_i = 0;
+      break;
+    case FB_TAB_OK:
+      box_slot = FB_BOX_BUTTONS;
+      button_i = 0;
+      break;
+    case FB_TAB_CANCEL:
+    default:
+      box_slot = FB_BOX_BUTTONS;
+      button_i = 1;
+      break;
     }
+
+  vk_box_set_subfocus (VK_BOX (st->fd), box_slot);
+
+  bar = VK_BOX (vk_box_get_widget (VK_BOX (st->fd), FB_BOX_BUTTONS));
+  if (bar)
+    vk_box_set_subfocus (bar, button_i);
 
   fb_style_widgets (st);
 }
@@ -240,49 +262,31 @@ fb_display (WIN * win)
     }
 
   /*
-   * Tab stops at the app layer (path → list → buttons).  VDK filedialog
-   * only switches path↔list via '/' / Enter; we own TAB/BTAB and button
-   * bar left/right here without changing libviper.
+   * Tab order: breadcrumb → picker → Okay → Cancel.
+   * VDK only knows path/list box slots; OK/Cancel are app-layer stops.
    */
   if (key == '\t' || key == KEY_BTAB)
     {
       if (key == '\t')
-	st->focus_slot = (st->focus_slot + 1) % FB_SLOT_COUNT;
+	st->tab = (st->tab + 1) % FB_TAB_COUNT;
       else
-	st->focus_slot = (st->focus_slot + FB_SLOT_COUNT - 1) % FB_SLOT_COUNT;
+	st->tab = (st->tab + FB_TAB_COUNT - 1) % FB_TAB_COUNT;
       fb_sync_box_focus (st);
       vk_filedialog_update (st->fd);
       cboard_ui_refresh ();
       return 1;
     }
 
-  if (st->focus_slot == FB_SLOT_BUTTONS)
+  if (st->tab == FB_TAB_OK || st->tab == FB_TAB_CANCEL)
     {
-      if (key == KEY_LEFT)
-	{
-	  st->button_focus = 0;
-	  fb_sync_box_focus (st);
-	  vk_filedialog_update (st->fd);
-	  cboard_ui_refresh ();
-	  return 1;
-	}
-      if (key == KEY_RIGHT)
-	{
-	  st->button_focus = 1;
-	  fb_sync_box_focus (st);
-	  vk_filedialog_update (st->fd);
-	  cboard_ui_refresh ();
-	  return 1;
-	}
       if (key == '\n' || key == KEY_ENTER)
 	{
-	  if (st->button_focus == 1)
+	  if (st->tab == FB_TAB_CANCEL)
 	    {
-	      /* Cancel */
 	      fb_free (win);
 	      return 0;
 	    }
-	  /* OK — accept current list selection if it is a file. */
+	  /* Okay — accept current list selection if it is a file. */
 	  {
 	    const char *selected = vk_filedialog_get_selected (st->fd);
 
@@ -297,27 +301,32 @@ fb_display (WIN * win)
 	  }
 	  return 1;
 	}
-      /* Other keys while on buttons: ignore (do not steal list/path). */
+      /* Swallow other keys on buttons so list/path do not steal them. */
       return 1;
     }
 
   /* Path or list: keep filedialog subfocus in sync, then drive kmio. */
   fb_sync_box_focus (st);
   cboard_ui_push_key ((cboard_widget_t *) st->fd, key);
-  /* Re-read focus in case '/' or Enter moved path↔list inside VDK. */
+  /* Re-read box focus if VDK moved path↔list ('/' or Enter on path). */
   {
     int slot = vk_box_get_subfocus (VK_BOX (st->fd));
 
-    if (slot >= 0 && slot < FB_SLOT_COUNT && slot != st->focus_slot)
+    if (slot == FB_BOX_PATH && st->tab != FB_TAB_PATH)
       {
-	st->focus_slot = slot;
+	st->tab = FB_TAB_PATH;
+	fb_style_widgets (st);
+      }
+    else if (slot == FB_BOX_LIST && st->tab != FB_TAB_LIST)
+      {
+	st->tab = FB_TAB_LIST;
 	fb_style_widgets (st);
       }
   }
   vk_filedialog_update (st->fd);
   cboard_ui_refresh ();
 
-  if (st->focus_slot == FB_SLOT_LIST
+  if (st->tab == FB_TAB_LIST
       && (key == '\n' || key == KEY_ENTER))
     {
       const char *selected = vk_filedialog_get_selected (st->fd);
@@ -437,8 +446,7 @@ file_browser (void *arg)
   st = Calloc (1, sizeof (struct fb_state_s));
   st->in = in;
   st->fd = fd;
-  st->focus_slot = FB_SLOT_LIST;
-  st->button_focus = 0;
+  st->tab = FB_TAB_LIST;
   fb_sync_box_focus (st);
   vk_filedialog_update (fd);
 
