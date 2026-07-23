@@ -530,13 +530,14 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
     vk_input_show_cursor(field, true);
     if (in->buf[0])
         vk_input_set_text(field, in->buf);
-    vk_widget_set_colors(VK_WIDGET(field),
-                         config.color[CONF_MENU].fg,
-                         config.color[CONF_MENU].bg);
-    vk_widget_set_attrs(VK_WIDGET(field), config.color[CONF_MENU].attrs);
-    vk_widget_set_relief_colors(VK_WIDGET(field),
-                                config.color[CONF_MENU].fg,
-                                config.color[CONF_MENU].bg);
+    /*
+     * Sunken field relief (VWM / xd-battery): face is dark-on-panel so the
+     * bevel can use white (hi) + black (lo).  Setting relief to the same
+     * menu white/cyan pair collapsed the 3D edges into one flat colour.
+     */
+    vk_widget_set_colors(VK_WIDGET(field), COLOR_BLACK, COLOR_CYAN);
+    vk_widget_set_attrs(VK_WIDGET(field), A_NORMAL);
+    vk_widget_set_relief_colors(VK_WIDGET(field), COLOR_WHITE, COLOR_BLACK);
     vin->field = field;
 
     if (eh > 0)
