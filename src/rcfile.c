@@ -384,6 +384,7 @@ set_default_keys ()
   add_key_binding (&global_keys, do_global_help, CTRL_KEY ('h'), NULL, 0);
   add_key_binding (&global_keys, do_global_help, KEY_F (1), NULL, 0);
   add_key_binding (&global_keys, do_global_quit, 'Q', _("quit"), 0);
+  add_key_binding (&global_keys, do_global_quit, 'q', NULL, 0);
 }
 
 void
