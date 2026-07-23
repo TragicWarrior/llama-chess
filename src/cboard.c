@@ -4526,31 +4526,7 @@ free_userdata_once(GAME g)
         return;
 
     if (d->engine)
-    {
-        stop_engine(g);
-
-        if (d->engine->enginebuf)
-        {
-            int n;
-
-            for (n = 0; d->engine->enginebuf[n]; n++)
-                free(d->engine->enginebuf[n]);
-
-            free(d->engine->enginebuf);
-        }
-
-        if (d->engine->queue)
-        {
-            struct queue_s **q;
-
-            for (q = d->engine->queue; *q; q++)
-                free(*q);
-
-            free(d->engine->queue);
-        }
-
-        free(d->engine);
-    }
+        free_engine(g);
 
 #ifdef WITH_LIBPERL
     if (d->perlfen)
@@ -5694,18 +5670,23 @@ void game_loop()
                                 d->engine->iobuf = NULL;
                                 d->engine->len = 0;
                             }
-                            else if (len == -1)
+                            else if (len == 0
+                                     || (len == -1 && errno != EAGAIN))
                             {
-                                if (errno != EAGAIN)
-                                {
+                                /*
+                                 * EOF (engine exited) or hard I/O error.
+                                 * free_engine tears down FDs/pid so a later
+                                 * restart can surface the same failure again.
+                                 */
+                                if (len == 0)
+                                    cmessage(ERROR_STR, ANY_KEY_STR, "%s",
+                                             _("Engine closed the connection"));
+                                else
                                     cmessage(ERROR_STR, ANY_KEY_STR,
                                              "Engine read(): %s",
                                              strerror(errno));
-                                    waitpid(d->engine->pid, &n, 0);
-                                    free(d->engine);
-                                    d->engine = NULL;
-                                    break;
-                                }
+                                free_engine(game[i]);
+                                break;
                             }
                         }
 

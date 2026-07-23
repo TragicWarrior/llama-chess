@@ -74,6 +74,8 @@ int send_to_engine(GAME g, int, const char *format, ...);
 int start_chess_engine(GAME);
 void set_engine_defaults(GAME, wchar_t **);
 void stop_engine(GAME);
+/* Full teardown: stop process, close FDs, free queue/iobuf, free engine. */
+void free_engine(GAME g);
 void append_enginebuf(GAME, char *);
 void send_engine_command(GAME g);
 void add_engine_command(GAME g, int s, const char *fmt, ...);

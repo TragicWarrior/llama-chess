@@ -378,6 +378,59 @@ void stop_engine(GAME g)
     d->engine->status = ENGINE_OFFLINE;
 }
 
+void free_engine(GAME g)
+{
+    struct userdata_s *d = g->data;
+    int n;
+
+    if (!d || !d->engine)
+        return;
+
+    if (d->engine->pid != -1 && d->engine->status != ENGINE_OFFLINE)
+        stop_engine(g);
+    else if (d->engine->pid > 0)
+    {
+        /* Dead pipe / already dying — reap without another quit handshake. */
+        waitpid(d->engine->pid, &n, WNOHANG);
+        d->engine->pid = -1;
+        d->engine->status = ENGINE_OFFLINE;
+    }
+
+    if (d->engine->fd[ENGINE_IN_FD] > 2)
+        close(d->engine->fd[ENGINE_IN_FD]);
+    if (d->engine->fd[ENGINE_OUT_FD] > 2)
+        close(d->engine->fd[ENGINE_OUT_FD]);
+    d->engine->fd[ENGINE_IN_FD] = d->engine->fd[ENGINE_OUT_FD] = -1;
+
+    free(d->engine->iobuf);
+    d->engine->iobuf = NULL;
+    d->engine->len = 0;
+
+    if (d->engine->enginebuf)
+    {
+        for (n = 0; d->engine->enginebuf[n]; n++)
+            free(d->engine->enginebuf[n]);
+        free(d->engine->enginebuf);
+        d->engine->enginebuf = NULL;
+    }
+
+    if (d->engine->queue)
+    {
+        struct queue_s **q;
+
+        for (q = d->engine->queue; *q; q++)
+        {
+            free((*q)->line);
+            free(*q);
+        }
+        free(d->engine->queue);
+        d->engine->queue = NULL;
+    }
+
+    free(d->engine);
+    d->engine = NULL;
+}
+
 void set_engine_defaults(GAME g, wchar_t **init)
 {
     int i;

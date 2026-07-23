@@ -400,6 +400,137 @@ message_resize_func(WIN *w)
  * The force_trim parameter will trim whitespace reguardless if there is more
  * than one line or not (help text vs. tag viewing).
  */
+/*
+ * VWM-style error dialog: red text on white, single OK, centered body.
+ * Any key or click (via mouse_modal_message) dismisses.
+ */
+struct error_s
+{
+    vk_popup_t *popup;
+    vk_label_t *label;
+};
+
+static void
+error_style(struct error_s *e)
+{
+    short fg = COLOR_RED;
+    short bg = COLOR_WHITE;
+    vk_button_t *ok;
+    vk_box_t *bar;
+
+    if (!e || !e->popup)
+        return;
+
+    vk_popup_set_colors(e->popup, fg, bg);
+    vk_popup_set_border_colors(e->popup, fg, bg);
+    vk_popup_set_border_attrs(e->popup, A_NORMAL);
+    vk_widget_set_colors(VK_WIDGET(e->popup), fg, bg);
+
+    if (e->label)
+    {
+        vk_widget_set_colors(VK_WIDGET(e->label), fg, bg);
+        vk_label_update(e->label);
+    }
+
+    bar = vk_popup_get_button_bar(e->popup);
+    if (bar)
+    {
+        vk_widget_set_colors(VK_WIDGET(bar), fg, bg);
+        vk_widget_fill(VK_WIDGET(bar),
+                       ' ' | COLOR_PAIR(vdk_color_pair(fg, bg)));
+        vk_box_update(bar);
+    }
+
+    ok = vk_popup_get_button(e->popup, 0);
+    if (ok)
+    {
+        vk_widget_set_colors(VK_WIDGET(ok), COLOR_YELLOW, bg);
+        vk_widget_set_attrs(VK_WIDGET(ok), A_BOLD);
+        vk_button_update(ok);
+    }
+
+    vk_popup_update(e->popup);
+}
+
+static void
+error_free(WIN *w)
+{
+    struct error_s *e = w->data;
+
+    if (e)
+    {
+        e->popup = NULL;
+        e->label = NULL;
+        free(e);
+    }
+    w->data = NULL;
+}
+
+static int
+display_error(WIN *win)
+{
+    if (win->c == KEY_RESIZE)
+        return 1;
+
+    if (win->c != 0)
+    {
+        error_free(win);
+        return 0;
+    }
+    return 1;
+}
+
+static WIN *
+construct_error_popup(const char *body, window_exit_func *efunc)
+{
+    WIN *win;
+    vk_popup_t *popup;
+    vk_label_t *lab;
+    struct error_s *e;
+    int w, h, y, x;
+    const char *text = body && body[0] ? body : _("Unknown error");
+
+    w = (int) strlen(text) + 10;
+    if (w < 36)
+        w = 36;
+    if (w > COLS - 4)
+        w = COLS - 4;
+    /* frame + pad + label + pad + button bar — same floor as VWM errors */
+    h = 8;
+    if (h > LINES - 2)
+        h = LINES - 2;
+
+    y = CALCPOSY(h);
+    x = CALCPOSX(w);
+
+    popup = vk_popup_create(w, h, VK_BORDER_SINGLE, _("OK"), NULL);
+    if (!popup)
+        return NULL;
+
+    vk_popup_set_title(popup, " Error ");
+
+    lab = vk_label_create(w - 2);
+    vk_label_set_justify(lab, VK_JUSTIFY_CENTER);
+    vk_label_set_text(lab, (char *) text);
+    vk_popup_set_client(popup, VK_WIDGET(lab));
+
+    e = Calloc(1, sizeof(struct error_s));
+    e->popup = popup;
+    e->label = lab;
+    error_style(e);
+
+    cboard_ui_widget_attach((cboard_widget_t *) popup, y, x);
+    cboard_ui_widget_raise((cboard_widget_t *) popup);
+    vk_popup_update(popup);
+
+    win = window_adopt(_("Error"), (void *) popup, WIN_VK_POPUP, h, w, y, x,
+                       display_error, e, efunc, NULL);
+    /* MESSAGE app_kind: mouse sink + click-to-dismiss via mouse_modal_message. */
+    win->app_kind = WIN_APP_MESSAGE;
+    cboard_ui_refresh();
+    return win;
+}
+
 WIN *construct_message(const char *title, const char *prompt, int center,
                        int force_trim, const char *extra_help,
                        message_func *func, void *arg, window_exit_func *efunc,
@@ -442,6 +573,27 @@ WIN *construct_message(const char *title, const char *prompt, int center,
         free(lines[i]);
     free(lines);
 
+    /*
+     * Error dialogs: VWM red-on-white OK popup (not legacy cyan/black window).
+     * title is ERROR_STR from cmessage / message sites.
+     */
+    if (title && strcmp(title, ERROR_STR) == 0)
+    {
+        win = construct_error_popup(m->body, efunc);
+        free(m->body);
+        free(m->prompt);
+        free(m->extra);
+        free(m->title);
+        free(m);
+        (void) center;
+        (void) func;
+        (void) arg;
+        (void) ckey;
+        (void) freedata;
+        (void) rfunc;
+        return win;
+    }
+
     if (m->w < 20)
         m->w = 20;
     if (m->h < 6)
@@ -459,7 +611,7 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     else
         vk_window_set_title(vkw, " Message ");
 
-    /* Match classic cboard message chrome: black body, cyan border. */
+    /* Informational messages: black body, cyan border. */
     vk_window_set_border_style(vkw, VK_BORDER_SINGLE);
     vk_window_set_border_colors(vkw,
                                 config.color[CONF_MBORDER].fg,
