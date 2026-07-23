@@ -5512,7 +5512,7 @@ find_macro (struct userdata_s *d)
   /*
    * Macros can't contain macros when in a window.
    */
-  if (wins)
+  if (window_depth () > 0)
     return;
 
 again:
@@ -5731,103 +5731,73 @@ game_loop ()
 	}
 
       /*
-       * Finds the top level window in the window stack so we know what
-       * window the wget_wch()'ed key belongs to.
+       * Always read keys from stdscr — never from a VDK canvas.  wget_wch()
+       * auto-wrefresh()'es a dirty WINDOW before blocking; modal/board
+       * canvases would repaint over the VDK composite.
        *
-       * When no modal is up, read keys from stdscr — never from boardw.
-       * wget_wch() auto-wrefresh()'es a dirty WINDOW before blocking, and
-       * boardw is the VDK board canvas (mvwin'd to the board geometry).
-       * That direct paint lands on the physical terminal on top of the
-       * VDK composite, so an open menubar dropdown appears briefly then
-       * is covered by the board (~one input-timeout later).
+       * Top-of-stack modal (if any) receives the key via win->func.
+       * efunc may open a new modal; destroy only the closed one afterward
+       * (no deferred keep list).
        */
-      if (wins)
-	{
-	  for (i = 0; wins[i]; i++);
-	  win = wins[i - 1];
-	  wp = win->w;
-	  wtimeout (wp, WINDOW_TIMEOUT);
-	}
-      else
-	{
-	  wp = stdscr;
-	  keypad (stdscr, TRUE);
-	  wtimeout (stdscr, WINDOW_TIMEOUT);
-	}
+      win = window_top ();
+      wp = stdscr;
+      keypad (stdscr, TRUE);
+      wtimeout (stdscr, WINDOW_TIMEOUT);
 
-      if (!i && pushkey)
+      if (pushkey)
 	input_c = pushkey;
-      else
+      else if (macros && macro_match >= 0)
 	{
-	  if (!pushkey)
+	  if (macros[macro_match]->n >= macros[macro_match]->total)
 	    {
-	      if (macros && macro_match >= 0)
-		{
-		  if (macros[macro_match]->n >= macros[macro_match]->total)
-                    {
-                      reset_macros ();
-                      goto refresh;
-                    }
-		  else
-		    {
-		      input_c = macros[macro_match]->keys[macros[macro_match]->n++];
-		      find_macro (d);
-		    }
-		}
-	      else
-		{
-		  if (wget_wch (wp, &input_c) == ERR || input_c == KEY_RESIZE)
-                    {
-                      if (input_c == KEY_RESIZE)
-                        {
-                          if (win)
-                            win->c = input_c;
-
-                          window_resize_all ();
-                          update_all (gp);
-                        }
-                      continue;
-                    }
-		}
-	    }
-	  else
-	    input_c = pushkey;
-
-	  if (win)
-	    {
-	      win->c = input_c;
-
-	      /*
-	       * Run the function associated with the window. When the
-	       * function returns 0 win->efunc is ran (if not NULL) with
-	       * win as the one and only parameter. Then the window is
-	       * destroyed.
-	       *
-	       * The exit function may create another window which will
-	       * mess up the window stack when window_destroy() is called.
-	       * So don't destory the window until the top window is
-	       * destroyable. See window_destroy().
-	       */
-	      if ((*win->func) (win) == 0)
-		{
-		  if (win->efunc)
-		    (*win->efunc) (win);
-
-		  win->keep = 1;
-		  window_destroy (win);
-		  update_all (gp);
-		}
-
-	      continue;
-	    }
-
-	  /* F10 menubar (and keys while the bar/dropdown is active). */
-	  if (cboard_menubar_key (input_c))
-	    {
-	      if (macro_match == -1)
-		keycount = 0;
+	      reset_macros ();
 	      goto refresh;
 	    }
+	  input_c = macros[macro_match]->keys[macros[macro_match]->n++];
+	  find_macro (d);
+	}
+      else
+	{
+	  if (wget_wch (wp, &input_c) == ERR || input_c == KEY_RESIZE)
+	    {
+	      if (input_c == KEY_RESIZE)
+		{
+		  if (win)
+		    win->c = input_c;
+
+		  window_resize_all ();
+		  update_all (gp);
+		}
+	      continue;
+	    }
+	}
+
+      pushkey = 0;
+
+      if (win)
+	{
+	  win->c = input_c;
+
+	  if ((*win->func) (win) == 0)
+	    {
+	      window_exit_func *ef = win->efunc;
+
+	      if (ef)
+		(*ef) (win);
+
+	      window_destroy (win);
+	      update_all (gp);
+	    }
+
+	  continue;
+	}
+
+      /* F10 menubar (and keys while the bar/dropdown is active). */
+      if (cboard_menubar_key (input_c))
+	{
+	  if (macro_match == -1)
+	    keycount = 0;
+	  goto refresh;
 	}
 
       if (!keycount && status.notify)

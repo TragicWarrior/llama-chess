@@ -1,20 +1,12 @@
 /* vim:tw=78:ts=8:sw=4:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
+    Copyright (C) 2026 cboard VDK port
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #ifndef WINDOW_H
 #define WINDOW_H
@@ -53,33 +45,40 @@ struct window_s
   int posx;
   char *title;
   /*
-   * Function that is called when a key is pressed from game_loop(). This is
-   * the only place where a key is gotten from. This is for the top window
-   * (LIFO). When the function returns 0, the window is destroyed and the
-   * top becomes top - 1.
+   * Key handler for the top-of-stack modal.  game_loop always reads keys
+   * from stdscr and dispatches here.  Return 0 to run efunc (if any) and
+   * destroy this window.
    */
   window_func *func;
   window_exit_func *efunc;
   window_resize_func *rfunc;
   void *data;
   wint_t c;
-  int keep;
-  int freedata;			// Whether or not to free() .data when destroying
+  int freedata;			/* free() .data when destroying */
 };
 
+/* Legacy alias of the modal stack (NULL-terminated). Prefer window_top(). */
 extern WIN **wins;
 extern wint_t pushkey;
 
 WIN *window_create (const char *title, int h, int w, int y, int x,
 		    window_func, void *data, window_exit_func,
-                    window_resize_func);
+		    window_resize_func);
 /* Adopt a pre-built VDK widget already attached (or about to be). */
 WIN *window_adopt (const char *title, void *vk, int vk_kind,
 		   int h, int w, int y, int x, window_func, void *data,
 		   window_exit_func, window_resize_func);
 void window_destroy (WIN *);
+
+/* Modal stack helpers for game_loop / compositor. */
+WIN *window_top (void);
+WIN *window_at (int index);	/* 0 = bottom; NULL if out of range */
+int window_depth (void);
+/* Raise every live modal in bottom→top order (VDK paint order). */
+void window_raise_all (void);
+
 void window_draw_title (WINDOW *, const char *, int, chtype, chtype);
 void window_draw_prompt (WINDOW *, int, int, const char *, chtype);
-void window_resize_all ();
+void window_resize_all (void);
 
 #endif

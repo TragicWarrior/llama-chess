@@ -19,6 +19,7 @@
 #include <vdk.h>
 
 #include "ui_screen.h"
+#include "window.h"
 
 static vk_screen_t *screen;
 
@@ -133,17 +134,18 @@ cboard_ui_refresh (void)
   if (screen == NULL)
     return;
 
-  /* 1) Put front-stack widgets last in the surface paint list. */
+  /* 1) Front chrome (menubar/dropdown) then modal stack on top. */
   for (i = 0; i < front_count; i++)
     raise_widget (front_stack[i]);
+  window_raise_all ();
 
   /* 2) Full composite (wallpaper + all widgets → stdscr). */
   vk_screen_refresh (screen);
 
   /*
-   * 3) Draw front widgets again on top of the surface, then push to stdscr.
-   *    This guarantees menubar/dropdowns cannot stay under the board even if
-   *    attach order was wrong or something re-attached chrome mid-frame.
+   * 3) Redraw front chrome then each modal on top of the surface.
+   *    Attach order can still race; a second pass keeps menus/dialogs above
+   *    board chrome.
    */
   for (i = 0; i < front_count; i++)
     {
@@ -158,6 +160,33 @@ cboard_ui_refresh (void)
       surface = ws;
       vk_widget_draw (w);
     }
+
+  {
+    int d, depth = window_depth ();
+
+    for (d = 0; d < depth; d++)
+      {
+	WIN *mw = window_at (d);
+	vk_widget_t *w;
+	WINDOW *ws;
+
+	if (mw == NULL || mw->vk == NULL)
+	  continue;
+	w = (vk_widget_t *) mw->vk;
+	if (!(vk_widget_get_state (w) & VK_STATE_VISIBLE))
+	  continue;
+	ws = vk_widget_get_surface (w);
+	if (ws == NULL)
+	  continue;
+	surface = ws;
+	/* Window frames need full update so children stay on the canvas. */
+	if (mw->vk_kind == WIN_VK_WINDOW)
+	  vk_window_update (VK_WINDOW (w));
+	else
+	  vk_widget_draw (w);
+	untouch_canvas (w);
+      }
+  }
 
   if (surface != NULL)
     {

@@ -1,20 +1,12 @@
 /* vim:tw=78:ts=8:sw=4:set ft=c:  */
 /*
     Copyright (C) 2002-2024 Ben Kibbey <bjk@luxsci.net>
+    Copyright (C) 2026 cboard VDK port
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -28,60 +20,43 @@
 #include "window.h"
 #include "ui_screen.h"
 
-WIN **wins;
+/* Modal stack: bottom → top. Top receives keys from game_loop. */
+static WIN **stack;
+static int stack_n;
+
 wint_t pushkey;
 
-/*
- * Creates a new window on the 'wins' stack. Returns the newly create window
- * structure. The 'func' parameter is a function pointer that is called from
- * game_loop(). 'efunc' is called just before the window is destroyed.
- */
-static WIN *
-window_push (const char *title, void *vk, int vk_kind, int h, int w,
-	     int y, int x, window_func func, void *data,
-	     window_exit_func efunc, window_resize_func rfunc)
+/* Legacy external name used by a few call sites; keep as a view of the stack. */
+WIN **wins;
+
+static void
+sync_wins_alias (void)
 {
-  int i = 0;
-
-  if (wins)
-    for (i = 0; wins[i]; i++);
-
-  wins = Realloc (wins, (i + 2) * sizeof (WIN *));
-  wins[i] = Calloc (1, sizeof (WIN));
-  wins[i]->vk = vk;
-  wins[i]->vk_kind = vk_kind;
-  wins[i]->w = cboard_ui_widget_canvas (vk);
-  wins[i]->data = data;
-  wins[i]->rows = h;
-  wins[i]->cols = w;
-  wins[i]->posy = y;
-  wins[i]->posx = x;
-  wins[i]->func = func;
-  wins[i]->efunc = efunc;
-  wins[i]->rfunc = rfunc;
-  wins[i]->title = (title) ? strdup (title) : NULL;
-  wins[i + 1] = NULL;
-  return wins[i];
+  wins = stack;
 }
 
-WIN *
-window_create (const char *title, int h, int w, int y, int x,
-	       window_func func, void *data, window_exit_func efunc,
-               window_resize_func rfunc)
+static WINDOW *
+canvas_for_vk (void *vk, int vk_kind)
 {
-  void *vk = cboard_ui_widget_new (h, w, y, x);
+  WINDOW *c;
 
-  return window_push (title, vk, WIN_VK_PLAIN, h, w, y, x, func, data,
-		      efunc, rfunc);
-}
+  if (vk == NULL)
+    return NULL;
 
-WIN *
-window_adopt (const char *title, void *vk, int vk_kind, int h, int w,
-	      int y, int x, window_func func, void *data,
-	      window_exit_func efunc, window_resize_func rfunc)
-{
-  return window_push (title, vk, vk_kind, h, w, y, x, func, data, efunc,
-		      rfunc);
+  switch (vk_kind)
+    {
+    case WIN_VK_WINDOW:
+      /* Prefer framed interior when present; else the window canvas. */
+      c = cboard_ui_frame_canvas ((cboard_widget_t *) vk);
+      if (c != NULL)
+	return c;
+      return cboard_ui_widget_canvas ((cboard_widget_t *) vk);
+    case WIN_VK_FILEDIALOG:
+    case WIN_VK_POPUP:
+    case WIN_VK_PLAIN:
+    default:
+      return cboard_ui_widget_canvas ((cboard_widget_t *) vk);
+    }
 }
 
 static void
@@ -126,55 +101,129 @@ window_free_one (WIN * win)
   free (win);
 }
 
+static WIN *
+window_push (const char *title, void *vk, int vk_kind, int h, int w,
+	     int y, int x, window_func func, void *data,
+	     window_exit_func efunc, window_resize_func rfunc)
+{
+  WIN *win;
+
+  win = Calloc (1, sizeof (WIN));
+  win->vk = vk;
+  win->vk_kind = vk_kind;
+  win->w = canvas_for_vk (vk, vk_kind);
+  win->data = data;
+  win->rows = h;
+  win->cols = w;
+  win->posy = y;
+  win->posx = x;
+  win->func = func;
+  win->efunc = efunc;
+  win->rfunc = rfunc;
+  win->title = (title) ? strdup (title) : NULL;
+
+  stack = Realloc (stack, (stack_n + 2) * sizeof (WIN *));
+  stack[stack_n++] = win;
+  stack[stack_n] = NULL;
+  sync_wins_alias ();
+
+  /* Top of paint order for this modal. */
+  if (vk)
+    {
+      cboard_ui_widget_raise ((cboard_widget_t *) vk);
+      cboard_ui_widget_show ((cboard_widget_t *) vk);
+    }
+
+  return win;
+}
+
+WIN *
+window_create (const char *title, int h, int w, int y, int x,
+	       window_func func, void *data, window_exit_func efunc,
+	       window_resize_func rfunc)
+{
+  void *vk = cboard_ui_widget_new (h, w, y, x);
+
+  return window_push (title, vk, WIN_VK_PLAIN, h, w, y, x, func, data,
+		      efunc, rfunc);
+}
+
+WIN *
+window_adopt (const char *title, void *vk, int vk_kind, int h, int w,
+	      int y, int x, window_func func, void *data,
+	      window_exit_func efunc, window_resize_func rfunc)
+{
+  return window_push (title, vk, vk_kind, h, w, y, x, func, data, efunc,
+		      rfunc);
+}
+
+WIN *
+window_top (void)
+{
+  if (stack_n < 1)
+    return NULL;
+  return stack[stack_n - 1];
+}
+
+WIN *
+window_at (int index)
+{
+  if (index < 0 || index >= stack_n)
+    return NULL;
+  return stack[index];
+}
+
+int
+window_depth (void)
+{
+  return stack_n;
+}
+
+void
+window_raise_all (void)
+{
+  int i;
+
+  for (i = 0; i < stack_n; i++)
+    {
+      if (stack[i] && stack[i]->vk)
+	cboard_ui_widget_raise ((cboard_widget_t *) stack[i]->vk);
+    }
+}
+
 void
 window_destroy (WIN * win)
 {
-  int i, n;
-  WIN **new = NULL;
+  int i, j;
 
-  if (!wins)
+  if (!win || stack_n < 1)
     return;
 
-  for (i = 0; wins[i]; i++);
-
-  while (i > 0 && wins[--i]->keep)
+  for (i = 0; i < stack_n; i++)
     {
-      if (win && win == wins[i])
-	win = NULL;
+      if (stack[i] != win)
+	continue;
 
-      window_free_one (wins[i]);
-      wins[i] = NULL;
-    }
+      window_free_one (win);
 
-  for (i = n = 0; wins[i]; i++)
-    {
-      if (win && !win->keep && win == wins[i])
+      for (j = i; j < stack_n - 1; j++)
+	stack[j] = stack[j + 1];
+      stack_n--;
+      if (stack_n == 0)
 	{
-	  window_free_one (win);
-	  win = NULL;
-	  continue;
+	  free (stack);
+	  stack = NULL;
 	}
-
-      if (win && win->keep && win == wins[i])
+      else
 	{
-	  /* Detach from paint order but keep WIN until keep is cleared. */
-	  if (win->vk)
-	    {
-	      cboard_ui_widget_hide (win->vk);
-	    }
+	  stack = Realloc (stack, (stack_n + 1) * sizeof (WIN *));
+	  stack[stack_n] = NULL;
 	}
+      sync_wins_alias ();
 
-      new = Realloc (new, (n + 2) * sizeof (WIN *));
-      new[n++] = wins[i];
-    }
-
-  free (wins);
-  wins = NULL;
-
-  if (new)
-    {
-      new[n] = NULL;
-      wins = new;
+      /* Re-raise remaining modals so z-order stays bottom→top. */
+      window_raise_all ();
+      return;
     }
 }
 
@@ -228,18 +277,15 @@ window_draw_prompt (WINDOW * win, int y, int width, const char *str,
 }
 
 void
-window_resize_all ()
+window_resize_all (void)
 {
   int i;
 
-  if (!wins)
-    return;
-
-  for (i = 0; wins[i]; i++)
+  for (i = 0; i < stack_n; i++)
     {
-      WIN *w = wins[i];
+      WIN *w = stack[i];
 
-      if (!w->keep && w->rfunc)
-        w->rfunc (w);
+      if (w && w->rfunc)
+	w->rfunc (w);
     }
 }
