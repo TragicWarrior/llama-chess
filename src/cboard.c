@@ -3758,13 +3758,28 @@ do_play_help()
 void do_play_history_mode()
 {
     struct userdata_s *d = gp->data;
+    int total;
 
-    if (!pgn_history_total(gp->hp) ||
-        (d->engine && d->engine->status == ENGINE_THINKING))
+    if (d->engine && d->engine->status == ENGINE_THINKING)
+    {
+        message(NULL, ANY_KEY_STR, "%s",
+                _("Cannot enter history mode while the engine is thinking."));
         return;
+    }
+
+    /* Drop any in-progress play selection before leaving play mode. */
+    if (d->sp.icon)
+        do_play_cancel_selected();
 
     d->mode = MODE_HISTORY;
-    pgn_board_update(gp, d->b, pgn_history_total(gp->hp));
+    /*
+     * total may be 0 (no moves yet) — still enter history mode at the
+     * starting position.  Previously we returned silently with no moves,
+     * so "Enter history mode" appeared to do nothing.
+     */
+    total = pgn_history_total(gp->hp);
+    pgn_board_update(gp, d->b, total);
+    update_all(gp);
 }
 
 void do_play_edit_mode()

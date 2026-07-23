@@ -233,6 +233,10 @@ on_dropdown_item(vk_widget_t *widget, void *anything)
     if (fn)
         (*fn)();
 
+    /* Mode / board changes need a full chrome refresh (not only composite). */
+    if (gp)
+        update_all(gp);
+
     return 0;
 }
 
