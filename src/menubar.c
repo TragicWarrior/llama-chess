@@ -192,6 +192,18 @@ item_enabled(const struct mb_item *it)
     return (it->mode_mask & bit) != 0;
 }
 
+/* True if a real (enabled) action item remains after index i in table. */
+static int
+has_enabled_after(const struct mb_item *table, int i)
+{
+    for (i++; table[i].mode_mask != -2; i++)
+    {
+        if (table[i].func && item_enabled(&table[i]))
+            return 1;
+    }
+    return 0;
+}
+
 static void
 close_dropdown(void)
 {
@@ -242,22 +254,33 @@ open_dropdown(int idx)
     table = menu_tables[idx];
     max_w = 12;
     n = 0;
-    for (i = 0; table[i].mode_mask != -2; i++)
+    /*
+     * Count only items that will actually appear: enabled actions, and
+     * separators only when they sit between two enabled actions (no
+     * leading/trailing/orphan separators after mode filtering).
+     */
     {
-        if (!table[i].func && !table[i].label)
-        {
-            n++;
-            continue;
-        }
-        if (table[i].func && !item_enabled(&table[i]))
-            continue;
-        if (table[i].label)
-        {
-            int len = (int) strlen(_(table[i].label));
+        int have_item = 0;
 
-            if (len + 2 > max_w)
-                max_w = len + 2;
-            n++;
+        for (i = 0; table[i].mode_mask != -2; i++)
+        {
+            if (!table[i].func && !table[i].label)
+            {
+                if (have_item && has_enabled_after(table, i))
+                    n++;
+                continue;
+            }
+            if (table[i].func && !item_enabled(&table[i]))
+                continue;
+            if (table[i].label && table[i].func)
+            {
+                int len = (int) strlen(_(table[i].label));
+
+                if (len + 2 > max_w)
+                    max_w = len + 2;
+                n++;
+                have_item = 1;
+            }
         }
     }
 
@@ -282,18 +305,27 @@ open_dropdown(int idx)
                          config.color[CONF_MENU].bg);
     vk_widget_set_attrs(VK_WIDGET(lb), config.color[CONF_MENU].attrs);
 
-    for (i = 0; table[i].mode_mask != -2; i++)
     {
-        if (!table[i].func && !table[i].label)
+        int have_item = 0;
+
+        for (i = 0; table[i].mode_mask != -2; i++)
         {
-            vk_listbox_add_separator(lb, VK_SEPARATOR_SINGLE);
-            continue;
+            if (!table[i].func && !table[i].label)
+            {
+                if (have_item && has_enabled_after(table, i))
+                    vk_listbox_add_separator(lb, VK_SEPARATOR_SINGLE);
+                continue;
+            }
+            if (table[i].func && !item_enabled(&table[i]))
+                continue;
+            if (table[i].label && table[i].func)
+            {
+                vk_listbox_add_item(lb, (char *) _(table[i].label),
+                                    on_dropdown_item,
+                                    (void *) table[i].func);
+                have_item = 1;
+            }
         }
-        if (table[i].func && !item_enabled(&table[i]))
-            continue;
-        if (table[i].label && table[i].func)
-            vk_listbox_add_item(lb, (char *) _(table[i].label),
-                                on_dropdown_item, (void *) table[i].func);
     }
 
     snprintf(caption, sizeof(caption), " %s ", _(menu_titles[idx]));
