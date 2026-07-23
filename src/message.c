@@ -709,15 +709,26 @@ construct_confirm (const char *title, const char *text,
 }
 
 /*
- * Close confirm after mouse: set win->c for efunc, free state, inject a
- * key so game_loop runs display_confirm (data NULL → return 0 → destroy).
+ * Close confirm after mouse.  Must not inject a follow-up key: game_loop
+ * would overwrite win->c with that key before efunc (do_quit) runs, so
+ * Yes never set quit=1.  Run efunc + destroy here instead.
  */
 static void
 confirm_mouse_close (WIN * win, wint_t result_c)
 {
+  window_exit_func *ef;
+
+  if (!win)
+    return;
+
   win->c = result_c;
+  ef = win->efunc;
   confirm_free (win);
-  pushkey = KEY_ESCAPE;
+  if (ef)
+    (*ef) (win);
+  window_destroy (win);
+  if (gp)
+    update_all (gp);
 }
 
 int
