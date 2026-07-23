@@ -219,7 +219,7 @@ file_browser (void *arg)
       return;
     }
 
-  /* Match menu/input: black body, cyan accents. */
+  /* Match menus: bright white on cyan. */
   vk_filedialog_set_colors (fd,
 			    config.color[CONF_MENU].fg,
 			    config.color[CONF_MENU].bg);
@@ -227,7 +227,7 @@ file_browser (void *arg)
 			       config.color[CONF_MENUS].fg,
 			       config.color[CONF_MENUS].bg);
   vk_filedialog_set_button_colors (fd,
-				   config.color[CONF_IBORDER].fg,
+				   config.color[CONF_MENU].fg,
 				   config.color[CONF_MENU].bg);
   if (config.pattern && config.pattern[0]
       && config.pattern[0] != '*')

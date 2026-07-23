@@ -159,9 +159,9 @@
 #color_input_border	cyan	black
 #color_input_prompt	white	magenta	none	bold
 #
-#color_menu		white	black	none	none
-#color_menu_selected	white	red	none	bold
-#color_menu_highlight	blue	yellow	none	bold
+#color_menu		white	cyan	bold	bold
+#color_menu_selected	cyan	white	bold	bold
+#color_menu_highlight	white	blue	bold	bold
 #color_menu_graphics	green	black	bold	bold
 
 # Sends a command to the chess engine when the specified key is pressed. The

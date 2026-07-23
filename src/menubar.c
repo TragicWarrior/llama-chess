@@ -282,8 +282,14 @@ open_dropdown (int idx)
 
   lb = vk_listbox_create (max_w, max_h);
   vk_listbox_set_wrap (lb, true);
-  vk_listbox_set_highlight (lb, COLOR_WHITE, COLOR_BLUE);
-  vk_widget_set_colors (VK_WIDGET (lb), COLOR_BLACK, COLOR_WHITE);
+  vk_listbox_set_highlight (lb,
+			    config.color[CONF_MENUS].fg,
+			    config.color[CONF_MENUS].bg);
+  vk_listbox_set_highlight_attrs (lb, config.color[CONF_MENUS].attrs);
+  vk_widget_set_colors (VK_WIDGET (lb),
+			config.color[CONF_MENU].fg,
+			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (lb), config.color[CONF_MENU].attrs);
 
   for (i = 0; table[i].mode_mask != -2; i++)
     {
@@ -304,9 +310,13 @@ open_dropdown (int idx)
   vk_window_set_title (win, caption);
   vk_window_set_border_style (win, VK_BORDER_SINGLE);
   vk_window_set_border_colors (win,
-			       config.color[CONF_IBORDER].fg,
-			       config.color[CONF_IBORDER].bg);
-  vk_widget_set_colors (VK_WIDGET (win), COLOR_BLACK, COLOR_WHITE);
+			       config.color[CONF_MENU].fg,
+			       config.color[CONF_MENU].bg);
+  vk_window_set_border_attrs (win, config.color[CONF_MENU].attrs);
+  vk_widget_set_colors (VK_WIDGET (win),
+			config.color[CONF_MENU].fg,
+			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (win), config.color[CONF_MENU].attrs);
   vk_window_set_child (win, VK_WIDGET (lb));
 
   vk_widget_get_position (VK_WIDGET (menubar), &bar_x, &bar_y);
@@ -360,8 +370,13 @@ cboard_menubar_init (void)
     return;
 
   menubar = vk_menubar_create (width);
-  vk_widget_set_colors (VK_WIDGET (menubar), COLOR_BLACK, COLOR_WHITE);
-  vk_menubar_set_highlight (menubar, COLOR_WHITE, COLOR_BLUE);
+  vk_widget_set_colors (VK_WIDGET (menubar),
+			config.color[CONF_MENU].fg,
+			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (menubar), config.color[CONF_MENU].attrs);
+  vk_menubar_set_highlight (menubar,
+			    config.color[CONF_MENUH].fg,
+			    config.color[CONF_MENUH].bg);
 
   for (i = 0; i < MB_COUNT; i++)
     vk_menubar_add_item (menubar, (char *) _(menu_titles[i]),

@@ -584,12 +584,15 @@ construct_menu (int rows, int cols, int y, int x, const char *title,
     vk_window_set_title (vkw, " Menu ");
 
   vk_window_set_border_style (vkw, VK_BORDER_SINGLE);
+  /* Bright white on cyan border (same pair as menu body). */
   vk_window_set_border_colors (vkw,
-			       config.color[CONF_IBORDER].fg,
-			       config.color[CONF_IBORDER].bg);
+			       config.color[CONF_MENU].fg,
+			       config.color[CONF_MENU].bg);
+  vk_window_set_border_attrs (vkw, config.color[CONF_MENU].attrs);
   vk_widget_set_colors (VK_WIDGET (vkw),
 			config.color[CONF_MENU].fg,
 			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (vkw), config.color[CONF_MENU].attrs);
 
   inner_w = w - 2;
   list_h = h - 4;
@@ -607,19 +610,23 @@ construct_menu (int rows, int cols, int y, int x, const char *title,
   vk_widget_set_colors (VK_WIDGET (lb),
 			config.color[CONF_MENU].fg,
 			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (lb), config.color[CONF_MENU].attrs);
   vk_widget_set_expand (VK_WIDGET (lb));
   m->listbox = lb;
 
   lab = vk_label_create (inner_w);
+  /* Status line: keep menu cyan body, bold white text. */
   vk_widget_set_colors (VK_WIDGET (lab),
-			config.color[CONF_IPROMPT].fg,
-			config.color[CONF_IPROMPT].bg);
+			config.color[CONF_MENU].fg,
+			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (lab), config.color[CONF_MENU].attrs);
   m->status_label = lab;
 
   vbox = vk_box_create (inner_w, h - 2, VK_BOX_VERTICAL, 2);
   vk_widget_set_colors (VK_WIDGET (vbox),
 			config.color[CONF_MENU].fg,
 			config.color[CONF_MENU].bg);
+  vk_widget_set_attrs (VK_WIDGET (vbox), config.color[CONF_MENU].attrs);
   /* Expand with the frame so geometry changes keep a full interior. */
   vk_widget_set_expand (VK_WIDGET (vbox));
   vk_box_set_widget (vbox, 0, VK_WIDGET (lb));

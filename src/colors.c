@@ -159,13 +159,20 @@ set_default_colors ()
   config.color[CONF_IPROMPT].fg = COLOR_WHITE;
   config.color[CONF_IPROMPT].bg = COLOR_MAGENTA;
   config.color[CONF_IPROMPT].nattrs = A_BOLD;
+  /* Menus: bright white on cyan; border uses the same pair with bold. */
   config.color[CONF_MENU].fg = COLOR_WHITE;
-  config.color[CONF_MENU].bg = COLOR_BLACK;
-  config.color[CONF_MENUS].fg = COLOR_WHITE;
-  config.color[CONF_MENUS].bg = COLOR_RED;
-  config.color[CONF_MENUS].nattrs = A_BOLD;
-  config.color[CONF_MENUH].fg = COLOR_BLUE;
-  config.color[CONF_MENUH].bg = COLOR_YELLOW;
+  config.color[CONF_MENU].bg = COLOR_CYAN;
+  config.color[CONF_MENU].attrs = A_BOLD;
+  config.color[CONF_MENU].nattrs = A_BOLD;
+  /* Selected row: reverse so it stands out on the cyan body. */
+  config.color[CONF_MENUS].fg = COLOR_CYAN;
+  config.color[CONF_MENUS].bg = COLOR_WHITE;
+  config.color[CONF_MENUS].attrs = A_BOLD;
+  config.color[CONF_MENUS].nattrs = A_BOLD | A_REVERSE;
+  /* Menubar focused item highlight. */
+  config.color[CONF_MENUH].fg = COLOR_WHITE;
+  config.color[CONF_MENUH].bg = COLOR_BLUE;
+  config.color[CONF_MENUH].attrs = A_BOLD;
   config.color[CONF_MENUH].nattrs = A_BOLD;
   config.color[CONF_HISTORY_MENU_LG].fg = COLOR_GREEN;
   config.color[CONF_HISTORY_MENU_LG].bg = COLOR_BLACK;
