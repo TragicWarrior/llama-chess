@@ -19,6 +19,8 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+#include <time.h>
+
 /*
  * Solaris 5.9
  */
@@ -26,10 +28,12 @@
 #define _PATH_DEV "/dev/"
 #endif
 
-#define RETURN(d)                         \
-    {                                     \
-        d->engine->status = ENGINE_READY; \
-        return;                           \
+#define RETURN(d)                           \
+    {                                       \
+        d->engine->status = ENGINE_READY;   \
+        d->engine->activity[0] = '\0';       \
+        d->engine->thinking_since = 0;      \
+        return;                             \
     }
 
 enum
@@ -74,6 +78,9 @@ struct engine_s
     char **enginebuf;
     char *iobuf;
     int len;
+    /* Progress / last error from Ollama bridge (# ollama: … / Error …). */
+    char activity[96];
+    time_t thinking_since; /* when ENGINE_THINKING began (elapsed display) */
 };
 
 int send_signal_to_engine(pid_t, int);

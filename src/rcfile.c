@@ -39,6 +39,7 @@
 #include "colors.h"
 #include "keys.h"
 #include "rcfile.h"
+#include "ollama.h"
 #include "common.h"
 
 struct config_s config;
@@ -960,6 +961,8 @@ void parse_rcfile(const char *filename)
         }
         else if (strcmp(var, "engine_timeout") == 0)
             config.engine_timeout = atoi(val);
+        else if (strcmp(var, "ollama_connection") == 0)
+            ollama_conn_add_from_config(val);
         else if (strcmp(var, "utf8_pieces") == 0)
             config.utf8_pieces = on_or_off(filename, lines, val);
         else if (strcmp(var, "turn_cmd") == 0)

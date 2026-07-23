@@ -488,8 +488,16 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
         in->buf[sizeof(in->buf) - 1] = 0;
     }
 
-    /* title + border + input(3) + help lines */
-    h = 2 + 3 + (eh ? eh : 1) + 1;
+    /*
+     * Window: border (2) + sunken field (3) + help labels.  Do not share
+     * height homogeneously — equal slots shrink the field below 3 rows and
+     * clip the bottom relief (especially with multi-line help / long paths).
+     */
+    {
+        int help_rows = eh > 0 ? eh : 1;
+
+        h = 2 + 3 + help_rows;
+    }
     w = in->w;
     if (w < 24)
         w = 24;
@@ -546,6 +554,8 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
         int si;
 
         vbox = vk_box_create(w - 2, h - 2, VK_BOX_VERTICAL, slots);
+        /* Natural sizes: field stays 3 rows; labels stay 1. */
+        vk_box_set_homogeneous(vbox, false);
         vk_widget_set_colors(VK_WIDGET(vbox),
                              config.color[CONF_MENU].fg,
                              config.color[CONF_MENU].bg);
@@ -572,6 +582,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
         char helpbuf[255];
 
         vbox = vk_box_create(w - 2, h - 2, VK_BOX_VERTICAL, 2);
+        vk_box_set_homogeneous(vbox, false);
         vk_widget_set_colors(VK_WIDGET(vbox),
                              config.color[CONF_MENU].fg,
                              config.color[CONF_MENU].bg);

@@ -77,7 +77,7 @@
 
 #define CBOARD_URL "https://gitlab.com/bjk/cboard/wikis"
 #define COPYRIGHT "Copyright (C) 2002-2024 " PACKAGE_BUGREPORT
-#define STATUS_HEIGHT 12
+#define STATUS_HEIGHT 13
 /* Leave row 0 for the menubar; all chrome is laid out below it. */
 #define UI_TOP CBOARD_MENUBAR_H
 #define WORK_LINES (LINES - UI_TOP)
@@ -1773,6 +1773,32 @@ void do_validate_move(char **move)
         pgn_history_add(gp, d->b, *move);
         pgn_switch_turn(gp);
     }
+    else if (engine_is_ollama(gp))
+    {
+        /*
+         * Apply the human move on our board, then push a fresh FEN to the
+         * bridge and ask for a reply.  (Unlike gnuchess, the bridge does not
+         * share our board state.)
+         */
+        if ((n = pgn_parse_move(gp, d->b, move, &frfr)) != E_PGN_OK)
+        {
+            invalid_move(d->n + 1, n, *move);
+            return;
+        }
+
+        strcpy(d->pm_frfr, frfr);
+        update_time_control(gp);
+        pgn_history_add(gp, d->b, *move);
+        pgn_switch_turn(gp);
+
+        {
+            char *fen = pgn_game_to_fen(gp, d->b);
+
+            add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+            free(fen);
+            add_engine_command(gp, ENGINE_THINKING, "go\n");
+        }
+    }
     else
     {
         if ((n = pgn_validate_move(gp, d->b, move, &frfr)) != E_PGN_OK)
@@ -2036,34 +2062,99 @@ void update_status_window(GAME g)
     mvwprintw(statusw, y++, 0, "%*s %-*s", 7, _("Valid:"), w,
               config.validmoves ? _("on") : _("off"));
 
-    if (d->engine)
+    /*
+     * Engine line: for Ollama, prefer bridge activity (connecting / waiting
+     * for model / last error) over a generic "pondering...".
+     */
     {
-        switch (d->engine->status)
+        static char engine_detail[160];
+        long think_sec = 0;
+
+        if (d->engine && d->engine->thinking_since
+            && d->engine->status == ENGINE_THINKING)
         {
-        case ENGINE_THINKING:
-            engine = _("pondering...");
-            break;
-        case ENGINE_READY:
-            engine = _("ready");
-            break;
-        case ENGINE_INITIALIZING:
-            engine = _("initializing...");
-            break;
-        case ENGINE_OFFLINE:
-            engine = _("offline");
-            break;
-        default:
-            engine = _("(empty value)");
-            break;
+            think_sec = (long) (time(NULL) - d->engine->thinking_since);
+            if (think_sec < 0)
+                think_sec = 0;
         }
+
+        if (d->engine)
+        {
+            switch (d->engine->status)
+            {
+            case ENGINE_THINKING:
+                if (engine_is_ollama(g) && d->engine->activity[0])
+                {
+                    snprintf(engine_detail, sizeof(engine_detail),
+                             "%s (%lds)", d->engine->activity, think_sec);
+                    engine = engine_detail;
+                }
+                else if (engine_is_ollama(g))
+                {
+                    snprintf(engine_detail, sizeof(engine_detail),
+                             _("waiting for Ollama (%lds)"), think_sec);
+                    engine = engine_detail;
+                }
+                else
+                    engine = _("pondering...");
+                break;
+            case ENGINE_READY:
+                if (engine_is_ollama(g) && d->engine->activity[0])
+                {
+                    /* Keep last error / note visible after a failed request. */
+                    snprintf(engine_detail, sizeof(engine_detail),
+                             "%s — %s", _("ready"), d->engine->activity);
+                    engine = engine_detail;
+                }
+                else
+                    engine = _("ready");
+                break;
+            case ENGINE_INITIALIZING:
+                engine = _("initializing...");
+                break;
+            case ENGINE_OFFLINE:
+                engine = _("offline");
+                break;
+            default:
+                engine = _("(empty value)");
+                break;
+            }
+        }
+        else
+            engine = _("offline");
     }
-    else
-        engine = _("offline");
 
     mvwprintw(statusw, y, 0, "%*s %-*s", 7, _("Engine:"), w, " ");
     wattron(statusw, CP_STATUS_ENGINE);
     mvwaddstr(statusw, y++, 8, engine);
     wattroff(statusw, CP_STATUS_ENGINE);
+
+    /* Ollama connection indicator (URL/model when the bridge is live). */
+    {
+        char conn[128];
+        const char *conn_s;
+
+        if (engine_is_ollama(g) && d->engine
+            && d->engine->status != ENGINE_OFFLINE)
+        {
+            const char *url = config.ollama_url;
+            const char *model = config.ollama_model;
+
+            if (url && url[0] && model && model[0])
+                snprintf(conn, sizeof(conn), "%s %s", url, model);
+            else if (url && url[0])
+                snprintf(conn, sizeof(conn), "%s", url);
+            else
+                snprintf(conn, sizeof(conn), "%s", _("connected"));
+            conn_s = conn;
+        }
+        else if (config.ollama_url && config.ollama_url[0])
+            conn_s = _("disconnected");
+        else
+            conn_s = _("offline");
+
+        mvwprintw(statusw, y++, 0, "%*s %-*s", 7, _("Ollama:"), w, conn_s);
+    }
 
     mvwprintw(statusw, y++, 0, "%*s %-*s", 7, _("Turn:"), w,
               (g->turn == WHITE) ? _("white") : _("black"));
@@ -3314,12 +3405,19 @@ void do_play_commit()
 
     move_to_engine(gp);
 
-    // Completa la función para que permita seguir jugando cuando se carga un
-    // archivo pgn (con juego no terminado) que inicie con turno del lado
-    // negro.
-    // Complete the function to allow continue playing when loading a file
-    // pgn (with unfinished game) you start to turn black side.
-    if (gp->side != gp->turn)
+    /*
+     * Completa la función para que permita seguir jugando cuando se carga un
+     * archivo pgn (con juego no terminado) que inicie con turno del lado
+     * negro.
+     *
+     * Only for local engines that do not apply the human move themselves
+     * (gnuchess path).  Ollama and human/human already applied the move and
+     * switched turn in do_validate_move — flipping side here makes the human
+     * play the engine's color, leaves ENGINE_THINKING set after the reply,
+     * and the second move appears to do nothing.
+     */
+    if (!TEST_FLAG(d->flags, CF_HUMAN) && !engine_is_ollama(gp)
+        && gp->side != gp->turn)
         pgn_switch_side(gp, FALSE);
 
     if (d->rotate && d->sp.icon)
@@ -4740,11 +4838,70 @@ void do_new_game_from_scratch(WIN *win)
 
 void do_new_game()
 {
+    int reattach_ollama = 0;
+    char *saved_url = NULL, *saved_model = NULL;
+
+    /*
+     * "New game / round" allocates a fresh GAME.  Tear down any engine on
+     * the current game first so we do not leak an Ollama bridge process,
+     * then optionally re-bind the same Ollama endpoint to the new game.
+     */
+    if (gp && gp->data)
+    {
+        if (engine_is_ollama(gp) && config.ollama_url && config.ollama_url[0])
+        {
+            reattach_ollama = 1;
+            saved_url = strdup(config.ollama_url);
+            saved_model = config.ollama_model && config.ollama_model[0]
+                              ? strdup(config.ollama_model)
+                              : strdup(OLLAMA_DEFAULT_MODEL);
+        }
+        free_engine(gp);
+    }
+
     pgn_new_game();
     gp = game[gindex];
     add_custom_tags(&gp->tag);
     init_userdata_once(gp, gindex);
     do_new_game_finalize(gp);
+
+    if (reattach_ollama && saved_url)
+    {
+        struct userdata_s *d = gp->data;
+
+        free(config.ollama_url);
+        config.ollama_url = saved_url;
+        free(config.ollama_model);
+        config.ollama_model = saved_model;
+        CLEAR_FLAG(d->flags, CF_HUMAN);
+        CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+        if (start_ollama_engine(gp) == 0)
+        {
+            char *fen = pgn_game_to_fen(gp, d->b);
+
+            add_engine_command(gp, ENGINE_READY, "xboard\n");
+            add_engine_command(gp, ENGINE_READY, "protover 2\n");
+            add_engine_command(gp, ENGINE_READY, "new\n");
+            add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
+            free(fen);
+            d->engine->status = ENGINE_READY;
+            update_status_notify(gp,
+                                 _("New game — still connected to Ollama (%s)"),
+                                 config.ollama_model);
+        }
+        else
+        {
+            SET_FLAG(d->flags, CF_HUMAN);
+            update_status_notify(gp, "%s",
+                                 _("New game — could not reattach Ollama; "
+                                   "use File → Connect Ollama…"));
+        }
+    }
+    else
+    {
+        free(saved_url);
+        free(saved_model);
+    }
 }
 
 void do_game_delete_finalize(int n)
@@ -5839,7 +5996,27 @@ void game_loop()
 
             pev = cboard_ui_poll_event(&input_c, &mev);
             if (pev == 0)
+            {
+                /*
+                 * Idle timeout: while Ollama (or any engine) is thinking,
+                 * refresh status once per second so elapsed time ticks.
+                 */
+                if (d->engine && d->engine->status == ENGINE_THINKING
+                    && d->engine->thinking_since)
+                {
+                    static time_t last_think_paint;
+                    time_t now = time(NULL);
+
+                    if (now != last_think_paint)
+                    {
+                        last_think_paint = now;
+                        update_status_window(gp);
+                        cboard_menubar_refresh();
+                        cboard_ui_refresh();
+                    }
+                }
                 continue;
+            }
             if (pev == 2)
             {
                 if (cboard_mouse_handle(&mev))

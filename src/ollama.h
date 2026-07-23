@@ -12,8 +12,9 @@
 #define OLLAMA_DEFAULT_MODEL "llama3.2"
 
 /*
- * Fork an XBoard-speaking child that translates go/moves into Ollama
- * /api/chat requests.  Fills g->data->engine fds/pid like a local engine.
+ * Fork an XBoard-speaking child that translates go/moves into Ollama chat
+ * HTTP (native /api/chat or OpenAI-compatible /v1/chat/completions).
+ * Fills g->data->engine fds/pid like a local engine.
  * Returns 0 on success, non-zero on failure (message already shown).
  */
 int start_ollama_engine(GAME g);
@@ -22,12 +23,19 @@ int start_ollama_engine(GAME g);
 int engine_is_ollama(GAME g);
 
 /*
- * Prompt for base URL (and optional model after ' '), store in config,
- * tear down any existing engine, clear human-only mode, start Ollama.
+ * Show saved connections (or New… if none).  Successful connects are stored
+ * under ~/.cboard/ollama_connections.
  */
 void do_global_connect_ollama(void);
 
 /* Drop Ollama URL binding and stop the opponent engine if it is Ollama. */
 void do_global_disconnect_ollama(void);
+
+/* Load/save helpers (also used from rcfile). */
+void ollama_conn_load(void);
+void ollama_conn_save(void);
+int ollama_conn_add(const char *name, const char *url, const char *model);
+/* Parse "name url model" or "url model" from a config line value. */
+void ollama_conn_add_from_config(const char *val);
 
 #endif

@@ -147,7 +147,26 @@ int send_to_engine(GAME g, int status, const char *format, ...)
     if (d->engine->status == ENGINE_OFFLINE)
         stop_engine(g);
     else
+    {
         d->engine->status = status;
+        if (status == ENGINE_THINKING)
+        {
+            time(&d->engine->thinking_since);
+            /* Bridge will refine this via "# ollama: …" progress lines. */
+            if (d->engine->backend == ENGINE_BACKEND_OLLAMA)
+                snprintf(d->engine->activity, sizeof(d->engine->activity),
+                         "%s", _("requesting move"));
+            else
+                d->engine->activity[0] = '\0';
+        }
+        else if (status == ENGINE_READY || status == ENGINE_OFFLINE)
+        {
+            /* Keep activity on READY so a prior error remains visible. */
+            if (status == ENGINE_OFFLINE)
+                d->engine->activity[0] = '\0';
+            d->engine->thinking_since = 0;
+        }
+    }
 
     free(line);
     return d->engine->status == ENGINE_OFFLINE ? 1 : 0;
@@ -498,6 +517,31 @@ parse_xboard_line(GAME g, char *str)
 
     p = str;
 
+    /*
+     * Ollama bridge progress (flushed before/during the HTTP wait).
+     * Format: "# ollama: <short detail>"
+     */
+    if (d->engine && strncmp(str, "# ollama: ", 10) == 0)
+    {
+        snprintf(d->engine->activity, sizeof(d->engine->activity), "%s",
+                 str + 10);
+        return;
+    }
+
+    /* XBoard Error lines — surface as activity + notification. */
+    if (d->engine && strncmp(str, "Error", 5) == 0)
+    {
+        const char *msg = str;
+
+        if (strncmp(str, "Error (ollama): ", 16) == 0)
+            msg = str + 16;
+        snprintf(d->engine->activity, sizeof(d->engine->activity), "%s", msg);
+        d->engine->status = ENGINE_READY;
+        d->engine->thinking_since = 0;
+        update_status_notify(g, "%s", str);
+        return;
+    }
+
     // 1. a2a4 (gnuchess)
     while (isdigit(*p))
         p++;
@@ -581,33 +625,32 @@ parse_xboard_line(GAME g, char *str)
             return;
         }
 
-        if (g->side == g->turn)
+        /*
+         * Engine delivered a move.  In human vs engine it is now the
+         * human's turn — always READY (do not require side==turn; a prior
+         * bug could desync side and leave THINKING forever).
+         */
+        if (config.turn_cmd && g->side == g->turn)
         {
-            if (config.turn_cmd)
+            char *cmd = string_replace(config.turn_cmd, "%m", buf);
+
+            switch (fork())
             {
-                char *cmd = string_replace(config.turn_cmd, "%m", buf);
-
-                switch (fork())
-                {
-                case 0:
-                    if (system(cmd) == -1)
-                        _exit(127);
-                    _exit(0);
-                case -1:
-                    break;
-                default:
-                    break;
-                }
-
-                free(cmd);
+            case 0:
+                if (system(cmd) == -1)
+                    _exit(127);
+                _exit(0);
+            case -1:
+                break;
+            default:
+                break;
             }
 
-            free(buf);
-            RETURN(d);
+            free(cmd);
         }
 
         free(buf);
-        d->engine->status = ENGINE_THINKING;
+        RETURN(d);
     }
 
     return;
