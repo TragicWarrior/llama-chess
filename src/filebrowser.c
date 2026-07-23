@@ -423,6 +423,200 @@ fb_resize (WIN * w)
     }
 }
 
+static int
+fb_left_press (mmask_t bstate)
+{
+  return (bstate & (BUTTON1_PRESSED | BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED))
+    != 0;
+}
+
+/* After fb_free, inject a key so game_loop runs display → returns 0 → destroy. */
+static void
+fb_request_close (void)
+{
+  pushkey = KEY_ESCAPE;
+}
+
+/*
+ * Screen-coordinate mouse for the open file dialog WIN.
+ * Maps path / list / OK / Cancel zones (same as tab stops).
+ * Returns 1 if the event was over the dialog (consumed).
+ */
+int
+file_browser_mouse (WIN * win, int x, int y, mmask_t bstate)
+{
+  struct fb_state_s *st;
+  int fx, fy, fw, fh;
+  int lx, ly;
+  vk_listbox_t *lb;
+  vk_widget_t *path_w;
+  vk_widget_t *list_fr;
+  vk_box_t *bar;
+  int px, py, pw, ph;
+
+  if (!win || !win->data || win->vk_kind != WIN_VK_FILEDIALOG)
+    return 0;
+
+  st = win->data;
+  if (!st->fd)
+    return 0;
+
+  vk_widget_get_position (VK_WIDGET (st->fd), &fx, &fy);
+  vk_widget_get_metrics (VK_WIDGET (st->fd), &fw, &fh);
+  if (x < fx || y < fy || x >= fx + fw || y >= fy + fh)
+    return 0;
+
+  lx = x - fx;
+  ly = y - fy;
+
+  /* Wheel over dialog → move list selection. */
+  if (bstate & (BUTTON4_PRESSED | BUTTON5_PRESSED))
+    {
+      lb = vk_filedialog_get_file_list (st->fd);
+      if (lb)
+	{
+	  st->tab = FB_TAB_LIST;
+	  fb_sync_box_focus (st);
+	  if (bstate & BUTTON4_PRESSED)
+	    vk_listbox_set_prev (lb);
+	  else
+	    vk_listbox_set_next (lb);
+	  vk_filedialog_update (st->fd);
+	  cboard_ui_refresh ();
+	}
+      return 1;
+    }
+
+  if (!fb_left_press (bstate))
+    return 1;
+
+  path_w = vk_box_get_widget (VK_BOX (st->fd), FB_BOX_PATH);
+  list_fr = vk_box_get_widget (VK_BOX (st->fd), FB_BOX_LIST);
+  bar = VK_BOX (vk_box_get_widget (VK_BOX (st->fd), FB_BOX_BUTTONS));
+
+  if (path_w)
+    {
+      vk_widget_get_position (path_w, &px, &py);
+      vk_widget_get_metrics (path_w, &pw, &ph);
+      if (lx >= px && lx < px + pw && ly >= py && ly < py + ph)
+	{
+	  st->tab = FB_TAB_PATH;
+	  fb_sync_box_focus (st);
+	  vk_filedialog_update (st->fd);
+	  cboard_ui_refresh ();
+	  return 1;
+	}
+    }
+
+  if (list_fr)
+    {
+      vk_widget_get_position (list_fr, &px, &py);
+      vk_widget_get_metrics (list_fr, &pw, &ph);
+      if (lx >= px && lx < px + pw && ly >= py && ly < py + ph)
+	{
+	  int row, scroll, n, ily;
+	  char name[NAME_MAX + 1];
+
+	  st->tab = FB_TAB_LIST;
+	  fb_sync_box_focus (st);
+	  lb = vk_filedialog_get_file_list (st->fd);
+	  ily = ly - py - 1;	/* frame border inset */
+	  if (lb && ily >= 0)
+	    {
+	      scroll = vk_listbox_get_scroll_pos (lb);
+	      n = vk_listbox_get_item_count (lb);
+	      row = scroll + ily;
+	      if (row >= 0 && row < n)
+		{
+		  vk_listbox_set_curr (lb, row);
+		  vk_filedialog_update (st->fd);
+		  if (bstate & BUTTON1_DOUBLE_CLICKED)
+		    {
+		      if (fb_copy_selected (st, name, sizeof (name)))
+			{
+			  if (fb_is_dir_entry (name))
+			    {
+			      cboard_ui_push_key ((cboard_widget_t *) st->fd,
+						     '\n');
+			      vk_filedialog_update (st->fd);
+			    }
+			  else if (fb_apply_name (st, name))
+			    {
+			      fb_free (win);
+			      fb_request_close ();
+			      cboard_ui_refresh ();
+			      return 1;
+			    }
+			}
+		    }
+		}
+	    }
+	  cboard_ui_refresh ();
+	  return 1;
+	}
+    }
+
+  if (bar)
+    {
+      vk_widget_t *btn0, *btn1;
+      int bx, by, bw, bh;
+      int rel_x;
+
+      vk_widget_get_position (VK_WIDGET (bar), &px, &py);
+      vk_widget_get_metrics (VK_WIDGET (bar), &pw, &ph);
+      if (lx >= px && lx < px + pw && ly >= py && ly < py + ph)
+	{
+	  rel_x = lx - px;
+	  btn0 = vk_box_get_widget (bar, 0);
+	  btn1 = vk_box_get_widget (bar, 1);
+	  if (btn0)
+	    {
+	      vk_widget_get_position (btn0, &bx, &by);
+	      vk_widget_get_metrics (btn0, &bw, &bh);
+	      if (rel_x >= bx && rel_x < bx + bw)
+		{
+		  char name[NAME_MAX + 1];
+
+		  st->tab = FB_TAB_OK;
+		  fb_sync_box_focus (st);
+		  if (fb_copy_selected (st, name, sizeof (name))
+		      && fb_apply_name (st, name))
+		    {
+		      fb_free (win);
+		      fb_request_close ();
+		    }
+		  else
+		    {
+		      vk_filedialog_update (st->fd);
+		      cboard_ui_refresh ();
+		    }
+		  return 1;
+		}
+	    }
+	  if (btn1)
+	    {
+	      vk_widget_get_position (btn1, &bx, &by);
+	      vk_widget_get_metrics (btn1, &bw, &bh);
+	      if (rel_x >= bx && rel_x < bx + bw)
+		{
+		  st->tab = FB_TAB_CANCEL;
+		  fb_sync_box_focus (st);
+		  fb_free (win);
+		  fb_request_close ();
+		  return 1;
+		}
+	    }
+	  st->tab = FB_TAB_OK;
+	  fb_sync_box_focus (st);
+	  vk_filedialog_update (st->fd);
+	  cboard_ui_refresh ();
+	  return 1;
+	}
+    }
+
+  return 1;
+}
+
 /*
  * Open a VDK file dialog as a modal over the current input field.
  * On accept, the selected path is written into the parent input buffer.

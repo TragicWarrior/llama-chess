@@ -606,3 +606,118 @@ cboard_menubar_key (wint_t c)
       return 1;
     }
 }
+
+static int
+mb_left_press (mmask_t bstate)
+{
+  return (bstate & (BUTTON1_PRESSED | BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED))
+    != 0;
+}
+
+int
+cboard_menubar_mouse (int x, int y, mmask_t bstate)
+{
+  int bar_x, bar_y, bar_w, bar_h;
+  int idx;
+  int lx;
+
+  if (!menubar)
+    return 0;
+
+  /* Wheel over open dropdown → move selection. */
+  if (dropdown
+      && (bstate & (BUTTON4_PRESSED | BUTTON5_PRESSED)))
+    {
+      int dx, dy, dw, dh;
+      vk_listbox_t *lb;
+
+      vk_widget_get_position (VK_WIDGET (dropdown), &dx, &dy);
+      vk_widget_get_metrics (VK_WIDGET (dropdown), &dw, &dh);
+      if (x >= dx && x < dx + dw && y >= dy && y < dy + dh)
+	{
+	  lb = VK_LISTBOX (vk_window_get_child (dropdown));
+	  if (lb)
+	    {
+	      if (bstate & BUTTON4_PRESSED)
+		vk_listbox_set_prev (lb);
+	      else
+		vk_listbox_set_next (lb);
+	      vk_listbox_update (lb);
+	      vk_window_update (dropdown);
+	      cboard_ui_refresh ();
+	    }
+	  return 1;
+	}
+    }
+
+  if (!mb_left_press (bstate))
+    return 0;
+
+  /* Click on open dropdown list → select and activate. */
+  if (dropdown)
+    {
+      int dx, dy, dw, dh;
+      int ly, row;
+      vk_listbox_t *lb;
+
+      vk_widget_get_position (VK_WIDGET (dropdown), &dx, &dy);
+      vk_widget_get_metrics (VK_WIDGET (dropdown), &dw, &dh);
+      if (x >= dx && x < dx + dw && y >= dy && y < dy + dh)
+	{
+	  lb = VK_LISTBOX (vk_window_get_child (dropdown));
+	  /* Interior of window frame: inset 1 for border. */
+	  ly = y - dy - 1;
+	  if (lb && ly >= 0)
+	    {
+	      int n = vk_listbox_get_item_count (lb);
+	      int scroll = vk_listbox_get_scroll_pos (lb);
+
+	      row = scroll + ly;
+	      if (row >= 0 && row < n)
+		{
+		  vk_listbox_set_curr (lb, row);
+		  vk_listbox_update (lb);
+		  vk_window_update (dropdown);
+		  /* Activate via the same path as Enter. */
+		  vk_listbox_exec_curr (lb);
+		  return 1;
+		}
+	    }
+	  return 1;
+	}
+
+      /* Click outside dropdown while open → close (and maybe open other). */
+      close_dropdown ();
+    }
+
+  vk_widget_get_position (VK_WIDGET (menubar), &bar_x, &bar_y);
+  vk_widget_get_metrics (VK_WIDGET (menubar), &bar_w, &bar_h);
+  if (y < bar_y || y >= bar_y + bar_h || x < bar_x || x >= bar_x + bar_w)
+    {
+      if (cboard_menubar_active ())
+	{
+	  menubar_deactivate ();
+	  return 1;
+	}
+      return 0;
+    }
+
+  lx = x - bar_x;
+  idx = vk_menubar_hit_test (menubar, lx);
+  if (idx < 0)
+    {
+      if (!cboard_menubar_active ())
+	menubar_activate ();
+      return 1;
+    }
+
+  if (!cboard_menubar_active ())
+    {
+      focused = 1;
+      vk_menubar_set_focused (menubar, true);
+    }
+  vk_menubar_set_curr (menubar, idx);
+  vk_menubar_update (menubar);
+  open_dropdown (idx);
+  return 1;
+}

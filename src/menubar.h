@@ -21,4 +21,10 @@ int cboard_menubar_active (void);
  */
 int cboard_menubar_key (wint_t c);
 
+/*
+ * Handle a screen-coordinate mouse event (MEVENT from vk_kmio_fetch).
+ * Returns 1 if consumed.
+ */
+int cboard_menubar_mouse (int x, int y, mmask_t bstate);
+
 #endif

@@ -51,6 +51,8 @@
 #include "perl-plugin.h"
 #endif
 
+#include <vdk.h>
+
 #include "common.h"
 #include "conf.h"
 #include "window.h"
@@ -66,6 +68,7 @@
 #include "filebrowser.h"
 #include "ui_screen.h"
 #include "menubar.h"
+#include "mouse.h"
 
 #ifdef DEBUG
 #include <debug.h>
@@ -3252,6 +3255,85 @@ do_play_commit ()
   d->pm_undo = FALSE;
 }
 
+/*
+ * Map a click on the board widget to rank/file (1..8).  Small-board layout
+ * only (classic 18x34).  Returns 1 and sets *rank/*file on hit.
+ */
+static int
+board_click_to_square (int lx, int ly, int *rank, int *file)
+{
+  int r, c;
+
+  if (BIG_BOARD || MEGA_BOARD)
+    return 0;
+
+  /* ROWTOMATRIX(r)=(8-r)*2+1 → ly odd 1..15 */
+  if (ly < 1 || (ly % 2) == 0)
+    return 0;
+  r = 8 - (ly - 1) / 2;
+  if (r < 1 || r > 8)
+    return 0;
+
+  /* COLTOMATRIX: 1,5,9,...,29 */
+  if (lx < 1)
+    return 0;
+  if (lx == 1)
+    c = 1;
+  else if ((lx + 3) % 4 == 0)
+    c = (lx + 3) / 4;
+  else
+    return 0;
+  if (c < 1 || c > 8)
+    return 0;
+
+  *rank = r;
+  *file = c;
+  return 1;
+}
+
+int
+cboard_board_mouse (int x, int y, mmask_t bstate)
+{
+  struct userdata_s *d;
+  int bx, by, bw, bh, lx, ly;
+  int rank, file;
+
+  if (!board_vk || !gp || !gp->data)
+    return 0;
+
+  if (!(bstate & (BUTTON1_PRESSED | BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED)))
+    return 0;
+
+  vk_widget_get_position ((vk_widget_t *) board_vk, &bx, &by);
+  vk_widget_get_metrics ((vk_widget_t *) board_vk, &bw, &bh);
+  if (x < bx || y < by || x >= bx + bw || y >= by + bh)
+    return 0;
+
+  lx = x - bx;
+  ly = y - by;
+  if (!board_click_to_square (lx, ly, &rank, &file))
+    return 1;			/* click on board chrome, absorb */
+
+  d = gp->data;
+  d->c_row = rank;
+  d->c_col = file;
+
+  if (d->mode == MODE_PLAY)
+    {
+      if (d->sp.icon)
+	do_play_commit ();
+      else
+	do_play_select ();
+      update_all (gp);
+    }
+  else if (d->mode == MODE_EDIT || d->mode == MODE_HISTORY)
+    {
+      update_all (gp);
+    }
+
+  return 1;
+}
+
 void
 do_play_select ()
 {
@@ -5731,13 +5813,9 @@ game_loop ()
 	}
 
       /*
-       * Always read keys from stdscr — never from a VDK canvas.  wget_wch()
-       * auto-wrefresh()'es a dirty WINDOW before blocking; modal/board
-       * canvases would repaint over the VDK composite.
-       *
-       * Top-of-stack modal (if any) receives the key via win->func.
-       * efunc may open a new modal; destroy only the closed one afterward
-       * (no deferred keep list).
+       * Input via vk_kmio_fetch (keyboard + SGR mouse).  Timeout still
+       * comes from wtimeout(stdscr).  Never read from a VDK canvas
+       * (auto-wrefresh would paint over the composite).
        */
       win = window_top ();
       wp = stdscr;
@@ -5745,7 +5823,10 @@ game_loop ()
       wtimeout (stdscr, WINDOW_TIMEOUT);
 
       if (pushkey)
-	input_c = pushkey;
+	{
+	  input_c = pushkey;
+	  pushkey = 0;
+	}
       else if (macros && macro_match >= 0)
 	{
 	  if (macros[macro_match]->n >= macros[macro_match]->total)
@@ -5758,16 +5839,31 @@ game_loop ()
 	}
       else
 	{
-	  if (wget_wch (wp, &input_c) == ERR || input_c == KEY_RESIZE)
-	    {
-	      if (input_c == KEY_RESIZE)
-		{
-		  if (win)
-		    win->c = input_c;
+	  MEVENT mev;
+	  int pev;
 
-		  window_resize_all ();
-		  update_all (gp);
+	  pev = cboard_ui_poll_event (&input_c, &mev);
+	  if (pev == 0)
+	    continue;
+	  if (pev == 2)
+	    {
+	      if (cboard_mouse_handle (&mev))
+		{
+		  if (macro_match == -1)
+		    keycount = 0;
+		  /* Modal may have closed via pushkey; drain next loop. */
+		  if (pushkey)
+		    continue;
+		  goto refresh;
 		}
+	      continue;
+	    }
+	  if (input_c == KEY_RESIZE)
+	    {
+	      if (win)
+		win->c = input_c;
+	      window_resize_all ();
+	      update_all (gp);
 	      continue;
 	    }
 	}

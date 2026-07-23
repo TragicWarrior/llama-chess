@@ -18,6 +18,15 @@ void cboard_ui_shutdown (void);
 void cboard_ui_refresh (void);
 void cboard_ui_resize (void);
 
+/*
+ * Input via vk_kmio (keyboard + SGR mouse).  Caller sets wtimeout(stdscr).
+ * Returns:
+ *   0 — timeout / no event
+ *   1 — key in *key (wint_t code from vk_kmio_fetch)
+ *   2 — mouse; *mev filled (only if mev != NULL)
+ */
+int cboard_ui_poll_event (wint_t *key, MEVENT *mev);
+
 /* Geometry uses ncurses-style (height, width, y, x). */
 cboard_widget_t *cboard_ui_widget_new (int height, int width, int y, int x);
 /*

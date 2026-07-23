@@ -14,14 +14,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <err.h>
+#include <unistd.h>
 
 #include <vdk.h>
+#include <vkmio.h>
 
 #include "ui_screen.h"
 #include "window.h"
 
 static vk_screen_t *screen;
+static int kmio_fd = -1;
 
 #define FRONT_MAX 8
 static vk_widget_t *front_stack[FRONT_MAX];
@@ -30,6 +34,8 @@ static int front_count;
 void
 cboard_ui_init (void)
 {
+  int fd;
+
   if (screen)
     return;
 
@@ -43,6 +49,13 @@ cboard_ui_init (void)
   noecho ();
   keypad (stdscr, TRUE);
   front_count = 0;
+
+  /* SGR mouse via vk_kmio (mousemask 0; do not cook via ncurses). */
+  fd = vk_screen_get_fd (screen);
+  if (fd < 0)
+    fd = STDOUT_FILENO;
+  kmio_fd = fd;
+  vk_kmio_init (kmio_fd, VK_KMIO_MOUSE);
 }
 
 void
@@ -51,9 +64,41 @@ cboard_ui_shutdown (void)
   if (screen == NULL)
     return;
 
+  if (kmio_fd >= 0)
+    {
+      vk_kmio_shutdown (kmio_fd);
+      kmio_fd = -1;
+    }
+
   front_count = 0;
   vk_screen_destroy (screen);
   screen = NULL;
+}
+
+int
+cboard_ui_poll_event (wint_t *key, MEVENT *mev)
+{
+  int32_t code;
+  MEVENT local;
+
+  if (key)
+    *key = 0;
+
+  if (mev == NULL)
+    mev = &local;
+
+  memset (mev, 0, sizeof (*mev));
+  code = vk_kmio_fetch (mev);
+
+  if (code == -1 || code == ERR)
+    return 0;
+
+  if (code == KEY_MOUSE)
+    return 2;
+
+  if (key)
+    *key = (wint_t) code;
+  return 1;
 }
 
 void

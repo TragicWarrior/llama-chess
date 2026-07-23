@@ -20,6 +20,8 @@
 #ifndef FILEBROWSER_H
 #define FILEBROWSER_H
 
+#include "window.h"
+
 struct file_s
 {
   char *path;
@@ -31,5 +33,8 @@ extern struct file_s **files;
 extern char *oldwd;
 
 void file_browser (void *arg);
+
+/* Mouse for an open file-browser WIN (screen coords). Returns 1 if handled. */
+int file_browser_mouse (WIN *win, int x, int y, mmask_t bstate);
 
 #endif

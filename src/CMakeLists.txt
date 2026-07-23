@@ -22,6 +22,8 @@ set(CBOARD_SOURCES
   menu.h
   menubar.c
   menubar.h
+  mouse.c
+  mouse.h
   tags.c
   keys.h
   filebrowser.c
