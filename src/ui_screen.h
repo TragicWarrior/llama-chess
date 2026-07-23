@@ -16,7 +16,14 @@ typedef void cboard_widget_t;
 void cboard_ui_init (void);
 void cboard_ui_shutdown (void);
 void cboard_ui_refresh (void);
+/* Terminal geometry owner: ioctl + resize_term + surface wresize (VDK). */
 void cboard_ui_resize (void);
+/*
+ * Re-arm kmio / keypad after a term change (resize, reattach, SIGCONT).
+ * Harmless on an ordinary KEY_RESIZE; required after dtach/reset-style
+ * reattach when mouse modes were cleared.
+ */
+void cboard_ui_input_rearm (void);
 
 /*
  * Input via vk_kmio (keyboard + SGR mouse).  Caller sets wtimeout(stdscr).

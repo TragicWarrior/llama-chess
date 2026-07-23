@@ -65,8 +65,9 @@ struct vdk_input_s
  * Paint field/labels into the box, then the box into the window.
  * Order matters: update leaf widgets first, then composite upward.
  */
+/* Layout/update VDK tree only — no screen composite (for resize cascade). */
 static void
-input_composite (WIN * win)
+input_layout (WIN * win)
 {
   struct vdk_input_s *vin;
 
@@ -82,6 +83,12 @@ input_composite (WIN * win)
 	vk_box_update (vin->vbox);
     }
   vk_window_update (VK_WINDOW (win->vk));
+}
+
+static void
+input_composite (WIN * win)
+{
+  input_layout (win);
   cboard_ui_refresh ();
 }
 
@@ -339,7 +346,8 @@ input_resize_func (WIN * w)
       cboard_ui_widget_move (w->vk, w->posy, w->posx);
       if (vin && vin->vbox)
 	vk_widget_resize (VK_WIDGET (vin->vbox), w->cols - 2, w->rows - 2);
-      input_composite (w);
+      /* Geometry only; do_window_resize ends with one composite. */
+      input_layout (w);
     }
 }
 

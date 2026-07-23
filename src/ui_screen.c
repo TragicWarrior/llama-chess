@@ -252,6 +252,26 @@ cboard_ui_resize (void)
     vk_screen_resize (screen);
 }
 
+void
+cboard_ui_input_rearm (void)
+{
+  int fd;
+
+  if (screen == NULL)
+    return;
+
+  fd = vk_screen_get_fd (screen);
+  if (fd < 0)
+    fd = STDOUT_FILENO;
+  kmio_fd = fd;
+  /* Re-emit SGR mouse enable; no-op if already armed on this fd. */
+  vk_kmio_init (kmio_fd, VK_KMIO_MOUSE);
+  keypad (stdscr, TRUE);
+  cbreak ();
+  noecho ();
+  curs_set (0);
+}
+
 int
 cboard_ui_active (void)
 {

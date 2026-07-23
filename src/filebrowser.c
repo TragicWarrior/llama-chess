@@ -295,9 +295,7 @@ fb_display (WIN * win)
 
   if (key == KEY_RESIZE)
     {
-      fb_style_widgets (st);
-      vk_filedialog_update (st->fd);
-      cboard_ui_refresh ();
+      /* Geometry is applied by do_window_resize → fb_resize; absorb. */
       return 1;
     }
 
@@ -412,14 +410,15 @@ fb_resize (WIN * w)
   w->posx = CALCPOSX (nw);
   if (w->vk)
     {
+      /* VDK geometry only; cascade ends with one composite refresh. */
       w->w = cboard_ui_widget_resize (w->vk, nh, nw);
       cboard_ui_widget_move (w->vk, w->posy, w->posx);
       if (st && st->fd)
 	{
 	  fb_sync_box_focus (st);
+	  fb_style_widgets (st);
 	  vk_filedialog_update (st->fd);
 	}
-      cboard_ui_refresh ();
     }
 }
 

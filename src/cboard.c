@@ -144,8 +144,6 @@ static int macro_match;
 // First move loaded game
 static char fm_loaded_file = FALSE;
 
-static int COLS_OLD, LINES_OLD;
-
 // Status window.
 static struct
 {
@@ -2555,20 +2553,44 @@ history_menu_resize (WIN *w)
   redraw_menu (w);
 }
 
+/*
+ * Single terminal-resize cascade (VWM / VDK style).
+ *
+ * KEY_RESIZE is the only entry for geometry changes.  Order:
+ *   1) vk_screen_resize — owns resize_term + surface canvases
+ *   2) re-arm kmio / tty modes (reattach / reset survival)
+ *   3) layout chrome with vk_widget_resize / vk_widget_move only
+ *   4) modal stack via window_resize_all (each rfunc uses VDK)
+ *   5) repaint content + one cboard_ui_refresh composite
+ *
+ * Do not mix a parallel LINES/COLS poll rebuild or a second window_resize_all
+ * + update_all after this; that races ncurses resizeterm during wrefresh.
+ */
 void
-do_window_resize ()
+do_window_resize (void)
 {
-  if (LINES < 24 || COLS < 74)
-    return;
-
+  /* 1–2: terminal geometry + input modes (VDK owns both). */
   cboard_ui_resize ();
+  cboard_ui_input_rearm ();
+
+  if (LINES < 24 || COLS < 74)
+    {
+      /* Too small for chrome; still keep term/kmio in sync. */
+      cboard_ui_refresh ();
+      return;
+    }
+
+  /* 3: permanent chrome — size then place (no raw wresize/wclear). */
   cboard_menubar_resize ();
+
   boardw = cboard_ui_widget_resize (board_vk, BOARD_HEIGHT, BOARD_WIDTH);
   historyw =
     cboard_ui_frame_resize (history_vk, HISTORY_HEIGHT, HISTORY_WIDTH);
   statusw =
     cboard_ui_frame_resize (status_vk, STATUS_HEIGHT, STATUS_WIDTH);
   tagw = cboard_ui_frame_resize (tag_vk, TAG_HEIGHT, TAG_WIDTH);
+
+  draw_window_decor ();
 
   if (loading_vk)
     loadingw = cboard_ui_widget_canvas (loading_vk);
@@ -2578,31 +2600,23 @@ do_window_resize ()
       cboard_ui_widget_move (engine_vk, 0, 0);
     }
 
-  if (boardw)
-    wclear (boardw);
-  if (historyw)
-    wclear (historyw);
-  if (tagw)
-    wclear (tagw);
-  if (statusw)
-    wclear (statusw);
-  if (loadingw)
-    wclear (loadingw);
-  if (enginew)
-    wclear (enginew);
-  draw_window_decor ();
-  cboard_menubar_refresh ();
-  update_all (gp);
-  if (boardw)
-    keypad (boardw, TRUE);
-  curs_set (0);
-  cbreak ();
-  noecho ();
+  /* 4: open modals (menus, inputs, dialogs) — VDK geometry only. */
+  window_resize_all ();
+
+  /* 5: one content paint + composite (no keypad/cbreak redo on boardw). */
+  if (gp)
+    update_all (gp);
+  else
+    {
+      cboard_menubar_refresh ();
+      cboard_ui_refresh ();
+    }
 }
 
 void
-do_global_redraw ()
+do_global_redraw (void)
 {
+  /* Ctrl-L: full cascade (same path as KEY_RESIZE / reattach). */
   do_window_resize ();
 }
 
@@ -5831,26 +5845,16 @@ game_loop ()
       d = gp->data;
 
       /*
-       * Do not full-refresh here: a composite every timeout (~70ms) repaints
-       * the board and races the menubar dropdown (which would appear briefly
-       * on top then get covered).  KEY_RESIZE from wget_wch is enough to
-       * notice geometry changes.
-       */
-      if (LINES != LINES_OLD || COLS != COLS_OLD)
-	{
-	  COLS_OLD = COLS;
-	  LINES_OLD = LINES;
-	  do_window_resize ();
-	}
-
-      /*
        * Input via vk_kmio_fetch (keyboard + SGR mouse).  Timeout still
        * comes from wtimeout(stdscr).  Never read from a VDK canvas
        * (auto-wrefresh would paint over the composite).
+       *
+       * Geometry changes are handled only on KEY_RESIZE (VDK/VWM style).
+       * Do not poll LINES/COLS here — that ran a second resize cascade and
+       * raced ncurses resizeterm inside wrefresh.
        */
       win = window_top ();
       wp = stdscr;
-      keypad (stdscr, TRUE);
       wtimeout (stdscr, WINDOW_TIMEOUT);
 
       if (pushkey)
@@ -5891,10 +5895,12 @@ game_loop ()
 	    }
 	  if (input_c == KEY_RESIZE)
 	    {
-	      if (win)
-		win->c = input_c;
-	      window_resize_all ();
-	      update_all (gp);
+	      /*
+	       * One cascade only: vk_screen_resize + chrome layout +
+	       * window_resize_all + update_all.  Do not also dispatch
+	       * KEY_RESIZE into the modal key handler (rfuncs already ran).
+	       */
+	      do_window_resize ();
 	      continue;
 	    }
 	}
@@ -6150,8 +6156,8 @@ catch_signal (int which, siginfo_t *info, void *ctx)
       break;
     case SIGCONT:
       resetty ();
+      /* Same cascade as KEY_RESIZE (re-arm kmio + layout + one refresh). */
       do_window_resize ();
-      keypad (boardw, TRUE);
       break;
     case SIGINT:
       quit = 1;
@@ -6394,9 +6400,6 @@ main (int argc, char *argv[])
       curses_initialized = 0;
       errx (EXIT_FAILURE, _("Need at least an 74x24 terminal."));
     }
-
-  COLS_OLD = COLS;
-  LINES_OLD = LINES;
 
   /* Color pairs come from vdk_color_init() in cboard_ui_init(). */
 

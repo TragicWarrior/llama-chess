@@ -276,6 +276,11 @@ window_draw_prompt (WINDOW * win, int y, int width, const char *str,
   wattroff (win, attr);
 }
 
+/*
+ * Modal geometry only (each rfunc must use vk_widget_* / cboard_ui_* helpers).
+ * Called from do_window_resize after vk_screen_resize; rfuncs must not call
+ * cboard_ui_refresh or update_all — the cascade ends with one composite.
+ */
 void
 window_resize_all (void)
 {

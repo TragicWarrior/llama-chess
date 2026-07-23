@@ -101,8 +101,10 @@ set_default_colors ()
   config.color[CONF_BCOUNT].nattrs = A_REVERSE;
   config.color[CONF_BGRAPHICS].fg = COLOR_WHITE;
   config.color[CONF_BGRAPHICS].bg = COLOR_BLACK;
+  /* Bold white → bright white (plain COLOR_WHITE is dim/grey on many terms). */
   config.color[CONF_BWHITE].fg = COLOR_WHITE;
   config.color[CONF_BWHITE].bg = COLOR_RED;
+  config.color[CONF_BWHITE].attrs = A_BOLD;
   config.color[CONF_BWHITE].nattrs = A_REVERSE;
   config.color[CONF_BBLACK].fg = COLOR_CYAN;
   config.color[CONF_BBLACK].bg = COLOR_BLACK;
