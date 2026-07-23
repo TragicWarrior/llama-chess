@@ -496,6 +496,7 @@ construct_message (const char *title, const char *prompt, int center,
 		      display_message, m, efunc,
 		      rfunc ? rfunc : message_resize_func);
   win->freedata = freedata;
+  win->app_kind = WIN_APP_MESSAGE;
   if (win->w)
     keypad (win->w, TRUE);
 
@@ -704,6 +705,7 @@ construct_confirm (const char *title, const char *text,
 
   win = window_adopt (title, (void *) popup, WIN_VK_POPUP, h, w, y, x,
 		      display_confirm, c, efunc, NULL);
+  win->app_kind = WIN_APP_CONFIRM;
   cboard_ui_refresh ();
   return win;
 }

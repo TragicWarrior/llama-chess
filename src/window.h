@@ -33,12 +33,24 @@ enum
   WIN_VK_FILEDIALOG		/* vk_filedialog_t */
 };
 
+/* App-level dialog class (do not cast win->data without this). */
+enum
+{
+  WIN_APP_GENERIC = 0,
+  WIN_APP_MENU,			/* construct_menu — data is menu_input_s */
+  WIN_APP_MESSAGE,		/* construct_message — data is message_s */
+  WIN_APP_INPUT,		/* construct_input — data is vdk_input_s */
+  WIN_APP_CONFIRM,		/* construct_confirm — data is confirm_s */
+  WIN_APP_FILEBROWSER		/* file_browser — data is fb_state_s */
+};
+
 struct window_s
 {
   WINDOW *w;
   /* VDK widget (opaque cboard_widget_t *); replaces ncurses PANEL. */
   void *vk;
   int vk_kind;
+  int app_kind;			/* WIN_APP_* — type of win->data */
   int rows;
   int cols;
   int posy;

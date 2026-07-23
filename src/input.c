@@ -590,6 +590,7 @@ construct_input (const char *title, const char *init, int lines, int reset,
   win = window_adopt (title, (void *) vkw, WIN_VK_WINDOW, h, w, y, x,
 		      get_input_vdk, vin, id->efunc,
 		      rfunc ? rfunc : input_resize_func);
+  win->app_kind = WIN_APP_INPUT;
   if (win->w)
     keypad (win->w, TRUE);
   curs_set (1);

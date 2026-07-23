@@ -642,6 +642,7 @@ construct_menu (int rows, int cols, int y, int x, const char *title,
 		      rfunc ? rfunc : menu_resize_func);
   /* window_adopt overwrote m via data pointer — m is still our struct. */
   win->data = m;
+  win->app_kind = WIN_APP_MENU;
 
   if (win->w)
     keypad (win->w, TRUE);

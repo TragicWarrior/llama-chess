@@ -48,7 +48,7 @@ point_in_widget (vk_widget_t *w, int x, int y, int *lx, int *ly)
   return 1;
 }
 
-/* construct_menu listbox click → set_curr; double-click → Enter. */
+/* construct_menu only — win->app_kind must be WIN_APP_MENU. */
 static int
 mouse_modal_list (WIN * win, int x, int y, mmask_t bstate)
 {
@@ -56,7 +56,7 @@ mouse_modal_list (WIN * win, int x, int y, mmask_t bstate)
   vk_listbox_t *lb;
   int ly, row, scroll, n;
 
-  if (!win || !win->data || win->vk_kind != WIN_VK_WINDOW)
+  if (!win || win->app_kind != WIN_APP_MENU || !win->data)
     return 0;
 
   m = win->data;
@@ -78,9 +78,7 @@ mouse_modal_list (WIN * win, int x, int y, mmask_t bstate)
 	vk_listbox_set_prev (lb);
       else
 	vk_listbox_set_next (lb);
-      win->c = KEY_UP;		/* force redraw path in display_menu */
-      if (bstate & BUTTON5_PRESSED)
-	win->c = KEY_DOWN;
+      win->c = (bstate & BUTTON4_PRESSED) ? KEY_UP : KEY_DOWN;
       (*win->func) (win);
       return 1;
     }
@@ -96,41 +94,36 @@ mouse_modal_list (WIN * win, int x, int y, mmask_t bstate)
 
   vk_listbox_set_curr (lb, row);
   if (bstate & BUTTON1_DOUBLE_CLICKED)
-    win->c = '\n';
+    {
+      win->c = '\n';
+      if ((*win->func) (win) == 0)
+	{
+	  if (win->efunc)
+	    (*win->efunc) (win);
+	  window_destroy (win);
+	  if (gp)
+	    update_all (gp);
+	}
+    }
   else
     {
-      /* Single click: sync selection without activating. */
-      win->c = KEY_UP;
-      (*win->func) (win);
-      win->c = KEY_DOWN;
-      (*win->func) (win);
-      /* Nudge back if needed — set_curr already correct; refresh. */
-      vk_listbox_set_curr (lb, row);
+      /* Single click: refresh selection highlight only. */
       win->c = 0;
       (*win->func) (win);
-      return 1;
-    }
-
-  if ((*win->func) (win) == 0)
-    {
-      if (win->efunc)
-	(*win->efunc) (win);
-      window_destroy (win);
-      if (gp)
-	update_all (gp);
+      cboard_ui_refresh ();
     }
   return 1;
 }
 
+/* Message dialog: wheel scrolls; click = any key (dismiss). */
 static int
-mouse_modal_any (WIN * win, int x, int y, mmask_t bstate)
+mouse_modal_message (WIN * win, int x, int y, mmask_t bstate)
 {
-  if (!win || !win->vk)
+  if (!win || win->app_kind != WIN_APP_MESSAGE || !win->vk)
     return 0;
   if (!point_in_widget (VK_WIDGET (win->vk), x, y, NULL, NULL))
     return 0;
 
-  /* Message: wheel scrolls; click does nothing special (keep open). */
   if (bstate & (BUTTON4_PRESSED | BUTTON5_PRESSED))
     {
       win->c = (bstate & BUTTON4_PRESSED) ? KEY_PPAGE : KEY_NPAGE;
@@ -138,6 +131,33 @@ mouse_modal_any (WIN * win, int x, int y, mmask_t bstate)
       return 1;
     }
 
+  if (left_press (bstate))
+    {
+      /* Same as any key: dismiss. */
+      win->c = ' ';
+      if ((*win->func) (win) == 0)
+	{
+	  if (win->efunc)
+	    (*win->efunc) (win);
+	  window_destroy (win);
+	  if (gp)
+	    update_all (gp);
+	}
+      return 1;
+    }
+
+  return 1;
+}
+
+static int
+mouse_modal_input (WIN * win, int x, int y, mmask_t bstate)
+{
+  if (!win || win->app_kind != WIN_APP_INPUT || !win->vk)
+    return 0;
+  if (!point_in_widget (VK_WIDGET (win->vk), x, y, NULL, NULL))
+    return 0;
+  /* Absorb clicks over the input dialog; keyboard still drives it. */
+  (void) bstate;
   return 1;
 }
 
@@ -158,27 +178,37 @@ cboard_mouse_handle (const MEVENT *mev)
   win = window_top ();
   if (win)
     {
-      if (win->vk_kind == WIN_VK_FILEDIALOG)
+      switch (win->app_kind)
 	{
+	case WIN_APP_FILEBROWSER:
 	  if (file_browser_mouse (win, x, y, b))
 	    return 1;
-	}
-      else if (win->vk_kind == WIN_VK_POPUP)
-	{
+	  break;
+	case WIN_APP_CONFIRM:
 	  if (confirm_dialog_mouse (win, x, y, b))
 	    return 1;
-	}
-      else
-	{
-	  struct menu_input_s *m = win->data;
-
-	  if (m && m->listbox)
-	    {
-	      if (mouse_modal_list (win, x, y, b))
-		return 1;
-	    }
-	  else if (mouse_modal_any (win, x, y, b))
+	  break;
+	case WIN_APP_MENU:
+	  if (mouse_modal_list (win, x, y, b))
 	    return 1;
+	  break;
+	case WIN_APP_MESSAGE:
+	  if (mouse_modal_message (win, x, y, b))
+	    return 1;
+	  break;
+	case WIN_APP_INPUT:
+	  if (mouse_modal_input (win, x, y, b))
+	    return 1;
+	  break;
+	default:
+	  /* Fallback: filedialog by vk_kind only. */
+	  if (win->vk_kind == WIN_VK_FILEDIALOG
+	      && file_browser_mouse (win, x, y, b))
+	    return 1;
+	  if (win->vk_kind == WIN_VK_POPUP
+	      && confirm_dialog_mouse (win, x, y, b))
+	    return 1;
+	  break;
 	}
     }
 

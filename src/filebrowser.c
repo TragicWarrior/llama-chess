@@ -699,6 +699,7 @@ file_browser (void *arg)
 
   win = window_adopt (_("File Browser"), (void *) fd, WIN_VK_FILEDIALOG,
 		      h, w, y, x, fb_display, st, NULL, fb_resize);
+  win->app_kind = WIN_APP_FILEBROWSER;
   if (win->w)
     keypad (win->w, TRUE);
   cboard_ui_refresh ();
