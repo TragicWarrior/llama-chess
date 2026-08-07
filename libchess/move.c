@@ -1149,6 +1149,9 @@ format_santofrfr(int promo, int sfile, int srank, int file, int rank)
 {
     char *frfr = malloc(6);
 
+    if (!frfr)
+        return NULL;
+
     memset(frfr, 0, 6);
     snprintf(frfr, 6, "%c%c%c%c", INTTOFILE(sfile),
              INTTORANK(srank), INTTOFILE(file), INTTORANK(rank));
@@ -1238,6 +1241,8 @@ frfrtosan(GAME g, BOARD b, char **m, char **dst)
             strcpy(*m, buf);
 
         *dst = format_santofrfr(promo, sfile, srank, file, rank);
+        if (!*dst)
+            return E_PGN_INVALID;
         return E_PGN_OK;
     }
 
@@ -1339,6 +1344,8 @@ capture:
 
     g->check = 0;
     *dst = format_santofrfr(promo, sfile, srank, file, rank);
+    if (!*dst)
+        return E_PGN_INVALID;
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END validating %s\n", __FILE__, __LINE__, *m);
 #endif
@@ -1607,6 +1614,8 @@ pgn_parse_move(GAME g, BOARD b, char **mp, char **dst)
 
     *p = g->check = 0;
     *dst = format_santofrfr(promo, sfile, srank, file, rank);
+    if (!*dst)
+        return E_PGN_INVALID;
 
 #ifdef DEBUG
     PGN_DUMP("%s:%d: END validating %s\n", __FILE__, __LINE__, m);

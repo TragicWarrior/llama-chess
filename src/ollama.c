@@ -1173,12 +1173,25 @@ ollama_conn_load(void)
         conns[nconns].name = strdup(name);
         conns[nconns].url = strdup(url);
         conns[nconns].model = strdup(model);
+        if (!conns[nconns].name || !conns[nconns].url || !conns[nconns].model)
+        {
+            free(conns[nconns].name);
+            free(conns[nconns].url);
+            free(conns[nconns].model);
+            continue;
+        }
         ollama_sanitize_name(conns[nconns].name);
         if (!conns[nconns].name[0])
         {
             free(conns[nconns].name);
             ollama_name_from_url(url, nbuf, sizeof(nbuf));
             conns[nconns].name = strdup(nbuf);
+            if (!conns[nconns].name)
+            {
+                free(conns[nconns].url);
+                free(conns[nconns].model);
+                continue;
+            }
         }
         nconns++;
     }
@@ -1229,20 +1242,44 @@ ollama_conn_add(const char *name, const char *url, const char *model)
 
     url_c = strdup(url);
     model_c = strdup(model);
+    if (!url_c || !model_c)
+    {
+        free(url_c);
+        free(model_c);
+        return -1;
+    }
     if (!name || !name[0])
     {
         ollama_name_from_url(url_c, nbuf, sizeof(nbuf));
         name_c = strdup(nbuf);
+        if (!name_c)
+        {
+            free(url_c);
+            free(model_c);
+            return -1;
+        }
     }
     else
     {
         name_c = strdup(name);
+        if (!name_c)
+        {
+            free(url_c);
+            free(model_c);
+            return -1;
+        }
         ollama_sanitize_name(name_c);
         if (!name_c[0])
         {
             free(name_c);
             ollama_name_from_url(url_c, nbuf, sizeof(nbuf));
             name_c = strdup(nbuf);
+            if (!name_c)
+            {
+                free(url_c);
+                free(model_c);
+                return -1;
+            }
         }
     }
 

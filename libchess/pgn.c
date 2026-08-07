@@ -1054,8 +1054,12 @@ nag_text(GAME g, FILE *fp)
     {
         if (c == '$')
         {
-            while ((c = Fgetc(fp)) != EOF && isdigit(c))
+            /* Read the digit number, storing at most sizeof(nags)-1 chars */
+            while ((c = Fgetc(fp)) != EOF && isdigit(c) && n < nags + (int)sizeof(nags) - 1)
                 *n++ = c;
+            /* Discard any excess digits without overflowing nags */
+            while (c != EOF && isdigit(c))
+                c = Fgetc(fp);
 
             Ungetc(c, fp);
             break;
@@ -1207,8 +1211,14 @@ annotation_text(GAME g, FILE *fp, int terminator)
             return E_PGN_ERR;
     }
 
-    if ((g->hp[hindex]->comment = strdup(buf)) == NULL)
-        return E_PGN_ERR;
+    {
+        char *newc = strdup(buf);
+
+        if (newc == NULL)
+            return E_PGN_ERR;
+        free(g->hp[hindex]->comment); /* free(NULL) ok if first time */
+        g->hp[hindex]->comment = newc;
+    }
 
     return E_PGN_OK;
 }
@@ -1228,11 +1238,14 @@ tag_text(GAME g, FILE *fp)
     skip_leading_space(fp);
 
     /* The tag name is up until the first whitespace. */
-    while ((c = Fgetc(fp)) != EOF && !isspace(c))
-        *n++ = c;
+    while ((c = Fgetc(fp)) != EOF && !isspace(c)) {
+        if (n < name + sizeof(name) - 1)
+            *n++ = c;
+    }
 
     *n = '\0';
-    *name = toupper(*name);
+    if (name[0] != '\0')
+        *name = toupper(*name);
     skip_leading_space(fp);
 
     /* The value is until the first closing bracket. */
@@ -1247,16 +1260,21 @@ tag_text(GAME g, FILE *fp)
         if (c == ' ' && lastchar == ' ')
             continue;
 
-        lastchar = *v++ = c;
+        if (v < value + sizeof(value) - 1)
+            lastchar = *v++ = c;
     }
 
     *v = '\0';
+    /* Trim trailing space/quote without walking before value[0]. */
+    if (v > value)
+    {
+        char *t = v - 1;
 
-    while (isspace(*--v))
-        *v = '\0';
-
-    if (*v == '\"')
-        *v = '\0';
+        while (t >= value && isspace((unsigned char)*t))
+            *t-- = '\0';
+        if (t >= value && *t == '\"')
+            *t = '\0';
+    }
 
     if (value[0] == '\0')
     {
