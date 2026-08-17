@@ -1901,7 +1901,8 @@ timeval_to_char(struct timeval t, long limit)
 {
     static char buf[9];
     unsigned h = 0, m = 0, s = 0;
-    int n = limit ? labs(limit - t.tv_sec) : 0;
+    /* With a time control, show remaining. Otherwise show elapsed. */
+    int n = limit ? (int) labs(limit - t.tv_sec) : (int) t.tv_sec;
 
     h = n / 3600;
     m = (n % 3600) / 60;
