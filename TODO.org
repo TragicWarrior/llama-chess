@@ -25,6 +25,7 @@
    Per-side elapsed now always increments; CF_CLOCK only gates forfeit.
 ** DONE PGN Black tag stays "?" after Connect Ollama
    Black is set to "Ollama (model)" on connect / new-game reattach.
+   Handshake failure now resets Black to "?" (was left as the old model).
 ** DONE No auto-reconnect to last saved Ollama opponent
    Last successful connect is saved to ollama_last and restored at startup.
 

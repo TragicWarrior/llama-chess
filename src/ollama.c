@@ -1548,6 +1548,7 @@ ollama_connect_to(const char *name, const char *url, const char *model)
         config.ollama_model = NULL;
         SET_FLAG(d->flags, CF_HUMAN);
         CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+        ollama_clear_black_tag(gp);
         message(ERROR_STR, ANY_KEY_STR,
                 _("Ollama handshake failed:\n%s\n\n"
                   "URL: %s\nModel: %s\n\n"
