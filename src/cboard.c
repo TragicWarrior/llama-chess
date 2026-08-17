@@ -6621,6 +6621,8 @@ int main(int argc, char *argv[])
         leaveok(historyw, TRUE);
     draw_window_decor();
     cboard_menubar_refresh();
+    update_all(gp);
+    ollama_try_autoreconnect();
     game_loop();
     cleanup_all();
     free(w_pawn_wchar);

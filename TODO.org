@@ -25,9 +25,8 @@
    Per-side elapsed now always increments; CF_CLOCK only gates forfeit.
 ** DONE PGN Black tag stays "?" after Connect Ollama
    Black is set to "Ollama (model)" on connect / new-game reattach.
-** TODO No auto-reconnect to last saved Ollama opponent
-   Every launch is human/human until File → Connect Ollama. Remember last
-   used connection or offer it on startup.
+** DONE No auto-reconnect to last saved Ollama opponent
+   Last successful connect is saved to ollama_last and restored at startup.
 
 *** Still open — vwm
 ** TODO F10 menubar: vwm-msg --key F10 does not deliver KEY_F(10)

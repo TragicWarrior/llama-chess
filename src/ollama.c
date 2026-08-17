@@ -52,6 +52,7 @@
 #define OLLAMA_HANDSHAKE_TIMEOUT_SEC 60
 
 #define OLLAMA_CONN_FILE "ollama_connections"
+#define OLLAMA_LAST_FILE "ollama_last"
 #define OLLAMA_CONN_MAX 64
 
 /* Saved endpoints the user can pick from (persisted under ~/.cboard). */
@@ -1068,6 +1069,70 @@ ollama_conn_path(void)
     return path;
 }
 
+static char *
+ollama_last_path(void)
+{
+    static char path[PATH_MAX];
+
+    if (!config.datadir)
+        return NULL;
+    snprintf(path, sizeof(path), "%s/%s", config.datadir, OLLAMA_LAST_FILE);
+    return path;
+}
+
+static void
+ollama_last_save(const char *name, const char *url, const char *model)
+{
+    FILE *fp;
+    char *path = ollama_last_path();
+
+    if (!path || !url || !url[0] || !model || !model[0])
+        return;
+    fp = fopen(path, "w");
+    if (!fp)
+        return;
+    fprintf(fp, "%s|%s|%s\n", name && name[0] ? name : "", url, model);
+    fclose(fp);
+}
+
+/* Returns 0 on success. */
+static int
+ollama_last_load(char *name, size_t nsz, char *url, size_t usz,
+                 char *model, size_t msz)
+{
+    FILE *fp;
+    char line[768], *p, *u, *m, *nl;
+    char *path = ollama_last_path();
+
+    if (!path)
+        return 1;
+    fp = fopen(path, "r");
+    if (!fp)
+        return 1;
+    if (!fgets(line, sizeof(line), fp))
+    {
+        fclose(fp);
+        return 1;
+    }
+    fclose(fp);
+    nl = strchr(line, '\n');
+    if (nl)
+        *nl = '\0';
+    p = line;
+    u = strchr(p, '|');
+    if (!u)
+        return 1;
+    *u++ = '\0';
+    m = strchr(u, '|');
+    if (!m)
+        return 1;
+    *m++ = '\0';
+    snprintf(name, nsz, "%s", p);
+    snprintf(url, usz, "%s", u);
+    snprintf(model, msz, "%s", m);
+    return (!url[0] || !model[0]);
+}
+
 /* Derive a short label from the host part of a URL. */
 static void
 ollama_name_from_url(const char *url, char *out, size_t outsz)
@@ -1499,6 +1564,7 @@ ollama_connect_to(const char *name, const char *url, const char *model)
 
     /* Remember successful endpoints for next time (safe vs conns[] aliases). */
     ollama_conn_add(name_c, url_c, model_c);
+    ollama_last_save(name_c, url_c, model_c);
 
     CLEAR_FLAG(d->flags, CF_HUMAN);
     CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
@@ -1638,9 +1704,28 @@ get_ollama_conn_items(WIN *win)
 
     ollama_conn_load();
 
-    /* Land on a saved opponent, not New/Remove (easy to overshoot). */
+    /* Land on last-used (or first) saved opponent, not New/Remove. */
     if (!m->items && conn_menu_mode == 0 && nconns > 0)
-        m->selected = CONN_MENU_ACTIONS;
+    {
+        char ln[128], lu[256], lm[128];
+        int i, idx = 0;
+
+        if (ollama_last_load(ln, sizeof(ln), lu, sizeof(lu), lm,
+                             sizeof(lm)) == 0)
+        {
+            for (i = 0; i < nconns; i++)
+            {
+                if ((ln[0] && strcmp(conns[i].name, ln) == 0)
+                    || (strcmp(conns[i].url, lu) == 0
+                        && strcmp(conns[i].model, lm) == 0))
+                {
+                    idx = i;
+                    break;
+                }
+            }
+        }
+        m->selected = CONN_MENU_ACTIONS + idx;
+    }
 
     /* Free previous items if rebuild. */
     if (m->items)
@@ -1865,6 +1950,24 @@ do_global_connect_ollama(void)
     construct_menu(0, 0, -1, -1, _("Ollama Connections"), 0,
                    get_ollama_conn_items, keys, NULL, NULL,
                    ollama_conn_menu_exit, NULL);
+}
+
+void
+ollama_try_autoreconnect(void)
+{
+    char name[128], url[256], model[128];
+
+    if (!gp || !gp->data)
+        return;
+    if (ollama_last_load(name, sizeof(name), url, sizeof(url), model,
+                         sizeof(model)) != 0)
+        return;
+
+    update_status_notify(gp, _("Reconnecting last Ollama opponent (%s)…"),
+                         model);
+    update_status_window(gp);
+    cboard_ui_refresh();
+    ollama_connect_to(name[0] ? name : NULL, url, model);
 }
 
 void
