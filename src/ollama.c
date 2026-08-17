@@ -47,8 +47,9 @@
 #define AI_NAME "Ollama"
 #endif
 
-/* First-connect handshake must answer within this many seconds. */
-#define OLLAMA_HANDSHAKE_TIMEOUT_SEC 15
+/* First-connect handshake must answer within this many seconds.
+ * Large local models (30B+) often need longer than 15s to load + reply. */
+#define OLLAMA_HANDSHAKE_TIMEOUT_SEC 60
 
 #define OLLAMA_CONN_FILE "ollama_connections"
 #define OLLAMA_CONN_MAX 64
@@ -259,6 +260,7 @@ http_post_json(const char *host, int port, const char *path,
     char *body;
     int http_status = 0;
     int read_errno = 0;
+    int conn_errno = 0;
 
     if (err && errsz)
         err[0] = '\0';
@@ -285,9 +287,14 @@ http_post_json(const char *host, int port, const char *path,
 
     for (rp = res; rp; rp = rp->ai_next)
     {
+        int cr;
+
         fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (fd < 0)
+        {
+            conn_errno = errno;
             continue;
+        }
         if (timeout_sec > 0)
         {
             struct timeval tv;
@@ -297,8 +304,16 @@ http_post_json(const char *host, int port, const char *path,
             setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
             setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
         }
-        if (connect(fd, rp->ai_addr, rp->ai_addrlen) == 0)
+        /*
+         * Play clocks use ITIMER_REAL every 100ms (SIGALRM, no SA_RESTART).
+         * connect() is almost always interrupted if a game is already live.
+         */
+        do
+            cr = connect(fd, rp->ai_addr, rp->ai_addrlen);
+        while (cr < 0 && errno == EINTR);
+        if (cr == 0)
             break;
+        conn_errno = errno;
         close(fd);
         fd = -1;
     }
@@ -308,11 +323,12 @@ http_post_json(const char *host, int port, const char *path,
         if (err && errsz)
         {
             if (timeout_sec > 0
-                && (errno == EAGAIN || errno == EWOULDBLOCK
-                    || errno == ETIMEDOUT))
+                && (conn_errno == EAGAIN || conn_errno == EWOULDBLOCK
+                    || conn_errno == ETIMEDOUT))
                 snprintf(err, errsz, "connect timed out (%ds)", timeout_sec);
             else
-                snprintf(err, errsz, "connect %s:%d failed", host, port);
+                snprintf(err, errsz, "connect %s:%d failed: %s", host, port,
+                         conn_errno ? strerror(conn_errno) : "unknown");
         }
         return NULL;
     }
@@ -360,8 +376,13 @@ http_post_json(const char *host, int port, const char *path,
     }
     free(req);
 
-    while ((n = read(fd, buf, sizeof(buf))) > 0)
+    for (;;)
     {
+        n = read(fd, buf, sizeof(buf));
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n <= 0)
+            break;
         if (len + (size_t) n + 1 > cap)
         {
             cap = (cap ? cap * 2 : 8192);
@@ -1801,7 +1822,12 @@ do_global_connect_ollama(void)
 
     add_menu_help_key(&keys, do_ollama_conn_help);
     add_menu_key(&keys, KEY_ESCAPE, do_ollama_conn_abort);
+    /* vterm / some hosts deliver CR or KEY_ENTER, not LF. Space is
+     * the same select key as on the board and always comes through. */
     add_menu_key(&keys, '\n', do_ollama_conn_activate);
+    add_menu_key(&keys, '\r', do_ollama_conn_activate);
+    add_menu_key(&keys, KEY_ENTER, do_ollama_conn_activate);
+    add_menu_key(&keys, ' ', do_ollama_conn_activate);
     add_menu_key(&keys, 'd', do_ollama_conn_delete_key);
     add_menu_key(&keys, 'D', do_ollama_conn_delete_key);
     construct_menu(0, 0, -1, -1, _("Ollama Connections"), 0,

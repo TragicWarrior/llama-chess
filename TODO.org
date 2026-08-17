@@ -1,3 +1,28 @@
+* PLAYTEST 2026-08-16 (vwm + Ollama opponent)
+** DONE Switching Ollama opponent after clocks start: handshake connect fails
+   ITIMER_REAL / SIGALRM every 100ms interrupted connect() (EINTR). close()
+   then clobbered errno so the dialog only said "connect host:port failed".
+   Fixed on `fixes`: retry connect/read on EINTR; preserve errno; strerror.
+** DONE Handshake timeout 15s is too short for 30B+ models
+   Bumped OLLAMA_HANDSHAKE_TIMEOUT_SEC to 60 on `fixes`.
+** TODO Error dialog truncates long Ollama handshake messages
+   "connect … failed URL: http://…" is cut off; no strerror, no model name
+   visible. message() needs wrap / larger box / scroll.
+** DONE Connection picker: Enter is easy to miss from vterm send-keys
+   construct_menu bound only '\n'. KEY_ENTER / '\r' (vwm --key Enter) did
+   not activate. Fixed on `fixes`: bind '\\n', '\\r', and KEY_ENTER.
+** TODO F10 menubar: some hosts send a sequence cboard does not map
+   vwm-msg --key F10 did not open the bar; CSI \e[21~ did. Confirm terminfo
+   kf10 for VTerm HiColor / vterm-xterm256.
+** TODO After a failed handshake, mode becomes human/engine + Engine offline
+   Confusing vs the default human/human. Restore human/human (or keep
+   previous live opponent) and say so in the status line.
+** TODO Illegal engine move (e.g. Black plays e2e4) only pops Error + OK
+   No automatic "go" retry. Prompt to retry, or ask the model again.
+** TODO No in-UI hint that 'g' forces the engine to move after an error
+** TODO Saved-connection list: easy to overshoot onto Disconnect / Remove
+   Consider activating the last-used or a marked default with one key.
+
 * BUG Don't rotate the board when leaving history mode.
   When loading a PGN file. This also affects GF_BLACK_OPENING. There
   is commented code that will allow a human to open as black but in
