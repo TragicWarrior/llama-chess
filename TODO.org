@@ -13,9 +13,8 @@
 ** DONE Error dialog truncates long Ollama handshake messages
    Multi-line errors now use the scrollable message window instead of the
    one-line OK popup that flattened newlines and clipped at COLS.
-** TODO After a failed handshake, mode becomes human/engine + Engine offline
-   Confusing vs the default human/human. Restore human/human (or keep
-   previous live opponent) and say so in the status line.
+** DONE After a failed handshake, mode becomes human/engine + Engine offline
+   Restore CF_HUMAN so status is human/human after a failed reconnect.
 ** TODO Illegal engine move (e.g. Black plays e2e4) only pops Error + OK
    No automatic "go" retry. Prompt to retry, or ask the model again.
 ** TODO No in-UI hint that 'g' forces the engine to move after an error
