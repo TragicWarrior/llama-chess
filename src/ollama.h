@@ -35,9 +35,6 @@ void do_global_disconnect_ollama(void);
 void ollama_set_black_tag(GAME g);
 void ollama_clear_black_tag(GAME g);
 
-/* Reconnect the last successful opponent after the UI is up. */
-void ollama_try_autoreconnect(void);
-
 /* Load/save helpers (also used from rcfile). */
 void ollama_conn_load(void);
 void ollama_conn_save(void);

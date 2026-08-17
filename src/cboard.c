@@ -6626,7 +6626,8 @@ int main(int argc, char *argv[])
     draw_window_decor();
     cboard_menubar_refresh();
     update_all(gp);
-    ollama_try_autoreconnect();
+    /* Default is human/human. File → Connect Ollama with a valid URL
+     * implies human/ollama (handshake still has to succeed to stay there). */
     game_loop();
     cleanup_all();
     free(w_pawn_wchar);

@@ -1530,6 +1530,10 @@ ollama_connect_to(const char *name, const char *url, const char *model)
 
     d = gp->data;
 
+    /* A valid http:// URL is an implied switch out of human/human. */
+    CLEAR_FLAG(d->flags, CF_HUMAN);
+    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+
     /* Drop any prior bridge (including one left on an older game). */
     free_engine(gp);
 
@@ -1567,8 +1571,6 @@ ollama_connect_to(const char *name, const char *url, const char *model)
     ollama_conn_add(name_c, url_c, model_c);
     ollama_last_save(name_c, url_c, model_c);
 
-    CLEAR_FLAG(d->flags, CF_HUMAN);
-    CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
     ollama_set_black_tag(gp);
 
     if (start_ollama_engine(gp) != 0)
@@ -1596,7 +1598,7 @@ ollama_connect_to(const char *name, const char *url, const char *model)
     }
 
     update_status_notify(gp,
-                         _("Connected to Ollama at %s (%s) — READY-TO-PLAY"),
+                         _("Connected to Ollama at %s (%s) — human/ollama"),
                          config.ollama_url, config.ollama_model);
     update_all(gp);
     free(url_c);
@@ -1951,24 +1953,6 @@ do_global_connect_ollama(void)
     construct_menu(0, 0, -1, -1, _("Ollama Connections"), 0,
                    get_ollama_conn_items, keys, NULL, NULL,
                    ollama_conn_menu_exit, NULL);
-}
-
-void
-ollama_try_autoreconnect(void)
-{
-    char name[128], url[256], model[128];
-
-    if (!gp || !gp->data)
-        return;
-    if (ollama_last_load(name, sizeof(name), url, sizeof(url), model,
-                         sizeof(model)) != 0)
-        return;
-
-    update_status_notify(gp, _("Reconnecting last Ollama opponent (%s)…"),
-                         model);
-    update_status_window(gp);
-    cboard_ui_refresh();
-    ollama_connect_to(name[0] ? name : NULL, url, model);
 }
 
 void
