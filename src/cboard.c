@@ -4891,6 +4891,7 @@ void do_new_game()
             add_engine_command(gp, ENGINE_READY, "setboard %s\n", fen);
             free(fen);
             d->engine->status = ENGINE_READY;
+            ollama_set_black_tag(gp);
             update_status_notify(gp,
                                  _("New game — still connected to Ollama (%s)"),
                                  config.ollama_model);

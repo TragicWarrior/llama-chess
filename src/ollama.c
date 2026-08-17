@@ -1398,6 +1398,28 @@ ollama_conn_remove_at(int idx)
     ollama_conn_save();
 }
 
+void
+ollama_set_black_tag(GAME g)
+{
+    char buf[160];
+    const char *model = config.ollama_model;
+
+    if (!g)
+        return;
+    if (model && model[0])
+        snprintf(buf, sizeof(buf), "Ollama (%s)", model);
+    else
+        snprintf(buf, sizeof(buf), "%s", "Ollama");
+    pgn_tag_add(&g->tag, (char *) "Black", buf);
+}
+
+void
+ollama_clear_black_tag(GAME g)
+{
+    if (g)
+        pgn_tag_add(&g->tag, (char *) "Black", (char *) "?");
+}
+
 /* ---- Connect UI ------------------------------------------------------- */
 
 /* Activate url/model: handshake, save list entry, start bridge. */
@@ -1480,9 +1502,12 @@ ollama_connect_to(const char *name, const char *url, const char *model)
 
     CLEAR_FLAG(d->flags, CF_HUMAN);
     CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+    ollama_set_black_tag(gp);
 
     if (start_ollama_engine(gp) != 0)
     {
+        SET_FLAG(d->flags, CF_HUMAN);
+        ollama_clear_black_tag(gp);
         free(url_c);
         free(model_c);
         free(name_c);
@@ -1860,6 +1885,7 @@ do_global_disconnect_ollama(void)
         d = gp->data;
         SET_FLAG(d->flags, CF_HUMAN);
         CLEAR_FLAG(d->flags, CF_ENGINE_LOOP);
+        ollama_clear_black_tag(gp);
         update_status_notify(gp, "%s", _("Disconnected Ollama; human/human."));
         update_all(gp);
     }

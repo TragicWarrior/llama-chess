@@ -31,6 +31,10 @@ void do_global_connect_ollama(void);
 /* Drop Ollama URL binding and stop the opponent engine if it is Ollama. */
 void do_global_disconnect_ollama(void);
 
+/* Set/clear the PGN Black tag from the current Ollama model. */
+void ollama_set_black_tag(GAME g);
+void ollama_clear_black_tag(GAME g);
+
 /* Load/save helpers (also used from rcfile). */
 void ollama_conn_load(void);
 void ollama_conn_save(void);

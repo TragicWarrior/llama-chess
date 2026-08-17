@@ -23,9 +23,8 @@
    Picker now opens on the first saved connection, not New connection.
 ** DONE Side clocks stay 00:00:00 while Total ticks
    Per-side elapsed now always increments; CF_CLOCK only gates forfeit.
-** TODO PGN Black tag stays "?" after Connect Ollama
-   White is filled (local user). Black never becomes the model / connection
-   name (qwen3.6:35b-a3b). Save/export then looks like an unrated human game.
+** DONE PGN Black tag stays "?" after Connect Ollama
+   Black is set to "Ollama (model)" on connect / new-game reattach.
 ** TODO No auto-reconnect to last saved Ollama opponent
    Every launch is human/human until File → Connect Ollama. Remember last
    used connection or offer it on startup.
