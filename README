@@ -22,13 +22,6 @@ After installing, type "llama-chess -h" for command-line options or just
 "llama-chess". Press F10 for the top menu bar (File, Game, Play, …). Help is
 Ctrl-H (or F1 if your terminal does not capture it). Press "a" for About.
 
-If you want PERL support you'll need to have libperl installed and pass
--DWITH_LIBPERL=ON to cmake. When compiled with PERL support, pressing ^O
-will "filter" the current game through a PERL subroutine defined in
-~/.llama-chess/perl.pl. The subroutine is passed a single argument which is a
-generated FEN tag of the current game. The subroutine should return a FEN tag
-after processing.
-
 The latest version can be found at https://github.com/TragicWarrior/llama-chess.
 If you find a bug or have a patch to fix one or a feature request you can use
 the issue tracker there or send me an email.
