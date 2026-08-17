@@ -38,6 +38,11 @@ done by doing:
 
     git clone https://github.com/TragicWarrior/llama-chess.git
 
-Ben Kibbey <bjk@luxsci.net>
-Jabber: bjk@jabber.org
-https://github.com/TragicWarrior/llama-chess
+Credits
+-------
+
+Llama Chess is based on CBoard, written by Ben Kibbey
+<bjk@luxsci.net> (Jabber: bjk@jabber.org). The original CBoard sources,
+issues, and wiki remain at https://gitlab.com/bjk/cboard.
+
+See THANKS for additional contributors.
