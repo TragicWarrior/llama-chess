@@ -24,6 +24,8 @@ set(CBOARD_SOURCES
   menu.h
   menubar.c
   menubar.h
+  splash.c
+  splash.h
   mouse.c
   mouse.h
   tags.c

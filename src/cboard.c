@@ -70,6 +70,7 @@
 #include "menubar.h"
 #include "mouse.h"
 #include "ollama.h"
+#include "splash.h"
 
 #ifdef DEBUG
 #include <debug.h>
@@ -6548,6 +6549,8 @@ int main(int argc, char *argv[])
 
     cboard_ui_init();
     curses_initialized = 1;
+
+    llama_chess_splash();
 
     if (LINES < 24 || COLS < 74)
     {
