@@ -1588,7 +1588,7 @@ update_clock(GAME g, struct itimerval it)
 {
     struct userdata_s *d = g->data;
 
-    if (TEST_FLAG(d->flags, CF_CLOCK) && g->turn == WHITE)
+    if (g->turn == WHITE)
     {
         d->wclock.elapsed.tv_sec += it.it_value.tv_sec;
         d->wclock.elapsed.tv_usec += it.it_value.tv_usec;
@@ -1599,14 +1599,14 @@ update_clock(GAME g, struct itimerval it)
             d->wclock.elapsed.tv_usec = d->wclock.elapsed.tv_usec % 1000000;
         }
 
-        if (d->wclock.tc[d->wclock.tcn][1] &&
+        if (TEST_FLAG(d->flags, CF_CLOCK) && d->wclock.tc[d->wclock.tcn][1] &&
             d->wclock.elapsed.tv_sec >= d->wclock.tc[d->wclock.tcn][1])
         {
             pgn_tag_add(&g->tag, (char *) "Result", (char *) "0-1");
             gameover(g);
         }
     }
-    else if (TEST_FLAG(d->flags, CF_CLOCK) && g->turn == BLACK)
+    else if (g->turn == BLACK)
     {
         d->bclock.elapsed.tv_sec += it.it_value.tv_sec;
         d->bclock.elapsed.tv_usec += it.it_value.tv_usec;
@@ -1617,7 +1617,7 @@ update_clock(GAME g, struct itimerval it)
             d->bclock.elapsed.tv_usec = d->bclock.elapsed.tv_usec % 1000000;
         }
 
-        if (d->bclock.tc[d->bclock.tcn][1] &&
+        if (TEST_FLAG(d->flags, CF_CLOCK) && d->bclock.tc[d->bclock.tcn][1] &&
             d->bclock.elapsed.tv_sec >= d->bclock.tc[d->bclock.tcn][1])
         {
             pgn_tag_add(&g->tag, (char *) "Result", (char *) "1-0");

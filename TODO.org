@@ -21,10 +21,8 @@
    Invalid Ollama moves mention g in the error dialog.
 ** DONE Saved-connection list: easy to overshoot onto Disconnect / Remove
    Picker now opens on the first saved connection, not New connection.
-** TODO Side clocks stay 00:00:00 while Total ticks
-   After 1.e4 1...e5 2.Nf3 2...Nc6 (~4.5 min), White and Black both still
-   read 00:00:00. Only Total advances. Side clocks should run for the
-   player to move (and persist after the move).
+** DONE Side clocks stay 00:00:00 while Total ticks
+   Per-side elapsed now always increments; CF_CLOCK only gates forfeit.
 ** TODO PGN Black tag stays "?" after Connect Ollama
    White is filled (local user). Black never becomes the model / connection
    name (qwen3.6:35b-a3b). Save/export then looks like an unrated human game.
