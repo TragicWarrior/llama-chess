@@ -31,6 +31,12 @@ static int kmio_fd = -1;
 static vk_widget_t *front_stack[FRONT_MAX];
 static int front_count;
 
+struct _vk_screen_s *
+cboard_ui_screen(void)
+{
+    return screen;
+}
+
 void cboard_ui_init(void)
 {
     int fd;

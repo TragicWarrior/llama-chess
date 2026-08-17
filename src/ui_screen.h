@@ -15,6 +15,9 @@ typedef void cboard_widget_t;
 
 void cboard_ui_init(void);
 void cboard_ui_shutdown(void);
+/* The vk_screen created by cboard_ui_init(); NULL before init / after shutdown. */
+struct _vk_screen_s;
+struct _vk_screen_s *cboard_ui_screen(void);
 void cboard_ui_refresh(void);
 /* Terminal geometry owner: ioctl + resize_term + surface wresize (VDK). */
 void cboard_ui_resize(void);
