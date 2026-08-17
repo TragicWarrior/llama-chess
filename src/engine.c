@@ -595,6 +595,13 @@ parse_xboard_line(GAME g, char *str)
             invalid_move(d->n + 1, n, m);
             free(buf);
             free(frfr);
+            /* Ask the model again instead of leaving Black stuck.
+             * Do not RETURN() — that would force ENGINE_READY and drop go. */
+            if (d->engine && d->engine->backend == ENGINE_BACKEND_OLLAMA)
+            {
+                add_engine_command(g, ENGINE_THINKING, "go\n");
+                return;
+            }
             RETURN(d);
         }
 
