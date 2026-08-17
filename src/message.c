@@ -699,8 +699,10 @@ WIN *construct_message(const char *title, const char *prompt, int center,
             for (i = 0; lines && lines[i]; i++)
                 nlines++;
 
-            /* Keep multi-line help-ish content on the scrollable window. */
-            if (is_error || nlines <= 3)
+            /* One-line errors and short notices use the OK popup.
+             * Multi-line errors (handshake detail, URL, model) need the
+             * scrollable window — the popup flattens newlines and clips. */
+            if ((!is_error && nlines <= 3) || (is_error && nlines <= 1))
             {
                 const char *ttl = is_error ? NULL : title;
 
