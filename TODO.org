@@ -17,7 +17,8 @@
    Restore CF_HUMAN so status is human/human after a failed reconnect.
 ** DONE Illegal engine move (e.g. Black plays e2e4) only pops Error + OK
    After dismiss, send go again to the Ollama bridge.
-** TODO No in-UI hint that 'g' forces the engine to move after an error
+** DONE No in-UI hint that 'g' forces the engine to move after an error
+   Invalid Ollama moves mention g in the error dialog.
 ** TODO Saved-connection list: easy to overshoot onto Disconnect / Remove
    Consider activating the last-used or a marked default with one key.
 ** TODO Side clocks stay 00:00:00 while Total ticks

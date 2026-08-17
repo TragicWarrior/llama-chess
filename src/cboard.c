@@ -1556,16 +1556,22 @@ void update_board_window(GAME g)
 
 void invalid_move(int n, int e, const char *m)
 {
+    const char *what = (e == E_PGN_AMBIGUOUS) ? _("Ambiguous move")
+                                              : _("Invalid move");
+
     if (curses_initialized)
-        cmessage(ERROR_STR, ANY_KEY_STR, "%s \"%s\" (round #%i)",
-                 (e ==
-                  E_PGN_AMBIGUOUS)
-                     ? _("Ambiguous move")
-                     : _("Invalid move"),
-                 m,
-                 n);
+    {
+        if (gp && engine_is_ollama(gp))
+            cmessage(ERROR_STR, ANY_KEY_STR,
+                     "%s \"%s\" (round #%i)\n\n%s",
+                     what, m, n,
+                     _("Asking the engine again. Press g to force a move."));
+        else
+            cmessage(ERROR_STR, ANY_KEY_STR, "%s \"%s\" (round #%i)",
+                     what, m, n);
+    }
     else
-        warnx("%s: %s \"%s\" (round #%i)", loadfile, (e == E_PGN_AMBIGUOUS) ? _("Ambiguous move") : _("Invalid move"), m, n);
+        warnx("%s: %s \"%s\" (round #%i)", loadfile, what, m, n);
 }
 
 void gameover(GAME g)
