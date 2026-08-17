@@ -1,12 +1,12 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR Free Software Foundation, Inc.
-# This file is distributed under the same license as the cboard package.
+# This file is distributed under the same license as the llama-chess package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: cboard 0.7.5\n"
+"Project-Id-Version: llama-chess 0.7.5\n"
 "Report-Msgid-Bugs-To: bjk@luxsci.net\n"
 "POT-Creation-Date: 2018-09-28 09:54-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -17,15 +17,15 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/cboard.c:286
+#: src/llama-chess.c:286
 msgid "none"
 msgstr ""
 
-#: src/cboard.c:347
+#: src/llama-chess.c:347
 msgid "NAG Menu Keys"
 msgstr ""
 
-#: src/cboard.c:348
+#: src/llama-chess.c:348
 msgid ""
 "    UP/DOWN - previous/next menu item\n"
 "   HOME/END - first/last menu item\n"
@@ -35,296 +35,296 @@ msgid ""
 "     CTRL-X - quit with changes"
 msgstr ""
 
-#: src/cboard.c:422
+#: src/llama-chess.c:422
 msgid "Numeric Annotation Glyphs"
 msgstr ""
 
-#: src/cboard.c:435
+#: src/llama-chess.c:435
 msgid "Viewing NAG for"
 msgstr ""
 
-#: src/cboard.c:466 src/cboard.c:481
+#: src/llama-chess.c:466 src/llama-chess.c:481
 msgid "Viewing Annotation for"
 msgstr ""
 
-#: src/cboard.c:486 src/cboard.c:491
+#: src/llama-chess.c:486 src/llama-chess.c:491
 msgid "Any other key to continue"
 msgstr ""
 
-#: src/cboard.c:487 src/cboard.c:492
+#: src/llama-chess.c:487 src/llama-chess.c:492
 msgid "Press 'n' to view NAG"
 msgstr ""
 
-#: src/cboard.c:493
+#: src/llama-chess.c:493
 msgid "No comment text for this move"
 msgstr ""
 
-#: src/cboard.c:513 src/cboard.c:4750
+#: src/llama-chess.c:513 src/llama-chess.c:4750
 msgid "Not a regular file"
 msgstr ""
 
-#: src/cboard.c:559 src/cboard.c:633 src/cboard.c:5917
+#: src/llama-chess.c:559 src/llama-chess.c:633 src/llama-chess.c:5917
 msgid "Save game failed."
 msgstr ""
 
-#: src/cboard.c:561 src/cboard.c:635
+#: src/llama-chess.c:561 src/llama-chess.c:635
 msgid "Game saved."
 msgstr ""
 
-#: src/cboard.c:610 src/cboard.c:6038
+#: src/llama-chess.c:610 src/llama-chess.c:6038
 msgid "Not a directory."
 msgstr ""
 
-#: src/cboard.c:624 src/cboard.c:4267 src/cboard.c:5092
+#: src/llama-chess.c:624 src/llama-chess.c:4267 src/llama-chess.c:5092
 msgid "What would you like to do?"
 msgstr ""
 
-#: src/cboard.c:627
+#: src/llama-chess.c:627
 msgid "File exists:"
 msgstr ""
 
-#: src/cboard.c:1474 src/cboard.c:1478
+#: src/llama-chess.c:1474 src/llama-chess.c:1478
 msgid "Ambiguous move"
 msgstr ""
 
-#: src/cboard.c:1474 src/cboard.c:1478
+#: src/llama-chess.c:1474 src/llama-chess.c:1478
 msgid "Invalid move"
 msgstr ""
 
-#: src/cboard.c:1583 src/cboard.c:1834 src/menu.c:147
+#: src/llama-chess.c:1583 src/llama-chess.c:1834 src/menu.c:147
 msgid "of"
 msgstr ""
 
-#: src/cboard.c:1584
+#: src/llama-chess.c:1584
 msgid " (ply)"
 msgstr ""
 
-#: src/cboard.c:1586 src/cboard.c:1595 src/cboard.c:1626 src/cboard.c:1831
+#: src/llama-chess.c:1586 src/llama-chess.c:1595 src/llama-chess.c:1626 src/llama-chess.c:1831
 msgid "not available"
 msgstr ""
 
-#: src/cboard.c:1589
+#: src/llama-chess.c:1589
 msgid "Move:"
 msgstr ""
 
-#: src/cboard.c:1595 src/cboard.c:1626
+#: src/llama-chess.c:1595 src/llama-chess.c:1626
 msgid "empty"
 msgstr ""
 
-#: src/cboard.c:1600 src/cboard.c:1631
+#: src/llama-chess.c:1600 src/llama-chess.c:1631
 msgid " (Annotated"
 msgstr ""
 
-#: src/cboard.c:1620
+#: src/llama-chess.c:1620
 msgid "Next:"
 msgstr ""
 
-#: src/cboard.c:1620
+#: src/llama-chess.c:1620
 msgid "Next move:"
 msgstr ""
 
-#: src/cboard.c:1651
+#: src/llama-chess.c:1651
 msgid "Prev.:"
 msgstr ""
 
-#: src/cboard.c:1651
+#: src/llama-chess.c:1651
 msgid "Prev move:"
 msgstr ""
 
-#: src/cboard.c:1733 src/cboard.c:1734
+#: src/llama-chess.c:1733 src/llama-chess.c:1734
 msgid "abcdefgh"
 msgstr ""
 
-#: src/cboard.c:1742
+#: src/llama-chess.c:1742
 msgid "Select Pawn Promotion Piece"
 msgstr ""
 
-#: src/cboard.c:1742
+#: src/llama-chess.c:1742
 msgid "R/N/B/Q"
 msgstr ""
 
-#: src/cboard.c:1745
+#: src/llama-chess.c:1745
 msgid "R = Rook, N = Knight, B = Bishop, Q = Queen"
 msgstr ""
 
-#: src/cboard.c:1832
+#: src/llama-chess.c:1832
 msgid "File:"
 msgstr ""
 
-#: src/cboard.c:1835
+#: src/llama-chess.c:1835
 msgid "Game:"
 msgstr ""
 
-#: src/cboard.c:1895
+#: src/llama-chess.c:1895
 msgid "Flags:"
 msgstr ""
 
-#: src/cboard.c:1901
+#: src/llama-chess.c:1901
 msgid "move history"
 msgstr ""
 
-#: src/cboard.c:1904
+#: src/llama-chess.c:1904
 msgid "edit"
 msgstr ""
 
-#: src/cboard.c:1907
+#: src/llama-chess.c:1907
 msgid "play"
 msgstr ""
 
-#: src/cboard.c:1910 src/cboard.c:1948
+#: src/llama-chess.c:1910 src/llama-chess.c:1948
 msgid "(empty value)"
 msgstr ""
 
-#: src/cboard.c:1914
+#: src/llama-chess.c:1914
 msgid "Mode:"
 msgstr ""
 
-#: src/cboard.c:1919
+#: src/llama-chess.c:1919
 msgid " (human/human)"
 msgstr ""
 
-#: src/cboard.c:1921
+#: src/llama-chess.c:1921
 msgid " (engine/engine)"
 msgstr ""
 
-#: src/cboard.c:1924
+#: src/llama-chess.c:1924
 msgid " (engine/human)"
 msgstr ""
 
-#: src/cboard.c:1924
+#: src/llama-chess.c:1924
 msgid " (human/engine)"
 msgstr ""
 
-#: src/cboard.c:1936
+#: src/llama-chess.c:1936
 msgid "pondering..."
 msgstr ""
 
-#: src/cboard.c:1939
+#: src/llama-chess.c:1939
 msgid "ready"
 msgstr ""
 
-#: src/cboard.c:1942
+#: src/llama-chess.c:1942
 msgid "initializing..."
 msgstr ""
 
-#: src/cboard.c:1945 src/cboard.c:1953
+#: src/llama-chess.c:1945 src/llama-chess.c:1953
 msgid "offline"
 msgstr ""
 
-#: src/cboard.c:1955
+#: src/llama-chess.c:1955
 msgid "Engine:"
 msgstr ""
 
-#: src/cboard.c:1960
+#: src/llama-chess.c:1960
 msgid "Turn:"
 msgstr ""
 
-#: src/cboard.c:1961 src/cboard.c:1963
+#: src/llama-chess.c:1961 src/llama-chess.c:1963
 msgid "white"
 msgstr ""
 
-#: src/cboard.c:1961 src/cboard.c:1971
+#: src/llama-chess.c:1961 src/llama-chess.c:1971
 msgid "black"
 msgstr ""
 
-#: src/cboard.c:1979
+#: src/llama-chess.c:1979
 msgid "Total:"
 msgstr ""
 
-#: src/cboard.c:1989 src/cboard.c:5524 src/input.c:128
+#: src/llama-chess.c:1989 src/llama-chess.c:5524 src/input.c:128
 #, c-format
 msgid "Type %ls for help"
 msgstr ""
 
-#: src/cboard.c:2098 src/cboard.c:5208
+#: src/llama-chess.c:2098 src/llama-chess.c:5208
 msgid "Engine IO Window"
 msgstr ""
 
-#: src/cboard.c:2236
+#: src/llama-chess.c:2236
 msgid "Error Matching Regular Expression"
 msgstr ""
 
-#: src/cboard.c:2265 src/cboard.c:4604 src/cboard.c:4624
+#: src/llama-chess.c:2265 src/llama-chess.c:4604 src/llama-chess.c:4624
 msgid "Cannot delete last game."
 msgstr ""
 
-#: src/cboard.c:2297 src/cboard.c:2315 src/cboard.c:3738
+#: src/llama-chess.c:2297 src/llama-chess.c:2315 src/llama-chess.c:3738
 msgid "Error Compiling Regular Expression"
 msgstr ""
 
-#: src/cboard.c:2466
+#: src/llama-chess.c:2466
 msgid "Game Status"
 msgstr ""
 
-#: src/cboard.c:2469
+#: src/llama-chess.c:2469
 msgid "Roster Tags"
 msgstr ""
 
-#: src/cboard.c:2472
+#: src/llama-chess.c:2472
 msgid "Move History"
 msgstr ""
 
-#: src/cboard.c:2719
+#: src/llama-chess.c:2719
 msgid "Maximum number of time controls reached"
 msgstr ""
 
-#: src/cboard.c:2780
+#: src/llama-chess.c:2780
 msgid "Invalid clock specification"
 msgstr ""
 
-#: src/cboard.c:2888
+#: src/llama-chess.c:2888
 msgid "Set Clock"
 msgstr ""
 
-#: src/cboard.c:2890
+#: src/llama-chess.c:2890
 msgid ""
 "Format: [W | B] [+]T[+I] | ++I | M/T [M/T [...] [SD/T]] [+I]\n"
 "T = time (hms), I = increment, M = moves per, SD = sudden death\n"
 "e.g., 30m or 4m+12s or 35/90m SD/30m"
 msgstr ""
 
-#: src/cboard.c:2949
+#: src/llama-chess.c:2949
 msgid "Engine Command"
 msgstr ""
 
-#: src/cboard.c:2980
+#: src/llama-chess.c:2980
 msgid "Press 'g' to start the game"
 msgstr ""
 
-#: src/cboard.c:2986
+#: src/llama-chess.c:2986
 msgid ""
 "You may only switch sides at the start of the \n"
 "game. Press ^K or ^N to begin a new game."
 msgstr ""
 
-#: src/cboard.c:3224
+#: src/llama-chess.c:3224
 #, c-format
 msgid ""
 "It is not your turn to move. You may switch playing sides by pressing \"%lc"
 "\"."
 msgstr ""
 
-#: src/cboard.c:3234
+#: src/llama-chess.c:3234
 msgid "It is not your turn to move. You can switch sides "
 msgstr ""
 
-#: src/cboard.c:3349
+#: src/llama-chess.c:3349
 msgid "more help"
 msgstr ""
 
-#: src/cboard.c:3453
+#: src/llama-chess.c:3453
 msgid "Global Game Keys (* = can take a repeat count)"
 msgstr ""
 
-#: src/cboard.c:3492
+#: src/llama-chess.c:3492
 msgid "Command Key Index"
 msgstr ""
 
-#: src/cboard.c:3493
+#: src/llama-chess.c:3493
 msgid "p/h/e/g or any other key to quit"
 msgstr ""
 
-#: src/cboard.c:3495
+#: src/llama-chess.c:3495
 msgid ""
 " p - play mode keys\n"
 " h - history mode keys\n"
@@ -332,33 +332,33 @@ msgid ""
 " g - global game keys"
 msgstr ""
 
-#: src/cboard.c:3507
+#: src/llama-chess.c:3507
 msgid "Play Mode Keys (* = can take a repeat count)"
 msgstr ""
 
-#: src/cboard.c:3637
+#: src/llama-chess.c:3637
 msgid "Insert Piece"
 msgstr ""
 
-#: src/cboard.c:3638
+#: src/llama-chess.c:3638
 msgid "P=pawn, R=rook, N=knight, B=bishop, Q=queen, K=king"
 msgstr ""
 
-#: src/cboard.c:3641
+#: src/llama-chess.c:3641
 msgid ""
 "Type the piece letter to insert. Lowercase for a black piece, uppercase for "
 "a white piece."
 msgstr ""
 
-#: src/cboard.c:3664
+#: src/llama-chess.c:3664
 msgid "Edit Mode Keys (* = can take a repeat count)"
 msgstr ""
 
-#: src/cboard.c:4012
+#: src/llama-chess.c:4012
 msgid "History Menu Help"
 msgstr ""
 
-#: src/cboard.c:4013
+#: src/llama-chess.c:4013
 msgid ""
 "    UP/DOWN - previous/next menu item\n"
 "   HOME/END - first/last menu item\n"
@@ -370,19 +370,19 @@ msgid ""
 "   ESCAPE/M - return to move history"
 msgstr ""
 
-#: src/cboard.c:4029 src/cboard.c:4073
+#: src/llama-chess.c:4029 src/llama-chess.c:4073
 msgid "Editing Annotation for"
 msgstr ""
 
-#: src/cboard.c:4035 src/cboard.c:4080
+#: src/llama-chess.c:4035 src/llama-chess.c:4080
 msgid "Type CTRL-t to edit NAG"
 msgstr ""
 
-#: src/cboard.c:4158
+#: src/llama-chess.c:4158
 msgid "Move History Tree"
 msgstr ""
 
-#: src/cboard.c:4270
+#: src/llama-chess.c:4270
 #, c-format
 msgid ""
 "The current move is not the final move of this round. Press \"%ls\" to "
@@ -390,56 +390,56 @@ msgid ""
 "key to cancel."
 msgstr ""
 
-#: src/cboard.c:4311
+#: src/llama-chess.c:4311
 msgid "History Mode Keys (* = can take a repeat count)"
 msgstr ""
 
-#: src/cboard.c:4333
+#: src/llama-chess.c:4333
 msgid "Find Move Text Expression"
 msgstr ""
 
-#: src/cboard.c:4394
+#: src/llama-chess.c:4394
 msgid "Jump to Move Number"
 msgstr ""
 
-#: src/cboard.c:4480
+#: src/llama-chess.c:4480
 #, c-format
 msgid "Loading... %i%% (%i games)"
 msgstr ""
 
-#: src/cboard.c:4619
+#: src/llama-chess.c:4619
 msgid "Delete the current game?"
 msgstr ""
 
-#: src/cboard.c:4628
+#: src/llama-chess.c:4628
 msgid "Delete all games marked for deletion?"
 msgstr ""
 
-#: src/cboard.c:4635 src/cboard.c:5174 src/cboard.c:5195
+#: src/llama-chess.c:4635 src/llama-chess.c:5174 src/llama-chess.c:5195
 msgid "[ Yes or No ]"
 msgstr ""
 
-#: src/cboard.c:4652
+#: src/llama-chess.c:4652
 msgid "No matches found"
 msgstr ""
 
-#: src/cboard.c:4870
+#: src/llama-chess.c:4870
 msgid "Save Game Filename"
 msgstr ""
 
-#: src/cboard.c:4871 src/cboard.c:5083
+#: src/llama-chess.c:4871 src/llama-chess.c:5083
 msgid "Type TAB for file browser"
 msgstr ""
 
-#: src/cboard.c:4887
+#: src/llama-chess.c:4887
 msgid "Save game aborted."
 msgstr ""
 
-#: src/cboard.c:4897
+#: src/llama-chess.c:4897
 msgid "ABOUT"
 msgstr ""
 
-#: src/cboard.c:4898
+#: src/llama-chess.c:4898
 #, c-format
 msgid ""
 "%s\n"
@@ -448,61 +448,61 @@ msgid ""
 "%s"
 msgstr ""
 
-#: src/cboard.c:4963
+#: src/llama-chess.c:4963
 msgid "Find Game by Tag Expression"
 msgstr ""
 
-#: src/cboard.c:4964
+#: src/llama-chess.c:4964
 msgid "[name expression:]value expression"
 msgstr ""
 
-#: src/cboard.c:5004
+#: src/llama-chess.c:5004
 msgid "Jump to Game Number"
 msgstr ""
 
-#: src/cboard.c:5082
+#: src/llama-chess.c:5082
 msgid "Load Filename"
 msgstr ""
 
-#: src/cboard.c:5095
+#: src/llama-chess.c:5095
 #, c-format
 msgid ""
 "There is more than one game loaded. Press \"%ls\" to save the current game, "
 "\"%ls\" to save all games or any other key to cancel."
 msgstr ""
 
-#: src/cboard.c:5176
+#: src/llama-chess.c:5176
 msgid "Really start a new game from scratch?"
 msgstr ""
 
-#: src/cboard.c:5196
+#: src/llama-chess.c:5196
 msgid "Want to Quit?"
 msgstr ""
 
-#: src/cboard.c:5271
+#: src/llama-chess.c:5271
 #, c-format
 msgid "Repeat %i"
 msgstr ""
 
-#: src/cboard.c:5390
+#: src/llama-chess.c:5390
 msgid "FEN parse error."
 msgstr ""
 
-#: src/cboard.c:5424
+#: src/llama-chess.c:5424
 msgid "PERL Subroutine Filter"
 msgstr ""
 
-#: src/cboard.c:5823
+#: src/llama-chess.c:5823
 msgid ""
-"Usage: cboard [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
+"Usage: %s [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
 "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"
 msgstr ""
 
-#: src/cboard.c:5826
-msgid "Usage: cboard [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"
+#: src/llama-chess.c:5826
+msgid "Usage: %s [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"
 msgstr ""
 
-#: src/cboard.c:5828
+#: src/llama-chess.c:5828
 msgid ""
 "  -p  Load PGN file.\n"
 "  -V  Validate a game file.\n"
@@ -516,68 +516,68 @@ msgid ""
 "  -h  This help text.\n"
 msgstr ""
 
-#: src/cboard.c:5940
+#: src/llama-chess.c:5940
 msgid "Broken pipe. Quitting."
 msgstr ""
 
-#: src/cboard.c:5973
+#: src/llama-chess.c:5973
 #, c-format
 msgid "Loading... %i%% (%i games)%c"
 msgstr ""
 
-#: src/cboard.c:6165
+#: src/llama-chess.c:6165
 msgid "y"
 msgstr ""
 
-#: src/cboard.c:6166 src/cboard.c:6170
+#: src/llama-chess.c:6166 src/llama-chess.c:6170
 msgid "a"
 msgstr ""
 
-#: src/cboard.c:6167
+#: src/llama-chess.c:6167
 msgid "o"
 msgstr ""
 
-#: src/cboard.c:6168
+#: src/llama-chess.c:6168
 msgid "r"
 msgstr ""
 
-#: src/cboard.c:6169
+#: src/llama-chess.c:6169
 msgid "c"
 msgstr ""
 
-#: src/cboard.c:6171
+#: src/llama-chess.c:6171
 msgid "Event"
 msgstr ""
 
-#: src/cboard.c:6172
+#: src/llama-chess.c:6172
 msgid "Site"
 msgstr ""
 
-#: src/cboard.c:6173
+#: src/llama-chess.c:6173
 msgid "Date"
 msgstr ""
 
-#: src/cboard.c:6174
+#: src/llama-chess.c:6174
 msgid "Round"
 msgstr ""
 
-#: src/cboard.c:6175
+#: src/llama-chess.c:6175
 msgid "White"
 msgstr ""
 
-#: src/cboard.c:6176
+#: src/llama-chess.c:6176
 msgid "Black"
 msgstr ""
 
-#: src/cboard.c:6177
+#: src/llama-chess.c:6177
 msgid "Result"
 msgstr ""
 
-#: src/cboard.c:6190
+#: src/llama-chess.c:6190
 msgid "Could not initialize curses."
 msgstr ""
 
-#: src/cboard.c:6197
+#: src/llama-chess.c:6197
 msgid "Need at least an 74x23 terminal."
 msgstr ""
 

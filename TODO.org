@@ -9,7 +9,7 @@
    construct_menu bound only '\n'. KEY_ENTER / '\r' (vwm --key Enter) did
    not activate. Fixed on `fixes`: bind '\\n', '\\r', and KEY_ENTER.
 
-*** Still open — cboard (game)
+*** Still open — llama-chess (game)
 ** DONE Error dialog truncates long Ollama handshake messages
    Multi-line errors now use the scrollable message window instead of the
    one-line OK popup that flattened newlines and clipped at COLS.

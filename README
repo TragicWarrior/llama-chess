@@ -1,15 +1,15 @@
-CBoard is a Console/Curses PGN file browser, editor and interface to chess
+Llama Chess is a Console/Curses PGN file browser, editor and interface to chess
 engines supporting the XBoard protocol. It supports SAN move format with
 annotations including RAV, NAG, single and multi-line comments along with the
 FEN tag which can be edited by arranging pieces on the board. It can also
 validate and save to (optionally reduced) PGN format. Multiple games
-(human/human, human/engine, engine/engine) can be loaded, created, searched
-and edited. You can also customize the key bindings and create macros.
+(human/human, human/engine, engine/engine, human/ollama) can be loaded, created,
+searched and edited. You can also customize the key bindings and create macros.
 
-Since there are many variations of the curses library, CBoard requires
+Since there are many variations of the curses library, Llama Chess requires
 NCurses to be installed to make porting to other operating systems
 easier. There are known issues with Sun/Solaris and NetBSD, although
-CBoard has been tested to work well on OpenBSD, FreeBSD and Linux.
+Llama Chess has been tested to work well on OpenBSD, FreeBSD and Linux.
 
 Build with CMake (see INSTALL for details). Requires a built sibling
 libviper (VDK) checkout:
@@ -18,14 +18,14 @@ libviper (VDK) checkout:
      cmake -S . -B build && cmake --build build
      sudo cmake --install build
 
-After installing, type "cboard -h" for command-line options or just "cboard".
-Press F10 for the top menu bar (File, Game, Play, …). Help is Ctrl-H
-(or F1 if your terminal does not capture it). Press "a" for About.
+After installing, type "llama-chess -h" for command-line options or just
+"llama-chess". Press F10 for the top menu bar (File, Game, Play, …). Help is
+Ctrl-H (or F1 if your terminal does not capture it). Press "a" for About.
 
 If you want PERL support you'll need to have libperl installed and pass
 -DWITH_LIBPERL=ON to cmake. When compiled with PERL support, pressing ^O
 will "filter" the current game through a PERL subroutine defined in
-~/.cboard/perl.pl. The subroutine is passed a single argument which is a
+~/.llama-chess/perl.pl. The subroutine is passed a single argument which is a
 generated FEN tag of the current game. The subroutine should return a FEN tag
 after processing.
 

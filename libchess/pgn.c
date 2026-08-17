@@ -2410,7 +2410,7 @@ pgn_open(const char *filename, const char *mode, PGN_FILE **result)
             int fd;
 
 #ifdef HAVE_MKSTEMP
-            snprintf(tmp, sizeof(tmp), "cboard.XXXXXX");
+            snprintf(tmp, sizeof(tmp), "llama-chess.XXXXXX");
 #else
             if (tmpnam(tmp) == NULL)
                 goto fail;

@@ -1,5 +1,5 @@
 # List of source files which contain translatable strings.
-src/cboard.c
+src/llama-chess.c
 src/colors.c
 src/colors.h
 src/common.h

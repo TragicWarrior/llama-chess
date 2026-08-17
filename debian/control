@@ -1,4 +1,4 @@
-Source: cboard
+Source: llama-chess
 Section: games
 Priority: optional
 Maintainer: Ben Kibbey <bjk@luxsci.net>
@@ -8,12 +8,15 @@ Standards-Version: 4.6.2
 Homepage: https://gitlab.com/bjk/cboard/wikis
 Vcs-Git: https://gitlab.com/bjk/cboard.git
 
-Package: cboard
+Package: llama-chess
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: crafty, gnuchess
+Provides: cboard
+Replaces: cboard
+Conflicts: cboard
 Description: An NCurses PGN browser, editor and chess engine interface.
- CBoard is a Console/Curses PGN file browser, editor and interface
+ Llama Chess is a Console/Curses PGN file browser, editor and interface
  to chess engines supporting the XBoard protocol. It supports SAN move format
  with annotations including RAV, NAG, single and multi-line comments along with
  the FEN tag which can be edited by arranging pieces on the board. It can also

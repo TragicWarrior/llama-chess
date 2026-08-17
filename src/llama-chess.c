@@ -6166,23 +6166,26 @@ void game_loop()
 
 void usage(const char *pn, int ret)
 {
-    fprintf((ret) ? stderr : stdout, "%s%s",
+    FILE *fp = (ret) ? stderr : stdout;
+
 #ifdef DEBUG
-            _("Usage: cboard [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
-              "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"),
+    fprintf(fp, _("Usage: %s [-hvCD] [-u [N]] [-p [-VtRSE] <file>]\n"
+                  "  -D  Dump libchess debugging info to \"libchess.debug\" (stderr)\n"),
+            pn);
 #else
-            _("Usage: cboard [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"),
+    fprintf(fp, _("Usage: %s [-hvC] [-u [N]] [-p [-VtRSE] <file>]\n"), pn);
 #endif
-            _("  -p  Load PGN file.\n"
-              "  -V  Validate a game file.\n"
-              "  -S  Validate and output a PGN formatted game.\n"
-              "  -R  Like -S but write a reduced PGN formatted game.\n"
-              "  -t  Also write custom PGN tags from config file.\n"
-              "  -E  Stop processing on file parsing error (overrides config).\n"
-              "  -C  Enable strict castling (overrides config).\n"
-              "  -u  Enable/disable UTF-8 pieces (1=enable, 0=disable, overrides config).\n"
-              "  -v  Version information.\n"
-              "  -h  This help text.\n"));
+    fputs(_("  -p  Load PGN file.\n"
+            "  -V  Validate a game file.\n"
+            "  -S  Validate and output a PGN formatted game.\n"
+            "  -R  Like -S but write a reduced PGN formatted game.\n"
+            "  -t  Also write custom PGN tags from config file.\n"
+            "  -E  Stop processing on file parsing error (overrides config).\n"
+            "  -C  Enable strict castling (overrides config).\n"
+            "  -u  Enable/disable UTF-8 pieces (1=enable, 0=disable, overrides config).\n"
+            "  -v  Version information.\n"
+            "  -h  This help text.\n"),
+          fp);
 
     exit(ret);
 }
@@ -6367,8 +6370,8 @@ int main(int argc, char *argv[])
     struct sigaction sigact;
 
     setlocale(LC_ALL, "");
-    bindtextdomain("cboard", LOCALE_DIR);
-    textdomain("cboard");
+    bindtextdomain("llama-chess", LOCALE_DIR);
+    textdomain("llama-chess");
 
     /* Solaris 5.9 */
 #ifndef HAVE_PROGNAME
@@ -6378,22 +6381,42 @@ int main(int argc, char *argv[])
     if ((config.pwd = getpwuid(getuid())) == NULL)
         err(EXIT_FAILURE, "getpwuid()");
 
-    if (asprintf(&config.datadir, "%s/.cboard", config.pwd->pw_dir) < 0 || asprintf(&config.ccfile, "%s/cc.data", config.datadir) < 0 || asprintf(&config.nagfile, "%s/nag.data", config.datadir) < 0 || asprintf(&config.configfile, "%s/config", config.datadir) < 0)
-        err(EXIT_FAILURE, "asprintf");
-
-    if (stat(config.datadir, &st) == -1)
+    /* Prefer ~/.llama-chess; keep using ~/.cboard if that already exists. */
     {
-        if (errno == ENOENT)
+        char *modern = NULL;
+        char *legacy = NULL;
+
+        if (asprintf(&modern, "%s/.llama-chess", config.pwd->pw_dir) < 0
+            || asprintf(&legacy, "%s/.cboard", config.pwd->pw_dir) < 0)
+            err(EXIT_FAILURE, "asprintf");
+
+        if (stat(modern, &st) == 0)
         {
-            if (mkdir(config.datadir, 0755) == -1)
-                err(EXIT_FAILURE, "%s", config.datadir);
+            config.datadir = modern;
+            free(legacy);
+        }
+        else if (errno == ENOENT && stat(legacy, &st) == 0)
+        {
+            config.datadir = legacy;
+            free(modern);
+        }
+        else if (errno == ENOENT)
+        {
+            if (mkdir(modern, 0755) == -1)
+                err(EXIT_FAILURE, "%s", modern);
+            if (stat(modern, &st) == -1)
+                err(EXIT_FAILURE, "%s", modern);
+            config.datadir = modern;
+            free(legacy);
         }
         else
-            err(EXIT_FAILURE, "%s", config.datadir);
-
-        if (stat(config.datadir, &st) == -1)
-            err(EXIT_FAILURE, "%s", config.datadir);
+            err(EXIT_FAILURE, "%s", modern);
     }
+
+    if (asprintf(&config.ccfile, "%s/cc.data", config.datadir) < 0
+        || asprintf(&config.nagfile, "%s/nag.data", config.datadir) < 0
+        || asprintf(&config.configfile, "%s/config", config.datadir) < 0)
+        err(EXIT_FAILURE, "asprintf");
 
     if (!S_ISDIR(st.st_mode))
         errx(EXIT_FAILURE, "%s: %s", config.datadir, _("Not a directory."));

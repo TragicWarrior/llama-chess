@@ -1,3 +1,10 @@
+Llama Chess
+-----------
+The user-facing name is now Llama Chess. The installed command is
+llama-chess (configuration lives in ~/.llama-chess, or ~/.cboard if that
+directory already exists).
+
+
 CBoard version 0.7.5
 --------------------
 Added the "engine_timeout" configuration parameter for use when starting a new

@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(cboard
+project(llama-chess
   VERSION 0.7.6
-  DESCRIPTION "Console/Curses PGN browser, editor and chess engine interface"
+  DESCRIPTION "Llama Chess — console PGN browser, editor and chess engine interface"
   LANGUAGES C
 )
 
+set(LLAMA_CHESS_DISPLAY_NAME "Llama Chess")
 set(CBOARD_BUGREPORT "Ben Kibbey <bjk@luxsci.net>")
 set(CBOARD_URL "https://gitlab.com/bjk/cboard/wikis")
 # Match historical package version string used in --version output.
@@ -286,7 +287,7 @@ add_subdirectory(doc)
 
 if(CBOARD_HAS_NLS AND GETTEXT_FOUND)
   # Compile message catalogs without modifying source .po files.
-  # Install as share/locale/<lang>/LC_MESSAGES/cboard.mo
+  # Install as share/locale/<lang>/LC_MESSAGES/llama-chess.mo
   set(_linguas)
   if(EXISTS "${CMAKE_SOURCE_DIR}/po/LINGUAS")
     file(STRINGS "${CMAKE_SOURCE_DIR}/po/LINGUAS" _linguas_raw)
@@ -312,11 +313,11 @@ if(CBOARD_HAS_NLS AND GETTEXT_FOUND)
       COMMENT "Generating ${_lang}.gmo"
       VERBATIM
     )
-    add_custom_target(cboard_mo_${_lang} ALL DEPENDS "${_gmo}")
+    add_custom_target(llama_chess_mo_${_lang} ALL DEPENDS "${_gmo}")
     install(
       FILES "${_gmo}"
       DESTINATION "${CMAKE_INSTALL_LOCALEDIR}/${_lang}/LC_MESSAGES"
-      RENAME cboard.mo
+      RENAME llama-chess.mo
     )
   endforeach()
 endif()
@@ -325,7 +326,7 @@ endif()
 # Summary
 # ---------------------------------------------------------------------------
 message(STATUS "")
-message(STATUS "CBoard ${PROJECT_VERSION}")
+message(STATUS "${LLAMA_CHESS_DISPLAY_NAME} ${PROJECT_VERSION}")
 message(STATUS "  Curses:     ${CURSES_LIBRARIES}")
 message(STATUS "  VDK:        ${VDK_LIBRARY}")
 message(STATUS "  PERL:       ${WITH_LIBPERL}")
@@ -333,6 +334,6 @@ message(STATUS "  Debug:      ${ENABLE_DEBUG}")
 message(STATUS "  NLS:        ${CBOARD_HAS_NLS}")
 message(STATUS "  Unix98 PTY: ${UNIX98}")
 message(STATUS "  Prefix:     ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "  Data dir:   ${CMAKE_INSTALL_FULL_DATADIR}/cboard")
+message(STATUS "  Data dir:   ${CMAKE_INSTALL_FULL_DATADIR}/llama-chess")
 message(STATUS "  Locale dir: ${CMAKE_INSTALL_FULL_LOCALEDIR}")
 message(STATUS "")

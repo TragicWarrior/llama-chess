@@ -55,7 +55,7 @@
 #define OLLAMA_LAST_FILE "ollama_last"
 #define OLLAMA_CONN_MAX 64
 
-/* Saved endpoints the user can pick from (persisted under ~/.cboard). */
+/* Saved endpoints the user can pick from (persisted under ~/.llama-chess). */
 struct ollama_conn
 {
     char *name;
@@ -1299,7 +1299,7 @@ ollama_conn_save(void)
     fp = fopen(path, "w");
     if (!fp)
         return;
-    fprintf(fp, "# cboard Ollama connections - name|url|model\n");
+    fprintf(fp, "# llama-chess Ollama connections - name|url|model\n");
     for (i = 0; i < nconns; i++)
         fprintf(fp, "%s|%s|%s\n", conns[i].name, conns[i].url,
                 conns[i].model);
@@ -1807,7 +1807,7 @@ do_ollama_conn_help(struct menu_input_s *m)
               "      ENTER - connect / choose action\n"
               "          d - delete selected connection\n"
               "     ESCAPE - cancel\n\n"
-              "Successful connects are saved under ~/.cboard/\n"
+              "Successful connects are saved under ~/.llama-chess/\n"
               "ollama_connections for next time."));
 }
 

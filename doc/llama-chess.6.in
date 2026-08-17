@@ -17,17 +17,17 @@
 \\$2 \(laURL: \\$1 \(ra\\$3
 ..
 .if \n[.g] .mso www.tmac
-.TH CBOARD 6 "Sep 16 2018" "@VERSION@" "Curses Chess Board"
+.TH LLAMA-CHESS 6 "Sep 16 2018" "@VERSION@" "Llama Chess"
 
 .SH NAME
-.B cboard
+.B llama-chess
 
 .SH SYNOPSIS
-.B cboard
+.B llama-chess
 .I "[\-hvC]" "[-u [0|1]]" "[\-p [\-VtRSE] <filename>]"
 
 .SH DESCRIPTION
-.B cboard 
+.B llama-chess
 is an
 .BR ncurses (3)
 PGN browser, editor and frontend to various chess engines supporting the
@@ -57,14 +57,14 @@ parameter.
 .TP
 .I "\-V"
 Validate the specified file only. If a parse error occurs
-.B cboard
+.B llama-chess
 will return a nonzero exit status.
 
 .TP
 .I "\-S"
 Validate the specified file and output the PGN formatted game to stdout. If a
 parse error occurs 
-.B cboard
+.B llama-chess
 will return a nonzero exit status.
 
 .TP
@@ -79,7 +79,7 @@ roster and move text without any annotations.
 Normally when
 .I "\-S"
 is specified custom tags aren't written. This option enables custom tags in
-.B ~/.cboard/config
+.B ~/.llama-chess/config
 to be added to the output.
 
 .TP
@@ -142,7 +142,7 @@ board. The default is true.
 .TP
 .I exit_dialog_box <bool>
 Confirm before quitting
-.B cboard
+.B llama-chess
 \&. The default is on.
 
 .TP
@@ -462,30 +462,34 @@ characters of the given parameter set.
 .I color_menu_graphics foreground background [<cattr>] [<attr>]
 
 .SH RETURN VALUE
-.B cboard
+.B llama-chess
 will return 0 on success or 1 on failure. Failures are file access errors,
 parsing errors or command line usage errors.
 
 .SH FILES
 .TP
-.I ~/.cboard/config
-Configuration file.
+.I ~/.llama-chess/config
+Configuration file.  An existing
+.I ~/.cboard
+directory is still used if
+.I ~/.llama-chess
+has not been created yet.
 
 .TP
-.I ~/.cboard/cc.data
+.I ~/.llama-chess/cc.data
 Country codes. Used when editing the "Site" tag.
 
 .TP
-.I ~/.cboard/nag.data
+.I ~/.llama-chess/nag.data
 Appending to this file is fine for custom NAG types, but lines before
 140 are reserved by the PGN standard.
 
 .TP
-.I ~/.cboard/perl.pl
+.I ~/.llama-chess/perl.pl
 If compiled with 
 .BR perl (1)
 support, a file containing subroutines that
-.B CBoard 
+.B Llama Chess
 can filter games through.
 
 .SH SEE ALSO
@@ -502,4 +506,4 @@ can filter games through.
 .SH AUTHORS
 Ben Kibbey <bjk@luxsci.net>
 .P
-.URL "https://gitlab.com/bjk/cboard/wikis" "CBoard homepage"
+.URL "https://gitlab.com/bjk/cboard/wikis" "Llama Chess homepage"

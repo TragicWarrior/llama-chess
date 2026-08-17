@@ -13,7 +13,7 @@
  */
 int cboard_mouse_handle(const MEVENT *mev);
 
-/* Board square hit-test (implemented in cboard.c). */
+/* Board square hit-test (implemented in llama-chess.c). */
 int cboard_board_mouse(int x, int y, mmask_t bstate);
 
 #endif

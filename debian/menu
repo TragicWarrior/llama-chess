@@ -1,2 +1,2 @@
-?package(cboard):needs="text" section="Games/Board"\
-  title="CBoard" command="/usr/games/cboard"
+?package(llama-chess):needs="text" section="Games/Board"\
+  title="Llama Chess" command="/usr/games/llama-chess"

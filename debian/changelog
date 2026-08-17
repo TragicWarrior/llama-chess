@@ -1,3 +1,9 @@
+llama-chess (0.7.6-1) UNRELEASED; urgency=medium
+
+  * Rename the user-facing command and package from cboard to llama-chess.
+
+ -- Bebop Pilot <bebop@localhost>  Mon, 17 Aug 2026 09:00:00 -0400
+
 cboard (0.7.5-1) UNRELEASED; urgency=medium
 
   * New upstream. 

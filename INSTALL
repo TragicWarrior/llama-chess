@@ -1,5 +1,5 @@
-Building and installing CBoard
-==============================
+Building and installing Llama Chess
+===================================
 
 Requirements
 ------------
@@ -24,7 +24,7 @@ Basic build
     cmake --build build
     sudo cmake --install build
 
-If libviper is not a sibling of cboard:
+If libviper is not a sibling of this source tree:
 
     cmake -S . -B build -DLIBVIPER_SOURCE_DIR=/path/to/libviper
 
@@ -34,8 +34,8 @@ Or with a custom prefix:
     cmake --build build
     cmake --install build
 
-After installing, run "cboard -h" for command-line options, or start
-"cboard" and press F1 for in-game help.
+After installing, run "llama-chess -h" for command-line options, or start
+"llama-chess" and press F1 for in-game help.
 
 Common options
 --------------
@@ -54,7 +54,7 @@ PERL plugin
 -----------
 
 When built with -DWITH_LIBPERL=ON, pressing ^O filters the current game
-through a PERL subroutine defined in ~/.cboard/perl.pl. The subroutine is
+through a PERL subroutine defined in ~/.llama-chess/perl.pl. The subroutine is
 passed a generated FEN of the current position and should return a FEN after
 processing.
 

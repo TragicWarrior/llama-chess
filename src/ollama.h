@@ -24,7 +24,7 @@ int engine_is_ollama(GAME g);
 
 /*
  * Show saved connections (or New… if none).  Successful connects are stored
- * under ~/.cboard/ollama_connections.
+ * under ~/.llama-chess/ollama_connections.
  */
 void do_global_connect_ollama(void);
 
