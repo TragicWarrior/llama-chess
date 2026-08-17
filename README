@@ -29,16 +29,15 @@ will "filter" the current game through a PERL subroutine defined in
 generated FEN tag of the current game. The subroutine should return a FEN tag
 after processing.
 
-The latest version can be found at https://gitlab.com/bjk/cboard/wikis. If
-you find a bug or have a patch to fix one or a feature request you can use the
-issue tracking system at https://gitlab.com/bjk/cboard/issues or send me an
-email.
+The latest version can be found at https://github.com/TragicWarrior/llama-chess.
+If you find a bug or have a patch to fix one or a feature request you can use
+the issue tracker there or send me an email.
 
 There is also a public GIT repository available. Anonymous checkouts can be
 done by doing:
 
-    git clone https://gitlab.com/bjk/cboard.git
+    git clone https://github.com/TragicWarrior/llama-chess.git
 
 Ben Kibbey <bjk@luxsci.net>
 Jabber: bjk@jabber.org
-https://gitlab.com/bjk/cboard/wikis
+https://github.com/TragicWarrior/llama-chess

@@ -76,7 +76,7 @@
 #include <debug.h>
 #endif
 
-#define CBOARD_URL "https://gitlab.com/bjk/cboard/wikis"
+#define CBOARD_URL "https://github.com/TragicWarrior/llama-chess"
 #define COPYRIGHT "Copyright (C) 2002-2024 " PACKAGE_BUGREPORT
 #define STATUS_HEIGHT 13
 /* Leave row 0 for the menubar; all chrome is laid out below it. */

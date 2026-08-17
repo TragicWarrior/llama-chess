@@ -5,8 +5,8 @@ Maintainer: Ben Kibbey <bjk@luxsci.net>
 Build-Depends: debhelper-compat (= 13), cmake, libncurses-dev,
  libperl-dev, gettext, pkg-config
 Standards-Version: 4.6.2
-Homepage: https://gitlab.com/bjk/cboard/wikis
-Vcs-Git: https://gitlab.com/bjk/cboard.git
+Homepage: https://github.com/TragicWarrior/llama-chess
+Vcs-Git: https://github.com/TragicWarrior/llama-chess.git
 
 Package: llama-chess
 Architecture: any

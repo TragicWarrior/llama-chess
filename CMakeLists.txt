@@ -8,7 +8,7 @@ project(llama-chess
 
 set(LLAMA_CHESS_DISPLAY_NAME "Llama Chess")
 set(CBOARD_BUGREPORT "Ben Kibbey <bjk@luxsci.net>")
-set(CBOARD_URL "https://gitlab.com/bjk/cboard/wikis")
+set(CBOARD_URL "https://github.com/TragicWarrior/llama-chess")
 # Match historical package version string used in --version output.
 set(PROJECT_VERSION "${PROJECT_VERSION}-dev")
 
