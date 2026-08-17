@@ -19,8 +19,8 @@
    After dismiss, send go again to the Ollama bridge.
 ** DONE No in-UI hint that 'g' forces the engine to move after an error
    Invalid Ollama moves mention g in the error dialog.
-** TODO Saved-connection list: easy to overshoot onto Disconnect / Remove
-   Consider activating the last-used or a marked default with one key.
+** DONE Saved-connection list: easy to overshoot onto Disconnect / Remove
+   Picker now opens on the first saved connection, not New connection.
 ** TODO Side clocks stay 00:00:00 while Total ticks
    After 1.e4 1...e5 2.Nf3 2...Nc6 (~4.5 min), White and Black both still
    read 00:00:00. Only Total advances. Side clocks should run for the

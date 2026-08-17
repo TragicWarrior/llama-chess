@@ -1613,6 +1613,10 @@ get_ollama_conn_items(WIN *win)
 
     ollama_conn_load();
 
+    /* Land on a saved opponent, not New/Remove (easy to overshoot). */
+    if (!m->items && conn_menu_mode == 0 && nconns > 0)
+        m->selected = CONN_MENU_ACTIONS;
+
     /* Free previous items if rebuild. */
     if (m->items)
     {
