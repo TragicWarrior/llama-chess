@@ -337,7 +337,7 @@ cboard_ui_frame_new(int height, int width, int y, int x,
 
     vk_widget_set_colors(body, body_fg, body_bg);
     vk_widget_set_expand(body);
-    vk_window_set_child(win, body);
+    vk_window_set_child(win, body, VK_INHERIT_NONE);
 
     vk_widget_move(VK_WIDGET(win), x, y);
     (void) vk_screen_detach_widget(screen, 0, VK_WIDGET(win));

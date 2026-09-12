@@ -608,7 +608,7 @@ construct_notice_popup(const char *body, const char *title,
 
     top_pad = vk_filler_create();
     vk_widget_set_colors(VK_WIDGET(top_pad), fg, bg);
-    vk_box_set_widget(client, 0, VK_WIDGET(top_pad));
+    vk_box_set_widget(client, 0, VK_WIDGET(top_pad), VK_INHERIT_NONE);
 
     lab = vk_label_create(client_w);
     vk_label_set_justify(lab, VK_JUSTIFY_CENTER);
@@ -616,11 +616,11 @@ construct_notice_popup(const char *body, const char *title,
     vk_widget_set_colors(VK_WIDGET(lab), fg, bg);
     vk_widget_set_attrs(VK_WIDGET(lab), is_error ? A_NORMAL : A_BOLD);
     vk_label_update(lab);
-    vk_box_set_widget(client, 1, VK_WIDGET(lab));
+    vk_box_set_widget(client, 1, VK_WIDGET(lab), VK_INHERIT_NONE);
 
     bot_pad = vk_filler_create();
     vk_widget_set_colors(VK_WIDGET(bot_pad), fg, bg);
-    vk_box_set_widget(client, 2, VK_WIDGET(bot_pad));
+    vk_box_set_widget(client, 2, VK_WIDGET(bot_pad), VK_INHERIT_NONE);
 
     vk_popup_set_client(popup, VK_WIDGET(client));
     {
@@ -782,7 +782,7 @@ WIN *construct_message(const char *title, const char *prompt, int center,
                          config.color[CONF_MWINDOW].fg,
                          config.color[CONF_MWINDOW].bg);
     vk_widget_set_expand(VK_WIDGET(tb));
-    vk_window_set_child(vkw, VK_WIDGET(tb));
+    vk_window_set_child(vkw, VK_WIDGET(tb), VK_INHERIT_NONE);
     m->tb = tb;
 
     vk_textbox_update(tb);

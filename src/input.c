@@ -561,7 +561,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
                              config.color[CONF_MENU].bg);
         vk_widget_set_attrs(VK_WIDGET(vbox), config.color[CONF_MENU].attrs);
         vk_widget_set_expand(VK_WIDGET(vbox));
-        vk_box_set_widget(vbox, 0, VK_WIDGET(field));
+        vk_box_set_widget(vbox, 0, VK_WIDGET(field), VK_INHERIT_NONE);
         for (si = 0; si < eh; si++)
         {
             vk_label_t *lab = vk_label_create(w - 2);
@@ -572,9 +572,9 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
                                  config.color[CONF_MENU].bg);
             vk_widget_set_attrs(VK_WIDGET(lab), config.color[CONF_MENU].attrs);
             vk_label_update(lab);
-            vk_box_set_widget(vbox, si + 1, VK_WIDGET(lab));
+            vk_box_set_widget(vbox, si + 1, VK_WIDGET(lab), VK_INHERIT_NONE);
         }
-        vk_window_set_child(vkw, VK_WIDGET(vbox));
+        vk_window_set_child(vkw, VK_WIDGET(vbox), VK_INHERIT_NONE);
     }
     else
     {
@@ -588,7 +588,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
                              config.color[CONF_MENU].bg);
         vk_widget_set_attrs(VK_WIDGET(vbox), config.color[CONF_MENU].attrs);
         vk_widget_set_expand(VK_WIDGET(vbox));
-        vk_box_set_widget(vbox, 0, VK_WIDGET(field));
+        vk_box_set_widget(vbox, 0, VK_WIDGET(field), VK_INHERIT_NONE);
         snprintf(helpbuf, sizeof(helpbuf), _("Type %ls for help"),
                  key_lookup(global_keys, do_global_help));
         vk_label_set_text(lab, helpbuf);
@@ -597,8 +597,8 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
                              config.color[CONF_MENU].bg);
         vk_widget_set_attrs(VK_WIDGET(lab), config.color[CONF_MENU].attrs);
         vk_label_update(lab);
-        vk_box_set_widget(vbox, 1, VK_WIDGET(lab));
-        vk_window_set_child(vkw, VK_WIDGET(vbox));
+        vk_box_set_widget(vbox, 1, VK_WIDGET(lab), VK_INHERIT_NONE);
+        vk_window_set_child(vkw, VK_WIDGET(vbox), VK_INHERIT_NONE);
     }
     vin->vbox = vbox;
 
