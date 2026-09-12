@@ -405,7 +405,7 @@ frame_build(int width, int height)
 
     vk_widget_set_colors(body, COLOR_WHITE, COLOR_BLACK);
     vk_widget_set_expand(body);
-    vk_frame_set_child(frame, body);
+    vk_frame_set_child(frame, body, VK_INHERIT_NONE);
 
     cboard_ui_widget_attach((cboard_widget_t *) frame, 0, 0);
     return 0;

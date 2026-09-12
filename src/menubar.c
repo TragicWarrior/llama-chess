@@ -349,7 +349,7 @@ open_dropdown(int idx)
                          config.color[CONF_MENU].fg,
                          config.color[CONF_MENU].bg);
     vk_widget_set_attrs(VK_WIDGET(win), config.color[CONF_MENU].attrs);
-    vk_window_set_child(win, VK_WIDGET(lb));
+    vk_window_set_child(win, VK_WIDGET(lb), VK_INHERIT_NONE);
 
     vk_widget_get_position(VK_WIDGET(menubar), &bar_x, &bar_y);
     (void) bar_y;

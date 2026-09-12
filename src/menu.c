@@ -627,9 +627,9 @@ WIN *construct_menu(int rows, int cols, int y, int x, const char *title,
     vk_widget_set_attrs(VK_WIDGET(vbox), config.color[CONF_MENU].attrs);
     /* Expand with the frame so geometry changes keep a full interior. */
     vk_widget_set_expand(VK_WIDGET(vbox));
-    vk_box_set_widget(vbox, 0, VK_WIDGET(lb));
-    vk_box_set_widget(vbox, 1, VK_WIDGET(lab));
-    vk_window_set_child(vkw, VK_WIDGET(vbox));
+    vk_box_set_widget(vbox, 0, VK_WIDGET(lb), VK_INHERIT_NONE);
+    vk_box_set_widget(vbox, 1, VK_WIDGET(lab), VK_INHERIT_NONE);
+    vk_window_set_child(vkw, VK_WIDGET(vbox), VK_INHERIT_NONE);
     m->vbox = vbox;
 
     cboard_ui_widget_attach((cboard_widget_t *) vkw, posy, posx);
