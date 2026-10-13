@@ -364,7 +364,6 @@ open_dropdown(int idx)
     cboard_ui_widget_attach((cboard_widget_t *) win,
                             CBOARD_MENUBAR_H, bar_x + item_x);
 
-    vk_listbox_redraw(lb);
     vk_window_redraw(win);
 
     dropdown = win;
@@ -450,13 +449,7 @@ void cboard_menubar_refresh(void)
     vk_menubar_redraw(menubar);
 
     if (dropdown)
-    {
-        vk_listbox_t *lb = VK_LISTBOX(vk_window_get_child(dropdown));
-
-        if (lb)
-            vk_listbox_redraw(lb);
         vk_window_redraw(dropdown);
-    }
 
     /*
    * Register menubar (and open dropdown) as the front layer.  refresh()
@@ -537,7 +530,6 @@ int cboard_menubar_key(wint_t c)
             if (lb)
             {
                 vk_listbox_set_prev(lb);
-                vk_listbox_redraw(lb);
                 vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
@@ -546,7 +538,6 @@ int cboard_menubar_key(wint_t c)
             if (lb)
             {
                 vk_listbox_set_next(lb);
-                vk_listbox_redraw(lb);
                 vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
@@ -555,7 +546,6 @@ int cboard_menubar_key(wint_t c)
             if (lb)
             {
                 vk_listbox_set_curr(lb, 0);
-                vk_listbox_redraw(lb);
                 vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
@@ -567,7 +557,6 @@ int cboard_menubar_key(wint_t c)
 
                 if (n > 0)
                     vk_listbox_set_curr(lb, n - 1);
-                vk_listbox_redraw(lb);
                 vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
@@ -665,7 +654,6 @@ int cboard_menubar_mouse(int x, int y, mmask_t bstate)
                     vk_listbox_set_prev(lb);
                 else
                     vk_listbox_set_next(lb);
-                vk_listbox_redraw(lb);
                 vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
@@ -699,7 +687,6 @@ int cboard_menubar_mouse(int x, int y, mmask_t bstate)
                 if (row >= 0 && row < n)
                 {
                     vk_listbox_set_curr(lb, row);
-                    vk_listbox_redraw(lb);
                     vk_window_redraw(dropdown);
                     /* Activate via the same path as Enter. */
                     vk_listbox_exec_curr(lb);

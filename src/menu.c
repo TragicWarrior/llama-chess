@@ -90,22 +90,16 @@ menu_update_status(struct menu_input_s *m)
 }
 
 /*
- * Composite listbox/status into the box, then the box into the window.
- * vk_listbox_redraw / vk_label_redraw only paint each widget's own canvas;
- * without vk_box_redraw those canvases never reach the window frame (menus
- * would open with a border and an empty interior).
+ * Repaint the menu and show it.  One redraw of the window repaints the
+ * list, the status line and the box they are in (libviper 11.1 and later).
  */
 static void
 menu_composite(WIN *win)
 {
-    struct menu_input_s *m;
-
     if (!win || !win->vk)
         return;
 
-    m = win->data;
-    if (m && m->vbox)
-        vk_box_redraw(VK_BOX(m->vbox));
+    /* redrawing the window repaints everything it holds */
     vk_window_redraw(VK_WINDOW(win->vk));
     cboard_ui_refresh();
 }
