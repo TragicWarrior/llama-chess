@@ -1,6 +1,6 @@
 Llama Chess
 -----------
-Needs libviper 12.0.0 or newer; the build stops with a message on an older
+Needs libviper 12.2.0 or newer; the build stops with a message on an older
 one. Fixed a double free when the splash screen closed. Dialogs and menus
 repaint with one redraw of their window or popup.
 
