@@ -78,11 +78,11 @@ input_layout(WIN *win)
     if (vin)
     {
         if (vin->field)
-            vk_input_update(vin->field);
+            vk_input_redraw(vin->field);
         if (vin->vbox)
-            vk_box_update(vin->vbox);
+            vk_box_redraw(vin->vbox);
     }
-    vk_window_update(VK_WINDOW(win->vk));
+    vk_window_redraw(VK_WINDOW(win->vk));
 }
 
 static void
@@ -372,9 +372,9 @@ void input_set_buf(struct input_s *in, const char *text)
     if (vin->field)
     {
         vk_input_set_text(vin->field, in->buf);
-        vk_input_update(vin->field);
+        vk_input_redraw(vin->field);
         if (vin->vbox)
-            vk_box_update(vin->vbox);
+            vk_box_redraw(vin->vbox);
     }
 }
 
@@ -571,7 +571,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
                                  config.color[CONF_MENU].fg,
                                  config.color[CONF_MENU].bg);
             vk_widget_set_attrs(VK_WIDGET(lab), config.color[CONF_MENU].attrs);
-            vk_label_update(lab);
+            vk_label_redraw(lab);
             vk_box_set_widget(vbox, si + 1, VK_WIDGET(lab), VK_INHERIT_NONE);
         }
         vk_window_set_child(vkw, VK_WIDGET(vbox), VK_INHERIT_NONE);
@@ -596,7 +596,7 @@ WIN *construct_input(const char *title, const char *init, int lines, int reset,
                              config.color[CONF_MENU].fg,
                              config.color[CONF_MENU].bg);
         vk_widget_set_attrs(VK_WIDGET(lab), config.color[CONF_MENU].attrs);
-        vk_label_update(lab);
+        vk_label_redraw(lab);
         vk_box_set_widget(vbox, 1, VK_WIDGET(lab), VK_INHERIT_NONE);
         vk_window_set_child(vkw, VK_WIDGET(vbox), VK_INHERIT_NONE);
     }

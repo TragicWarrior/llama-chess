@@ -290,8 +290,8 @@ message_paint(struct message_s *m)
 {
     if (m->tb)
     {
-        vk_textbox_update(m->tb);
-        vk_widget_draw(VK_WIDGET(m->tb));
+        vk_textbox_redraw(m->tb);
+        vk_widget_blit(VK_WIDGET(m->tb));
     }
     cboard_ui_refresh();
 }
@@ -389,8 +389,8 @@ message_resize_func(WIN *w)
         if (inner_h < 1)
             inner_h = 1;
         vk_widget_resize(VK_WIDGET(m->tb), inner_w, inner_h);
-        vk_textbox_update(m->tb);
-        vk_window_update(VK_WINDOW(w->vk));
+        vk_textbox_redraw(m->tb);
+        vk_window_redraw(VK_WINDOW(w->vk));
     }
 
     message_paint(m);
@@ -437,7 +437,7 @@ notice_style(struct notice_s *n)
     {
         vk_widget_set_colors(VK_WIDGET(n->client), fg, bg);
         vk_widget_fill(VK_WIDGET(n->client), ' ' | COLOR_PAIR(pair));
-        vk_box_update(n->client);
+        vk_box_redraw(n->client);
     }
 
     /* Label after box layout so width matches the slot for center justify. */
@@ -457,7 +457,7 @@ notice_style(struct notice_s *n)
             vk_widget_get_metrics(VK_WIDGET(n->client), &lw, NULL);
         if (lw > 0)
             vk_widget_resize(VK_WIDGET(n->label), lw, lh > 0 ? lh : 1);
-        vk_label_update(n->label);
+        vk_label_redraw(n->label);
     }
 
     bar = vk_popup_get_button_bar(n->popup);
@@ -465,7 +465,7 @@ notice_style(struct notice_s *n)
     {
         vk_widget_set_colors(VK_WIDGET(bar), fg, bg);
         vk_widget_fill(VK_WIDGET(bar), ' ' | COLOR_PAIR(pair));
-        vk_box_update(bar);
+        vk_box_redraw(bar);
     }
 
     ok = vk_popup_get_button(n->popup, 0);
@@ -474,10 +474,10 @@ notice_style(struct notice_s *n)
         /* Yellow OK stands out on white (error) and on cyan (notice). */
         vk_widget_set_colors(VK_WIDGET(ok), COLOR_YELLOW, bg);
         vk_widget_set_attrs(VK_WIDGET(ok), A_BOLD);
-        vk_button_update(ok);
+        vk_button_redraw(ok);
     }
 
-    vk_popup_update(n->popup);
+    vk_popup_redraw(n->popup);
 }
 
 static void
@@ -615,7 +615,7 @@ construct_notice_popup(const char *body, const char *title,
     vk_label_set_text(lab, text);
     vk_widget_set_colors(VK_WIDGET(lab), fg, bg);
     vk_widget_set_attrs(VK_WIDGET(lab), is_error ? A_NORMAL : A_BOLD);
-    vk_label_update(lab);
+    vk_label_redraw(lab);
     vk_box_set_widget(client, 1, VK_WIDGET(lab), VK_INHERIT_NONE);
 
     bot_pad = vk_filler_create();
@@ -640,12 +640,12 @@ construct_notice_popup(const char *body, const char *title,
 
     pair = vdk_color_pair(fg, bg);
     vk_widget_fill(VK_WIDGET(client), ' ' | COLOR_PAIR(pair));
-    vk_box_update(client);
-    vk_popup_update(popup);
+    vk_box_redraw(client);
+    vk_popup_redraw(popup);
 
     cboard_ui_widget_attach((cboard_widget_t *) popup, y, x);
     cboard_ui_widget_raise((cboard_widget_t *) popup);
-    vk_popup_update(popup);
+    vk_popup_redraw(popup);
 
     win = window_adopt(is_error ? _("Error") : _("Notice"),
                        (void *) popup, WIN_VK_POPUP, h, w, y, x,
@@ -785,8 +785,8 @@ WIN *construct_message(const char *title, const char *prompt, int center,
     vk_window_set_child(vkw, VK_WIDGET(tb), VK_INHERIT_NONE);
     m->tb = tb;
 
-    vk_textbox_update(tb);
-    vk_window_update(vkw);
+    vk_textbox_redraw(tb);
+    vk_window_redraw(vkw);
 
     cboard_ui_widget_attach((cboard_widget_t *) vkw, y, x);
     cboard_ui_widget_raise((cboard_widget_t *) vkw);
@@ -849,7 +849,7 @@ confirm_style(struct confirm_s *c)
     {
         vk_widget_set_colors(VK_WIDGET(c->label), fg, bg);
         vk_widget_set_attrs(VK_WIDGET(c->label), attrs);
-        vk_label_update(c->label);
+        vk_label_redraw(c->label);
     }
 
     by = vk_popup_get_button(c->popup, 0);
@@ -858,13 +858,13 @@ confirm_style(struct confirm_s *c)
     {
         vk_widget_set_colors(VK_WIDGET(by), yfg, bg);
         vk_widget_set_attrs(VK_WIDGET(by), attrs);
-        vk_button_update(by);
+        vk_button_redraw(by);
     }
     if (bn)
     {
         vk_widget_set_colors(VK_WIDGET(bn), nfg, bg);
         vk_widget_set_attrs(VK_WIDGET(bn), attrs);
-        vk_button_update(bn);
+        vk_button_redraw(bn);
     }
 
     {
@@ -873,11 +873,11 @@ confirm_style(struct confirm_s *c)
         if (bar)
         {
             vk_box_set_subfocus(bar, c->focus);
-            vk_box_update(bar);
+            vk_box_redraw(bar);
         }
     }
 
-    vk_popup_update(c->popup);
+    vk_popup_redraw(c->popup);
 }
 
 static void
@@ -999,7 +999,7 @@ WIN *construct_confirm(const char *title, const char *text,
 
     cboard_ui_widget_attach((cboard_widget_t *) popup, y, x);
     cboard_ui_widget_raise((cboard_widget_t *) popup);
-    vk_popup_update(popup);
+    vk_popup_redraw(popup);
 
     win = window_adopt(title, (void *) popup, WIN_VK_POPUP, h, w, y, x,
                        display_confirm, c, efunc, NULL);

@@ -203,7 +203,7 @@ void cboard_ui_refresh(void)
         if (ws == NULL)
             continue;
         surface = ws;
-        vk_widget_draw(w);
+        vk_widget_blit(w);
     }
 
     {
@@ -226,9 +226,9 @@ void cboard_ui_refresh(void)
             surface = ws;
             /* Window frames need full update so children stay on the canvas. */
             if (mw->vk_kind == WIN_VK_WINDOW)
-                vk_window_update(VK_WINDOW(w));
+                vk_window_redraw(VK_WINDOW(w));
             else
-                vk_widget_draw(w);
+                vk_widget_blit(w);
             untouch_canvas(w);
         }
     }
@@ -343,7 +343,7 @@ cboard_ui_frame_new(int height, int width, int y, int x,
     (void) vk_screen_detach_widget(screen, 0, VK_WIDGET(win));
     vk_screen_attach_widget(screen, 0, VK_WIDGET(win));
     vk_widget_show(VK_WIDGET(win));
-    vk_window_update(win);
+    vk_window_redraw(win);
 
     return (cboard_widget_t *) win;
 }
@@ -396,7 +396,7 @@ void cboard_ui_frame_paint(cboard_widget_t *frame)
     if (frame == NULL)
         return;
 
-    vk_window_update(VK_WINDOW(frame));
+    vk_window_redraw(VK_WINDOW(frame));
 }
 
 void cboard_ui_widget_attach(cboard_widget_t *widget, int y, int x)

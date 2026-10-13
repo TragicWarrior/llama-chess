@@ -373,7 +373,7 @@ paint(void)
                   P_YELLOW);
     draw_centered(top + title_h + 2 + rank_h + 2 + 2, "v1.0.0", P_CBLUE);
 
-    vk_frame_update(frame);
+    vk_frame_redraw(frame);
     if (cboard_ui_screen())
         vk_screen_refresh(cboard_ui_screen());
 }
@@ -417,11 +417,16 @@ frame_teardown(void)
     if (frame)
     {
         cboard_ui_widget_detach((cboard_widget_t *) frame);
+        /* The frame owns its child: destroying it destroys body too
+           (libviper 10 and later).  Destroying body afterwards as well
+           freed it twice. */
         vk_frame_destroy(frame);
         frame = NULL;
+        body = NULL;
     }
-    if (body)
+    else if (body)
     {
+        /* body was made but never given to a frame */
         vk_widget_destroy(body);
         body = NULL;
     }

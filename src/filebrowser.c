@@ -212,10 +212,10 @@ fb_style_widgets(struct fb_state_s *st)
         fb_paint_slot(btn0, ok_fg, base_bg, attrs);
         fb_paint_slot(btn1, cancel_fg, base_bg, attrs);
         if (btn0)
-            vk_button_update(VK_BUTTON(btn0));
+            vk_button_redraw(VK_BUTTON(btn0));
         if (btn1)
-            vk_button_update(VK_BUTTON(btn1));
-        vk_box_update(bar);
+            vk_button_redraw(VK_BUTTON(btn1));
+        vk_box_redraw(bar);
     }
 }
 
@@ -309,7 +309,7 @@ fb_display(WIN *win)
         else
             st->tab = (st->tab + FB_TAB_COUNT - 1) % FB_TAB_COUNT;
         fb_sync_box_focus(st);
-        vk_filedialog_update(st->fd);
+        vk_filedialog_redraw(st->fd);
         cboard_ui_refresh();
         return 1;
     }
@@ -353,7 +353,7 @@ fb_display(WIN *win)
         {
             fb_sync_box_focus(st);
             cboard_ui_push_key((cboard_widget_t *) st->fd, '\n');
-            vk_filedialog_update(st->fd);
+            vk_filedialog_redraw(st->fd);
             cboard_ui_refresh();
             return 1;
         }
@@ -386,7 +386,7 @@ fb_display(WIN *win)
             fb_style_widgets(st);
         }
     }
-    vk_filedialog_update(st->fd);
+    vk_filedialog_redraw(st->fd);
     cboard_ui_refresh();
     return 1;
 }
@@ -415,7 +415,7 @@ fb_resize(WIN *w)
         {
             fb_sync_box_focus(st);
             fb_style_widgets(st);
-            vk_filedialog_update(st->fd);
+            vk_filedialog_redraw(st->fd);
         }
     }
 }
@@ -476,7 +476,7 @@ int file_browser_mouse(WIN *win, int x, int y, mmask_t bstate)
                 vk_listbox_set_prev(lb);
             else
                 vk_listbox_set_next(lb);
-            vk_filedialog_update(st->fd);
+            vk_filedialog_redraw(st->fd);
             cboard_ui_refresh();
         }
         return 1;
@@ -497,7 +497,7 @@ int file_browser_mouse(WIN *win, int x, int y, mmask_t bstate)
         {
             st->tab = FB_TAB_PATH;
             fb_sync_box_focus(st);
-            vk_filedialog_update(st->fd);
+            vk_filedialog_redraw(st->fd);
             cboard_ui_refresh();
             return 1;
         }
@@ -524,7 +524,7 @@ int file_browser_mouse(WIN *win, int x, int y, mmask_t bstate)
                 if (row >= 0 && row < n)
                 {
                     vk_listbox_set_curr(lb, row);
-                    vk_filedialog_update(st->fd);
+                    vk_filedialog_redraw(st->fd);
                     if (bstate & BUTTON1_DOUBLE_CLICKED)
                     {
                         if (fb_copy_selected(st, name, sizeof(name)))
@@ -533,7 +533,7 @@ int file_browser_mouse(WIN *win, int x, int y, mmask_t bstate)
                             {
                                 cboard_ui_push_key((cboard_widget_t *) st->fd,
                                                    '\n');
-                                vk_filedialog_update(st->fd);
+                                vk_filedialog_redraw(st->fd);
                             }
                             else if (fb_apply_name(st, name))
                             {
@@ -581,7 +581,7 @@ int file_browser_mouse(WIN *win, int x, int y, mmask_t bstate)
                     }
                     else
                     {
-                        vk_filedialog_update(st->fd);
+                        vk_filedialog_redraw(st->fd);
                         cboard_ui_refresh();
                     }
                     return 1;
@@ -602,7 +602,7 @@ int file_browser_mouse(WIN *win, int x, int y, mmask_t bstate)
             }
             st->tab = FB_TAB_OK;
             fb_sync_box_focus(st);
-            vk_filedialog_update(st->fd);
+            vk_filedialog_redraw(st->fd);
             cboard_ui_refresh();
             return 1;
         }
@@ -687,7 +687,7 @@ void file_browser(void *arg)
     st->fd = fd;
     st->tab = FB_TAB_LIST;
     fb_sync_box_focus(st);
-    vk_filedialog_update(fd);
+    vk_filedialog_redraw(fd);
 
     win = window_adopt(_("File Browser"), (void *) fd, WIN_VK_FILEDIALOG,
                        h, w, y, x, fb_display, st, NULL, fb_resize);
