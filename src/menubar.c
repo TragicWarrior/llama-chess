@@ -231,7 +231,7 @@ on_dropdown_item(vk_widget_t *widget, void *anything)
     if (menubar)
     {
         vk_menubar_set_focused(menubar, false);
-        vk_menubar_update(menubar);
+        vk_menubar_redraw(menubar);
     }
     cboard_ui_refresh();
 
@@ -364,8 +364,8 @@ open_dropdown(int idx)
     cboard_ui_widget_attach((cboard_widget_t *) win,
                             CBOARD_MENUBAR_H, bar_x + item_x);
 
-    vk_listbox_update(lb);
-    vk_window_update(win);
+    vk_listbox_redraw(lb);
+    vk_window_redraw(win);
 
     dropdown = win;
     dropdown_idx = idx;
@@ -413,7 +413,7 @@ void cboard_menubar_init(void)
     vk_widget_move(VK_WIDGET(menubar), 0, 0);
     cboard_ui_widget_attach((cboard_widget_t *) menubar, 0, 0);
     vk_menubar_set_focused(menubar, false);
-    vk_menubar_update(menubar);
+    vk_menubar_redraw(menubar);
     focused = 0;
     dropdown = NULL;
     dropdown_idx = -1;
@@ -438,7 +438,7 @@ void cboard_menubar_resize(void)
     close_dropdown();
     vk_widget_resize(VK_WIDGET(menubar), COLS, 1);
     vk_widget_move(VK_WIDGET(menubar), 0, 0);
-    vk_menubar_update(menubar);
+    vk_menubar_redraw(menubar);
     cboard_ui_widget_raise((cboard_widget_t *) menubar);
 }
 
@@ -447,15 +447,15 @@ void cboard_menubar_refresh(void)
     if (!menubar)
         return;
 
-    vk_menubar_update(menubar);
+    vk_menubar_redraw(menubar);
 
     if (dropdown)
     {
         vk_listbox_t *lb = VK_LISTBOX(vk_window_get_child(dropdown));
 
         if (lb)
-            vk_listbox_update(lb);
-        vk_window_update(dropdown);
+            vk_listbox_redraw(lb);
+        vk_window_redraw(dropdown);
     }
 
     /*
@@ -484,7 +484,7 @@ menubar_activate(void)
     vk_menubar_set_focused(menubar, true);
     if (vk_menubar_get_curr(menubar) < 0)
         vk_menubar_set_curr(menubar, 0);
-    vk_menubar_update(menubar);
+    vk_menubar_redraw(menubar);
     cboard_ui_front_clear();
     cboard_ui_front_push((cboard_widget_t *) menubar);
     if (dropdown)
@@ -500,7 +500,7 @@ menubar_deactivate(void)
     if (menubar)
     {
         vk_menubar_set_focused(menubar, false);
-        vk_menubar_update(menubar);
+        vk_menubar_redraw(menubar);
     }
     cboard_ui_refresh();
 }
@@ -537,8 +537,8 @@ int cboard_menubar_key(wint_t c)
             if (lb)
             {
                 vk_listbox_set_prev(lb);
-                vk_listbox_update(lb);
-                vk_window_update(dropdown);
+                vk_listbox_redraw(lb);
+                vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
             return 1;
@@ -546,8 +546,8 @@ int cboard_menubar_key(wint_t c)
             if (lb)
             {
                 vk_listbox_set_next(lb);
-                vk_listbox_update(lb);
-                vk_window_update(dropdown);
+                vk_listbox_redraw(lb);
+                vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
             return 1;
@@ -555,8 +555,8 @@ int cboard_menubar_key(wint_t c)
             if (lb)
             {
                 vk_listbox_set_curr(lb, 0);
-                vk_listbox_update(lb);
-                vk_window_update(dropdown);
+                vk_listbox_redraw(lb);
+                vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
             return 1;
@@ -567,8 +567,8 @@ int cboard_menubar_key(wint_t c)
 
                 if (n > 0)
                     vk_listbox_set_curr(lb, n - 1);
-                vk_listbox_update(lb);
-                vk_window_update(dropdown);
+                vk_listbox_redraw(lb);
+                vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
             return 1;
@@ -577,7 +577,7 @@ int cboard_menubar_key(wint_t c)
             if (menubar)
             {
                 vk_menubar_set_prev(menubar);
-                vk_menubar_update(menubar);
+                vk_menubar_redraw(menubar);
                 open_dropdown(vk_menubar_get_curr(menubar));
             }
             return 1;
@@ -586,7 +586,7 @@ int cboard_menubar_key(wint_t c)
             if (menubar)
             {
                 vk_menubar_set_next(menubar);
-                vk_menubar_update(menubar);
+                vk_menubar_redraw(menubar);
                 open_dropdown(vk_menubar_get_curr(menubar));
             }
             return 1;
@@ -610,7 +610,7 @@ int cboard_menubar_key(wint_t c)
         if (menubar)
         {
             vk_menubar_set_prev(menubar);
-            vk_menubar_update(menubar);
+            vk_menubar_redraw(menubar);
             cboard_ui_refresh();
         }
         return 1;
@@ -618,7 +618,7 @@ int cboard_menubar_key(wint_t c)
         if (menubar)
         {
             vk_menubar_set_next(menubar);
-            vk_menubar_update(menubar);
+            vk_menubar_redraw(menubar);
             cboard_ui_refresh();
         }
         return 1;
@@ -665,8 +665,8 @@ int cboard_menubar_mouse(int x, int y, mmask_t bstate)
                     vk_listbox_set_prev(lb);
                 else
                     vk_listbox_set_next(lb);
-                vk_listbox_update(lb);
-                vk_window_update(dropdown);
+                vk_listbox_redraw(lb);
+                vk_window_redraw(dropdown);
                 cboard_ui_refresh();
             }
             return 1;
@@ -699,8 +699,8 @@ int cboard_menubar_mouse(int x, int y, mmask_t bstate)
                 if (row >= 0 && row < n)
                 {
                     vk_listbox_set_curr(lb, row);
-                    vk_listbox_update(lb);
-                    vk_window_update(dropdown);
+                    vk_listbox_redraw(lb);
+                    vk_window_redraw(dropdown);
                     /* Activate via the same path as Enter. */
                     vk_listbox_exec_curr(lb);
                     return 1;
@@ -740,7 +740,7 @@ int cboard_menubar_mouse(int x, int y, mmask_t bstate)
         vk_menubar_set_focused(menubar, true);
     }
     vk_menubar_set_curr(menubar, idx);
-    vk_menubar_update(menubar);
+    vk_menubar_redraw(menubar);
     open_dropdown(idx);
     return 1;
 }

@@ -12,7 +12,7 @@ easier. There are known issues with Sun/Solaris and NetBSD, although
 Llama Chess has been tested to work well on OpenBSD, FreeBSD and Linux.
 
 Build with CMake (see INSTALL for details). Requires a built sibling
-libviper (VDK) checkout:
+libviper (VDK) checkout, 12.0.0 or newer:
 
      (cd ../libviper && cmake . && make)
      cmake -S . -B build && cmake --build build

@@ -26,6 +26,16 @@
  */
 #include <vdk.h>
 
+/* Llama Chess is written for libviper 12: the names for repainting a
+   widget are vk_<type>_redraw() and vk_widget_blit(), and a container
+   destroys what it holds.  A libviper from before 12 does not say its
+   version at all. */
+#ifndef VDK_VERSION_MAJOR
+#error "Llama Chess needs libviper 12.0.0 or newer"
+#elif !VDK_VERSION_AT_LEAST(12, 0, 0)
+#error "Llama Chess needs libviper 12.0.0 or newer"
+#endif
+
 enum
 {
     A_FG_B_BG,

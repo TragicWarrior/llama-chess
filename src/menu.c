@@ -86,13 +86,13 @@ menu_update_status(struct menu_input_s *m)
                  key_lookup(global_keys, do_global_help));
 
     vk_label_set_text(lab, buf);
-    vk_label_update(lab);
+    vk_label_redraw(lab);
 }
 
 /*
  * Composite listbox/status into the box, then the box into the window.
- * vk_listbox_update / vk_label_update only paint each widget's own canvas;
- * without vk_box_update those canvases never reach the window frame (menus
+ * vk_listbox_redraw / vk_label_redraw only paint each widget's own canvas;
+ * without vk_box_redraw those canvases never reach the window frame (menus
  * would open with a border and an empty interior).
  */
 static void
@@ -105,8 +105,8 @@ menu_composite(WIN *win)
 
     m = win->data;
     if (m && m->vbox)
-        vk_box_update(VK_BOX(m->vbox));
-    vk_window_update(VK_WINDOW(win->vk));
+        vk_box_redraw(VK_BOX(m->vbox));
+    vk_window_redraw(VK_WINDOW(win->vk));
     cboard_ui_refresh();
 }
 
@@ -175,7 +175,7 @@ menu_populate_listbox(WIN *win)
 
     m->top = vk_listbox_get_scroll_pos(lb);
     menu_update_status(m);
-    vk_listbox_update(lb);
+    vk_listbox_redraw(lb);
     menu_composite(win);
 }
 
@@ -446,7 +446,7 @@ display_menu(WIN *win)
             {
                 vk_listbox_set_curr(lb, cur);
                 menu_sync_selection(m);
-                vk_listbox_update(lb);
+                vk_listbox_redraw(lb);
                 menu_composite(win);
             }
         }
@@ -457,7 +457,7 @@ display_menu(WIN *win)
     {
         menu_sync_selection(m);
         if (lb)
-            vk_listbox_update(lb);
+            vk_listbox_redraw(lb);
         menu_composite(win);
     }
 

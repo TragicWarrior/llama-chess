@@ -1453,7 +1453,7 @@ void update_board_window(GAME g)
     vk_table_set_border_colors(board_table,
                                config.color[CONF_BGRAPHICS].fg,
                                config.color[CONF_BGRAPHICS].bg);
-    vk_table_update(board_table);
+    vk_table_redraw(board_table);
 
     cv = vk_widget_get_canvas(VK_WIDGET(board_table));
 
@@ -1551,7 +1551,7 @@ void update_board_window(GAME g)
                                 BOARD_CURSOR_FG);
 
     /* Composite inset table onto host, then coords in the gutters. */
-    vk_widget_draw(VK_WIDGET(board_table));
+    vk_widget_blit(VK_WIDGET(board_table));
     board_paint_coord_labels(d, host);
 }
 
