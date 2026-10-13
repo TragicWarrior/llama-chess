@@ -434,10 +434,11 @@ notice_style(struct notice_s *n)
     if (n->client)
     {
         vk_widget_set_colors(VK_WIDGET(n->client), fg, bg);
-        /* Not for the painting, which the popup's redraw below does: a
-           box lays out its slots when it is redrawn, and the label is
-           sized from that layout next. */
-        vk_box_redraw(n->client);
+        /* Arrange the box's slots, without painting: the label is sized
+           from that next, and the popup's redraw below does the
+           painting.  (Before libviper 12.2 the only way to arrange a
+           box was to redraw it.) */
+        vk_box_layout(n->client);
     }
 
     /* Label after box layout so width matches the slot for center justify. */
