@@ -62,26 +62,17 @@ struct vdk_input_s
 };
 
 /*
- * Paint field/labels into the box, then the box into the window.
- * Order matters: update leaf widgets first, then composite upward.
+ * Repaint the dialog.  One redraw of the window repaints the field, the
+ * labels and the box they are in (libviper 11.1 and later).
  */
 /* Layout/update VDK tree only — no screen composite (for resize cascade). */
 static void
 input_layout(WIN *win)
 {
-    struct vdk_input_s *vin;
-
     if (!win || !win->vk)
         return;
 
-    vin = win->data;
-    if (vin)
-    {
-        if (vin->field)
-            vk_input_redraw(vin->field);
-        if (vin->vbox)
-            vk_box_redraw(vin->vbox);
-    }
+    /* redrawing the window repaints the field and the box it is in */
     vk_window_redraw(VK_WINDOW(win->vk));
 }
 
